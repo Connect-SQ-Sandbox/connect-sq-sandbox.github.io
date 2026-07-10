@@ -1,0 +1,281 @@
+/* =============================================================
+   굿닥 커넥트 웹뷰 — 진료항목 정보(등록) 화면 전용 전역 스타일
+   /Users/goodoc/test 프로토타입(register.css)을 Next.js 프로젝트로 이식.
+   - className은 프로토타입과 동일하게 유지(plain CSS).
+   - 토큰/리셋/공통 셸(.cn-artboard, .cn-screen, 타이틀바, 사이드 내비)은
+     connectShell.css에서 공유한다. 이 파일은 rg-* 화면 전용 스타일만 담는다.
+   - 클래스 접두사(rg-)가 고유해 다른 페이지와 충돌하지 않음.
+   ============================================================= */
+
+/* ---- Main: 풋터 absolute 기준 ---- */
+.rg-main { position: relative; }
+
+/* 헤더 eyebrow */
+.rg-eyebrow { font: 400 14px/22px var(--font-sans); color: #808799; margin-bottom: 6px; }
+
+/* ---- 본문 2단 레이아웃 ---- */
+.rg-container {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  padding: 0 64px 124px;
+}
+.rg-form { flex: 1 0 0; min-width: 0; display: flex; flex-direction: column; gap: 24px; }
+
+/* ---- 흰색 섹션 카드 ---- */
+.rg-card {
+  background: var(--white);
+  border: 1px solid rgba(128, 135, 153, 0.2);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.rg-card.required { padding: 20px 0; }
+.rg-card.extra { padding: 24px 0; }
+
+/* 그룹 타이틀 */
+.rg-group-title { font: 700 18px/26px var(--font-sans); color: #16181d; padding: 0 24px; }
+
+/* ---- 필드 공통 ---- */
+.rg-field { padding: 0 24px; display: flex; flex-direction: column; }
+.rg-field-head { display: flex; flex-direction: column; gap: 2px; padding-bottom: 8px; }
+.rg-label { font: 600 16px/26px var(--font-sans); color: #31353f; }
+.rg-label.optional { color: #434956; }
+.rg-optional { font-weight: 600; color: #808799; }
+.rg-help { font: 400 12px/18px var(--font-sans); color: #5d6474; }
+
+/* ---- 입력 (디자인 시스템 Input: border #caced8 / radius 6 / 40h / Medium 14) ---- */
+.rg-input {
+  width: 100%;
+  height: 40px;
+  border: 1px solid #caced8;
+  border-radius: 6px;
+  padding: 0 16px;
+  background: var(--white);
+  font: 500 14px/22px var(--font-sans);
+  color: #16181d;
+}
+.rg-input::placeholder { color: #a8aebd; font-weight: 500; }
+.rg-input:focus { outline: none; border-color: var(--blue-60, #0073fa); }
+
+.rg-search { position: relative; }
+.rg-search .rg-input { padding-right: 44px; }
+.rg-search-ic {
+  position: absolute; top: 50%; right: 16px; transform: translateY(-50%);
+  width: 18px; height: 18px; color: #808799; pointer-events: none;
+}
+
+/* 글자 수 카운터 */
+.rg-counter { margin-top: 8px; text-align: right; font: 500 13px/18px var(--font-sans); color: #808799; }
+.rg-counter-num { font-weight: 600; color: #434956; }
+
+/* ---- 가격 정보 필드: 공통 24px 거터 구조 ----
+   필드 좌측 패딩(24px)을 제거하고 드래그 핸들(24px)이 그 거터를 대신한다.
+   → 가격명 인풋의 좌측 엣지가 진료항목 인풋과 정확히 정렬되며,
+     레이블/도움말만 24px 들여써서 콘텐츠-좌측 정렬을 유지. */
+.rg-field.price { padding-left: 0; padding-right: 24px; }
+.rg-field.price .rg-field-head { padding-left: 24px; }
+.rg-price-list { display: flex; flex-direction: column; }
+
+/* ---- 가격 옵션 행 (상태: 기본 / Hover / DND) ---- */
+.rg-price-row {
+  display: flex; align-items: flex-start;
+  /* 좌측: 핸들(24px)이 거터 역할 / 우측: × 버튼 우측 엣지가 진료항목 인풋 우측과 정렬되도록 패딩 0 */
+  padding: 8px 0;
+  border-radius: 8px;
+}
+/* DND(드래그 중): 흰 배경 + 회색 테두리(ring) + 그림자 — 레이아웃 영향 없도록 box-shadow 사용 */
+.rg-price-row.dragging {
+  background: var(--white);
+  box-shadow: 0 0 0 1px #a8aebd, 0 2px 0.5px rgba(22, 24, 29, 0.02), 0 2px 4px rgba(22, 24, 29, 0.1);
+}
+/* 드래그 핸들: 기본 숨김 → Hover/DND 시 노출 */
+.rg-drag {
+  width: 24px; flex: none;
+  align-self: stretch; min-height: 40px;
+  padding: 0 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: #808799; opacity: 0; cursor: grab;
+}
+.rg-price-row:hover .rg-drag,
+.rg-price-row.dragging .rg-drag { opacity: 1; }
+.rg-price-row.dragging .rg-drag { cursor: grabbing; }
+.rg-drag svg { width: 8px; height: 12px; }
+.rg-price-fields { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.rg-price-entry { display: flex; align-items: center; gap: 8px; }
+
+/* 가격 타입 드롭다운 (button + 메뉴) */
+.rg-select-wrap { position: relative; flex: none; }
+.rg-select.open { border-color: var(--blue-60, #0073fa); }
+.rg-select-menu {
+  position: absolute; top: calc(100% + 4px); left: 0; z-index: 20;
+  width: 140px; padding: 4px;
+  background: var(--white); border: 1px solid #e3e6ed; border-radius: 8px;
+  box-shadow: 0 2px 1px rgba(22, 24, 29, 0.02), 0 2px 8px rgba(22, 24, 29, 0.1);
+  display: flex; flex-direction: column;
+}
+.rg-select-opt {
+  height: 36px; border: 0; border-radius: 6px; background: transparent;
+  padding: 0 12px; text-align: left; cursor: pointer;
+  font: 500 14px/22px var(--font-sans); color: #31353f;
+}
+.rg-select-opt:hover { background: #f2f4f7; }
+.rg-select-opt.active { background: var(--alpha-blue-10); color: var(--blue-60, #0073fa); font-weight: 600; }
+
+/* 할인 가격: 정상가 → 판매가 화살표 */
+.rg-price-arrow { flex: none; font: 500 14px/22px var(--font-sans); color: #808799; }
+
+.rg-select {
+  width: 140px; flex: none; height: 40px;
+  border: 1px solid #caced8; border-radius: 6px;
+  padding: 0 12px 0 16px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  font: 500 14px/22px var(--font-sans); color: #31353f;
+  background: var(--white); cursor: pointer;
+}
+.rg-select .rg-select-ic { width: 16px; height: 16px; color: #5d6474; flex: none; }
+.rg-num {
+  width: 128px; flex: none; height: 40px;
+  border: 1px solid #caced8; border-radius: 6px;
+  padding: 0 16px; text-align: right;
+  font: 500 14px/22px var(--font-sans); color: #16181d;
+  background: var(--white);
+}
+.rg-num::placeholder { color: #a8aebd; font-weight: 500; }
+.rg-num:focus, .rg-select:focus { outline: none; border-color: var(--blue-60, #0073fa); }
+.rg-unit {
+  height: 40px; flex: none;
+  display: flex; align-items: center;
+  font: 500 14px/22px var(--font-sans); color: #16181d;
+}
+.rg-price-del {
+  width: 40px; height: 40px; flex: none;
+  border: 0; background: transparent; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: #16181d; border-radius: 4px;
+}
+.rg-price-del:hover { background: #f2f4f7; }
+.rg-price-del svg { width: 16px; height: 16px; }
+
+/* 가격 옵션 추가 버튼 */
+.rg-add-wrap { padding: 16px 24px 0; }
+.rg-add-btn {
+  width: 100%; height: 40px;
+  border: 0; border-radius: 6px;
+  background: rgba(0, 115, 250, 0.1);
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  font: 600 14px/22px var(--font-sans); color: var(--blue-60, #0073fa);
+  cursor: pointer;
+}
+.rg-add-btn svg { width: 18px; height: 18px; }
+
+/* ---- 사진 업로드 ---- */
+.rg-upload {
+  width: 96px; height: 96px;
+  border: 1px dashed #caced8; border-radius: 6px;
+  background: var(--white);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  cursor: pointer;
+}
+.rg-upload svg { width: 24px; height: 24px; color: #808799; }
+.rg-upload-label { font: 500 13px/18px var(--font-sans); color: #808799; }
+
+/* 회색 가이드 박스 */
+.rg-guide-wrap { padding: 16px 24px 0; }
+.rg-guide { background: #f6f7f9; border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+.rg-guide-li { display: flex; gap: 6px; font: 400 13px/20px var(--font-sans); color: #5d6474; }
+.rg-guide-li::before { content: "\2022"; color: #808799; flex: none; }
+
+/* 텍스트영역 */
+.rg-textarea {
+  width: 100%; height: 296px;
+  border: 1px solid #caced8; border-radius: 6px;
+  padding: 9px 16px; resize: none;
+  font: 500 14px/22px var(--font-sans); color: #16181d;
+  background: var(--white);
+}
+.rg-textarea::placeholder { color: #a8aebd; font-weight: 500; }
+.rg-textarea:focus { outline: none; border-color: var(--blue-60, #0073fa); }
+
+/* 키워드 태그 입력 */
+.rg-tag-box {
+  min-height: 80px; margin-top: 8px;
+  background: var(--white); border: 1px solid #caced8; border-radius: 8px;
+  padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start;
+}
+.rg-tag-empty { font: 400 14px/22px var(--font-sans); color: #a8aebd; }
+
+/* 구분선 */
+.rg-divider { height: 1px; background: #f2f4f7; margin: 0 24px; }
+
+/* =========================================================
+   우측 미리보기 (모바일 프레임)
+   ========================================================= */
+.rg-preview {
+  width: 320px; flex: none; height: 740px;
+  border: 4px solid #5d6474; border-radius: 24px;
+  background: var(--white);
+  padding: 4px 4px 24px;
+  overflow: hidden;
+}
+.rg-pv-hero { height: 8px; border-radius: 6px; background: #f2f4f7; }
+.rg-pv-basic { padding: 16px; }
+.rg-pv-title { font: 700 18px/26px var(--font-sans); color: #a8aebd; }
+.rg-pv-divider { height: 5px; background: #f2f4f7; }
+.rg-pv-price { padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.rg-pv-price-head { font: 700 16px/24px var(--font-sans); color: #31353f; }
+.rg-pv-price-row { min-height: 48px; display: flex; align-items: center; justify-content: space-between; }
+.rg-pv-price-name { font: 500 14px/22px var(--font-sans); color: #a8aebd; }
+.rg-pv-price-val { font: 700 14px/22px var(--font-sans); color: #a8aebd; }
+
+/* =========================================================
+   하단 고정 풋터
+   ========================================================= */
+.rg-footer {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: 64px;
+  background: var(--white);
+  border-top: 1px solid #e3e6ed;
+  padding: 0 64px;
+  display: flex; align-items: center; gap: 8px;
+}
+.rg-footer-left { flex: 1; display: flex; align-items: center; gap: 8px; }
+.rg-btn-cancel {
+  width: 80px; height: 40px;
+  border: 1px solid rgba(128, 135, 153, 0.2); border-radius: 6px;
+  background: var(--white); font: 700 14px/22px var(--font-sans); color: #5d6474; cursor: pointer;
+}
+.rg-btn-save {
+  width: 80px; height: 40px;
+  border: 0; border-radius: 6px;
+  background: var(--blue-60, #0073fa); font: 700 14px/22px var(--font-sans); color: var(--white); cursor: pointer;
+}
+.rg-footer-right { display: flex; align-items: center; gap: 10px; }
+.rg-footer-label { font: 400 14px/22px var(--font-sans); color: #5d6474; }
+.rg-toggle { width: 36px; height: 20px; border-radius: 24px; background: var(--blue-60, #0073fa); position: relative; flex: none; cursor: pointer; transition: background 0.15s; }
+.rg-toggle.off { background: #caced8; }
+.rg-toggle-knob { position: absolute; top: 2px; right: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--white); transition: left 0.15s, right 0.15s; }
+.rg-toggle.off .rg-toggle-knob { right: auto; left: 2px; }
+
+/* 키워드 칩 */
+.rg-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 28px; padding: 0 6px 0 10px; border-radius: 6px;
+  background: var(--alpha-blue-10); color: var(--blue-70, #0061db);
+  font: 500 13px/20px var(--font-sans);
+}
+.rg-tag-del {
+  border: 0; background: transparent; cursor: pointer;
+  width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center;
+  color: var(--blue-70, #0061db); font-size: 14px; line-height: 1;
+}
+
+/* 저장/취소 토스트 */
+.rg-toast {
+  position: absolute; left: 50%; bottom: 84px; transform: translateX(-50%);
+  z-index: 50; padding: 12px 20px; border-radius: 8px;
+  background: rgba(25, 31, 40, 0.92); color: var(--white);
+  font: 500 14px/22px var(--font-sans);
+  box-shadow: var(--shadow-toast);
+}

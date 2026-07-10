@@ -1,0 +1,158 @@
+/* =============================================================
+   굿닥 커넥트 웹뷰 — 공통 셸 (디자인 토큰 + 윈도우 셸/사이드내비)
+   여러 커넥트 화면(진료항목 등록, 예약 신청 내역 등)이 공유한다.
+   - /Users/goodoc/test 프로토타입의 colors_and_type.css(:root)와
+     connect.css의 셸 부분을 이식.
+   - 전역 누수 방지를 위해 원본 body 레벨 스타일은 .cn-artboard 래퍼로
+     한정했고 리셋도 .cn-artboard 하위로 스코프.
+   - 클래스 접두사(cn-)가 고유해 다른 페이지와 충돌하지 않음.
+   ============================================================= */
+
+/* ---- Design tokens (colors_and_type.css :root, @font-face 제외) ---- */
+:root {
+  --gray-10:  #F9FAFB;
+  --gray-15:  #F4F6F8;
+  --gray-20:  #F2F4F6;
+  --gray-30:  #E5E8EB;
+  --gray-40:  #D1D6DB;
+  --gray-50:  #B0B8C1;
+  --gray-60:  #8B95A1;
+  --gray-70:  #6B7684;
+  --gray-80:  #4E5968;
+  --gray-90:  #31353F;
+  --gray-100: #191F28;
+
+  --blue-30:  #B3D5FF;
+  --blue-60:  #0073FA;
+  --blue-70:  #0061DB;
+  --blue-80:  #0050B5;
+
+  --red-60:   #FA4655;
+  --red-70:   #EC3847;
+  --red-80:   #D52130;
+
+  --green-70: #41D293;
+  --green-80: #1FA972;
+  --orange-60:#F79009;
+
+  --white: #FFFFFF;
+  --black: #000000;
+  --transparent: transparent;
+
+  --alpha-gray-05: rgba(128, 135, 153, 0.05);
+  --alpha-gray-10: rgba(128, 135, 153, 0.10);
+  --alpha-gray-15: rgba(128, 135, 153, 0.15);
+  --alpha-gray-20: rgba(128, 135, 153, 0.20);
+  --alpha-gray-40: rgba(128, 135, 153, 0.40);
+  --alpha-gray-60: rgba(128, 135, 153, 0.60);
+
+  --alpha-blue-05: rgba(0, 115, 250, 0.05);
+  --alpha-blue-10: rgba(0, 115, 250, 0.10);
+  --alpha-blue-15: rgba(0, 115, 250, 0.15);
+  --alpha-blue-20: rgba(0, 115, 250, 0.20);
+
+  --alpha-red-05: rgba(250, 70, 85, 0.05);
+  --alpha-red-10: rgba(250, 70, 85, 0.10);
+  --alpha-red-15: rgba(250, 70, 85, 0.15);
+  --alpha-red-20: rgba(250, 70, 85, 0.20);
+
+  --shadow-toast: 0 2px 1px rgba(22, 24, 29, 0.02), 0 2px 8px rgba(22, 24, 29, 0.10);
+  --shadow-toggle-knob: 0 0 6px rgba(0, 0, 0, 0.25);
+
+  --font-sans: 'Pretendard', 'Pretendard Variable', -apple-system,
+    BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+}
+
+/* ---- Artboard backdrop (원본 connect.css의 body 스타일을 래퍼로 한정) ---- */
+.cn-artboard {
+  font-family: var(--font-sans);
+  background: #e7e9ee;
+  color: var(--gray-100);
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 24px;
+}
+.cn-artboard *,
+.cn-artboard *::before,
+.cn-artboard *::after { box-sizing: border-box; }
+
+/* ---- App window (1280 x 832 rounded webview frame) ---- */
+.cn-screen {
+  width: 1280px;
+  min-height: 832px;
+  background: var(--white);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 12px 40px rgba(22, 24, 29, 0.12);
+  position: relative;
+}
+
+/* ---- Title bar (windows-style) ---- */
+.cn-titlebar {
+  height: 32px;
+  background: #f3f3f3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: none;
+}
+.cn-ci { display: flex; align-items: center; gap: 4px; padding: 0 8px; height: 100%; }
+.cn-ci-mark { width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; }
+.cn-ci-mark svg { display: block; }
+.cn-ci-name { font: 500 13px/16px var(--font-sans); color: rgba(0, 0, 0, 0.9); padding: 0 8px 2px 4px; }
+.cn-winctrls { display: flex; height: 100%; }
+.cn-winbtn {
+  width: 46px; height: 32px;
+  border: 0; background: transparent;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: rgba(0, 0, 0, 0.9); cursor: pointer;
+}
+.cn-winbtn:hover { background: rgba(0, 0, 0, 0.05); }
+.cn-winbtn.close:hover { background: #e81123; color: #fff; }
+
+/* ---- Body: nav + main ---- */
+.cn-body { display: flex; align-items: stretch; flex: 1; min-height: 800px; }
+
+/* ---- Side nav (250px) ---- */
+.cn-nav { width: 250px; flex: none; background: #f2f4f7; position: relative; display: flex; flex-direction: column; }
+.cn-nav-scroll { flex: 1; overflow: auto; }
+.cn-nav-group { padding: 8px 0; display: flex; flex-direction: column; }
+.cn-nav-header { height: 40px; display: flex; align-items: center; padding: 0 16px; font: 600 14px/20px var(--font-sans); color: rgba(0, 0, 0, 0.9); }
+.cn-nav-item {
+  height: 40px; width: 100%;
+  border: 0; background: transparent;
+  display: flex; align-items: center;
+  padding: 0 16px; position: relative; cursor: pointer; text-align: left;
+}
+.cn-nav-item > .cn-nav-label { font: 400 14px/22px var(--font-sans); color: var(--gray-90); flex: 1; }
+.cn-nav-item .cn-chevron { width: 12px; height: 12px; color: #808799; flex: none; display: inline-flex; align-items: center; justify-content: center; }
+.cn-nav-item.sub { padding-left: 32px; }
+.cn-nav-item.sub::before { content: ""; position: absolute; inset: 2px 4px; border-radius: 4px; pointer-events: none; }
+.cn-nav-item.active::before { background: var(--alpha-gray-10); }
+.cn-nav-item.active .cn-nav-label { color: var(--gray-90); }
+.cn-nav-item:not(.active):not(.cn-nav-header):hover::before {
+  content: ""; position: absolute; inset: 2px 4px;
+  background: rgba(128, 135, 153, 0.06); border-radius: 4px; pointer-events: none;
+}
+.cn-nav-label-wrap { display: inline-flex; align-items: center; gap: 6px; flex: 1; }
+.cn-beta {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0 5px; border-radius: 4px;
+  background: var(--alpha-blue-10);
+  font: 600 12px/18px var(--font-sans);
+  color: var(--blue-80, #115fd4);
+}
+.cn-nav-divider { padding: 4px 0; }
+.cn-nav-divider span { display: block; height: 1px; background: var(--gray-30); }
+.cn-nav-footer { background: #f2f4f7; padding-bottom: 8px; display: flex; flex-direction: column; }
+
+/* ---- Main frame ---- */
+.cn-main { flex: 1; min-width: 0; background: var(--white); display: flex; flex-direction: column; }
+.cn-header { padding: 48px 64px 32px; }
+.cn-header-title { font: 700 28px/36px var(--font-sans); color: #16181d; }
+.cn-header-desc { font: 400 14px/22px var(--font-sans); color: #808799; margin-top: 6px; }

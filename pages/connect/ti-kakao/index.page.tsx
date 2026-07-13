@@ -1,20 +1,37 @@
 import React, { useMemo, useState } from 'react';
 
 /**
- * 진료항목 정보 기반 카카오 노출 + 예약 신청 내역 — 신규 버전 프로토타입 (ti-kakao)
- * 화면 3개(LNB로 이동): ① 진료항목 목록 ② 진료항목 폼(등록/상세) ③ 예약 신청 내역
+ * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
+ * 이름     : ti-kakao — 진료항목 카카오 노출 + 예약 신청 내역
+ * 상태     : 현행(active)   버전: v2   최종수정: 2026-07-13
+ * PRD      : Notion "진료항목 카카오톡 예약하기 연동" PRD v0.4  (링크 붙이기)
+ * 배포URL  : https://connect-sq-sandbox.github.io/out/ti-kakao.html
+ * 관련 CSS : connectRegister.css + connectTiKakao.css
+ * 기술제약 : react-only · plain CSS · mock · 네트워크 0
  *
- * ① ② 방향(세화님):
- *  - 굿닥 진료항목 정보를 기반으로, 원하면 카카오에 노출(폼 안 "…에서도 보이기" 토글)
- *  - 카카오 전용 정보는 옵션 아코디언, 우측 미리보기는 굿닥 기준만
- *  - 카카오 전용 목록 없음 → 진료항목 목록에 인입 채널 심볼([굿닥][카카오])만 병합
- *  - PRD 확정 반영: 워딩 "카카오톡 예약하기에서도 보이기", 노출 캐스케이드(굿닥 OFF→카카오 OFF)
+ * 화면구성 (LNB 이동):
+ *   ① 진료항목 목록  ② 진료항목 폼(등록/상세)  ③ 예약 신청 내역
  *
- * ③ 예약 신청 내역: 실제 TreatmentItemApptListView 재현(탭/기간·검색 필터/2줄 셀 테이블/행 액션).
- *  - 카카오로 받은 진료항목 예약도 같은 테이블에 동일하게 쌓임 → 기존 정보 + "채널" 컬럼만 추가.
- *  - 채널 = 진료항목 목록과 동일한 굿닥/카카오 심볼로 통일.
+ * 핵심 결정 (why):
+ *   [확정·PRD] 토글 워딩 = "카카오톡 예약하기에서도 보이기"
+ *   [확정·PRD] 노출 캐스케이드 — 굿닥 노출 OFF → 카카오도 OFF
+ *   [유지·자체] 채널 심볼 [굿닥][카카오] 아이콘만 표기(텍스트 없음)
+ *   [유지·자체] 규격 검증 — 상품명50 / 가격명25 / 할인가 / 상담가 / 이미지
+ *   [유지·자체] 미리보기는 굿닥 기준만(카카오 미리보기 없음)
+ *   [유지·자체] 카카오 전용 목록 없음 → 진료항목 목록에 인입 채널 심볼만 병합
+ *   [유지·자체] 카카오 전용 정보는 옵션 아코디언으로 추가 입력
+ *   [유지·자체] 예약 신청 내역 = 실제 TreatmentItemApptListView 재현
+ *              (카카오·굿닥 예약이 같은 테이블에 혼재 + "채널" 컬럼만 추가)
+ *   [폐기]      구버전 kakao-link(별도 연동관리 페이지형) → ti-kakao로 대체
  *
- * react-only · plain CSS(connectRegister.css + connectTiKakao.css) · mock · 네트워크 0.
+ * 보류 · TODO (PO 확인 대기):
+ *   - PRD 10·16·18장 "상품 관리 메뉴" 잔재 (18-1 Non-Scope 충돌)
+ *   - 규격위반 자동보정 정책 명문화
+ *
+ * 변경 이력:
+ *   v2  2026-07-13 — 예약 신청 내역 + 예약 상세 모달 추가
+ *   v1  2026-07-09 — ti-kakao 방향 확정, kakao-link 대체
+ * └──────────────────────────────────────────────────────
  */
 
 /* ============================ 진료항목 타입 & mock ============================ */
@@ -158,6 +175,8 @@ const Back = () => (<svg viewBox="0 0 20 20" fill="none"><path d="M12 5l-5 5 5 5
 const WarnIc = () => (<svg viewBox="0 0 16 16" fill="none"><path d="M8 2l6 11H2L8 2z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" /><path d="M8 6.2v2.8M8 11v.1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>);
 const InfoIc = () => (<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.4" stroke="currentColor" strokeWidth="1.4" /><path d="M8 7.2v3.6M8 4.9v.1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>);
 const HandleIcon = () => (<svg viewBox="0 0 16 16" fill="none"><circle cx="6" cy="4" r="1" fill="currentColor" /><circle cx="10" cy="4" r="1" fill="currentColor" /><circle cx="6" cy="8" r="1" fill="currentColor" /><circle cx="10" cy="8" r="1" fill="currentColor" /><circle cx="6" cy="12" r="1" fill="currentColor" /><circle cx="10" cy="12" r="1" fill="currentColor" /></svg>);
+/** 실제 서비스 드래그 핸들(@/components/medias/Icon/Handler) — 6×10, 둥근 사각형 6개 */
+const DragHandle = () => (<svg width="6" height="10" viewBox="0 0 6 10" fill="none"><rect width="2.25" height="2.30769" rx="1.125" fill="currentColor" /><rect x="3.75" width="2.25" height="2.30769" rx="1.125" fill="currentColor" /><rect y="3.84619" width="2.25" height="2.30769" rx="1.125" fill="currentColor" /><rect x="3.75" y="3.84619" width="2.25" height="2.30769" rx="1.125" fill="currentColor" /><rect y="7.69226" width="2.25" height="2.30769" rx="1.125" fill="currentColor" /><rect x="3.75" y="7.69226" width="2.25" height="2.30769" rx="1.125" fill="currentColor" /></svg>);
 const ThumbIcon = () => (<svg viewBox="0 0 36 36" fill="none"><rect width="36" height="36" rx="6" fill="#F2F4F6" /><path d="M11 23l4.5-5 3 3.2L22 17l4 6" stroke="#B0B8C1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /><circle cx="14" cy="14" r="1.6" fill="#B0B8C1" /></svg>);
 const CalIcon = () => (<svg viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3.5" width="13" height="12" rx="2" stroke="currentColor" strokeWidth="1.4" /><path d="M2.5 7h13M6 2.2v2.2M12 2.2v2.2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>);
 const KakaoMark = ({ cls }: { cls?: string }) => (<svg viewBox="0 0 20 20" fill="none" className={cls}><rect width="20" height="20" rx="5" fill="#FEE500" /><path d="M10 5.1c-2.9 0-5.2 1.8-5.2 4 0 1.4.95 2.62 2.38 3.32-.1.36-.37 1.34-.42 1.55 0 0-.02.09.04.12.06.03.13 0 .13 0 .17-.02 1.9-1.28 2.2-1.5.29.04.58.06.87.06 2.9 0 5.2-1.8 5.2-4S12.9 5.1 10 5.1z" fill="#3C1E1E" /></svg>);
@@ -225,7 +244,7 @@ function PriceRow({ p, kakaoOn, onChange, onDelete }: { p: Price; kakaoOn: boole
   const over = kakaoOn && p.title.length > K_PRICE_MAX;
   return (
     <div className="rg-price-row tk-price-row">
-      <div className="rg-drag" aria-label="순서 변경 핸들"><HandleIcon /></div>
+      <div className="rg-drag" aria-label="순서 변경 핸들"><DragHandle /></div>
       <div className="rg-price-fields">
         <input className="rg-input" placeholder="가격명을 입력해 주세요. (15자 권장, 최대 50자)" maxLength={50} value={p.title} onChange={(e) => onChange({ title: e.target.value })} />
         {over && <div className="tk-fwarn"><WarnIc /> 카카오 상품에선 25자까지 노출돼요 (현재 {p.title.length}자)</div>}

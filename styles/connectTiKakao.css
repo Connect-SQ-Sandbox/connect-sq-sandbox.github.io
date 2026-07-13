@@ -137,6 +137,8 @@
 .tk-finfo { display: flex; align-items: center; gap: 5px; font: 400 12px/16px var(--font-sans); color: #8b95a1; }
 .tk-fwarn svg, .tk-finfo svg { width: 13px; height: 13px; flex: none; }
 .tk-price-row .rg-price-fields { gap: 6px; }
+/* 드래그 핸들: 실제 서비스(IconHandler) 크기 6×10로 (register 기본 8×12 override) */
+.tk-price-row .rg-drag svg { width: 6px; height: 10px; }
 
 /* 카카오 전용 정보 (아코디언) */
 .tk-kextra-toggle {

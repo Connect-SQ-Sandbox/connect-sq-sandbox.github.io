@@ -312,7 +312,7 @@ function ChannelMarks({ it }: { it: Item }) {
 function ItemRow({ it, onOpen, onToggle }: { it: Item; onOpen: () => void; onToggle: () => void }) {
   return (
     <div className="tk-l3">
-      <span className="tk-l3-handle"><HandleIcon /></span>
+      <span className="tk-l3-handle"><DragHandle /></span>
       <button className="tk-l3-detail" onClick={onOpen}>
         <span className="tk-l3-name">{it.alias || it.name}</span>
         <span className="tk-l3-price"><span className="tk-l3-price-text">{priceDisplay(it)}</span><span className="tk-l3-optcount">{it.prices.length}</span></span>
@@ -623,7 +623,7 @@ function TiKakao() {
                     <nav className="tk-grid-clist" aria-label="진료항목 카테고리">
                       {cat1List.map((c) => (
                         <button key={c.name} className={`tk-cat${c.name === selCat1 ? ' sel' : ''}`} onClick={() => setSelCat1(c.name)}>
-                          <span className="tk-cat-handle"><HandleIcon /></span>
+                          <span className="tk-cat-handle"><DragHandle /></span>
                           <span className="tk-cat-name">{c.name}</span>
                           <span className="tk-cat-count">{c.count}</span>
                         </button>
@@ -635,7 +635,7 @@ function TiKakao() {
                       ) : (
                         groups.map((g) => (
                           <div key={g.name} className="tk-l2">
-                            <div className="tk-l2-head"><span className="tk-cat-handle"><HandleIcon /></span><span className="tk-l2-name">{g.name}</span></div>
+                            <div className="tk-l2-head"><span className="tk-cat-handle"><DragHandle /></span><span className="tk-l2-name">{g.name}</span></div>
                             <div className="tk-l2-body">{g.items.map((it) => (<ItemRow key={it.id} it={it} onOpen={() => open(it)} onToggle={() => toggleGdVisible(it.id)} />))}</div>
                             <div className="tk-l2-pad" />
                           </div>

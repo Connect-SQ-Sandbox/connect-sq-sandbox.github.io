@@ -48,8 +48,44 @@ docs/                                 # 기획/기능정의서
 ## 새 프로토타입 추가
 
 1. `pages/connect/<name>/index.page.tsx` 작성 (react 훅만, 인라인 SVG, plain CSS, 네트워크 0).
-2. 화면 전용 CSS를 `styles/`에 두고 `scripts/proto-share/css-manifest.mjs`의 `SCREEN_CSS`에 `<name>` 키로 등록.
-3. `yarn proto:share pages/connect/<name>/index.page.tsx --out <name>` → 끝에 `외부참조: 0 (OK)` 확인.
+2. 파일 **최상단에 컨텍스트 헤더**를 단다 (아래 규칙 참고).
+3. 화면 전용 CSS를 `styles/`에 두고 `scripts/proto-share/css-manifest.mjs`의 `SCREEN_CSS`에 `<name>` 키로 등록.
+4. `yarn proto:share pages/connect/<name>/index.page.tsx --out <name>` → 끝에 `외부참조: 0 (OK)` 확인.
+
+## 컨텍스트 헤더 규칙
+
+각 프로토타입 **소스(`index.page.tsx`) 최상단**에 아래 양식의 JSDoc 헤더를 단다.
+코드는 "무엇을 만들었나(what)"만 담고 결정 이유·버린 안·보류 항목(why)은 안 남으므로,
+이 헤더가 있으면 새 대화에서 파일만 열어도 맥락이 복원된다. (빌드 산출물 `out/*.html`엔 달지 않음 — 소스가 원천)
+
+```
+/**
+ * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
+ * 이름     : <name> — 한 줄 설명
+ * 상태     : 현행(active) | 폐기(deprecated)   버전: vN   최종수정: YYYY-MM-DD
+ * PRD      : Notion "<PRD 제목>" (링크)
+ * 배포URL  : https://connect-sq-sandbox.github.io/out/<name>.html
+ * 관련 CSS : <화면 전용 CSS 파일들>
+ * 기술제약 : react-only · plain CSS · mock · 네트워크 0
+ *
+ * 화면구성 : ① … ② … ③ …
+ *
+ * 핵심 결정 (why):
+ *   [확정·PRD] PRD에서 확정돼 반영한 항목
+ *   [유지·자체] 프로토타입 임의 판단 — PRD와 무관하게 유지
+ *   [폐기]      대체된 항목
+ *   [보류]      PO 확인 대기
+ *
+ * 보류 · TODO (PO 확인 대기): …
+ *
+ * 변경 이력:
+ *   vN  YYYY-MM-DD — 무엇이 바뀌었나
+ * └──────────────────────────────────────────────────────
+ */
+```
+
+결정마다 붙는 **출처 태그**가 핵심 — "PRD에서 확정된 것만 반영하고, 우리 임의 판단은 유지한다"는
+정책을 코드에 박아두는 장치다. 예시는 `ti-kakao`(현행)·`kakao-link`(폐기 사유 기록) 헤더 참고.
 
 ## 제약 (빌드 시 프리플라이트가 막음)
 

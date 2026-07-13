@@ -116,7 +116,9 @@
   font: 400 13px/20px var(--font-sans); color: #434956;
 }
 .tk-kauto b { color: var(--blue-70); font-weight: 600; }
-.tk-kauto svg { width: 16px; height: 16px; color: var(--blue-60); flex: none; margin-top: 2px; }
+.tk-kauto-ic { flex: none; display: inline-flex; margin-top: 2px; }
+.tk-kauto-ic svg { width: 16px; height: 16px; color: var(--blue-60); }
+.tk-kauto-txt { flex: 1; min-width: 0; } /* 텍스트+<b>를 한 문장으로 흐르게 (flex 아이템 분리로 쪼개지던 것 방지) */
 
 /* 노출 캐스케이드 안내 (굿닥 노출 OFF → 카카오도 노출 안 됨) */
 .tk-kcascade { display: flex; gap: 8px; align-items: flex-start; background: rgba(247,144,9,.08); border: 1px solid rgba(247,144,9,.28); border-radius: 8px; padding: 11px 13px; font: 500 13px/20px var(--font-sans); color: var(--orange-60); }

@@ -835,7 +835,7 @@ function TiKakao() {
                       {d.kakaoOn && (
                         <div className="tk-kbody">
                           {!d.gdVisible && <div className="tk-kcascade"><WarnIc /> 굿닥 노출이 꺼져 있어 지금은 카카오에도 노출되지 않아요. 굿닥 노출을 켜야 카카오에도 함께 보여요.</div>}
-                          <div className="tk-kauto"><InfoIc /> 위에 입력한 굿닥 진료항목 정보가 카카오 상품으로 <b>자동 반영</b>돼요. 규격에 안 맞는 부분만 아래에서 확인하세요.</div>
+                          <div className="tk-kauto"><span className="tk-kauto-ic"><InfoIc /></span><span className="tk-kauto-txt">위에 입력한 굿닥 진료항목 정보가 카카오 상품으로 <b>자동 반영</b>돼요. 규격에 안 맞는 부분만 아래에서 확인하세요.</span></div>
                           {warns.length > 0 ? (
                             <div className="tk-warns">{warns.map((w, i) => (<div key={i} className={`tk-warn ${w.level}`}><span className="tk-warn-ic">{w.level === 'warn' ? <WarnIc /> : <InfoIc />}</span><div><span className="tk-warn-field">{w.field}</span><span className="tk-warn-msg">{w.msg}</span></div></div>))}</div>
                           ) : <div className="tk-ok">규격에 모두 맞아요. 그대로 노출돼요.</div>}

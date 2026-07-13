@@ -736,7 +736,8 @@ a {
 .tk-add-count { font-weight: 500; opacity: .8; }
 
 /* 부가정보(질문) 3종: 주관식 / 단수 선택형 / 복수 선택형 */
-.tk-q-item { display: flex; flex-direction: column; gap: 10px; padding: 13px; border: 1px solid #f2f4f6; border-radius: 8px; background: #fff; }
+.tk-q-item { display: flex; flex-direction: column; gap: 10px; padding: 13px; border: 1px solid var(--gray-30); border-radius: 8px; background: #fff; transition: border-color .12s; }
+.tk-q-item:hover { border-color: var(--gray-50); }
 .tk-q-item.dragging { opacity: .5; border-color: var(--blue-60); }
 /* 상단 중앙 드래그 핸들 (네이버 폼 참고) */
 .tk-q-drag { align-self: center; height: 12px; display: inline-flex; align-items: center; justify-content: center; color: var(--gray-40); cursor: grab; }

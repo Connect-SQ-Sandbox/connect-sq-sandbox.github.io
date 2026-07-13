@@ -102,10 +102,11 @@
 
 /* ============================ 폼: 카카오 노출 섹션 ============================ */
 .tk-kcard { padding: 0; overflow: hidden; }
-.tk-khead { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 20px 24px; }
-.tk-khead-left { display: flex; align-items: center; gap: 12px; }
-.tk-khead-mark { width: 28px; height: 28px; flex: none; }
-.tk-khead-title { font: 700 18px/26px var(--font-sans); color: #16181d; }
+.tk-khead { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 20px 24px; }
+.tk-khead-left { display: flex; align-items: flex-start; gap: 12px; flex: 1; min-width: 0; }
+.tk-khead-text { flex: 1; min-width: 0; } /* 좁아져도 텍스트가 정상 줄바꿈되도록 (0폭 붕괴 방지) */
+.tk-khead-mark { width: 28px; height: 28px; flex: none; margin-top: 1px; }
+.tk-khead-title { font: 700 18px/26px var(--font-sans); color: #16181d; word-break: keep-all; }
 .rg-toggle.disabled { opacity: .4; cursor: not-allowed; }
 
 .tk-kbody { padding: 0 24px 24px; display: flex; flex-direction: column; gap: 16px; border-top: 1px solid #f2f4f7; padding-top: 20px; }

@@ -699,7 +699,7 @@ function TiKakao() {
                     {/* 카카오톡 예약하기에서도 보이기 */}
                     <section className="rg-card tk-kcard">
                       <div className="tk-khead">
-                        <div className="tk-khead-left"><KakaoMark cls="tk-khead-mark" /><div><div className="tk-khead-title">카카오톡 예약하기에서도 보이기</div><div className="rg-help">켜면 이 진료항목이 카카오톡 예약하기에도 상품으로 보여요. 끄면 카카오에서만 안 보이며 입력한 정보는 그대로 유지돼요.</div></div></div>
+                        <div className="tk-khead-left"><KakaoMark cls="tk-khead-mark" /><div className="tk-khead-text"><div className="tk-khead-title">카카오톡 예약하기에서도 보이기</div><div className="rg-help">켜면 이 진료항목이 카카오톡 예약하기에도 상품으로 보여요. 끄면 카카오에서만 안 보이며 입력한 정보는 그대로 유지돼요.</div></div></div>
                         <button className={`rg-toggle${d.kakaoOn ? '' : ' off'}${hospitalLinked ? '' : ' disabled'}`} onClick={() => hospitalLinked && patch({ kakaoOn: !d.kakaoOn })}><span className="rg-toggle-knob" /></button>
                       </div>
                       {d.kakaoOn && (

@@ -198,6 +198,16 @@
 .rg-textarea::placeholder { color: #a8aebd; font-weight: 500; }
 .rg-textarea:focus { outline: none; border-color: var(--blue-60, #0073fa); }
 
+/* 상세 소개 사진 (다중 썸네일, 최대 5개) */
+.rg-detail-imgs { display: flex; flex-wrap: wrap; gap: 8px; }
+.rg-detail-thumb { position: relative; width: 96px; height: 96px; border-radius: 6px; background: linear-gradient(135deg, #dbeafe, #cfe0ff); }
+.rg-detail-thumb-idx { position: absolute; left: 6px; bottom: 6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 5px; background: rgba(25,31,40,.55); color: #fff; font: 600 11px/18px var(--font-sans); text-align: center; }
+.rg-detail-thumb-del { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; border: 0; border-radius: 50%; background: rgba(25,31,40,.6); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.rg-detail-thumb-del svg { width: 12px; height: 12px; }
+.rg-detail-add { width: 96px; height: 96px; border: 1px dashed #caced8; border-radius: 6px; background: var(--white); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; }
+.rg-detail-add svg { width: 24px; height: 24px; color: #808799; }
+.rg-detail-add span { font: 500 13px/18px var(--font-sans); color: #808799; }
+
 /* 키워드 태그 입력 */
 .rg-tag-box {
   min-height: 80px; margin-top: 8px;

@@ -3,7 +3,7 @@ import React, { useMemo, useState } from 'react';
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-kakao — 진료항목 카카오 노출 + 예약 신청 내역 + 운영 설정
- * 상태     : 현행(active)   버전: v5   최종수정: 2026-07-13
+ * 상태     : 현행(active)   버전: v6   최종수정: 2026-07-13
  * PRD      : Notion "진료항목 카카오톡 예약하기 연동" PRD v0.4  (링크 붙이기)
  * 배포URL  : https://connect-sq-sandbox.github.io/out/ti-kakao.html
  * 관련 CSS : connectRegister.css + connectTiKakao.css
@@ -31,6 +31,8 @@ import React, { useMemo, useState } from 'react';
  *   - 규격위반 자동보정 정책 명문화
  *
  * 변경 이력:
+ *   v6  2026-07-13 — 진료항목 폼 '추가 정보'에 상세 소개(텍스트)·상세 소개 사진(최대 5개) 섹션 추가(실제 TreatmentItemForm 반영).
+ *                    상세 소개 글자수 제한 2,000자(요청; 실제 코드 5,000). 미리보기에도 상세 소개·이미지 반영.
  *   v5  2026-07-13 — 예약 신청 상세 모달을 실제 서비스 상세 디자인 언어로 재구성:
  *                    상단 상태 헤더(상태+안내문), 취소 사유 안내 배너, 추가 질문·답변, 방문자=예약자 동일 처리,
  *                    병원 메모(내부), 실제 데이터 계약(PartnerTreatmentItemApptDetailResponse) 필드 반영, CTA 버튼 강조.
@@ -50,7 +52,7 @@ type Item = {
   id: number;
   cat1: string; cat2: string;
   name: string; alias: string; intro: string; detail: string;
-  keywords: string[]; hasImage: boolean;
+  keywords: string[]; hasImage: boolean; detailImages: number; // detail=상세 소개, detailImages=상세 소개 사진 개수
   prices: Price[];
   gdVisible: boolean;
   kakaoOn: boolean;
@@ -69,13 +71,13 @@ const CAT_ORDER = ['피부·미용', '성형·윤곽', '주사·수액', '직접
 const CUSTOM_CAT = '직접 입력 항목';
 
 const mk = (p: Partial<Item> & { id: number; name: string; cat1: string; cat2: string }): Item => ({
-  alias: '', intro: '', detail: '', keywords: [], hasImage: false,
+  alias: '', intro: '', detail: '', keywords: [], hasImage: false, detailImages: 0,
   prices: [{ id: UID++, title: '기본', content: '', type: 'fixed', amount: '', original: '', sale: '' }],
   gdVisible: true, kakaoOn: false, kExtra: emptyExtra(), ...p
 });
 
 const INITIAL: Item[] = [
-  mk({ id: 1, cat1: '피부·미용', cat2: '스킨부스터', name: '리쥬란 힐러', alias: '', intro: '피부 재생 스킨부스터', keywords: ['리쥬란', '스킨부스터'], hasImage: true,
+  mk({ id: 1, cat1: '피부·미용', cat2: '스킨부스터', name: '리쥬란 힐러', alias: '', intro: '피부 재생 스킨부스터', detail: '리쥬란 힐러는 연어에서 추출한 PDRN 성분으로 손상된 피부를 근본부터 재생시키는 스킨부스터예요.\n\n· 잔주름·모공·탄력 개선\n· 시술 후 즉시 일상생활 가능\n· 3~4주 간격 3회 권장', keywords: ['리쥬란', '스킨부스터'], hasImage: true, detailImages: 3,
     prices: [{ id: UID++, title: '1회', content: '', type: 'fixed', amount: '250000', original: '', sale: '' }, { id: UID++, title: '3회 패키지 (사후관리 포함)', content: '재생관리 포함', type: 'discount', amount: '', original: '750000', sale: '600000' }], gdVisible: true, kakaoOn: false }),
   mk({ id: 2, cat1: '피부·미용', cat2: '스킨부스터', name: '물광주사', intro: '수분 광채 물광주사', keywords: ['물광주사'], hasImage: true,
     prices: [{ id: UID++, title: '1회', content: '', type: 'fixed', amount: '120000', original: '', sale: '' }], gdVisible: true, kakaoOn: true }),
@@ -83,7 +85,7 @@ const INITIAL: Item[] = [
     prices: [{ id: UID++, title: '상담 후 결정', content: '', type: 'consult', amount: '', original: '', sale: '' }], gdVisible: false, kakaoOn: false }),
   mk({ id: 4, cat1: '피부·미용', cat2: '리프팅', name: '슈링크 유니버스', intro: '집중 리프팅', keywords: ['슈링크'], hasImage: true,
     prices: [{ id: UID++, title: '300샷', content: '', type: 'fixed', amount: '300000', original: '', sale: '' }], gdVisible: true, kakaoOn: false }),
-  mk({ id: 5, cat1: '피부·미용', cat2: '색소·톤', name: '레이저 토닝', intro: '색소·톤 개선 레이저', keywords: ['레이저토닝'], hasImage: true,
+  mk({ id: 5, cat1: '피부·미용', cat2: '색소·톤', name: '레이저 토닝', intro: '색소·톤 개선 레이저', detail: '레이저 토닝은 미세한 저출력 레이저를 반복 조사해 기미·잡티·색소 침착을 단계적으로 옅게 만드는 시술이에요.\n\n· 다운타임 거의 없음\n· 2주 간격 꾸준한 관리 권장', keywords: ['레이저토닝'], hasImage: true, detailImages: 2,
     prices: [{ id: UID++, title: '1회', content: '', type: 'fixed', amount: '80000', original: '', sale: '' }, { id: UID++, title: '5회', content: '', type: 'fixed', amount: '350000', original: '', sale: '' }], gdVisible: true, kakaoOn: true }),
   mk({ id: 6, cat1: '성형·윤곽', cat2: '지방흡입', name: '얼굴지방흡입', alias: '얼굴 지방흡입', intro: '갸름한 얼굴라인을 위한 지방흡입', keywords: ['지방흡입', '얼굴윤곽'], hasImage: true,
     prices: [{ id: UID++, title: '기본', content: '', type: 'fixed', amount: '3500000', original: '', sale: '' }], gdVisible: true, kakaoOn: true }),
@@ -100,6 +102,8 @@ const K_Q_MAX = 10;           // 카카오 예약 부가정보(질문) 최대 10
 const K_Q_NAME_MAX = 120;     // 카카오 질문(부가정보 name) 최대 120자
 const K_INFO_MAX = 2000;      // 카카오 이용 방법(information) 최대 2,000자
 const K_CANCEL_MAX = 100;     // 카카오 취소 유의사항(cancelNotice) 최대 100자
+const DETAIL_DESC_MAX = 2000; // 상세 소개(detailDescription) 최대 글자수 (요청 반영 — 실제 코드 MAX_LENGTH는 5,000)
+const DETAIL_IMG_MAX = 5;     // 상세 소개 사진(detailImages) 최대 개수 (실제 코드 동일)
 type Warn = { field: string; msg: string; level: 'warn' | 'info' };
 function kakaoWarns(it: Item): Warn[] {
   const w: Warn[] = [];
@@ -311,6 +315,9 @@ function GoodocPreview({ d }: { d: Item }) {
               <span className="tk-pv-price-val">{p.type === 'discount' && p.original && <span className="tk-pv-strike">{won(p.original)}</span>}{priceLine(p)}</span>
             </div>
           ))}
+          {(d.detail || d.detailImages > 0) && <div className="tk-pv-divider" />}
+          {d.detail && <div className="tk-pv-detail">{d.detail}</div>}
+          {d.detailImages > 0 && <div className="tk-pv-detail-imgs">{Array.from({ length: d.detailImages }).map((_, i) => <div key={i} className="tk-pv-detail-img">상세 이미지 {i + 1}</div>)}</div>}
         </div>
       </div>
       <div className="tk-pv-tag">굿닥 기준 미리보기</div>
@@ -754,6 +761,8 @@ function TiKakao() {
   const open = (it: Item) => { setSelId(it.id); setD({ ...it, prices: it.prices.map((p) => ({ ...p })), keywords: [...it.keywords], kExtra: { ...it.kExtra, questions: it.kExtra.questions.map((q) => ({ ...q })) } }); setScreen('form'); };
   const create = () => { setSelId(null); setD(mk({ id: UID++, name: '', cat1: selCat1 === CUSTOM_CAT ? CUSTOM_CAT : selCat1, cat2: groups[0]?.name || '' })); setScreen('form'); };
   const save = () => { if (!d) return; setItems((prev) => (selId === null ? [...prev, d] : prev.map((it) => (it.id === d.id ? d : it)))); setScreen('list'); showToast(selId === null ? '진료항목을 등록했어요.' : '진료항목을 저장했어요.'); };
+  const addDetailImg = () => d && d.detailImages < DETAIL_IMG_MAX && patch({ detailImages: d.detailImages + 1 });
+  const delDetailImg = () => d && d.detailImages > 0 && patch({ detailImages: d.detailImages - 1 });
 
   const addKw = () => { if (!d) return; const t = kw.trim(); if (t && d.keywords.length < 20 && !d.keywords.includes(t)) patch({ keywords: [...d.keywords, t] }); setKw(''); };
   const setPrice = (id: number, u: Partial<Price>) => d && patch({ prices: d.prices.map((p) => (p.id === id ? { ...p, ...u } : p)) });
@@ -859,6 +868,22 @@ function TiKakao() {
                         <FieldHead label="한 줄 소개" optional helpers={['진료항목을 한눈에 이해할 수 있는 짧은 소개 문구를 입력해 주세요.']} />
                         <input className="rg-input" placeholder="한 줄 소개를 입력해 주세요." maxLength={50} value={d.intro} onChange={(e) => patch({ intro: e.target.value })} />
                         <div className="rg-counter"><span className="rg-counter-num">{d.intro.length}</span>/50자</div>
+                      </div>
+                      <div className="rg-divider" />
+                      <div className="rg-field">
+                        <FieldHead label="상세 소개" optional helpers={['진료항목 상세 페이지에서 보여질 자세한 소개 내용을 입력해 주세요.']} />
+                        <textarea className="rg-textarea" placeholder="상세 소개를 입력해 주세요." maxLength={DETAIL_DESC_MAX} value={d.detail} onChange={(e) => patch({ detail: e.target.value })} />
+                        <div className="rg-counter"><span className="rg-counter-num">{d.detail.length}</span>/{DETAIL_DESC_MAX.toLocaleString('ko-KR')}자</div>
+                      </div>
+                      <div className="rg-field">
+                        <FieldHead label="상세 소개 사진" optional helpers={[`진료항목 상세 페이지에 노출할 사진을 업로드해 주세요. (최대 ${DETAIL_IMG_MAX}개)`, '권장 사이즈 가로 800px, 세로 15,000px 이하 · 파일당 최대 20MB · jpeg, jpg, png, gif', '이미지를 드래그해 순서를 바꿀 수 있어요.']} />
+                        <div className="rg-detail-imgs">
+                          {Array.from({ length: d.detailImages }).map((_, i) => (
+                            <div key={i} className="rg-detail-thumb"><span className="rg-detail-thumb-idx">{i + 1}</span><button className="rg-detail-thumb-del" onClick={delDetailImg} aria-label="사진 삭제"><CloseIcon /></button></div>
+                          ))}
+                          {d.detailImages < DETAIL_IMG_MAX && <button className="rg-detail-add" onClick={addDetailImg}><PhotoIcon /><span>사진 추가</span></button>}
+                        </div>
+                        <div className="rg-counter"><span className="rg-counter-num">{d.detailImages}</span>/{DETAIL_IMG_MAX}개</div>
                       </div>
                       <div className="rg-divider" />
                       <div className="rg-field">

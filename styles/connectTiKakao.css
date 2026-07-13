@@ -204,6 +204,9 @@
 .tk-pv-kw { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 12px; }
 .tk-pv-kwchip { font: 500 12px/17px var(--font-sans); color: #6b7684; background: #f2f4f7; padding: 3px 8px; border-radius: 999px; }
 .tk-pv-divider { height: 5px; background: #f2f4f7; margin: 16px -16px; }
+.tk-pv-detail { font: 400 14px/22px var(--font-sans); color: #454c5a; white-space: pre-wrap; word-break: break-word; }
+.tk-pv-detail-imgs { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.tk-pv-detail-img { height: 140px; border-radius: 8px; background: linear-gradient(135deg, #dbeafe, #cfe0ff); display: flex; align-items: center; justify-content: center; font: 500 12px/17px var(--font-sans); color: #5d6474; }
 .tk-pv-price-head { font: 700 16px/24px var(--font-sans); color: #31353f; margin-bottom: 4px; }
 .tk-pv-price-row { min-height: 46px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid #f6f7f9; }
 .tk-pv-price-row:last-child { border-bottom: 0; }

@@ -8,7 +8,6 @@
 
 - 랜딩: **https://connect-sq-sandbox.github.io/**
 - 진료항목·카카오 노출 + 예약 신청 내역: **https://connect-sq-sandbox.github.io/out/ti-kakao.html**
-- 카카오 연동 관리(초기안): **https://connect-sq-sandbox.github.io/out/kakao-link.html**
 
 > Pages 활성화: 레포 Settings → Pages → Source `main` / `/ (root)`. `*.github.io` 레포라 main 푸시 시 자동 배포된다. (루트 `.nojekyll`로 정적 파일 그대로 서빙)
 
@@ -17,7 +16,6 @@
 | 화면 | 소스 | 산출물 | 설명 |
 |---|---|---|---|
 | **진료항목 → 카카오 노출 + 예약 신청 내역** (현행) | `pages/connect/ti-kakao/index.page.tsx` | `out/ti-kakao.html` | 진료항목 목록(인입 채널 심볼 병합) · 진료항목 상세 폼("카카오톡 예약하기에서도 보이기" 토글 + 자동 매핑·규격 검증 + 굿닥 미리보기) · 예약 신청 내역(채널 컬럼·상세 모달). LNB로 화면 이동. |
-| 카카오 연동 관리(구버전) | `pages/connect/kakao-link/index.page.tsx` | `out/kakao-link.html` | 별도 연동 관리 페이지형 초기안(참고용). |
 
 > 방향: 굿닥 진료항목 정보를 기반으로 원하면 카카오에 노출(자동 매핑 + 규격 검증), 별도 카카오 상품 관리 메뉴 없이 진료항목 화면에 병합. 상세 기획은 `docs/` 참고.
 

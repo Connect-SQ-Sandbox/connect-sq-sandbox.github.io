@@ -2,3 +2,8 @@ node_modules/
 out/.tmp/
 .DS_Store
 *.log
+
+# 유효하지 않은 초기안(로컬 보관, 깃 추적 제외)
+out/kakao-link.html
+pages/connect/kakao-link/
+styles/connectKakaoLink.css

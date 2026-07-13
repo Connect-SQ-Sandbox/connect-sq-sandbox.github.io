@@ -172,6 +172,7 @@
 .tk-kextra { display: flex; flex-direction: column; gap: 16px; padding: 4px 2px 0; }
 .tk-kextra-desc { margin-bottom: -4px; }
 .tk-kfield { display: flex; flex-direction: column; gap: 8px; }
+.tk-kfield .rg-counter { margin-top: 0; }
 .tk-klabel { font: 600 14px/22px var(--font-sans); color: #434956; }
 .tk-klabel-count { font: 500 13px/22px var(--font-sans); color: var(--gray-50); margin-left: 4px; }
 .tk-q-row { display: flex; align-items: center; gap: 8px; }

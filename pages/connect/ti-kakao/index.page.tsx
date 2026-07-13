@@ -3,7 +3,7 @@ import React, { useMemo, useState } from 'react';
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-kakao — 진료항목 카카오 노출 + 예약 신청 내역 + 운영 설정
- * 상태     : 현행(active)   버전: v7   최종수정: 2026-07-13
+ * 상태     : 현행(active)   버전: v8   최종수정: 2026-07-13
  * PRD      : Notion "진료항목 카카오톡 예약하기 연동" PRD v0.4  (링크 붙이기)
  * 배포URL  : https://connect-sq-sandbox.github.io/out/ti-kakao.html
  * 관련 CSS : connectRegister.css + connectTiKakao.css
@@ -31,6 +31,8 @@ import React, { useMemo, useState } from 'react';
  *   - 규격위반 자동보정 정책 명문화
  *
  * 변경 이력:
+ *   v8  2026-07-13 — 질문 개수 제한을 유형별로 분리: 주관식 10(API 명시)/단수 5/복수 5(권장), 선택지 2~10개.
+ *                    유형별 추가 버튼에 n/최대 카운트 + 상한 도달 시 비활성. (기존 3종 합산 10개 총량 상한 폐기)
  *   v7  2026-07-13 — 예약 부가정보(질문)를 카카오 API 4.4.2대로 3종 지원: 주관식(infos)/단수 선택형(radioInfos)/복수 선택형(selectInfos).
  *                    선택형은 설명·선택지 목록(최소 2, 추가/삭제) 입력. 질문 120자, 총 10개 상한 유지.
  *   v6  2026-07-13 — 진료항목 폼 '추가 정보'에 상세 소개(텍스트)·상세 소개 사진(최대 5개) 섹션 추가(실제 TreatmentItemForm 반영).
@@ -107,7 +109,13 @@ const INITIAL: Item[] = [
 /* ============================ 카카오 규격 검증 ============================ */
 const K_NAME_MAX = 50;        // 카카오 상품명 최대 50자
 const K_PRICE_MAX = 25;       // 카카오 가격 이름 최대 25자
-const K_Q_MAX = 10;           // 예약 부가정보(질문) 총 개수 상한 (API는 주관식 infos[]만 10개 명시 — 프로토타입은 3종 합산 10개로 단순화)
+// 질문 유형별 개수 상한. API는 주관식 infos[]만 "최대 10개" 명시 → 그대로 사용. 단수/복수는 문서 제한 없음 → UX 기준 권장값.
+const K_Q_TEXT_MAX = 10;      // 주관식(infos[]) — API 명시값
+const K_Q_RADIO_MAX = 5;      // 단수 선택형(radioInfos) — 권장
+const K_Q_SELECT_MAX = 5;     // 복수 선택형(selectInfos) — 권장
+const Q_CAP: Record<QType, number> = { text: K_Q_TEXT_MAX, radio: K_Q_RADIO_MAX, select: K_Q_SELECT_MAX };
+const K_Q_OPT_MIN = 2;        // 선택형 선택지 최소 개수
+const K_Q_OPT_MAX = 10;       // 선택형 선택지 최대 개수 (권장)
 const K_Q_NAME_MAX = 120;     // 카카오 질문(부가정보 name) 최대 120자
 const K_INFO_MAX = 2000;      // 카카오 이용 방법(information) 최대 2,000자
 const K_CANCEL_MAX = 100;     // 카카오 취소 유의사항(cancelNotice) 최대 100자
@@ -778,12 +786,13 @@ function TiKakao() {
   const addPrice = () => d && patch({ prices: [...d.prices, { id: UID++, title: '', content: '', type: 'fixed', amount: '', original: '', sale: '' }] });
   const delPrice = (id: number) => d && patch({ prices: d.prices.length > 1 ? d.prices.filter((p) => p.id !== id) : d.prices });
   const newQ = (type: QType): Question => ({ id: UID++, type, name: '', optional: true, description: '', options: type === 'text' ? [] : ['', ''] });
-  const addQ = (type: QType) => d && d.kExtra.questions.length < K_Q_MAX && patchExtra({ questions: [...d.kExtra.questions, newQ(type)] });
+  const qCount = (type: QType) => (d ? d.kExtra.questions.filter((q) => q.type === type).length : 0);
+  const addQ = (type: QType) => d && qCount(type) < Q_CAP[type] && patchExtra({ questions: [...d.kExtra.questions, newQ(type)] });
   const setQ = (id: number, u: Partial<Question>) => d && patchExtra({ questions: d.kExtra.questions.map((q) => (q.id === id ? { ...q, ...u } : q)) });
   const delQ = (id: number) => d && patchExtra({ questions: d.kExtra.questions.filter((q) => q.id !== id) });
-  const addOpt = (id: number) => { const q = d?.kExtra.questions.find((x) => x.id === id); if (q) setQ(id, { options: [...q.options, ''] }); };
+  const addOpt = (id: number) => { const q = d?.kExtra.questions.find((x) => x.id === id); if (q && q.options.length < K_Q_OPT_MAX) setQ(id, { options: [...q.options, ''] }); };
   const setOpt = (id: number, idx: number, v: string) => { const q = d?.kExtra.questions.find((x) => x.id === id); if (q) setQ(id, { options: q.options.map((o, i) => (i === idx ? v : o)) }); };
-  const delOpt = (id: number, idx: number) => { const q = d?.kExtra.questions.find((x) => x.id === id); if (q && q.options.length > 2) setQ(id, { options: q.options.filter((_, i) => i !== idx) }); };
+  const delOpt = (id: number, idx: number) => { const q = d?.kExtra.questions.find((x) => x.id === id); if (q && q.options.length > K_Q_OPT_MIN) setQ(id, { options: q.options.filter((_, i) => i !== idx) }); };
   const toggleGdVisible = (id: number) => setItems((prev) => prev.map((it) => (it.id === id ? { ...it, gdVisible: !it.gdVisible } : it)));
 
   return (
@@ -925,7 +934,7 @@ function TiKakao() {
                             <div className="tk-kextra">
                               <div className="rg-help tk-kextra-desc">카카오톡 예약하기에만 노출되는 정보예요. (굿닥 화면엔 노출되지 않아요)</div>
                               <div className="tk-kfield">
-                                <div className="tk-klabel">예약 시 받을 정보 <span className="tk-klabel-count">{d.kExtra.questions.length}/{K_Q_MAX}</span></div>
+                                <div className="tk-klabel">예약 시 받을 정보 <span className="tk-klabel-count">총 {d.kExtra.questions.length}개</span></div>
                                 {d.kExtra.questions.map((q) => (
                                   <div key={q.id} className="tk-q-item">
                                     <div className="tk-q-row">
@@ -942,18 +951,22 @@ function TiKakao() {
                                             <div key={i} className="tk-q-optrow">
                                               <span className={`tk-q-optmark ${q.type}`} />
                                               <input className="rg-input" placeholder={`선택지 ${i + 1}`} value={opt} onChange={(e) => setOpt(q.id, i, e.target.value)} />
-                                              <button className="rg-price-del" onClick={() => delOpt(q.id, i)} disabled={q.options.length <= 2} aria-label="선택지 삭제"><CloseIcon /></button>
+                                              <button className="rg-price-del" onClick={() => delOpt(q.id, i)} disabled={q.options.length <= K_Q_OPT_MIN} aria-label="선택지 삭제"><CloseIcon /></button>
                                             </div>
                                           ))}
-                                          <button className="tk-add-xs" onClick={() => addOpt(q.id)}><PlusIcon /> 선택지 추가</button>
+                                          {q.options.length < K_Q_OPT_MAX
+                                            ? <button className="tk-add-xs" onClick={() => addOpt(q.id)}><PlusIcon /> 선택지 추가</button>
+                                            : <div className="rg-help">선택지는 최대 {K_Q_OPT_MAX}개까지 추가할 수 있어요.</div>}
                                         </div>
                                       </div>
                                     )}
                                   </div>
                                 ))}
-                                {d.kExtra.questions.length < K_Q_MAX
-                                  ? <div className="tk-q-add"><button className="tk-add-sm" onClick={() => addQ('text')}><PlusIcon /> 주관식</button><button className="tk-add-sm" onClick={() => addQ('radio')}><PlusIcon /> 단수 선택형</button><button className="tk-add-sm" onClick={() => addQ('select')}><PlusIcon /> 복수 선택형</button></div>
-                                  : <div className="rg-help">질문은 최대 {K_Q_MAX}개까지 추가할 수 있어요.</div>}
+                                <div className="tk-q-add">
+                                  <button className="tk-add-sm" disabled={qCount('text') >= K_Q_TEXT_MAX} onClick={() => addQ('text')}><PlusIcon /> 주관식 <span className="tk-add-count">{qCount('text')}/{K_Q_TEXT_MAX}</span></button>
+                                  <button className="tk-add-sm" disabled={qCount('radio') >= K_Q_RADIO_MAX} onClick={() => addQ('radio')}><PlusIcon /> 단수 선택형 <span className="tk-add-count">{qCount('radio')}/{K_Q_RADIO_MAX}</span></button>
+                                  <button className="tk-add-sm" disabled={qCount('select') >= K_Q_SELECT_MAX} onClick={() => addQ('select')}><PlusIcon /> 복수 선택형 <span className="tk-add-count">{qCount('select')}/{K_Q_SELECT_MAX}</span></button>
+                                </div>
                               </div>
                               <div className="tk-kfield"><div className="tk-klabel">이용 방법</div><input className="rg-input" placeholder="예: 접수처에 예약 내역을 보여 주세요." maxLength={K_INFO_MAX} value={d.kExtra.howto} onChange={(e) => patchExtra({ howto: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.howto.length}</span>/{K_INFO_MAX.toLocaleString('ko-KR')}자</div></div>
                               <div className="tk-kfield"><div className="tk-klabel">유의사항</div><input className="rg-input" placeholder="예: 방문 시 신분증을 지참해 주세요." value={d.kExtra.notice} onChange={(e) => patchExtra({ notice: e.target.value })} /></div>

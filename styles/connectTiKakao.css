@@ -14,6 +14,14 @@
 .cn-titlebar { display: none; }
 .cn-body { flex: 1; min-height: 0; }
 
+/* 콘텐츠 최대 너비 1024 (실제 PageTemplate innerContainer max-width) — 좌우 64px 패딩 포함 1152, 본문 좌측 정렬.
+   .cn-main(flex column)의 컨텐츠 블록을 캡해 넓은 화면에서 무한정 늘어나지 않게 한다. */
+.cn-main .cn-header,
+.cn-main .tk-list-body,
+.cn-main .rg-container,
+.cn-main .ap-body,
+.cn-main .set-body { max-width: 1152px; }
+
 /* ---- 공통 버튼 ---- */
 .tk-btn-primary {
   height: 40px; padding: 0 16px; border: 0; border-radius: 6px;

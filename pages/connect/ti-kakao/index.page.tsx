@@ -3,7 +3,7 @@ import React, { useMemo, useState } from 'react';
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-kakao — 진료항목 카카오 노출 + 예약 신청 내역 + 운영 설정
- * 상태     : 현행(active)   버전: v8   최종수정: 2026-07-13
+ * 상태     : 현행(active)   버전: v9   최종수정: 2026-07-13
  * PRD      : Notion "진료항목 카카오톡 예약하기 연동" PRD v0.4  (링크 붙이기)
  * 배포URL  : https://connect-sq-sandbox.github.io/out/ti-kakao.html
  * 관련 CSS : connectRegister.css + connectTiKakao.css
@@ -31,6 +31,7 @@ import React, { useMemo, useState } from 'react';
  *   - 규격위반 자동보정 정책 명문화
  *
  * 변경 이력:
+ *   v9  2026-07-13 — 질문 목록 드래그 순서 변경 추가(핸들 드래그, HTML5 DnD). API sequence(3종 통합 오름차순 전역 순서) 대응.
  *   v8  2026-07-13 — 질문 개수 제한을 유형별로 분리: 주관식 10(API 명시)/단수 5/복수 5(권장), 선택지 2~10개.
  *                    유형별 추가 버튼에 n/최대 카운트 + 상한 도달 시 비활성. (기존 3종 합산 10개 총량 상한 폐기)
  *   v7  2026-07-13 — 예약 부가정보(질문)를 카카오 API 4.4.2대로 3종 지원: 주관식(infos)/단수 선택형(radioInfos)/복수 선택형(selectInfos).
@@ -754,6 +755,7 @@ function TiKakao() {
   const [selId, setSelId] = useState<number | null>(null);
   const [d, setD] = useState<Item | null>(null);
   const [kw, setKw] = useState('');
+  const [dragQ, setDragQ] = useState<number | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const hospitalLinked = true;
 
@@ -788,6 +790,7 @@ function TiKakao() {
   const newQ = (type: QType): Question => ({ id: UID++, type, name: '', optional: true, description: '', options: type === 'text' ? [] : ['', ''] });
   const qCount = (type: QType) => (d ? d.kExtra.questions.filter((q) => q.type === type).length : 0);
   const addQ = (type: QType) => d && qCount(type) < Q_CAP[type] && patchExtra({ questions: [...d.kExtra.questions, newQ(type)] });
+  const moveQ = (from: number, to: number) => { if (!d || from === to) return; const arr = [...d.kExtra.questions]; const [m] = arr.splice(from, 1); arr.splice(to, 0, m); patchExtra({ questions: arr }); };
   const setQ = (id: number, u: Partial<Question>) => d && patchExtra({ questions: d.kExtra.questions.map((q) => (q.id === id ? { ...q, ...u } : q)) });
   const delQ = (id: number) => d && patchExtra({ questions: d.kExtra.questions.filter((q) => q.id !== id) });
   const addOpt = (id: number) => { const q = d?.kExtra.questions.find((x) => x.id === id); if (q && q.options.length < K_Q_OPT_MAX) setQ(id, { options: [...q.options, ''] }); };
@@ -935,9 +938,12 @@ function TiKakao() {
                               <div className="rg-help tk-kextra-desc">카카오톡 예약하기에만 노출되는 정보예요. (굿닥 화면엔 노출되지 않아요)</div>
                               <div className="tk-kfield">
                                 <div className="tk-klabel">예약 시 받을 정보 <span className="tk-klabel-count">총 {d.kExtra.questions.length}개</span></div>
-                                {d.kExtra.questions.map((q) => (
-                                  <div key={q.id} className="tk-q-item">
+                                {d.kExtra.questions.map((q, idx) => (
+                                  <div key={q.id} className={`tk-q-item${dragQ === idx ? ' dragging' : ''}`}
+                                    onDragOver={(e) => { if (dragQ !== null) e.preventDefault(); }}
+                                    onDrop={() => { if (dragQ !== null) moveQ(dragQ, idx); setDragQ(null); }}>
                                     <div className="tk-q-row">
+                                      <span className="tk-q-handle" draggable onDragStart={() => setDragQ(idx)} onDragEnd={() => setDragQ(null)} aria-label="순서 변경 핸들"><DragHandle /></span>
                                       <span className={`tk-q-type ${q.type}`}>{QTYPE_LABEL[q.type]}</span>
                                       <input className="rg-input" placeholder="질문 (예: 증상, 방문 예상일시)" maxLength={K_Q_NAME_MAX} value={q.name} onChange={(e) => setQ(q.id, { name: e.target.value })} />
                                       <button className={`tk-q-opt${q.optional ? '' : ' req'}`} onClick={() => setQ(q.id, { optional: !q.optional })}>{q.optional ? '선택' : '필수'}</button>

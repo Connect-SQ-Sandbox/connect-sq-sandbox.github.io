@@ -3,7 +3,7 @@ import React, { useMemo, useState } from 'react';
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-kakao — 진료항목 카카오 노출 + 예약 신청 내역 + 운영 설정
- * 상태     : 현행(active)   버전: v3   최종수정: 2026-07-13
+ * 상태     : 현행(active)   버전: v4   최종수정: 2026-07-13
  * PRD      : Notion "진료항목 카카오톡 예약하기 연동" PRD v0.4  (링크 붙이기)
  * 배포URL  : https://connect-sq-sandbox.github.io/out/ti-kakao.html
  * 관련 CSS : connectRegister.css + connectTiKakao.css
@@ -31,6 +31,8 @@ import React, { useMemo, useState } from 'react';
  *   - 규격위반 자동보정 정책 명문화
  *
  * 변경 이력:
+ *   v4  2026-07-13 — 예약 상세 모달 뷰포트 기준(fixed) 교정(하단버튼·타이틀 고정+본문 스크롤).
+ *                    카카오 상품 API v1.2.2 규격 입력 반영: 질문 120자·최대10개, 이용방법 2,000자, 취소유의 100자.
  *   v3  2026-07-13 — 운영 설정 화면 추가(실제 operation 코드 이식), LNB beta를 그룹 헤더로 이동
  *   v2  2026-07-13 — 예약 신청 내역 + 예약 상세 모달 추가
  *   v1  2026-07-09 — ti-kakao 방향 확정, kakao-link 대체
@@ -89,8 +91,12 @@ const INITIAL: Item[] = [
 ];
 
 /* ============================ 카카오 규격 검증 ============================ */
-const K_NAME_MAX = 50;
-const K_PRICE_MAX = 25;
+const K_NAME_MAX = 50;        // 카카오 상품명 최대 50자
+const K_PRICE_MAX = 25;       // 카카오 가격 이름 최대 25자
+const K_Q_MAX = 10;           // 카카오 예약 부가정보(질문) 최대 10개 (bookingAdditionalInfo.infos[])
+const K_Q_NAME_MAX = 120;     // 카카오 질문(부가정보 name) 최대 120자
+const K_INFO_MAX = 2000;      // 카카오 이용 방법(information) 최대 2,000자
+const K_CANCEL_MAX = 100;     // 카카오 취소 유의사항(cancelNotice) 최대 100자
 type Warn = { field: string; msg: string; level: 'warn' | 'info' };
 function kakaoWarns(it: Item): Warn[] {
   const w: Warn[] = [];
@@ -716,7 +722,7 @@ function TiKakao() {
   const setPrice = (id: number, u: Partial<Price>) => d && patch({ prices: d.prices.map((p) => (p.id === id ? { ...p, ...u } : p)) });
   const addPrice = () => d && patch({ prices: [...d.prices, { id: UID++, title: '', content: '', type: 'fixed', amount: '', original: '', sale: '' }] });
   const delPrice = (id: number) => d && patch({ prices: d.prices.length > 1 ? d.prices.filter((p) => p.id !== id) : d.prices });
-  const addQ = () => d && patchExtra({ questions: [...d.kExtra.questions, { id: UID++, name: '', optional: true }] });
+  const addQ = () => d && d.kExtra.questions.length < K_Q_MAX && patchExtra({ questions: [...d.kExtra.questions, { id: UID++, name: '', optional: true }] });
   const setQ = (id: number, u: Partial<Question>) => d && patchExtra({ questions: d.kExtra.questions.map((q) => (q.id === id ? { ...q, ...u } : q)) });
   const delQ = (id: number) => d && patchExtra({ questions: d.kExtra.questions.filter((q) => q.id !== id) });
   const toggleGdVisible = (id: number) => setItems((prev) => prev.map((it) => (it.id === id ? { ...it, gdVisible: !it.gdVisible } : it)));
@@ -844,13 +850,15 @@ function TiKakao() {
                             <div className="tk-kextra">
                               <div className="rg-help tk-kextra-desc">카카오톡 예약하기에만 노출되는 정보예요. (굿닥 화면엔 노출되지 않아요)</div>
                               <div className="tk-kfield">
-                                <div className="tk-klabel">예약 시 받을 정보</div>
-                                {d.kExtra.questions.map((q) => (<div key={q.id} className="tk-q-row"><input className="rg-input" placeholder="질문 (예: 증상, 방문 예상일시)" value={q.name} onChange={(e) => setQ(q.id, { name: e.target.value })} /><button className={`tk-q-opt${q.optional ? '' : ' req'}`} onClick={() => setQ(q.id, { optional: !q.optional })}>{q.optional ? '선택' : '필수'}</button><button className="rg-price-del" onClick={() => delQ(q.id)}><CloseIcon /></button></div>))}
-                                <button className="tk-add-sm" onClick={addQ}><PlusIcon /> 질문 추가</button>
+                                <div className="tk-klabel">예약 시 받을 정보 <span className="tk-klabel-count">{d.kExtra.questions.length}/{K_Q_MAX}</span></div>
+                                {d.kExtra.questions.map((q) => (<div key={q.id} className="tk-q-row"><input className="rg-input" placeholder="질문 (예: 증상, 방문 예상일시)" maxLength={K_Q_NAME_MAX} value={q.name} onChange={(e) => setQ(q.id, { name: e.target.value })} /><button className={`tk-q-opt${q.optional ? '' : ' req'}`} onClick={() => setQ(q.id, { optional: !q.optional })}>{q.optional ? '선택' : '필수'}</button><button className="rg-price-del" onClick={() => delQ(q.id)}><CloseIcon /></button></div>))}
+                                {d.kExtra.questions.length < K_Q_MAX
+                                  ? <button className="tk-add-sm" onClick={addQ}><PlusIcon /> 질문 추가</button>
+                                  : <div className="rg-help">질문은 최대 {K_Q_MAX}개까지 추가할 수 있어요.</div>}
                               </div>
-                              <div className="tk-kfield"><div className="tk-klabel">이용 방법</div><input className="rg-input" placeholder="예: 접수처에 예약 내역을 보여 주세요." value={d.kExtra.howto} onChange={(e) => patchExtra({ howto: e.target.value })} /></div>
+                              <div className="tk-kfield"><div className="tk-klabel">이용 방법</div><input className="rg-input" placeholder="예: 접수처에 예약 내역을 보여 주세요. (최대 2,000자)" maxLength={K_INFO_MAX} value={d.kExtra.howto} onChange={(e) => patchExtra({ howto: e.target.value })} /></div>
                               <div className="tk-kfield"><div className="tk-klabel">유의사항</div><input className="rg-input" placeholder="예: 방문 시 신분증을 지참해 주세요." value={d.kExtra.notice} onChange={(e) => patchExtra({ notice: e.target.value })} /></div>
-                              <div className="tk-kfield"><div className="tk-klabel">취소 유의사항</div><input className="rg-input" placeholder="예: 방문 불가 시 취소 바랍니다." maxLength={100} value={d.kExtra.cancelNotice} onChange={(e) => patchExtra({ cancelNotice: e.target.value })} /></div>
+                              <div className="tk-kfield"><div className="tk-klabel">취소 유의사항</div><input className="rg-input" placeholder="예: 방문 불가 시 취소 바랍니다. (최대 100자)" maxLength={K_CANCEL_MAX} value={d.kExtra.cancelNotice} onChange={(e) => patchExtra({ cancelNotice: e.target.value })} /></div>
                             </div>
                           )}
                         </div>

@@ -339,3 +339,60 @@
 .ap-modal-btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 .ap-btn-cancel-confirm { height: 44px; padding: 0 20px; border: 0; border-radius: 10px; background: var(--red-60); color: #fff; cursor: pointer; font: 700 14px/44px var(--font-sans); }
 .ap-btn-cancel-confirm:disabled { background: var(--gray-20); color: var(--gray-50); cursor: not-allowed; }
+
+/* =============================================================
+   운영 설정 (set-) — 실제 non-payment-reservations/operation 재현
+   BoxContainer / GuideBanner(normal) / Toggle(rg-toggle 재사용)
+   ============================================================= */
+.set-header { padding: 40px 64px 20px; }
+.set-body { padding: 20px 64px 64px; display: flex; flex-direction: column; gap: 40px; }
+
+/* BoxContainer */
+.set-box {
+  display: flex; align-items: center; justify-content: space-between; gap: 48px;
+  padding: 24px; border: 1px solid var(--gray-30); border-radius: 8px;
+  transition: border-color 0.15s;
+}
+.set-box:hover { border-color: var(--gray-50); }
+.set-box-left { min-width: 0; }
+.set-box-title { font: 600 16px/1.5 var(--font-sans); color: var(--gray-100); }
+.set-box-sub { margin-top: 1px; font: 400 14px/1.5 var(--font-sans); color: var(--gray-70); }
+.set-box-right { display: flex; flex-shrink: 0; gap: 16px; align-items: center; }
+
+/* 비급여 예약 받기 — 개수 강조 + 운영중/미운영 라벨 */
+.set-count { font: 500 14px/1.5 var(--font-sans); color: var(--gray-80); }
+.set-count-rest { font: 400 14px/1.5 var(--font-sans); color: var(--gray-70); }
+.set-status-toggle { display: flex; align-items: center; gap: 8px; }
+.set-status { font: 600 14px/1.5 var(--font-sans); color: var(--blue-70); }
+.set-status.off { color: var(--gray-60); }
+
+/* 설정 섹션 */
+.set-section { display: flex; flex-direction: column; gap: 12px; }
+.set-section-title { font: 700 18px/1.5 var(--font-sans); color: var(--gray-100); }
+
+/* GuideBanner (normal variant) */
+.set-banner {
+  display: flex; align-items: center; gap: 16px; height: 54px;
+  padding: 0 20px 0 16px;
+  background: var(--alpha-gray-05); border: 1px solid var(--alpha-gray-10); border-radius: 8px;
+}
+.set-banner-left { display: flex; flex: 1; gap: 8px; align-items: center; min-width: 0; }
+.set-banner-ic { width: 20px; height: 20px; flex: none; color: var(--gray-60); display: inline-flex; }
+.set-banner-ic svg { width: 20px; height: 20px; display: block; }
+.set-banner-msg { font: 600 14px/1.5 var(--font-sans); color: var(--gray-80); }
+.set-banner-action {
+  display: flex; gap: 4px; align-items: center; height: 36px; white-space: nowrap;
+  cursor: pointer; border: 0; background: none;
+  font: 600 13px/1.5 var(--font-sans); color: rgba(0, 0, 0, 0.7);
+}
+.set-banner-arrow { width: 16px; height: 16px; flex: none; color: rgba(0, 0, 0, 0.7); display: inline-flex; align-items: center; justify-content: center; }
+.set-banner-arrow svg { width: 12px; height: 12px; display: block; }
+
+/* 중지 확인 모달 (StopConfirmModal, width 560) */
+.set-modal { width: 560px; }
+.set-modal-body { margin-top: 12px; font: 500 16px/1.5 var(--font-sans); color: var(--gray-60); }
+.set-modal-danger {
+  height: 44px; padding: 0 20px; border: 0; border-radius: 10px;
+  background: var(--red-60); color: #fff; cursor: pointer; font: 700 14px/44px var(--font-sans);
+}
+.set-modal-danger:hover { background: var(--red-70); }

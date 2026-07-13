@@ -2,15 +2,15 @@ import React, { useMemo, useState } from 'react';
 
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
- * 이름     : ti-kakao — 진료항목 카카오 노출 + 예약 신청 내역
- * 상태     : 현행(active)   버전: v2   최종수정: 2026-07-13
+ * 이름     : ti-kakao — 진료항목 카카오 노출 + 예약 신청 내역 + 운영 설정
+ * 상태     : 현행(active)   버전: v3   최종수정: 2026-07-13
  * PRD      : Notion "진료항목 카카오톡 예약하기 연동" PRD v0.4  (링크 붙이기)
  * 배포URL  : https://connect-sq-sandbox.github.io/out/ti-kakao.html
  * 관련 CSS : connectRegister.css + connectTiKakao.css
  * 기술제약 : react-only · plain CSS · mock · 네트워크 0
  *
  * 화면구성 (LNB 이동):
- *   ① 진료항목 목록  ② 진료항목 폼(등록/상세)  ③ 예약 신청 내역
+ *   ① 진료항목 목록  ② 진료항목 폼(등록/상세)  ③ 예약 신청 내역  ④ 운영 설정
  *
  * 핵심 결정 (why):
  *   [확정·PRD] 토글 워딩 = "카카오톡 예약하기에서도 보이기"
@@ -22,6 +22,8 @@ import React, { useMemo, useState } from 'react';
  *   [유지·자체] 카카오 전용 정보는 옵션 아코디언으로 추가 입력
  *   [유지·자체] 예약 신청 내역 = 실제 TreatmentItemApptListView 재현
  *              (카카오·굿닥 예약이 같은 테이블에 혼재 + "채널" 컬럼만 추가)
+ *   [유지·자체] 운영 설정 = 실제 non-payment-reservations/operation 재현
+ *              (비급여 예약 받기 토글[OFF 시 중지 모달] + 자동확정/당일예약/새 예약 알림)
  *   [폐기]      구버전 kakao-link(별도 연동관리 페이지형) → ti-kakao로 대체
  *
  * 보류 · TODO (PO 확인 대기):
@@ -29,6 +31,7 @@ import React, { useMemo, useState } from 'react';
  *   - 규격위반 자동보정 정책 명문화
  *
  * 변경 이력:
+ *   v3  2026-07-13 — 운영 설정 화면 추가(실제 operation 코드 이식), LNB beta를 그룹 헤더로 이동
  *   v2  2026-07-13 — 예약 신청 내역 + 예약 상세 모달 추가
  *   v1  2026-07-09 — ti-kakao 방향 확정, kakao-link 대체
  * └──────────────────────────────────────────────────────
@@ -179,6 +182,8 @@ const HandleIcon = () => (<svg viewBox="0 0 16 16" fill="none"><circle cx="6" cy
 const DragHandle = () => (<svg width="6" height="10" viewBox="0 0 6 10" fill="none"><rect width="2.25" height="2.30769" rx="1.125" fill="currentColor" /><rect x="3.75" width="2.25" height="2.30769" rx="1.125" fill="currentColor" /><rect y="3.84619" width="2.25" height="2.30769" rx="1.125" fill="currentColor" /><rect x="3.75" y="3.84619" width="2.25" height="2.30769" rx="1.125" fill="currentColor" /><rect y="7.69226" width="2.25" height="2.30769" rx="1.125" fill="currentColor" /><rect x="3.75" y="7.69226" width="2.25" height="2.30769" rx="1.125" fill="currentColor" /></svg>);
 const ThumbIcon = () => (<svg viewBox="0 0 36 36" fill="none"><rect width="36" height="36" rx="6" fill="#F2F4F6" /><path d="M11 23l4.5-5 3 3.2L22 17l4 6" stroke="#B0B8C1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /><circle cx="14" cy="14" r="1.6" fill="#B0B8C1" /></svg>);
 const CalIcon = () => (<svg viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3.5" width="13" height="12" rx="2" stroke="currentColor" strokeWidth="1.4" /><path d="M2.5 7h13M6 2.2v2.2M12 2.2v2.2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>);
+/** 안내 배너 아이콘(실제 GuideBanner normal variant = ic_caution, gray-60) */
+const CautionIc = () => (<svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" fill="currentColor" /><rect x="9" y="5.2" width="2" height="6" rx="1" fill="#fff" /><circle cx="10" cy="13.7" r="1.1" fill="#fff" /></svg>);
 const KakaoMark = ({ cls }: { cls?: string }) => (<svg viewBox="0 0 20 20" fill="none" className={cls}><rect width="20" height="20" rx="5" fill="#FEE500" /><path d="M10 5.1c-2.9 0-5.2 1.8-5.2 4 0 1.4.95 2.62 2.38 3.32-.1.36-.37 1.34-.42 1.55 0 0-.02.09.04.12.06.03.13 0 .13 0 .17-.02 1.9-1.28 2.2-1.5.29.04.58.06.87.06 2.9 0 5.2-1.8 5.2-4S12.9 5.1 10 5.1z" fill="#3C1E1E" /></svg>);
 const GoodocMark = () => (
   <svg viewBox="0 0 27 43" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -199,7 +204,7 @@ function TitleBar() {
     </div>
   );
 }
-type Page = 'items' | 'appt';
+type Page = 'items' | 'appt' | 'settings';
 function SideNav({ page, onNav }: { page: Page; onNav: (p: Page) => void }) {
   const N = ({ label, sub, active, beta, ex, onClick }: { label: string; sub?: boolean; active?: boolean; beta?: boolean; ex?: 'r' | 'd'; onClick?: () => void }) => (
     <button className={`cn-nav-item${sub ? ' sub' : ''}${active ? ' active' : ''}`} onClick={onClick}>
@@ -213,9 +218,10 @@ function SideNav({ page, onNav }: { page: Page; onNav: (p: Page) => void }) {
         <div className="cn-nav-group">
           <div className="cn-nav-header">서비스 운영</div>
           <N label="차트 접수·예약" ex="r" />
-          <N label="비급여 예약" ex="d" />
+          <N label="비급여 예약" beta ex="d" />
           <N label="예약 신청 내역" sub active={page === 'appt'} onClick={() => onNav('appt')} />
-          <N label="진료항목 관리" sub beta active={page === 'items'} onClick={() => onNav('items')} />
+          <N label="진료항목 관리" sub active={page === 'items'} onClick={() => onNav('items')} />
+          <N label="운영 설정" sub active={page === 'settings'} onClick={() => onNav('settings')} />
           <N label="병원 약관" ex="r" />
         </div>
         <div className="cn-nav-divider"><span /></div>
@@ -551,6 +557,127 @@ function ApptScreen({ showToast }: { showToast: (m: string) => void }) {
   );
 }
 
+/* ============================ 운영 설정 화면 ============================ */
+/** 실제 개발 화면(non-payment-reservations/operation) 재현.
+ *  구성 = 비급여 예약 받기(BoxContainer + 운영중/미운영 라벨 토글, OFF 시 중지 확인 모달)
+ *        + 설정 섹션(운영시간 GuideBanner + 예약 자동확정/당일예약/새 예약 알림 토글).
+ *  API(usePatchApptUsed 등) → 로컬 state로 mock. 진료항목 개수는 목록 mock과 연동. */
+function SettingToggle({ checked, onChange, disabled }: { checked: boolean; onChange: () => void; disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      className={`rg-toggle${checked ? '' : ' off'}${disabled ? ' disabled' : ''}`}
+      onClick={() => !disabled && onChange()}
+    >
+      <span className="rg-toggle-knob" />
+    </button>
+  );
+}
+function SettingBox({ title, subNode, right }: { title: string; subNode: React.ReactNode; right: React.ReactNode }) {
+  return (
+    <div className="set-box">
+      <div className="set-box-left">
+        <div className="set-box-title">{title}</div>
+        <div className="set-box-sub">{subNode}</div>
+      </div>
+      <div className="set-box-right">{right}</div>
+    </div>
+  );
+}
+function SettingsScreen({ itemCount, showToast }: { itemCount: number; showToast: (m: string) => void }) {
+  const [apptUsed, setApptUsed] = useState(true);
+  const [autoConfirmed, setAutoConfirmed] = useState(true);
+  const [todayApptUsed, setTodayApptUsed] = useState(true);
+  const [newApptNotified, setNewApptNotified] = useState(true);
+  const [stopOpen, setStopOpen] = useState(false);
+
+  const handleApptUsed = () => {
+    if (!apptUsed) {
+      setApptUsed(true);
+      showToast('진료항목 비급여 예약을 시작했어요.');
+      return;
+    }
+    setStopOpen(true);
+  };
+  const confirmStop = () => {
+    setApptUsed(false);
+    setStopOpen(false);
+    showToast('진료항목 비급여 예약을 중지했어요.');
+  };
+
+  return (
+    <>
+      <div className="cn-header set-header">
+        <div className="cn-header-title">비급여 예약 설정</div>
+        <div className="ap-sub">굿닥에 등록한 비급여 진료항목으로 예약을 받을 수 있습니다.</div>
+      </div>
+
+      <div className="set-body">
+        {/* 비급여 예약 받기 */}
+        <SettingBox
+          title="비급여 예약 받기"
+          subNode={<><span className="set-count">{itemCount}개의 진료항목이</span><span className="set-count-rest"> 등록되어 있어요.</span></>}
+          right={
+            <div className="set-status-toggle">
+              <span className={`set-status${apptUsed ? '' : ' off'}`}>{apptUsed ? '운영중' : '미운영'}</span>
+              <SettingToggle checked={apptUsed} onChange={handleApptUsed} />
+            </div>
+          }
+        />
+
+        {/* 설정 */}
+        <section className="set-section">
+          <div className="set-section-title">설정</div>
+
+          <div className="set-banner">
+            <span className="set-banner-left">
+              <span className="set-banner-ic"><CautionIc /></span>
+              <span className="set-banner-msg">병원 운영 시간에 맞춰 30분 단위로 예약을 받습니다.</span>
+            </span>
+            <button type="button" className="set-banner-action" onClick={() => showToast('병원 운영시간 관리 화면으로 이동해요.')}>
+              병원 운영시간 관리<span className="set-banner-arrow"><ChevronR /></span>
+            </button>
+          </div>
+
+          <SettingBox
+            title="예약 자동 확정"
+            subNode="자동 확정 사용 시, 별도 승인 없이 예약 신청과 동시에 자동으로 확정됩니다."
+            right={<SettingToggle checked={autoConfirmed} onChange={() => setAutoConfirmed((v) => !v)} />}
+          />
+          <SettingBox
+            title="당일 예약 허용"
+            subNode="당일 예약 허용 시, 현재 시간 기준 1시간 이후부터 당일 예약을 받습니다."
+            right={<SettingToggle checked={todayApptUsed} onChange={() => setTodayApptUsed((v) => !v)} />}
+          />
+          <SettingBox
+            title="새 예약 알림 받기"
+            subNode="새 예약 신청이 발생하면, 이 PC에서 윈도우 알림을 받습니다."
+            right={<SettingToggle checked={newApptNotified} onChange={() => setNewApptNotified((v) => !v)} />}
+          />
+        </section>
+      </div>
+
+      {/* 예약 그만 받기 확인 모달 (실제 StopConfirmModal) */}
+      {stopOpen && (
+        <div className="ap-dim" onClick={() => setStopOpen(false)}>
+          <div className="ap-modal set-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="ap-modal-title">비급여 예약을 그만 받으시겠어요?</div>
+            <div className="set-modal-body">
+              그만 받기를 누르면 굿닥에서 진료항목 노출과 예약 신청이 모두 중단돼요. 등록된 진료항목은 그대로 유지되며, 다시 시작하면 바로 예약을 받을 수 있어요.
+            </div>
+            <div className="ap-modal-btns">
+              <button className="rg-btn-cancel" onClick={() => setStopOpen(false)}>취소</button>
+              <button className="set-modal-danger" onClick={confirmStop}>그만 받기</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 /* ============================================================ */
 function TiKakao() {
   const [page, setPage] = useState<Page>('items');
@@ -604,6 +731,9 @@ function TiKakao() {
 
             {/* ========================= 예약 신청 내역 ========================= */}
             {page === 'appt' && <ApptScreen showToast={showToast} />}
+
+            {/* ========================= 운영 설정 ========================= */}
+            {page === 'settings' && <SettingsScreen itemCount={items.length} showToast={showToast} />}
 
             {/* ========================= 진료항목 목록 ========================= */}
             {page === 'items' && screen === 'list' && (

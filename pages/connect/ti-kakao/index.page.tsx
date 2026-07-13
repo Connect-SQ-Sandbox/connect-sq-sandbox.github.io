@@ -3,7 +3,7 @@ import React, { useMemo, useState } from 'react';
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-kakao — 진료항목 카카오 노출 + 예약 신청 내역 + 운영 설정
- * 상태     : 현행(active)   버전: v10  최종수정: 2026-07-13
+ * 상태     : 현행(active)   버전: v11  최종수정: 2026-07-13
  * PRD      : Notion "진료항목 카카오톡 예약하기 연동" PRD v0.4  (링크 붙이기)
  * 배포URL  : https://connect-sq-sandbox.github.io/out/ti-kakao.html
  * 관련 CSS : connectRegister.css + connectTiKakao.css
@@ -15,6 +15,7 @@ import React, { useMemo, useState } from 'react';
  * 핵심 결정 (why):
  *   [확정·PRD] 토글 워딩 = "카카오톡 예약하기에서도 보이기"
  *   [확정·PRD] 노출 캐스케이드 — 굿닥 노출 OFF → 카카오도 OFF
+ *   [확정·PRD] 카카오 연동 활성화는 오직 진료항목 상세의 "…에서도 보이기" 토글로만. 리스트 일괄 연동 없음(리스트 채널 심볼은 읽기 전용 현황)
  *   [유지·자체] 채널 심볼 [굿닥][카카오] 아이콘만 표기(텍스트 없음)
  *   [유지·자체] 규격 검증 — 상품명50 / 가격명25 / 할인가 / 상담가 / 이미지
  *   [유지·자체] 미리보기는 굿닥 기준만(카카오 미리보기 없음)
@@ -31,6 +32,8 @@ import React, { useMemo, useState } from 'react';
  *   - 규격위반 자동보정 정책 명문화
  *
  * 변경 이력:
+ *   v11 2026-07-13 — 질문 입력 UI를 네이버 폼 참고로 개선: 유형=드롭다운(객관식/주관식), 답변 필수·복수 선택=토글, 질문 추가 단일 버튼.
+ *                    '복수 선택'은 유형이 아닌 토글(객관식 내 radio↔select). 개수 상한 주관식 10 / 객관식(합산) 10.
  *   v10 2026-07-13 — 질문 생성 필드 디자인을 Figma 컴포넌트(18305:65068)에 맞춤: 필수/선택 버튼(w64·연한 테두리), 체크박스 18px,
  *                    선택지 추가 버튼(투명·아이콘16+텍스트13), 카드 여백 13px·테두리 #f2f4f6, 삭제 아이콘 18px.
  *   v9  2026-07-13 — 질문 목록 드래그 순서 변경 추가(핸들 드래그, HTML5 DnD). API sequence(3종 통합 오름차순 전역 순서) 대응.
@@ -114,9 +117,7 @@ const K_NAME_MAX = 50;        // 카카오 상품명 최대 50자
 const K_PRICE_MAX = 25;       // 카카오 가격 이름 최대 25자
 // 질문 유형별 개수 상한. API는 주관식 infos[]만 "최대 10개" 명시 → 그대로 사용. 단수/복수는 문서 제한 없음 → UX 기준 권장값.
 const K_Q_TEXT_MAX = 10;      // 주관식(infos[]) — API 명시값
-const K_Q_RADIO_MAX = 5;      // 단수 선택형(radioInfos) — 권장
-const K_Q_SELECT_MAX = 5;     // 복수 선택형(selectInfos) — 권장
-const Q_CAP: Record<QType, number> = { text: K_Q_TEXT_MAX, radio: K_Q_RADIO_MAX, select: K_Q_SELECT_MAX };
+const K_Q_CHOICE_MAX = 10;    // 객관식(단수 radioInfos + 복수 selectInfos 합산) — 권장. '복수 선택'은 유형이 아니라 토글
 const K_Q_OPT_MIN = 2;        // 선택형 선택지 최소 개수
 const K_Q_OPT_MAX = 10;       // 선택형 선택지 최대 개수 (권장)
 const K_Q_NAME_MAX = 120;     // 카카오 질문(부가정보 name) 최대 120자
@@ -758,6 +759,7 @@ function TiKakao() {
   const [d, setD] = useState<Item | null>(null);
   const [kw, setKw] = useState('');
   const [dragQ, setDragQ] = useState<number | null>(null);
+  const [qTypeOpen, setQTypeOpen] = useState<number | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const hospitalLinked = true;
 
@@ -790,8 +792,18 @@ function TiKakao() {
   const addPrice = () => d && patch({ prices: [...d.prices, { id: UID++, title: '', content: '', type: 'fixed', amount: '', original: '', sale: '' }] });
   const delPrice = (id: number) => d && patch({ prices: d.prices.length > 1 ? d.prices.filter((p) => p.id !== id) : d.prices });
   const newQ = (type: QType): Question => ({ id: UID++, type, name: '', optional: true, description: '', options: type === 'text' ? [] : ['', ''] });
-  const qCount = (type: QType) => (d ? d.kExtra.questions.filter((q) => q.type === type).length : 0);
-  const addQ = (type: QType) => d && qCount(type) < Q_CAP[type] && patchExtra({ questions: [...d.kExtra.questions, newQ(type)] });
+  const textCount = () => (d ? d.kExtra.questions.filter((q) => q.type === 'text').length : 0);
+  const choiceCount = () => (d ? d.kExtra.questions.filter((q) => q.type !== 'text').length : 0);
+  const addQ = (type: QType) => d && patchExtra({ questions: [...d.kExtra.questions, newQ(type)] });
+  const addQuestion = () => { if (!d) return; if (choiceCount() < K_Q_CHOICE_MAX) addQ('radio'); else if (textCount() < K_Q_TEXT_MAX) addQ('text'); else showToast('질문은 더 추가할 수 없어요.'); };
+  // 유형 드롭다운(객관식/주관식) — 카카오 매핑: 주관식=infos, 객관식=radio(단수)/select(복수)
+  const setQKind = (id: number, kind: 'choice' | 'text') => {
+    const q = d?.kExtra.questions.find((x) => x.id === id); if (!q) return;
+    if (kind === 'text') { if (q.type === 'text') return; if (textCount() >= K_Q_TEXT_MAX) { showToast(`주관식은 최대 ${K_Q_TEXT_MAX}개까지예요.`); return; } setQ(id, { type: 'text' }); }
+    else { if (q.type !== 'text') return; if (choiceCount() >= K_Q_CHOICE_MAX) { showToast(`객관식은 최대 ${K_Q_CHOICE_MAX}개까지예요.`); return; } setQ(id, { type: 'radio', options: q.options.length >= K_Q_OPT_MIN ? q.options : ['', ''] }); }
+  };
+  // '복수 선택' 토글 — 객관식 내에서 단수(radio)↔복수(select) 전환
+  const setQMultiple = (id: number, multiple: boolean) => { const q = d?.kExtra.questions.find((x) => x.id === id); if (q && q.type !== 'text') setQ(id, { type: multiple ? 'select' : 'radio' }); };
   const moveQ = (from: number, to: number) => { if (!d || from === to) return; const arr = [...d.kExtra.questions]; const [m] = arr.splice(from, 1); arr.splice(to, 0, m); patchExtra({ questions: arr }); };
   const setQ = (id: number, u: Partial<Question>) => d && patchExtra({ questions: d.kExtra.questions.map((q) => (q.id === id ? { ...q, ...u } : q)) });
   const delQ = (id: number) => d && patchExtra({ questions: d.kExtra.questions.filter((q) => q.id !== id) });
@@ -944,37 +956,48 @@ function TiKakao() {
                                   <div key={q.id} className={`tk-q-item${dragQ === idx ? ' dragging' : ''}`}
                                     onDragOver={(e) => { if (dragQ !== null) e.preventDefault(); }}
                                     onDrop={() => { if (dragQ !== null) moveQ(dragQ, idx); setDragQ(null); }}>
-                                    <div className="tk-q-row">
-                                      <span className="tk-q-handle" draggable onDragStart={() => setDragQ(idx)} onDragEnd={() => setDragQ(null)} aria-label="순서 변경 핸들"><DragHandle /></span>
-                                      <span className={`tk-q-type ${q.type}`}>{QTYPE_LABEL[q.type]}</span>
-                                      <input className="rg-input" placeholder="질문 (예: 증상, 방문 예상일시)" maxLength={K_Q_NAME_MAX} value={q.name} onChange={(e) => setQ(q.id, { name: e.target.value })} />
-                                      <button className={`tk-q-opt${q.optional ? '' : ' req'}`} onClick={() => setQ(q.id, { optional: !q.optional })}>{q.optional ? '선택' : '필수'}</button>
-                                      <button className="rg-price-del" onClick={() => delQ(q.id)} aria-label="질문 삭제"><CloseIcon /></button>
+                                    <div className="tk-q-drag" draggable onDragStart={() => setDragQ(idx)} onDragEnd={() => setDragQ(null)} aria-label="순서 변경 핸들"><DragHandle /></div>
+                                    <div className="rg-select-wrap tk-q-typesel">
+                                      <button type="button" className={`rg-select tk-q-typebtn${qTypeOpen === q.id ? ' open' : ''}`} onClick={() => setQTypeOpen((v) => (v === q.id ? null : q.id))}>{q.type === 'text' ? '주관식' : '객관식'}<span className="rg-select-ic"><SelectArrow /></span></button>
+                                      {qTypeOpen === q.id && (
+                                        <div className="rg-select-menu" onMouseLeave={() => setQTypeOpen(null)}>
+                                          <button type="button" className={`rg-select-opt${q.type !== 'text' ? ' active' : ''}`} onClick={() => { setQKind(q.id, 'choice'); setQTypeOpen(null); }}>객관식</button>
+                                          <button type="button" className={`rg-select-opt${q.type === 'text' ? ' active' : ''}`} onClick={() => { setQKind(q.id, 'text'); setQTypeOpen(null); }}>주관식</button>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="tk-q-qrow">
+                                      {!q.optional && <span className="tk-q-req">*</span>}
+                                      <input className="rg-input" placeholder="질문 입력" maxLength={K_Q_NAME_MAX} value={q.name} onChange={(e) => setQ(q.id, { name: e.target.value })} />
                                     </div>
                                     {q.type !== 'text' && (
                                       <div className="tk-q-choice">
-                                        <input className="rg-input" placeholder="설명 (선택)" value={q.description} onChange={(e) => setQ(q.id, { description: e.target.value })} />
+                                        <input className="rg-input" placeholder="설명 입력 (선택)" value={q.description} onChange={(e) => setQ(q.id, { description: e.target.value })} />
                                         <div className="tk-q-opts">
                                           {q.options.map((opt, i) => (
                                             <div key={i} className="tk-q-optrow">
                                               <span className={`tk-q-optmark ${q.type}`} />
-                                              <input className="rg-input" placeholder={`선택지 ${i + 1}`} value={opt} onChange={(e) => setOpt(q.id, i, e.target.value)} />
-                                              <button className="rg-price-del" onClick={() => delOpt(q.id, i)} disabled={q.options.length <= K_Q_OPT_MIN} aria-label="선택지 삭제"><CloseIcon /></button>
+                                              <input className="rg-input" placeholder={`항목 ${i + 1}`} value={opt} onChange={(e) => setOpt(q.id, i, e.target.value)} />
+                                              <button className="rg-price-del" onClick={() => delOpt(q.id, i)} disabled={q.options.length <= K_Q_OPT_MIN} aria-label="항목 삭제"><CloseIcon /></button>
                                             </div>
                                           ))}
                                           {q.options.length < K_Q_OPT_MAX
-                                            ? <button className="tk-add-xs" onClick={() => addOpt(q.id)}><PlusIcon /> 선택지 추가</button>
-                                            : <div className="rg-help">선택지는 최대 {K_Q_OPT_MAX}개까지 추가할 수 있어요.</div>}
+                                            ? <button className="tk-add-xs" onClick={() => addOpt(q.id)}><PlusIcon /> 항목 추가</button>
+                                            : <div className="rg-help">항목은 최대 {K_Q_OPT_MAX}개까지 추가할 수 있어요.</div>}
                                         </div>
                                       </div>
                                     )}
+                                    <div className="tk-q-bar">
+                                      <label className="tk-q-switch"><span>답변 필수</span><button type="button" className={`rg-toggle${q.optional ? ' off' : ''}`} onClick={() => setQ(q.id, { optional: !q.optional })}><span className="rg-toggle-knob" /></button></label>
+                                      {q.type !== 'text' && <label className="tk-q-switch"><span>복수 선택</span><button type="button" className={`rg-toggle${q.type === 'select' ? '' : ' off'}`} onClick={() => setQMultiple(q.id, q.type !== 'select')}><span className="rg-toggle-knob" /></button></label>}
+                                      <span className="tk-q-bar-spacer" />
+                                      <button className="rg-price-del" onClick={() => delQ(q.id)} aria-label="질문 삭제"><CloseIcon /></button>
+                                    </div>
                                   </div>
                                 ))}
-                                <div className="tk-q-add">
-                                  <button className="tk-add-sm" disabled={qCount('text') >= K_Q_TEXT_MAX} onClick={() => addQ('text')}><PlusIcon /> 주관식 <span className="tk-add-count">{qCount('text')}/{K_Q_TEXT_MAX}</span></button>
-                                  <button className="tk-add-sm" disabled={qCount('radio') >= K_Q_RADIO_MAX} onClick={() => addQ('radio')}><PlusIcon /> 단수 선택형 <span className="tk-add-count">{qCount('radio')}/{K_Q_RADIO_MAX}</span></button>
-                                  <button className="tk-add-sm" disabled={qCount('select') >= K_Q_SELECT_MAX} onClick={() => addQ('select')}><PlusIcon /> 복수 선택형 <span className="tk-add-count">{qCount('select')}/{K_Q_SELECT_MAX}</span></button>
-                                </div>
+                                {textCount() < K_Q_TEXT_MAX || choiceCount() < K_Q_CHOICE_MAX
+                                  ? <button className="tk-add-sm tk-q-addbtn" onClick={addQuestion}><PlusIcon /> 질문 추가</button>
+                                  : <div className="rg-help">질문은 더 추가할 수 없어요.</div>}
                               </div>
                               <div className="tk-kfield"><div className="tk-klabel">이용 방법</div><input className="rg-input" placeholder="예: 접수처에 예약 내역을 보여 주세요." maxLength={K_INFO_MAX} value={d.kExtra.howto} onChange={(e) => patchExtra({ howto: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.howto.length}</span>/{K_INFO_MAX.toLocaleString('ko-KR')}자</div></div>
                               <div className="tk-kfield"><div className="tk-klabel">유의사항</div><input className="rg-input" placeholder="예: 방문 시 신분증을 지참해 주세요." value={d.kExtra.notice} onChange={(e) => patchExtra({ notice: e.target.value })} /></div>

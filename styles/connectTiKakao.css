@@ -161,7 +161,6 @@
 
 /* 카카오 전용 정보 */
 .tk-kextra { display: flex; flex-direction: column; gap: 16px; padding: 4px 2px 0; }
-.tk-kextra-desc { margin-bottom: -4px; }
 .tk-kfield { display: flex; flex-direction: column; gap: 8px; }
 .tk-kfield .rg-counter { margin-top: 0; }
 .tk-klabel { font: 600 14px/22px var(--font-sans); color: #434956; }

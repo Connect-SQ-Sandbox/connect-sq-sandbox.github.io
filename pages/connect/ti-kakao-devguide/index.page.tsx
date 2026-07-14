@@ -1200,10 +1200,13 @@ function TiKakao() {
           sources={POLICY_SOURCES}
           showPlanned={showPlanned}
           onShowPlannedChange={setShowPlanned}
-          devMode={devMode}
-          onDevModeChange={setDevMode}
           onLocate={locatePolicyChange}
         />
+        {/* POC 전용 개발 검토용 토글 (공유 정책패널과 독립 — 복제본에만 존재) */}
+        <button className={`dg-devtoggle${devMode ? ' on' : ''}`} type="button" onClick={() => setDevMode((v) => !v)} aria-pressed={devMode}>
+          <span className="dg-devtoggle-track"><span className="dg-devtoggle-knob" /></span>
+          개발 검토용
+        </button>
       </div>
     </div>
   );

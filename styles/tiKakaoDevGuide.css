@@ -2,6 +2,14 @@
    프론트 개발 핸드오프 가이드 임베드 실험용. 원본 ti-kakao에는 로드되지 않는다.
    (dg-* 프리픽스 = dev guide) */
 
+/* POC 개발 검토용 토글 — 화면 좌하단 고정 (공유 정책패널과 독립) */
+.dg-devtoggle { position: fixed; left: 16px; bottom: 16px; z-index: 150; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px 0 10px; border: 1px solid var(--gray-30); border-radius: 999px; background: #fff; color: var(--gray-70); font: 700 12px/18px var(--font-sans); cursor: pointer; box-shadow: 0 4px 16px rgba(22,24,29,.12); }
+.dg-devtoggle.on { border-color: var(--blue-60); color: var(--blue-60); }
+.dg-devtoggle-track { width: 30px; height: 18px; border-radius: 999px; background: var(--gray-40); position: relative; transition: background .15s; }
+.dg-devtoggle.on .dg-devtoggle-track { background: var(--blue-60); }
+.dg-devtoggle-knob { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: left .15s; }
+.dg-devtoggle.on .dg-devtoggle-knob { left: 14px; }
+
 /* ===== 진료항목 목록 스타일: 피그마 18290:66063 기준 (복제본 전용 오버라이드) ===== */
 /* 채널 아이콘: 굿닥=파란 라운드 사각 뱃지+흰 심볼, 카카오=노란 사각. 간격 4 */
 .tk-chans { gap: 4px; }

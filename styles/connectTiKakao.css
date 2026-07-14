@@ -140,15 +140,16 @@
 .rg-toggle.disabled { opacity: .4; cursor: not-allowed; }
 
 .tk-kbody { padding: 0 24px 24px; display: flex; flex-direction: column; gap: 16px; border-top: 1px solid #f2f4f7; padding-top: 20px; }
+/* 카카오 안내 배너 — Figma(GuideBanner, node 1:928): 회색 톤 배경·테두리, ic_caution, SemiBold 14/22 gray-70 */
 .tk-kauto {
-  display: flex; gap: 8px; align-items: flex-start;
-  background: var(--alpha-blue-05); border-radius: 8px; padding: 12px 14px;
-  font: 400 13px/20px var(--font-sans); color: #434956;
+  display: flex; gap: 8px; align-items: center; min-height: 54px;
+  background: rgba(128,135,153,.05); border: 1px solid rgba(128,135,153,.1); border-radius: 8px;
+  padding: 0 20px 0 16px;
 }
 .tk-kauto b { color: var(--blue-70); font-weight: 600; }
-.tk-kauto-ic { flex: none; display: inline-flex; margin-top: 2px; }
-.tk-kauto-ic svg { width: 16px; height: 16px; color: var(--blue-60); }
-.tk-kauto-txt { flex: 1; min-width: 0; } /* 텍스트+<b>를 한 문장으로 흐르게 (flex 아이템 분리로 쪼개지던 것 방지) */
+.tk-kauto-ic { flex: none; width: 20px; height: 20px; display: inline-flex; color: #808799; }
+.tk-kauto-ic svg { width: 20px; height: 20px; }
+.tk-kauto-txt { flex: 1; min-width: 0; font: 600 14px/22px var(--font-sans); color: #5d6474; } /* 텍스트를 한 문장으로 흐르게 */
 
 /* 노출 캐스케이드 안내 (굿닥 노출 OFF → 카카오도 노출 안 됨) */
 .tk-kcascade { display: flex; gap: 8px; align-items: flex-start; background: rgba(247,144,9,.08); border: 1px solid rgba(247,144,9,.28); border-radius: 8px; padding: 11px 13px; font: 500 13px/20px var(--font-sans); color: var(--orange-60); }

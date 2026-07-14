@@ -7,12 +7,25 @@ export const POLICY_SOURCES: Record<string, PolicySource> = {
     title: '진료항목 카카오톡 예약하기 연동 구축',
     version: '2.1-review',
     sourceStatus: 'review',
+    targetReleaseAt: null,
     sourcePath: '3-미션·기획/1-PRD/2026-07-13-진료항목-카카오톡-예약하기-연동-구축.md',
     summaryMarkdown: gcp1Summary
   }
 };
 
 export const TI_KAKAO_CHANGES: PolicyChange[] = [
+  {
+    id: 'GCP-1-PLAN-001',
+    prdId: 'GCP-1',
+    date: '2026-07-14',
+    prototypeVersion: 'v13-planned',
+    view: 'items-list',
+    targetId: 'gcp1-channel-overview',
+    title: '굿닥과 카카오 노출을 독립적으로 운영',
+    before: '현재 프로토타입은 굿닥 노출을 끄면 카카오 노출도 함께 비활성화됩니다.',
+    after: '검토 중인 상품 마스터 정책에서는 굿닥을 끈 채 카카오에서만 노출할 수 있습니다.',
+    publicationStatus: 'planned'
+  },
   {
     id: 'GCP-1-CHANGE-001',
     prdId: 'GCP-1',

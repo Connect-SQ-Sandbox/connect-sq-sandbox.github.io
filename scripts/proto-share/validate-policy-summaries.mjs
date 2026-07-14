@@ -3,9 +3,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const REQUIRED = ['summary_id', 'source_prd_id', 'source_version', 'source_status', 'visibility', 'publication_status'];
+const REQUIRED = ['summary_id', 'source_prd_id', 'source_version', 'source_status', 'target_release_at', 'visibility', 'publication_status'];
 const ALLOWED_SOURCE_STATUS = new Set(['draft', 'review', 'approved', 'superseded', 'archived']);
-const ALLOWED_PUBLICATION_STATUS = new Set(['baseline', 'approved']);
+const ALLOWED_PUBLICATION_STATUS = new Set(['baseline', 'approved', 'planned']);
 
 function parseFrontmatter(source, file) {
   const match = source.match(/^---\s*\n([\s\S]*?)\n---\s*\n/);
@@ -35,6 +35,7 @@ export function validatePolicySummaries(repoRoot) {
     if (meta.visibility !== 'public-summary') throw new Error(`${file}: visibility는 public-summary여야 합니다.`);
     if (!ALLOWED_SOURCE_STATUS.has(meta.source_status)) throw new Error(`${file}: 지원하지 않는 source_status입니다.`);
     if (!ALLOWED_PUBLICATION_STATUS.has(meta.publication_status)) throw new Error(`${file}: 지원하지 않는 publication_status입니다.`);
+    if (meta.target_release_at !== 'null' && !/^\d{4}-\d{2}-\d{2}$/.test(meta.target_release_at)) throw new Error(`${file}: target_release_at은 YYYY-MM-DD 또는 null이어야 합니다.`);
     if (path.basename(file, '.md') !== meta.source_prd_id) throw new Error(`${file}: 파일명과 source_prd_id가 일치해야 합니다.`);
     if (!source.includes(`**PRD ID:** \`${meta.source_prd_id}\``)) throw new Error(`${file}: 본문에 독자가 볼 수 있는 PRD ID가 필요합니다.`);
 
@@ -42,6 +43,9 @@ export function validatePolicySummaries(repoRoot) {
       if (meta.source_status !== 'approved') throw new Error(`${file}: 승인 반영 요약의 source_status는 approved여야 합니다.`);
       if (!meta.approved_by || meta.approved_by === 'null') throw new Error(`${file}: 승인 반영 요약에 approved_by가 필요합니다.`);
       if (!meta.approved_at || meta.approved_at === 'null') throw new Error(`${file}: 승인 반영 요약에 approved_at이 필요합니다.`);
+    }
+    if (meta.publication_status === 'planned' && !['draft', 'review'].includes(meta.source_status)) {
+      throw new Error(`${file}: 예정 요약의 source_status는 draft 또는 review여야 합니다.`);
     }
     return { file, prdId: meta.source_prd_id, publicationStatus: meta.publication_status };
   });

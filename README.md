@@ -1,7 +1,7 @@
 # connect-sq-sandbox — 굿닥 커넥트 프로토타입 샌드박스
 
 굿닥 커넥트(파트너스 웹뷰)의 **진료항목 → 카카오톡 예약하기 연동** 및 **예약 신청 내역** 프로토타입.
-확정 PRD의 공개 가능한 정책 요약과 화면 변경 지점을 연결해, 화면 우측의 기본 닫힘 패널에서 변경 전후와 원본 `PRD ID`를 추적한다.
+확정 PRD와 선택적으로 공개한 예정 PRD의 정책 요약을 화면 변경 지점과 연결해, 화면 우측의 기본 닫힘 패널에서 변경 전후와 원본 `PRD ID`를 추적한다.
 `react` 훅만 쓰는 **자체완결 React 화면**을, 모든 JS/CSS가 인라인된 **단일 HTML**(외부 요청 0)로 빌드한다.
 빌드 산출물(`out/*.html`)은 브라우저로 바로 열리고, **GitHub Pages로도 서빙**된다.
 
@@ -94,13 +94,15 @@ docs/                                 # 기획/기능정의서
 ## PRD → 프로토타입 동기화
 
 1. 원본 PRD는 Connect Squad 공유 폴더의 `3-미션·기획/1-PRD/`에서만 수정한다.
-2. `status: approved`, `approved_by`, `approved_at`, `version`을 모두 확인한다.
+2. `status`, `approved_by`, `approved_at`, `version`, `target_release_at`을 모두 확인한다. 예정일 미정은 `null`로 명시한다.
 3. 전체 PRD를 복제하지 말고 `docs/policy-summaries/<PRD-ID>.md`에 공개 가능한 요약만 작성한다.
 4. `content/change-manifests/`에 변경 전후, 대상 화면, `data-policy-id`를 연결한다.
 5. `npm run proto:validate`로 공개 요약 메타데이터를 확인한다.
 6. `npm run proto:share ...`로 HTML을 재생성하고 외부참조 `0 (OK)`를 확인한다.
 
-현재 `GCP-1`은 원본 PRD가 `review` 상태이므로 신규 승인 정책이 아니라 기존 공개 프로토타입의 **현재 기준선**으로 표시한다.
+승인 PRD는 `승인 반영`으로 표시한다. `draft` 또는 `review` PRD는 공개 가능한 요약과 화면 대상이 있을 때만 `예정` 항목으로 추가하며 기본값에서는 숨긴다. 사용자가 `예정된 내용도 보기`를 켜면 확정 전 안내와 함께 화면에 표시한다. 모든 정책 카드에는 예정 배포일을 표시하고 `target_release_at: null`은 `미정`으로 표기한다.
+
+현재 `GCP-1`은 원본 PRD가 `review` 상태다. 기존 공개 화면은 **현재 기준선**, 굿닥·카카오 노출 독립 운영안은 기본 OFF인 **예정 · 확정 전** 항목으로 구분한다.
 
 ## 제약 (빌드 시 프리플라이트가 막음)
 

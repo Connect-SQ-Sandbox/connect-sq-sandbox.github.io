@@ -3,6 +3,7 @@ summary_id: GCP-1-PUBLIC-1
 source_prd_id: GCP-1
 source_version: 2.1-review
 source_status: review
+target_release_at: null
 visibility: public-summary
 publication_status: baseline
 ---
@@ -23,12 +24,19 @@ publication_status: baseline
 - 굿닥과 카카오 예약은 예약 신청 내역에서 채널을 구분해 함께 처리합니다.
 - 비급여 예약 운영 여부와 주요 조건은 Connect의 운영 설정에서 관리합니다.
 
+## 예정안 · 검토 중
+
+- 굿닥과 카카오톡 예약하기의 노출 상태를 서로 독립적으로 운영합니다.
+- 굿닥 노출을 끈 상태에서도 카카오톡 예약하기만 켜서 운영할 수 있습니다.
+- 이 내용은 아직 승인되지 않았으며 `예정된 내용도 보기`를 켠 경우에만 화면에 표시합니다.
+
 ## 원본 추적
 
 - **PRD ID:** `GCP-1`
 - **원본 제목:** 진료항목 카카오톡 예약하기 연동 구축
 - **원본 버전:** `2.1-review`
 - **원본 상태:** `review`
+- **예정 배포:** `미정`
 - **원본 위치:** `3-미션·기획/1-PRD/2026-07-13-진료항목-카카오톡-예약하기-연동-구축.md`
 
 ## 공개 상태 안내

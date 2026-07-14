@@ -127,6 +127,9 @@
 .tk-khead-text { flex: 1; min-width: 0; } /* 좁아져도 텍스트가 정상 줄바꿈되도록 (0폭 붕괴 방지) */
 .tk-khead-mark { width: 28px; height: 28px; flex: none; margin-top: 1px; }
 .tk-khead-title { font: 700 18px/26px var(--font-sans); color: #16181d; word-break: keep-all; }
+.tk-khead-right { display: inline-flex; align-items: center; gap: 8px; flex: none; }
+/* 카카오 전용 정보 — 여러 줄 입력(이용 방법·유의사항·취소 유의사항) */
+.tk-ktextarea { height: 88px; }
 .tk-kdependency { margin: 0 24px 20px; display: flex; gap: 8px; align-items: flex-start; background: rgba(247,144,9,.08); border: 1px solid rgba(247,144,9,.28); border-radius: 8px; padding: 11px 13px; font: 500 13px/20px var(--font-sans); color: var(--orange-60); }
 .tk-kdependency svg { width: 16px; height: 16px; flex: none; margin-top: 2px; }
 .rg-toggle.disabled { opacity: .4; cursor: not-allowed; }

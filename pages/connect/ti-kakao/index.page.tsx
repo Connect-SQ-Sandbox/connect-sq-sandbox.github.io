@@ -30,6 +30,8 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
  *   [폐기]      구버전 kakao-link(별도 연동관리 페이지형) → ti-kakao로 대체
  *
  * 변경 이력:
+ *   v19 2026-07-14 — 카카오 전용 정보 영역을 Figma(18329:1260077)에 맞춤: 토글 앞 상태 라벨(노출중/미노출), 필드 라벨 (선택) 표기,
+ *                    이용 방법·유의사항·취소 유의사항을 여러 줄 textarea로 변경(카운터 유지). '예약 시 받을 정보' 명칭은 Figma 확인 결과 그대로 유지.
  *   v18 2026-07-14 — 저장 유효성 실패를 실제 서비스 컨벤션대로 필드별 인라인 처리로 변경: 위반 필드 빨간 테두리 + 하단 빨간 메시지(다중 동시 표시), 첫 오류로 스크롤, 편집 시 해당 필드 에러 해제. (토스트 차단 방식 대체)
  *   v17 2026-07-14 — 저장 유효성 검증 추가: 진료항목명·가격명·유형별 금액 필수, 카카오 노출 시 질문 제목 필수·선택형 선택지(2개↑·빈 항목 금지). 위반 시 토스트 안내 후 저장 차단.
  *   v16 2026-07-14 — 질문 필드 글자 수 제한 정합: 질문 name 120자(API 명시·required) 유지, 설명 description 100자·선택지 항목 50자
@@ -1238,7 +1240,10 @@ function TiKakao() {
                     <section className="rg-card tk-kcard" data-policy-id="gcp1-channel-visibility">
                       <div className="tk-khead">
                         <div className="tk-khead-left"><KakaoMark cls="tk-khead-mark" /><div className="tk-khead-text"><div className="tk-khead-title">카카오톡 예약하기에서도 보이기</div><div className="rg-help">켜면 이 진료항목이 카카오톡 예약하기에도 상품으로 보여요. 끄면 카카오에서만 안 보이며 입력한 정보는 그대로 유지돼요.</div></div></div>
-                        <button className={`rg-toggle${d.kakaoOn ? '' : ' off'}${hospitalLinked && d.gdVisible ? '' : ' disabled'}`} aria-label="카카오톡 예약하기에서도 보이기" aria-disabled={!hospitalLinked || !d.gdVisible} onClick={() => hospitalLinked && d.gdVisible && patch({ kakaoOn: !d.kakaoOn })}><span className="rg-toggle-knob" /></button>
+                        <div className="tk-khead-right">
+                          <span className={`tk-l3-visible${d.kakaoOn ? ' on' : ''}`}>{d.kakaoOn ? '노출중' : '미노출'}</span>
+                          <button className={`rg-toggle${d.kakaoOn ? '' : ' off'}${hospitalLinked && d.gdVisible ? '' : ' disabled'}`} aria-label="카카오톡 예약하기에서도 보이기" aria-disabled={!hospitalLinked || !d.gdVisible} onClick={() => hospitalLinked && d.gdVisible && patch({ kakaoOn: !d.kakaoOn })}><span className="rg-toggle-knob" /></button>
+                        </div>
                       </div>
                       {!d.gdVisible && <div className="tk-kdependency"><WarnIc /> 굿닥에 노출 중인 진료항목만 카카오톡 예약하기에도 노출할 수 있어요. 먼저 하단의 굿닥 노출을 켜 주세요.</div>}
                       {devMode && (
@@ -1255,7 +1260,7 @@ function TiKakao() {
                           <div className="tk-kextra">
                               <div className="rg-help tk-kextra-desc">카카오톡 예약하기에만 노출되는 정보예요. (굿닥 화면엔 노출되지 않아요)</div>
                               <div className="tk-kfield">
-                                <div className="tk-klabel">예약 시 받을 정보 <span className="tk-klabel-count">총 {d.kExtra.questions.length}개</span></div>
+                                <div className="tk-klabel">예약 시 받을 정보 <span className="rg-optional">(선택)</span><span className="tk-klabel-count">총 {d.kExtra.questions.length}개</span></div>
                                 {d.kExtra.questions.map((q, idx) => (
                                   <div key={q.id} className={`tk-q-item${dragQ === idx ? ' dragging' : ''}`}
                                     onDragOver={(e) => { if (dragQ !== null) e.preventDefault(); }}
@@ -1305,9 +1310,9 @@ function TiKakao() {
                                   ? <button className="tk-add-sm tk-q-addbtn" onClick={addQuestion}><PlusIcon /> 질문 추가</button>
                                   : <div className="rg-help">질문은 더 추가할 수 없어요.</div>}
                               </div>
-                              <div className="tk-kfield"><div className="tk-klabel">이용 방법</div><input className="rg-input" placeholder="예: 접수처에 예약 내역을 보여 주세요." maxLength={K_INFO_MAX} value={d.kExtra.howto} onChange={(e) => patchExtra({ howto: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.howto.length}</span>/{K_INFO_MAX.toLocaleString('ko-KR')}자</div></div>
-                              <div className="tk-kfield"><div className="tk-klabel">유의사항</div><input className="rg-input" placeholder="예: 방문 시 신분증을 지참해 주세요." value={d.kExtra.notice} onChange={(e) => patchExtra({ notice: e.target.value })} /></div>
-                              <div className="tk-kfield"><div className="tk-klabel">취소 유의사항</div><input className="rg-input" placeholder="예: 방문 불가 시 취소 바랍니다." maxLength={K_CANCEL_MAX} value={d.kExtra.cancelNotice} onChange={(e) => patchExtra({ cancelNotice: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.cancelNotice.length}</span>/{K_CANCEL_MAX}자</div></div>
+                              <div className="tk-kfield"><div className="tk-klabel">이용 방법 <span className="rg-optional">(선택)</span></div><textarea className="rg-textarea tk-ktextarea" placeholder="예: 접수처에 예약 내역을 보여 주세요." maxLength={K_INFO_MAX} value={d.kExtra.howto} onChange={(e) => patchExtra({ howto: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.howto.length}</span>/{K_INFO_MAX.toLocaleString('ko-KR')}자</div></div>
+                              <div className="tk-kfield"><div className="tk-klabel">유의사항 <span className="rg-optional">(선택)</span></div><textarea className="rg-textarea tk-ktextarea" placeholder="예: 방문 시 신분증을 지참해 주세요." value={d.kExtra.notice} onChange={(e) => patchExtra({ notice: e.target.value })} /></div>
+                              <div className="tk-kfield"><div className="tk-klabel">취소 유의사항 <span className="rg-optional">(선택)</span></div><textarea className="rg-textarea tk-ktextarea" placeholder="예: 방문 불가 시 취소 바랍니다." maxLength={K_CANCEL_MAX} value={d.kExtra.cancelNotice} onChange={(e) => patchExtra({ cancelNotice: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.cancelNotice.length}</span>/{K_CANCEL_MAX}자</div></div>
                           </div>
                         </div>
                       )}

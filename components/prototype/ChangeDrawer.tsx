@@ -32,8 +32,6 @@ type Props = {
   sources: Record<string, PolicySource>;
   showPlanned: boolean;
   onShowPlannedChange: (show: boolean) => void;
-  devMode: boolean;
-  onDevModeChange: (v: boolean) => void;
   onLocate: (change: PolicyChange) => void;
 };
 
@@ -83,7 +81,7 @@ const PUBLISH_LABEL: Record<PublicationStatus, string> = {
 
 const releaseLabel = (value: string | null) => value || '미정';
 
-export function ChangeDrawer({ currentView, changes, sources, showPlanned, onShowPlannedChange, devMode, onDevModeChange, onLocate }: Props) {
+export function ChangeDrawer({ currentView, changes, sources, showPlanned, onShowPlannedChange, onLocate }: Props) {
   const [open, setOpen] = useState(false);
   const [scope, setScope] = useState<'current' | 'all'>('current');
   const [summaryPrdId, setSummaryPrdId] = useState<string | null>(null);
@@ -156,23 +154,6 @@ export function ChangeDrawer({ currentView, changes, sources, showPlanned, onSho
                 </button>
               </div>
               {showPlanned && <div className="pc-planned-notice">예정 화면은 검토 중이며 실제 배포 시 변경될 수 있어요.</div>}
-              <div className="pc-planned-filter">
-                <div>
-                  <strong>개발 검토용 보기</strong>
-                  <span>카카오 API 전송 구조 등 개발·기획 확인용 정보</span>
-                </div>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-label="개발 검토용 보기"
-                  aria-checked={devMode}
-                  className={`pc-switch${devMode ? ' on' : ''}`}
-                  onClick={() => onDevModeChange(!devMode)}
-                >
-                  <span />
-                </button>
-              </div>
-              {devMode && <div className="pc-planned-notice">개발·기획 검토용 정보이며 실제 병원 화면에는 노출되지 않아요.</div>}
               <div className="pc-current-view">현재 화면 · {VIEW_LABEL[currentView]}</div>
             </div>
 

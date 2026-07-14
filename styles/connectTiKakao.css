@@ -147,15 +147,7 @@
 /* 드래그 핸들: 실제 서비스(IconHandler) 크기 6×10로 (register 기본 8×12 override) */
 .tk-price-row .rg-drag svg { width: 6px; height: 10px; }
 
-/* 카카오 전용 정보 (아코디언) */
-.tk-kextra-toggle {
-  width: 100%; height: 44px; border: 1px solid #e3e6ed; border-radius: 8px; background: #fff;
-  padding: 0 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;
-  font: 600 14px/20px var(--font-sans); color: #31353f;
-}
-.tk-kextra-toggle:hover { background: #f9fafb; }
-.tk-kextra-chev { width: 12px; height: 12px; color: #808799; display: inline-flex; transition: transform .15s; }
-.tk-kextra-chev.open { transform: rotate(180deg); }
+/* 카카오 전용 정보 */
 .tk-kextra { display: flex; flex-direction: column; gap: 16px; padding: 4px 2px 0; }
 .tk-kextra-desc { margin-bottom: -4px; }
 .tk-kfield { display: flex; flex-direction: column; gap: 8px; }

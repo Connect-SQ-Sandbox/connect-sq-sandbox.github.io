@@ -1,4 +1,6 @@
 import React, { useMemo, useState } from 'react';
+import { ChangeDrawer, type PolicyChange, type PrototypeView } from '../../../components/prototype/ChangeDrawer';
+import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manifests/ti-kakao';
 
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
@@ -738,6 +740,7 @@ function TiKakao() {
   const [dragQ, setDragQ] = useState<number | null>(null);
   const [qTypeOpen, setQTypeOpen] = useState<number | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [showPlanned, setShowPlanned] = useState(false);
   const hospitalLinked = true;
 
   const showToast = (m: string) => { setToast(m); window.setTimeout(() => setToast(null), 2200); };
@@ -790,6 +793,27 @@ function TiKakao() {
     return { ...it, gdVisible, kakaoOn: gdVisible ? it.kakaoOn : false };
   }));
 
+  const currentView: PrototypeView = page === 'items' ? (screen === 'form' ? 'items-form' : 'items-list') : page;
+  const locatePolicyChange = (change: PolicyChange) => {
+    if (change.view === 'items-list') { setPage('items'); setScreen('list'); }
+    if (change.view === 'items-form') {
+      setPage('items');
+      const targetItem = items.find((item) => item.kakaoOn) || items[0];
+      if (targetItem) open(targetItem);
+    }
+    if (change.view === 'appt') setPage('appt');
+    if (change.view === 'settings') setPage('settings');
+
+    window.setTimeout(() => {
+      const target = document.querySelector(`[data-policy-id="${change.targetId}"]`);
+      if (!(target instanceof HTMLElement)) return;
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      target.classList.remove('pc-policy-highlight');
+      window.requestAnimationFrame(() => target.classList.add('pc-policy-highlight'));
+      window.setTimeout(() => target.classList.remove('pc-policy-highlight'), 2600);
+    }, 80);
+  };
+
   return (
     <div className="cn-artboard">
       <div className="cn-screen">
@@ -797,6 +821,13 @@ function TiKakao() {
         <div className="cn-body">
           <SideNav page={page} onNav={nav} />
           <main className="cn-main rg-main tk-main">
+            {showPlanned && (
+              <div className="pc-planned-preview-banner" role="status">
+                <strong>예정 화면 미리보기</strong>
+                <span>확정 전 PRD를 시각화한 화면이며 실제 배포 시 변경될 수 있어요.</span>
+              </div>
+            )}
+
             {/* ========================= 예약 신청 내역 ========================= */}
             {page === 'appt' && <ApptScreen showToast={showToast} />}
 
@@ -920,9 +951,7 @@ function TiKakao() {
                       {d.kakaoOn && (
                         <div className="tk-kbody">
                           <div className="tk-kauto"><span className="tk-kauto-ic"><InfoIc /></span><span className="tk-kauto-txt">위에 입력한 굿닥 진료항목 정보가 카카오톡 예약하기에도 함께 표시돼요.</span></div>
-                          <button className="tk-kextra-toggle" onClick={() => patchExtra({ open: !d.kExtra.open })}><span>카카오 전용 정보 추가 입력 <span className="rg-optional">(선택)</span></span><span className={`tk-kextra-chev${d.kExtra.open ? ' open' : ''}`}><ChevronD /></span></button>
-                          {d.kExtra.open && (
-                            <div className="tk-kextra">
+                          <div className="tk-kextra">
                               <div className="rg-help tk-kextra-desc">카카오톡 예약하기에만 노출되는 정보예요. (굿닥 화면엔 노출되지 않아요)</div>
                               <div className="tk-kfield">
                                 <div className="tk-klabel">예약 시 받을 정보 <span className="tk-klabel-count">총 {d.kExtra.questions.length}개</span></div>
@@ -976,8 +1005,7 @@ function TiKakao() {
                               <div className="tk-kfield"><div className="tk-klabel">이용 방법</div><input className="rg-input" placeholder="예: 접수처에 예약 내역을 보여 주세요." maxLength={K_INFO_MAX} value={d.kExtra.howto} onChange={(e) => patchExtra({ howto: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.howto.length}</span>/{K_INFO_MAX.toLocaleString('ko-KR')}자</div></div>
                               <div className="tk-kfield"><div className="tk-klabel">유의사항</div><input className="rg-input" placeholder="예: 방문 시 신분증을 지참해 주세요." value={d.kExtra.notice} onChange={(e) => patchExtra({ notice: e.target.value })} /></div>
                               <div className="tk-kfield"><div className="tk-klabel">취소 유의사항</div><input className="rg-input" placeholder="예: 방문 불가 시 취소 바랍니다." maxLength={K_CANCEL_MAX} value={d.kExtra.cancelNotice} onChange={(e) => patchExtra({ cancelNotice: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.cancelNotice.length}</span>/{K_CANCEL_MAX}자</div></div>
-                            </div>
-                          )}
+                          </div>
                         </div>
                       )}
                     </section>
@@ -1002,6 +1030,14 @@ function TiKakao() {
             {toast && <div className="rg-toast">{toast}</div>}
           </main>
         </div>
+        <ChangeDrawer
+          currentView={currentView}
+          changes={TI_KAKAO_CHANGES}
+          sources={POLICY_SOURCES}
+          showPlanned={showPlanned}
+          onShowPlannedChange={setShowPlanned}
+          onLocate={locatePolicyChange}
+        />
       </div>
     </div>
   );

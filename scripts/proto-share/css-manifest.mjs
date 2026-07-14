@@ -10,7 +10,6 @@ export const SHARED_CSS = ['styles/globals.css', 'styles/connectShell.css', 'sty
 /** 페이지 디렉터리명 -> 화면 전용 CSS */
 export const SCREEN_CSS = {
   'ti-kakao': ['styles/connectRegister.css', 'styles/connectTiKakao.css'],
-  'ti-kakao-devguide': ['styles/connectRegister.css', 'styles/connectTiKakao.css', 'styles/tiKakaoDevGuide.css'],
   'kakao-booking': ['styles/kakaoBooking.css'],
   'kakao-link': ['styles/connectKakaoLink.css']
 };

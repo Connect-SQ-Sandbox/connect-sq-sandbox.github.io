@@ -257,7 +257,7 @@ a {
 /* styles/prototypeChanges.css */
 /* 프로토타입 메타 UI: 실제 Connect 기능이 아니라 정책 변경 추적용 패널 */
 .pc-trigger {
-  position: absolute; top: 72px; right: 0; z-index: 105;
+  position: fixed; top: 72px; right: 0; z-index: 105;
   height: 40px; padding: 0 12px 0 10px; border: 1px solid var(--gray-30); border-right: 0;
   border-radius: 8px 0 0 8px; background: var(--gray-100); color: var(--white);
   display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
@@ -267,9 +267,9 @@ a {
 .pc-trigger-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green-70); }
 .pc-trigger-count { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: rgba(255,255,255,.16); font: 700 11px/18px var(--font-sans); }
 
-.pc-scrim { position: absolute; inset: 32px 0 0 250px; z-index: 110; border: 0; background: rgba(25,31,40,.24); cursor: default; }
+.pc-scrim { position: fixed; inset: 0 0 0 250px; z-index: 110; border: 0; background: rgba(25,31,40,.24); cursor: default; }
 .pc-drawer {
-  position: absolute; top: 32px; right: 0; bottom: 0; z-index: 120; width: 392px;
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 120; width: 392px;
   background: var(--white); box-shadow: -12px 0 32px rgba(22,24,29,.14);
   display: flex; flex-direction: column; transform: translateX(102%); visibility: hidden;
   transition: transform .2s ease, visibility .2s;
@@ -667,6 +667,8 @@ a {
 .cn-screen { width: 100%; min-height: 100vh; border-radius: 0; box-shadow: none; overflow: visible; }
 .cn-titlebar { display: none; }
 .cn-body { flex: 1; min-height: 0; }
+/* 좌측 LNB를 세로 스크롤과 무관히 고정 (뷰포트 상단 스티키, 전체 높이) */
+.cn-nav { position: sticky; top: 0; align-self: flex-start; height: 100vh; }
 
 /* 콘텐츠 최대 너비 1024 (실제 PageTemplate innerContainer max-width) — 좌우 64px 패딩 포함 1152, 본문 좌측 정렬.
    .cn-main(flex column)의 컨텐츠 블록을 캡해 넓은 화면에서 무한정 늘어나지 않게 한다. */

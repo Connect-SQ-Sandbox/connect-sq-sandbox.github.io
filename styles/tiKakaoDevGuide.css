@@ -41,15 +41,16 @@
 .dg-case-banner button { margin-left: auto; height: 28px; padding: 0 12px; border: 1px solid rgba(247,144,9,.4); border-radius: 6px; background: #fff; color: #9a5800; font: 600 12px/26px var(--font-sans); cursor: pointer; }
 .dg-case-banner button:hover { background: rgba(247,144,9,.08); }
 
-/* 빈 상태 (케이스 재현) */
-.tk-empty-state {
-  padding: 72px 24px; text-align: center;
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
-  font: 500 15px/24px var(--font-sans); color: var(--gray-60);
+/* 진료항목 없음 (페이지 레벨 빈 상태) — 공유 캡처 기준 */
+.tk-empty-page {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; padding: 88px 24px; text-align: center;
+  background: var(--gray-10); border: 1px solid var(--gray-20); border-radius: 16px;
 }
-.tk-empty-state span { font: 400 13px/20px var(--font-sans); color: var(--gray-50); }
-.dg-reset { margin-top: 14px; height: 32px; padding: 0 12px; border: 1px solid var(--gray-30); border-radius: 8px; background: #fff; color: var(--blue-60); font: 600 13px/30px var(--font-sans); cursor: pointer; }
-.dg-reset:hover { border-color: var(--blue-60); }
+.tk-empty-title { font: 700 22px/32px var(--font-sans); color: var(--gray-100); }
+.tk-empty-desc { font: 400 15px/24px var(--font-sans); color: var(--gray-60); }
+.tk-empty-cta { margin-top: 16px; height: 48px; padding: 0 28px; border: 0; border-radius: 10px; background: var(--blue-60); color: #fff; font: 700 16px/48px var(--font-sans); cursor: pointer; }
+.tk-empty-cta:hover { background: var(--blue-70); }
 
 /* 명세 팝오버 (딤 없음: 투명 클릭캐처로 닫기만) */
 .dg-pop-catch { position: fixed; inset: 0; z-index: 200; background: transparent; }

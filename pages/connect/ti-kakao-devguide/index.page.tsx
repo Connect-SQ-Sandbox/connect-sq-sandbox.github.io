@@ -968,44 +968,46 @@ function TiKakao() {
                 )}
 
                 <div className="tk-list-body" data-policy-id="gcp1-channel-overview">
-                  <div className="tk-grid">
-                    {devMode && (
-                      <div className="dg-badge-cluster">
-                        <button className="dg-badge" onClick={() => setDevSpec('list-grid')}>목록 명세</button>
-                        <button className="dg-badge" onClick={() => setDevSpec('item-row')}>행 명세</button>
-                      </div>
-                    )}
-                    <div className="tk-grid-chead"><span className="tk-grid-title">카테고리</span></div>
-                    <div className="tk-grid-ihead"><span className="tk-grid-title">{selCat1}</span></div>
-                    <nav className="tk-grid-clist" aria-label="진료항목 카테고리">
-                      {cat1List.map((c) => (
-                        <button key={c.name} className={`tk-cat${c.name === selCat1 ? ' sel' : ''}`} onClick={() => setSelCat1(c.name)}>
-                          <span className="tk-cat-handle"><DragHandle /></span>
-                          <span className="tk-cat-name">{c.name}</span>
-                          <span className="tk-cat-count">{c.count}</span>
-                        </button>
-                      ))}
-                    </nav>
-                    <section className="tk-grid-ilist">
-                      {devMode && emptyPreview ? (
-                        <div className="tk-empty-state">
-                          이 카테고리에 등록된 진료항목이 없어요.
-                          <span>진료항목을 추가하면 여기에 표시됩니다.</span>
-                          <button className="dg-reset" onClick={() => setEmptyPreview(false)}>← 기본 상태로 (케이스 재현 해제)</button>
+                  {devMode && emptyPreview ? (
+                    <div className="tk-empty-page">
+                      <div className="tk-empty-title">진료항목을 등록하고 더 많은 예약을 받아보세요.</div>
+                      <div className="tk-empty-desc">앱에 노출될 대표 진료와 가격 옵션을 설정하면 환자들이 쉽게 탐색하고 예약할 수 있습니다.</div>
+                      <button className="tk-empty-cta" onClick={create}>첫 진료항목 등록하기</button>
+                    </div>
+                  ) : (
+                    <div className="tk-grid">
+                      {devMode && (
+                        <div className="dg-badge-cluster">
+                          <button className="dg-badge" onClick={() => setDevSpec('list-grid')}>목록 명세</button>
+                          <button className="dg-badge" onClick={() => setDevSpec('item-row')}>행 명세</button>
                         </div>
-                      ) : isCustom ? (
-                        <div className="tk-l2-body">{customItems.map((it) => (<ItemRow key={it.id} it={it} plannedPreview={it.id === plannedPreviewItemId} showChannels={hospitalLinked} onOpen={() => open(it)} onToggle={() => toggleGdVisible(it.id)} />))}</div>
-                      ) : (
-                        groups.map((g) => (
-                          <div key={g.name} className="tk-l2">
-                            <div className="tk-l2-head"><span className="tk-cat-handle"><DragHandle /></span><span className="tk-l2-name">{g.name}</span></div>
-                            <div className="tk-l2-body">{g.items.map((it) => (<ItemRow key={it.id} it={it} plannedPreview={it.id === plannedPreviewItemId} showChannels={hospitalLinked} onOpen={() => open(it)} onToggle={() => toggleGdVisible(it.id)} />))}</div>
-                            <div className="tk-l2-pad" />
-                          </div>
-                        ))
                       )}
-                    </section>
-                  </div>
+                      <div className="tk-grid-chead"><span className="tk-grid-title">카테고리</span></div>
+                      <div className="tk-grid-ihead"><span className="tk-grid-title">{selCat1}</span></div>
+                      <nav className="tk-grid-clist" aria-label="진료항목 카테고리">
+                        {cat1List.map((c) => (
+                          <button key={c.name} className={`tk-cat${c.name === selCat1 ? ' sel' : ''}`} onClick={() => setSelCat1(c.name)}>
+                            <span className="tk-cat-handle"><DragHandle /></span>
+                            <span className="tk-cat-name">{c.name}</span>
+                            <span className="tk-cat-count">{c.count}</span>
+                          </button>
+                        ))}
+                      </nav>
+                      <section className="tk-grid-ilist">
+                        {isCustom ? (
+                          <div className="tk-l2-body">{customItems.map((it) => (<ItemRow key={it.id} it={it} plannedPreview={it.id === plannedPreviewItemId} showChannels={hospitalLinked} onOpen={() => open(it)} onToggle={() => toggleGdVisible(it.id)} />))}</div>
+                        ) : (
+                          groups.map((g) => (
+                            <div key={g.name} className="tk-l2">
+                              <div className="tk-l2-head"><span className="tk-cat-handle"><DragHandle /></span><span className="tk-l2-name">{g.name}</span></div>
+                              <div className="tk-l2-body">{g.items.map((it) => (<ItemRow key={it.id} it={it} plannedPreview={it.id === plannedPreviewItemId} showChannels={hospitalLinked} onOpen={() => open(it)} onToggle={() => toggleGdVisible(it.id)} />))}</div>
+                              <div className="tk-l2-pad" />
+                            </div>
+                          ))
+                        )}
+                      </section>
+                    </div>
+                  )}
                 </div>
               </>
             )}

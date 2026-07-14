@@ -2,8 +2,8 @@
    프론트 개발 핸드오프 가이드 임베드 실험용. 원본 ti-kakao에는 로드되지 않는다.
    (dg-* 프리픽스 = dev guide) */
 
-/* POC 개발 검토용 토글 — 화면 좌하단 고정 (공유 정책패널과 독립) */
-.dg-devtoggle { position: fixed; left: 16px; bottom: 16px; z-index: 150; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px 0 10px; border: 1px solid var(--gray-30); border-radius: 999px; background: #fff; color: var(--gray-70); font: 700 12px/18px var(--font-sans); cursor: pointer; box-shadow: 0 4px 16px rgba(22,24,29,.12); }
+/* POC 개발 검토용 토글 — 우측 상단(변경사항 배지 아래) 고정. 공유 정책패널이 원복돼 패널 밖 독립 컨트롤로 둔다. */
+.dg-devtoggle { position: fixed; right: 0; top: 120px; z-index: 106; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px 0 12px; border: 1px solid var(--gray-30); border-right: 0; border-radius: 8px 0 0 8px; background: #fff; color: var(--gray-70); font: 700 12px/18px var(--font-sans); cursor: pointer; box-shadow: 0 4px 16px rgba(22,24,29,.14); }
 .dg-devtoggle.on { border-color: var(--blue-60); color: var(--blue-60); }
 .dg-devtoggle-track { width: 30px; height: 18px; border-radius: 999px; background: var(--gray-40); position: relative; transition: background .15s; }
 .dg-devtoggle.on .dg-devtoggle-track { background: var(--blue-60); }

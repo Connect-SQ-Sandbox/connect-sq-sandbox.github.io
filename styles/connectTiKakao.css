@@ -123,6 +123,8 @@
 .tk-khead-text { flex: 1; min-width: 0; } /* 좁아져도 텍스트가 정상 줄바꿈되도록 (0폭 붕괴 방지) */
 .tk-khead-mark { width: 28px; height: 28px; flex: none; margin-top: 1px; }
 .tk-khead-title { font: 700 18px/26px var(--font-sans); color: #16181d; word-break: keep-all; }
+.tk-kdependency { margin: 0 24px 20px; display: flex; gap: 8px; align-items: flex-start; background: rgba(247,144,9,.08); border: 1px solid rgba(247,144,9,.28); border-radius: 8px; padding: 11px 13px; font: 500 13px/20px var(--font-sans); color: var(--orange-60); }
+.tk-kdependency svg { width: 16px; height: 16px; flex: none; margin-top: 2px; }
 .rg-toggle.disabled { opacity: .4; cursor: not-allowed; }
 
 .tk-kbody { padding: 0 24px 24px; display: flex; flex-direction: column; gap: 16px; border-top: 1px solid #f2f4f7; padding-top: 20px; }
@@ -151,6 +153,27 @@
 .tk-warn-field { display: inline-block; font: 600 13px/19px var(--font-sans); color: #31353f; margin-right: 6px; }
 .tk-warn-msg { font: 400 13px/19px var(--font-sans); color: #5d6474; }
 .tk-ok { font: 500 13px/20px var(--font-sans); color: var(--green-80); background: rgba(31,169,114,.07); padding: 11px 13px; border-radius: 8px; }
+
+/* 카카오 Product / 기술용 DEFAULT Item / Price 매핑 미리보기 */
+.tk-api-map { border: 1px solid var(--gray-30); border-radius: 10px; background: #fff; overflow: hidden; }
+.tk-api-map-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 14px; background: var(--gray-10); border-bottom: 1px solid var(--gray-20); }
+.tk-api-map-head > div { display: flex; flex-direction: column; gap: 2px; }
+.tk-api-map-head b { font: 700 13px/19px var(--font-sans); color: var(--gray-100); }
+.tk-api-map-head span { font: 500 12px/17px var(--font-sans); color: var(--gray-60); }
+.tk-api-badge { flex: none; border-radius: 999px; padding: 4px 8px; background: var(--alpha-blue-10); color: var(--blue-70) !important; font: 700 11px/15px var(--font-sans) !important; }
+.tk-api-tree { padding: 14px; display: flex; flex-direction: column; align-items: stretch; }
+.tk-api-node { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 11px; border: 1px solid var(--blue-30); border-radius: 8px; background: var(--alpha-blue-05); }
+.tk-api-node.muted { border-color: var(--gray-30); background: var(--gray-10); }
+.tk-api-node span { font: 700 12px/17px var(--font-sans); color: var(--blue-70); }
+.tk-api-node.muted span { color: var(--gray-60); }
+.tk-api-node b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 600 12px/17px var(--font-sans); color: var(--gray-90); }
+.tk-api-arrow { height: 20px; display: flex; align-items: center; justify-content: center; color: var(--gray-50); font-size: 14px; }
+.tk-api-prices { display: flex; flex-direction: column; gap: 6px; }
+.tk-api-price { display: flex; flex-direction: column; gap: 2px; padding: 9px 11px; border: 1px solid var(--gray-30); border-radius: 8px; }
+.tk-api-price-name { font: 700 12px/17px var(--font-sans); color: var(--gray-90); }
+.tk-api-price-desc { overflow-wrap: anywhere; font: 500 11px/16px var(--font-sans); color: var(--gray-60); }
+.tk-api-map > p { margin: 0; padding: 0 14px 14px; font: 500 11px/17px var(--font-sans); color: var(--gray-60); }
+.tk-api-map code { padding: 1px 5px; border-radius: 4px; background: var(--gray-20); color: var(--gray-80); font: 600 11px/16px ui-monospace, SFMono-Regular, Menlo, monospace; }
 
 /* 인라인 필드 경고 (가격 등) */
 .tk-fwarn { display: flex; align-items: center; gap: 5px; font: 500 12px/16px var(--font-sans); color: var(--orange-60); margin-top: -2px; }

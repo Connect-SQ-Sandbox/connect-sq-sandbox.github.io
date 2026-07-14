@@ -4,12 +4,14 @@
   "version": "0.1.0",
   "description": "굿닥 커넥트 프로토타입 샌드박스 (진료항목 → 카카오 노출 / 예약 신청 내역) — 자체완결 React 프로토타입을 단일 HTML로 빌드, GitHub Pages로 서빙",
   "scripts": {
+    "proto:validate": "node scripts/proto-share/validate-policy-summaries.mjs",
     "proto:share": "node scripts/proto-share/build.mjs",
     "proto:preview": "node scripts/proto-share/preview-server.mjs out 4599"
   },
   "devDependencies": {
     "esbuild": "0.27.3",
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "react-icons": "^5.5.0"
   }
 }

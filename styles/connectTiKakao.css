@@ -122,7 +122,7 @@
 
 /* ============================ 폼: 카카오 노출 섹션 ============================ */
 /* 카카오 노출 헤더 박스 — Figma(Setting_Detail, node 1:907/1:917) 기준 */
-.tk-kcard { padding: 0; overflow: hidden; border-color: #e3e6ed; }
+.tk-kcard { padding: 0; overflow: hidden; border-color: #e3e6ed; gap: 0; }
 .tk-khead { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 24px; }
 .tk-khead-left { display: flex; align-items: center; gap: 16px; flex: 1; min-width: 0; }
 .tk-khead-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; } /* 좁아져도 텍스트가 정상 줄바꿈되도록 (0폭 붕괴 방지) */
@@ -139,7 +139,8 @@
 .tk-kdependency svg { width: 16px; height: 16px; flex: none; margin-top: 2px; }
 .rg-toggle.disabled { opacity: .4; cursor: not-allowed; }
 
-.tk-kbody { padding: 0 24px 24px; display: flex; flex-direction: column; gap: 16px; border-top: 1px solid #f2f4f7; padding-top: 20px; }
+/* 본문 — Figma(진료항목_추가정보, node 1:926): 헤더 밑 라인 없음, 항목 간 gap 24, 하단 24 (헤더 padding-24로 간격 확보) */
+.tk-kbody { padding: 0 24px 24px; display: flex; flex-direction: column; gap: 24px; }
 /* 카카오 안내 배너 — Figma(GuideBanner, node 1:928): 회색 톤 배경·테두리, ic_caution, SemiBold 14/22 gray-70 */
 .tk-kauto {
   display: flex; gap: 8px; align-items: center; min-height: 54px;
@@ -160,7 +161,8 @@
 .tk-price-row .rg-drag svg { width: 6px; height: 10px; }
 
 /* 카카오 전용 정보 */
-.tk-kextra { display: flex; flex-direction: column; gap: 16px; padding: 4px 2px 0; }
+.tk-kextra { display: flex; flex-direction: column; gap: 24px; }
+.tk-kdivider { width: 100%; height: 1px; background: #f2f4f7; } /* Figma node 1:947 — 예약 시 받을 정보 ↔ 이용 방법 사이 구분선 */
 .tk-kfield { display: flex; flex-direction: column; gap: 8px; }
 .tk-kfield .rg-counter { margin-top: 0; }
 .tk-klabel { font: 600 14px/22px var(--font-sans); color: #434956; }

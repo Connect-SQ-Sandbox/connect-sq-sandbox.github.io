@@ -30,6 +30,8 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
  *   [폐기]      구버전 kakao-link(별도 연동관리 페이지형) → ti-kakao로 대체
  *
  * 변경 이력:
+ *   v20 2026-07-14 — 입력 제한 값 정리(PO 협의용): 흩어져 있던 maxLength·개수 상한을 상단 상수 블록으로 일원화하고 [API]/[임의]/[서비스] 태그로 분류.
+ *                    가격명·노출명·한 줄 소개·키워드 상한도 상수화. 값 변경 없음(PO 협의 후 상수만 수정하면 일괄 반영).
  *   v19 2026-07-14 — 카카오 전용 정보 영역을 Figma(18329:1260077)에 맞춤: 토글 앞 상태 라벨(노출중/미노출), 필드 라벨 (선택) 표기,
  *                    이용 방법·유의사항·취소 유의사항을 여러 줄 textarea로 변경(카운터 유지). '예약 시 받을 정보' 명칭은 Figma 확인 결과 그대로 유지.
  *   v18 2026-07-14 — 저장 유효성 실패를 실제 서비스 컨벤션대로 필드별 인라인 처리로 변경: 위반 필드 빨간 테두리 + 하단 빨간 메시지(다중 동시 표시), 첫 오류로 스크롤, 편집 시 해당 필드 에러 해제. (토스트 차단 방식 대체)
@@ -117,18 +119,35 @@ const INITIAL: Item[] = [
     prices: [{ id: UID++, title: '1회', content: '', type: 'fixed', amount: '150000', original: '', sale: '' }], gdVisible: true, kakaoOn: false })
 ];
 
-// 질문 유형별 개수 상한. API는 주관식 infos[]만 "최대 10개" 명시 → 그대로 사용. 단수/복수는 문서 제한 없음 → UX 기준 권장값.
-const K_Q_TEXT_MAX = 10;      // 주관식(infos[]) — API 명시값
-const K_Q_CHOICE_MAX = 10;    // 객관식(단수 radioInfos + 복수 selectInfos 합산) — 권장. '복수 선택'은 유형이 아니라 토글
-const K_Q_OPT_MIN = 2;        // 선택형 선택지 최소 개수
-const K_Q_OPT_MAX = 10;       // 선택형 선택지 최대 개수 (권장)
-const K_Q_NAME_MAX = 120;     // 카카오 질문(부가정보 name) 최대 120자 — API 명시(주관식/단수/복수 공통, required)
-const K_Q_DESC_MAX = 100;     // 선택형 질문 설명(description) — API 제한 없음(선택 필드) → 권장값(가격 설명과 동일 100자)
-const K_Q_OPT_LEN_MAX = 50;   // 선택지 항목(value[]) 글자 수 — API 제한 없음 → 권장값(명칭 계열 50자, 상품명과 동일)
-const K_INFO_MAX = 2000;      // 카카오 이용 방법(information) 최대 2,000자
-const K_CANCEL_MAX = 100;     // 카카오 취소 유의사항(cancelNotice) 최대 100자
-const DETAIL_DESC_MAX = 2000; // 상세 소개(detailDescription) 최대 글자수 (요청 반영 — 실제 코드 MAX_LENGTH는 5,000)
-const DETAIL_IMG_MAX = 5;     // 상세 소개 사진(detailImages) 최대 개수 (실제 코드 동일)
+/* ============================ 입력 제한 값 (PO 최종 협의용) ============================
+ * 태그 기준:
+ *   [API]     카카오 상품 API v1.2.2 명시값 → 고정(변경 불가)
+ *   [임의]     API 미명시 → 프로토타입 권장값 → PO 협의로 확정 필요
+ *   [서비스]   굿닥 실서비스 값(추정) → 실코드 대조 후 확정 필요
+ * ※ PO 협의 후에는 이 블록의 값만 바꾸면 화면 전체(입력 maxLength·카운터·안내문구)에 일괄 반영됩니다.
+ * ------------------------------------------------------------------------------------ */
+
+// --- [API] 카카오 상품 API 명시값 (고정) ---
+const K_Q_NAME_MAX = 120;     // [API] 질문(부가정보 name) — required, 최대 120자
+const K_Q_TEXT_MAX = 10;      // [API] 주관식 부가정보(infos[]) 개수 — 최대 10개
+const K_INFO_MAX = 2000;      // [API] 이용 방법(information) — 최대 2,000자
+const K_CANCEL_MAX = 100;     // [API] 취소 유의사항(cancelNotice) — 최대 100자
+const PRICE_DESC_MAX = 100;   // [API] 가격 설명(Price description) — 최대 100자
+
+// --- [임의] API 미명시 → PO 협의 대상 ---
+const K_Q_CHOICE_MAX = 10;    // [임의] 객관식(단수 radioInfos + 복수 selectInfos 합산) 개수 — API 미명시
+const K_Q_OPT_MIN = 2;        // [임의] 선택형 선택지 최소 개수 — API 미명시(선택형 성립 최소치)
+const K_Q_OPT_MAX = 10;       // [임의] 선택형 선택지 최대 개수 — API 미명시
+const K_Q_DESC_MAX = 100;     // [임의] 선택형 질문 설명(description) 글자 — API 미명시(가격 설명과 동일 100자 차용)
+const K_Q_OPT_LEN_MAX = 50;   // [임의] 선택지 항목(value[]) 글자 — API 미명시(명칭 계열 50자 차용)
+
+// --- [서비스] 굿닥 실서비스 값 추정 → 실코드 대조 필요 ---
+const PRICE_NAME_MAX = 50;    // [서비스/불일치] 가격명 — 현재 50자. 단, 카카오 API '가격 이름'은 25자 → 협의 필요
+const ALIAS_MAX = 50;         // [서비스] 진료항목 노출명 — 현재 50자
+const INTRO_MAX = 50;         // [서비스] 한 줄 소개 — 현재 50자
+const KEYWORD_MAX = 20;       // [서비스] 진료항목 키워드 개수 — 현재 20개
+const DETAIL_DESC_MAX = 2000; // [서비스/불일치] 상세 소개 — 현재 2,000자. 실제 코드 MAX_LENGTH는 5,000 → 협의 필요
+const DETAIL_IMG_MAX = 5;     // [서비스] 상세 소개 사진 — 현재 5개 (실코드 동일)
 const priceDisplay = (it: Item) => {
   const p0 = it.prices[0];
   const base = p0.type === 'consult' ? '상담 후 결정' : p0.type === 'discount' ? won(p0.sale) : won(p0.amount);
@@ -309,9 +328,9 @@ function PriceRow({ p, onChange, onDelete, onDragStart, onDrop, titleErr, amount
     <div className="rg-price-row tk-price-row" draggable onDragStart={onDragStart} onDragOver={(e) => e.preventDefault()} onDrop={onDrop}>
       <div className="rg-drag" aria-label="순서 변경 핸들"><DragHandle /></div>
       <div className="rg-price-fields">
-        <input className={`rg-input${titleErr ? ' error' : ''}`} placeholder="가격명을 입력해 주세요. (15자 권장, 최대 50자)" maxLength={50} value={p.title} onChange={(e) => onChange({ title: e.target.value })} />
+        <input className={`rg-input${titleErr ? ' error' : ''}`} placeholder={`가격명을 입력해 주세요. (15자 권장, 최대 ${PRICE_NAME_MAX}자)`} maxLength={PRICE_NAME_MAX} value={p.title} onChange={(e) => onChange({ title: e.target.value })} />
         {titleErr && <p className="rg-error">{titleErr}</p>}
-        <input className="rg-input" placeholder="가격 설명을 입력해 주세요. (선택사항, 최대 100자)" maxLength={100} value={p.content} onChange={(e) => onChange({ content: e.target.value })} />
+        <input className="rg-input" placeholder={`가격 설명을 입력해 주세요. (선택사항, 최대 ${PRICE_DESC_MAX}자)`} maxLength={PRICE_DESC_MAX} value={p.content} onChange={(e) => onChange({ content: e.target.value })} />
         <div className="rg-price-entry">
           <div className="rg-select-wrap">
             <button type="button" className={`rg-select${open ? ' open' : ''}`} onClick={() => setOpen((v) => !v)}>{cur.label}<span className="rg-select-ic"><SelectArrow /></span></button>
@@ -1029,7 +1048,7 @@ function TiKakao() {
   const addDetailImg = () => d && d.detailImages < DETAIL_IMG_MAX && patch({ detailImages: d.detailImages + 1 });
   const delDetailImg = () => d && d.detailImages > 0 && patch({ detailImages: d.detailImages - 1 });
 
-  const addKw = () => { if (!d) return; const t = kw.trim(); if (t && d.keywords.length < 20 && !d.keywords.includes(t)) patch({ keywords: [...d.keywords, t] }); setKw(''); };
+  const addKw = () => { if (!d) return; const t = kw.trim(); if (t && d.keywords.length < KEYWORD_MAX && !d.keywords.includes(t)) patch({ keywords: [...d.keywords, t] }); setKw(''); };
   const setPrice = (id: number, u: Partial<Price>) => { if (!d) return; clearErr(`price-${id}-title`, `price-${id}-amount`); patch({ prices: d.prices.map((p) => (p.id === id ? { ...p, ...u } : p)) }); };
   const addPrice = () => d && patch({ prices: [...d.prices, { id: UID++, title: '', content: '', type: 'fixed', amount: '', original: '', sale: '' }] });
   const delPrice = (id: number) => d && patch({ prices: d.prices.length > 1 ? d.prices.filter((p) => p.id !== id) : d.prices });
@@ -1203,13 +1222,13 @@ function TiKakao() {
                       </div>
                       <div className="rg-field">
                         <FieldHead label="진료항목 노출명" optional helpers={['비워두면 진료항목명과 동일하게 노출됩니다.']} />
-                        <input className="rg-input" placeholder="진료항목 노출명을 입력해 주세요." maxLength={50} value={d.alias} onChange={(e) => patch({ alias: e.target.value })} />
-                        <div className="rg-counter"><span className="rg-counter-num">{d.alias.length}</span>/50자</div>
+                        <input className="rg-input" placeholder="진료항목 노출명을 입력해 주세요." maxLength={ALIAS_MAX} value={d.alias} onChange={(e) => patch({ alias: e.target.value })} />
+                        <div className="rg-counter"><span className="rg-counter-num">{d.alias.length}</span>/{ALIAS_MAX}자</div>
                       </div>
                       <div className="rg-field">
                         <FieldHead label="한 줄 소개" optional helpers={['진료항목을 한눈에 이해할 수 있는 짧은 소개 문구를 입력해 주세요.']} />
-                        <input className="rg-input" placeholder="한 줄 소개를 입력해 주세요." maxLength={50} value={d.intro} onChange={(e) => patch({ intro: e.target.value })} />
-                        <div className="rg-counter"><span className="rg-counter-num">{d.intro.length}</span>/50자</div>
+                        <input className="rg-input" placeholder="한 줄 소개를 입력해 주세요." maxLength={INTRO_MAX} value={d.intro} onChange={(e) => patch({ intro: e.target.value })} />
+                        <div className="rg-counter"><span className="rg-counter-num">{d.intro.length}</span>/{INTRO_MAX}자</div>
                       </div>
                       <div className="rg-divider" />
                       <div className="rg-field">
@@ -1232,7 +1251,7 @@ function TiKakao() {
                         <FieldHead label="진료항목 키워드" optional helpers={['포털에서 더 잘 검색되도록 관련 키워드를 입력해 주세요.']} />
                         <input className="rg-input" placeholder="키워드 입력 후 Enter 키를 눌러주세요." value={kw} onChange={(e) => setKw(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addKw(); } }} />
                         <div className="rg-tag-box">{d.keywords.length === 0 ? <span className="rg-tag-empty">등록된 키워드가 없습니다.</span> : d.keywords.map((t, i) => (<span className="rg-tag" key={i}>{t}<button className="rg-tag-del" onClick={() => patch({ keywords: d.keywords.filter((_, j) => j !== i) })}>×</button></span>))}</div>
-                        <div className="rg-counter"><span className="rg-counter-num">{d.keywords.length}</span>/20개</div>
+                        <div className="rg-counter"><span className="rg-counter-num">{d.keywords.length}</span>/{KEYWORD_MAX}개</div>
                       </div>
                     </section>
 

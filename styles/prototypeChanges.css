@@ -10,7 +10,8 @@
 .pc-trigger-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green-70); }
 .pc-trigger-count { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: rgba(255,255,255,.16); font: 700 11px/18px var(--font-sans); }
 
-.pc-scrim { position: fixed; inset: 0 0 0 250px; z-index: 110; border: 0; background: rgba(25,31,40,.24); cursor: default; }
+/* 딤 제거: 우측 패널을 비모달로 (열어둔 채 본문 확인·조작 가능) */
+.pc-scrim { display: none; }
 .pc-drawer {
   position: fixed; top: 0; right: 0; bottom: 0; z-index: 120; width: 392px;
   background: var(--white); box-shadow: -12px 0 32px rgba(22,24,29,.14);

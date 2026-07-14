@@ -815,6 +815,7 @@ function TiKakao() {
   const [qTypeOpen, setQTypeOpen] = useState<number | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [showPlanned, setShowPlanned] = useState(false);
+  const [devMode, setDevMode] = useState(false);
   const hospitalLinked = true;
 
   const showToast = (m: string) => { setToast(m); window.setTimeout(() => setToast(null), 2200); };
@@ -1032,7 +1033,7 @@ function TiKakao() {
                           {warns.length > 0 ? (
                             <div className="tk-warns">{warns.map((w, i) => (<div key={i} className={`tk-warn ${w.level}`}><span className="tk-warn-ic">{w.level === 'warn' ? <WarnIc /> : <InfoIc />}</span><div><span className="tk-warn-field">{w.field}</span><span className="tk-warn-msg">{w.msg}</span></div></div>))}</div>
                           ) : <div className="tk-ok">규격에 모두 맞아요. 그대로 노출돼요.</div>}
-                          <KakaoApiPreview d={d} />
+                          {devMode && <KakaoApiPreview d={d} />}
                           <button className="tk-kextra-toggle" onClick={() => patchExtra({ open: !d.kExtra.open })}><span>카카오 전용 정보 추가 입력 <span className="rg-optional">(선택)</span></span><span className={`tk-kextra-chev${d.kExtra.open ? ' open' : ''}`}><ChevronD /></span></button>
                           {d.kExtra.open && (
                             <div className="tk-kextra">
@@ -1122,6 +1123,8 @@ function TiKakao() {
           sources={POLICY_SOURCES}
           showPlanned={showPlanned}
           onShowPlannedChange={setShowPlanned}
+          devMode={devMode}
+          onDevModeChange={setDevMode}
           onLocate={locatePolicyChange}
         />
       </div>

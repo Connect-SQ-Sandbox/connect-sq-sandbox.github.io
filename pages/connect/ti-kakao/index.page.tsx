@@ -387,7 +387,16 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
   return (<div className="ap-drow"><span className="ap-drow-label">{label}</span><span className="ap-drow-val">{children}</span></div>);
 }
 
-function ApptScreen({ showToast }: { showToast: (m: string) => void }) {
+function DevNote({ title, items }: { title: string; items: React.ReactNode[] }) {
+  return (
+    <aside className="pc-dev-note" aria-label={`개발 검토: ${title}`}>
+      <div className="pc-dev-note-head"><span>DEV</span><strong>{title}</strong></div>
+      <ul>{items.map((item, i) => <li key={i}>{item}</li>)}</ul>
+    </aside>
+  );
+}
+
+function ApptScreen({ showToast, devMode }: { showToast: (m: string) => void; devMode: boolean }) {
   const [appts, setAppts] = useState<Appt[]>(INITIAL_APPTS);
   const [tab, setTab] = useState<ApptTab>('request');
   const [preset, setPreset] = useState('last30d');
@@ -444,6 +453,13 @@ function ApptScreen({ showToast }: { showToast: (m: string) => void }) {
       </div>
 
       <div className="ap-body" data-policy-id="gcp1-appointment-channel">
+        {devMode && (
+          <DevNote title="예약 신청 내역 · 채널 통합" items={[
+            <>목록 응답의 <code>channel</code> 값으로 굿닥·카카오 인입을 구분하고, 진료항목 다음 열에 채널 아이콘을 렌더링합니다.</>,
+            <>채널이 달라도 상태 전이·검색·상세 진입은 동일한 예약 도메인 로직을 사용하며, 카카오 예약도 굿닥 예약 ID와 매핑되어야 합니다.</>,
+            <>상세에서는 예약자와 실제 방문자를 별도 객체로 유지하고, 카카오 추가 질문 응답은 질문·답변 순서를 보존해 표시합니다.</>
+          ]} />
+        )}
         {/* 탭 */}
         <div className="ap-tabs">
           {APPT_TABS.map((t) => (
@@ -490,16 +506,16 @@ function ApptScreen({ showToast }: { showToast: (m: string) => void }) {
         {/* 테이블 */}
         <div className="ap-table">
           <div className="ap-tr ap-th">
-            <span>채널</span><span>상태</span><span>{DATETIME_HEADER[tab]}</span><span>진료항목</span><span>방문자</span><span>예약자</span><span>요청사항</span>
+            <span>상태</span><span>{DATETIME_HEADER[tab]}</span><span>진료항목</span><span>채널</span><span>방문자</span><span>예약자</span><span>요청사항</span>
           </div>
           {rows.length === 0 ? (
             <div className="ap-empty">{applied.trim() ? '조건에 맞는 예약이 없어요' : tab === 'request' ? '조회된 예약 신청이 없어요' : tab === 'upcoming' ? '조회된 내원 예정 일정이 없어요' : '조회된 지난 내역이 없어요'}</div>
           ) : rows.map((a) => (
             <div key={a.id} className="ap-tr ap-row" onClick={() => setDetailId(a.id)}>
-              <span><span className="ap-chan-ic only" title={`${CHANNEL_LABEL[a.channel]}에서 신청`}><ChannelIcon channel={a.channel} /></span></span>
               <span><span className={`ap-tag ${AS_TAG[a.status] || 'gray'}`}>{AS_LABEL[a.status] || a.status}</span></span>
               <span><TwoLine primary={a.visit} sub={a.when} /></span>
               <span><TwoLine primary={a.itemName} sub={a.priceText} /></span>
+              <span><span className="ap-chan-ic only" title={`${CHANNEL_LABEL[a.channel]}에서 신청`}><ChannelIcon channel={a.channel} /></span></span>
               <span><TwoLine primary={a.visitor.name} sub={a.visitor.phone} /></span>
               <span><TwoLine primary={a.reserver.name} sub={a.reserver.phone} /></span>
               <span className="ap-memo-cell">
@@ -636,7 +652,7 @@ function SettingBox({ title, subNode, right }: { title: string; subNode: React.R
     </div>
   );
 }
-function SettingsScreen({ itemCount, showToast }: { itemCount: number; showToast: (m: string) => void }) {
+function SettingsScreen({ itemCount, showToast, devMode }: { itemCount: number; showToast: (m: string) => void; devMode: boolean }) {
   const [apptUsed, setApptUsed] = useState(true);
   const [autoConfirmed, setAutoConfirmed] = useState(true);
   const [todayApptUsed, setTodayApptUsed] = useState(true);
@@ -665,6 +681,13 @@ function SettingsScreen({ itemCount, showToast }: { itemCount: number; showToast
       </div>
 
       <div className="set-body" data-policy-id="gcp1-operation-settings">
+        {devMode && (
+          <DevNote title="운영 설정 · 노출 전제 조건" items={[
+            <><code>apptUsed=false</code>이면 채널과 무관하게 신규 비급여 예약 슬롯 제공을 중단하고, 기존 예약 데이터는 유지합니다.</>,
+            <>카카오 노출 가능 여부는 병원 연동 상태, 굿닥 진료항목 노출, 항목별 카카오 노출 값을 모두 충족할 때만 true입니다.</>,
+            <>자동 확정·당일 예약·알림 설정 변경은 각각 독립 mutation으로 처리하고 실패 시 UI 값을 원복해야 합니다.</>
+          ]} />
+        )}
         {/* 비급여 예약 받기 */}
         <SettingBox
           title="비급여 예약 받기"
@@ -741,6 +764,7 @@ function TiKakao() {
   const [qTypeOpen, setQTypeOpen] = useState<number | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [showPlanned, setShowPlanned] = useState(false);
+  const [devMode, setDevMode] = useState(false);
   const hospitalLinked = true;
 
   const showToast = (m: string) => { setToast(m); window.setTimeout(() => setToast(null), 2200); };
@@ -829,10 +853,10 @@ function TiKakao() {
             )}
 
             {/* ========================= 예약 신청 내역 ========================= */}
-            {page === 'appt' && <ApptScreen showToast={showToast} />}
+            {page === 'appt' && <ApptScreen showToast={showToast} devMode={devMode} />}
 
             {/* ========================= 운영 설정 ========================= */}
-            {page === 'settings' && <SettingsScreen itemCount={items.length} showToast={showToast} />}
+            {page === 'settings' && <SettingsScreen itemCount={items.length} showToast={showToast} devMode={devMode} />}
 
             {/* ========================= 진료항목 목록 ========================= */}
             {page === 'items' && screen === 'list' && (
@@ -846,6 +870,13 @@ function TiKakao() {
                 </div>
 
                 <div className="tk-list-body" data-policy-id="gcp1-channel-overview">
+                  {devMode && (
+                    <DevNote title="진료항목 목록 · 채널 노출 상태" items={[
+                      <>행 단위 채널 표시는 <code>gdVisible</code>과 <code>kakaoOn</code>의 조합으로 계산하며, 카카오의 최종 노출 값은 <code>gdVisible &amp;&amp; kakaoOn</code>입니다.</>,
+                      <>굿닥 노출을 OFF로 변경하면 카카오 노출도 즉시 OFF 처리하고, 저장 API에도 두 값을 함께 반영합니다.</>,
+                      <>카카오 규격 검토가 필요한 항목은 원본 데이터는 유지한 채 별도 validation 결과로 표시합니다.</>
+                    ]} />
+                  )}
                   <div className="tk-grid">
                     <div className="tk-grid-chead"><span className="tk-grid-title">카테고리</span></div>
                     <div className="tk-grid-ihead"><span className="tk-grid-title">{selCat1}</span></div>
@@ -948,6 +979,14 @@ function TiKakao() {
                         <button className={`rg-toggle${d.kakaoOn ? '' : ' off'}${hospitalLinked && d.gdVisible ? '' : ' disabled'}`} aria-label="카카오톡 예약하기에서도 보이기" aria-disabled={!hospitalLinked || !d.gdVisible} onClick={() => hospitalLinked && d.gdVisible && patch({ kakaoOn: !d.kakaoOn })}><span className="rg-toggle-knob" /></button>
                       </div>
                       {!d.gdVisible && <div className="tk-kdependency"><WarnIc /> 굿닥에 노출 중인 진료항목만 카카오톡 예약하기에도 노출할 수 있어요. 먼저 하단의 굿닥 노출을 켜 주세요.</div>}
+                      {devMode && (
+                        <DevNote title="진료항목 상세 · 카카오 상품 매핑" items={[
+                          <>카카오 <code>Product</code>는 굿닥 진료항목 1개와 1:1 매핑하고, <code>Item</code>은 별도 생성하지 않습니다.</>,
+                          <>굿닥 가격 옵션 각각을 카카오 <code>Price</code>로 전송합니다. 병원 API에 가격 필드가 없어 금액은 <code>Price.description</code> 문자열에 포함합니다.</>,
+                          <>상담 후 결정은 금액을 생략하고, 할인가는 판매가만, 고정가는 고정 금액을 사용합니다. 가격 설명이 있으면 금액 뒤에 <code> - </code>를 붙여 이어 씁니다.</>,
+                          <>카카오 노출 ON 즉시 전용 입력 필드를 렌더링하며, 별도 "추가 입력" 토글 상태는 두지 않습니다.</>
+                        ]} />
+                      )}
                       {d.kakaoOn && (
                         <div className="tk-kbody">
                           <div className="tk-kauto"><span className="tk-kauto-ic"><InfoIc /></span><span className="tk-kauto-txt">위에 입력한 굿닥 진료항목 정보가 카카오톡 예약하기에도 함께 표시돼요.</span></div>
@@ -1036,6 +1075,8 @@ function TiKakao() {
           sources={POLICY_SOURCES}
           showPlanned={showPlanned}
           onShowPlannedChange={setShowPlanned}
+          devMode={devMode}
+          onDevModeChange={setDevMode}
           onLocate={locatePolicyChange}
         />
       </div>

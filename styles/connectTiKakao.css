@@ -347,7 +347,7 @@
 
 /* 테이블 */
 .ap-table { border: 1px solid var(--gray-30); border-radius: 8px; overflow: hidden; }
-.ap-tr { display: grid; grid-template-columns: 56px 84px 176px minmax(0,1.3fr) 128px 128px minmax(0,1.4fr); align-items: center; gap: 12px; padding: 0 20px; }
+.ap-tr { display: grid; grid-template-columns: 84px 176px minmax(0,1.3fr) 56px 128px 128px minmax(0,1.4fr); align-items: center; gap: 12px; padding: 0 20px; }
 .ap-th { min-height: 44px; background: var(--gray-10); border-bottom: 1px solid var(--gray-30); font: 600 13px/18px var(--font-sans); color: var(--gray-60); }
 .ap-row { min-height: 68px; border-bottom: 1px solid var(--gray-20); }
 .ap-row:last-child { border-bottom: 0; }

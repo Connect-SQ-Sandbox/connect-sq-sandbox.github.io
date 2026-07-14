@@ -37,6 +37,15 @@
 .pc-switch.on { background: #f79009; }
 .pc-switch.on > span { transform: translateX(16px); }
 .pc-planned-notice { margin-top: 8px; padding: 8px 10px; border-radius: 6px; background: rgba(247,144,9,.09); color: #9a5800; font: 500 11px/17px var(--font-sans); }
+.pc-dev-filter { margin-top: 10px; border-color: rgba(234, 179, 8, .48); background: #fffdf2; }
+.pc-dev-notice { margin-top: 8px; padding: 8px 10px; border: 1px solid rgba(234, 179, 8, .35); border-radius: 6px; background: #fff8cf; color: #745300; font: 600 11px/17px var(--font-sans); }
+.pc-dev-note { margin: 0 0 16px; padding: 13px 15px; border: 1px solid #e9bd32; border-left: 4px solid #e0a600; border-radius: 8px; background: #fff8cf; box-shadow: 0 2px 8px rgba(116,83,0,.06); color: #5f4700; }
+.pc-dev-note-head { display: flex; align-items: center; gap: 8px; }
+.pc-dev-note-head > span { padding: 2px 6px; border-radius: 4px; background: #e0a600; color: #fff; font: 800 10px/16px ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .04em; }
+.pc-dev-note-head strong { font: 700 13px/20px var(--font-sans); }
+.pc-dev-note ul { margin: 8px 0 0; padding-left: 18px; }
+.pc-dev-note li { margin-top: 4px; font: 500 12px/19px var(--font-sans); word-break: keep-all; }
+.pc-dev-note code { padding: 1px 4px; border-radius: 4px; background: rgba(116,83,0,.10); color: #604700; font: 600 11px/17px ui-monospace, SFMono-Regular, Menlo, monospace; }
 .pc-current-view { display: inline-flex; margin-top: 12px; padding: 5px 9px; border-radius: 6px; background: var(--alpha-blue-10); color: var(--blue-70); font: 600 12px/18px var(--font-sans); }
 .pc-scope { margin: 0 20px; padding: 3px; border-radius: 8px; background: var(--gray-20); display: grid; grid-template-columns: 1fr 1fr; flex: none; }
 .pc-scope button { height: 34px; border-radius: 6px; color: var(--gray-70); cursor: pointer; font: 600 13px/34px var(--font-sans); }
@@ -69,6 +78,20 @@
 .pc-change-foot button:hover { background: var(--alpha-blue-10); }
 .pc-change-foot button:disabled { color: var(--gray-40); cursor: not-allowed; }
 
+.pc-document-overlay { position: fixed; inset: 0; z-index: 220; padding: 40px; background: rgba(22,24,29,.54); display: flex; align-items: center; justify-content: center; }
+.pc-document-modal { width: min(920px, calc(100vw - 48px)); height: min(820px, calc(100vh - 48px)); border-radius: 14px; background: var(--white); box-shadow: 0 24px 80px rgba(22,24,29,.30); overflow: hidden; display: flex; flex-direction: column; }
+.pc-document-head { min-height: 104px; padding: 20px 24px; border-bottom: 1px solid var(--gray-20); display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; flex: none; }
+.pc-document-head h2 { margin: 8px 0 0; color: var(--gray-100); font: 700 21px/29px var(--font-sans); }
+.pc-document-head p { margin: 3px 0 0; color: var(--gray-60); font: 500 12px/18px var(--font-sans); }
+.pc-document-close { flex: none; width: 36px; height: 36px; border-radius: 8px; color: var(--gray-70); font: 400 26px/34px var(--font-sans); cursor: pointer; }
+.pc-document-close:hover { background: var(--gray-10); color: var(--gray-100); }
+.pc-document-body { padding: 24px 32px 40px; overflow: auto; }
+.pc-document-body .pc-summary-source { margin-top: 0; }
+.pc-document-body .pc-markdown { max-width: 760px; margin: 24px auto 0; }
+.pc-document-body .pc-markdown h1 { font-size: 25px; line-height: 34px; }
+.pc-document-body .pc-markdown h2 { margin-top: 28px; font-size: 18px; line-height: 27px; }
+.pc-document-body .pc-markdown p, .pc-document-body .pc-md-li { font-size: 14px; line-height: 23px; }
+
 .pc-summary-view { padding: 20px 20px 32px; overflow: auto; }
 .pc-summary-meta { display: flex; align-items: center; gap: 7px; }
 .pc-summary-release { margin-top: 10px; color: #9a5800; font: 600 12px/18px var(--font-sans); }
@@ -97,4 +120,7 @@
 @media (max-width: 1100px) {
   .pc-drawer { width: min(392px, calc(100% - 24px)); }
   .pc-scrim { left: 0; }
+  .pc-document-overlay { padding: 20px; }
+  .pc-document-modal { width: calc(100vw - 40px); height: calc(100vh - 40px); }
+  .pc-document-body { padding: 20px 22px 32px; }
 }

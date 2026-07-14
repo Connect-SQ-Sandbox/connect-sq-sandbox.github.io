@@ -32,6 +32,8 @@ type Props = {
   sources: Record<string, PolicySource>;
   showPlanned: boolean;
   onShowPlannedChange: (show: boolean) => void;
+  devMode: boolean;
+  onDevModeChange: (show: boolean) => void;
   onLocate: (change: PolicyChange) => void;
 };
 
@@ -81,10 +83,10 @@ const PUBLISH_LABEL: Record<PublicationStatus, string> = {
 
 const releaseLabel = (value: string | null) => value || '미정';
 
-export function ChangeDrawer({ currentView, changes, sources, showPlanned, onShowPlannedChange, onLocate }: Props) {
+export function ChangeDrawer({ currentView, changes, sources, showPlanned, onShowPlannedChange, devMode, onDevModeChange, onLocate }: Props) {
   const [open, setOpen] = useState(false);
   const [scope, setScope] = useState<'current' | 'all'>('current');
-  const [summaryPrdId, setSummaryPrdId] = useState<string | null>(null);
+  const [documentPrdId, setDocumentPrdId] = useState<string | null>(null);
 
   const available = useMemo(
     () => changes.filter((change) => showPlanned || change.publicationStatus !== 'planned'),
@@ -96,9 +98,9 @@ export function ChangeDrawer({ currentView, changes, sources, showPlanned, onSho
   );
   const currentCount = available.filter((change) => change.view === currentView).length;
   const plannedCount = new Set(changes.filter((change) => change.publicationStatus === 'planned').map((change) => change.prdId)).size;
-  const summary = summaryPrdId ? sources[summaryPrdId] : null;
+  const documentSource = documentPrdId ? sources[documentPrdId] : null;
 
-  const close = () => { setOpen(false); setSummaryPrdId(null); };
+  const close = () => { setOpen(false); setDocumentPrdId(null); };
   const locate = (change: PolicyChange) => {
     close();
     onLocate(change);
@@ -116,25 +118,11 @@ export function ChangeDrawer({ currentView, changes, sources, showPlanned, onSho
 
       <aside className={`pc-drawer${open ? ' open' : ''}`} aria-label="정책 변경 내역">
         <div className="pc-drawer-head">
-          {summary ? (
-            <button className="pc-back" type="button" onClick={() => setSummaryPrdId(null)}>← 변경 목록</button>
-          ) : <div className="pc-eyebrow">PROTOTYPE POLICY LOG</div>}
+          <div className="pc-eyebrow">PROTOTYPE POLICY LOG</div>
           <button className="pc-close" type="button" aria-label="닫기" onClick={close}>×</button>
         </div>
 
-        {summary ? (
-          <div className="pc-summary-view">
-            <div className="pc-summary-meta">
-              <span className="pc-prd-id">PRD {summary.prdId}</span>
-              <span className={`pc-source-status ${summary.sourceStatus}`}>{summary.sourceStatus}</span>
-            </div>
-            <div className="pc-summary-release">예정 배포 · {releaseLabel(summary.targetReleaseAt)}</div>
-            <div className="pc-summary-source">원본: {summary.sourcePath}</div>
-            <MarkdownSummary markdown={summary.summaryMarkdown} />
-          </div>
-        ) : (
-          <>
-            <div className="pc-drawer-title-wrap">
+        <div className="pc-drawer-title-wrap">
               <h2>정책 변경 내역</h2>
               <p>현재 화면에 반영된 정책과 원본 PRD를 확인할 수 있어요.</p>
               <div className="pc-planned-filter">
@@ -154,6 +142,23 @@ export function ChangeDrawer({ currentView, changes, sources, showPlanned, onSho
                 </button>
               </div>
               {showPlanned && <div className="pc-planned-notice">예정 화면은 검토 중이며 실제 배포 시 변경될 수 있어요.</div>}
+              <div className="pc-planned-filter pc-dev-filter">
+                <div>
+                  <strong>개발 검토용 보기</strong>
+                  <span>화면 영역별 구현 정책과 데이터 처리 기준</span>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-label="개발 검토용 보기"
+                  aria-checked={devMode}
+                  className={`pc-switch${devMode ? ' on' : ''}`}
+                  onClick={() => onDevModeChange(!devMode)}
+                >
+                  <span />
+                </button>
+              </div>
+              {devMode && <div className="pc-dev-notice">개발자 대상 참고 정보가 화면의 관련 영역에 노란색으로 표시됩니다.</div>}
               <div className="pc-current-view">현재 화면 · {VIEW_LABEL[currentView]}</div>
             </div>
 
@@ -181,15 +186,35 @@ export function ChangeDrawer({ currentView, changes, sources, showPlanned, onSho
                     </button>
                     <div className="pc-change-foot">
                       <span>프로토타입 {change.prototypeVersion} · 예정 배포 {releaseLabel(source?.targetReleaseAt ?? null)}</span>
-                      <button type="button" onClick={() => setSummaryPrdId(change.prdId)} disabled={!source}>PRD 요약 보기</button>
+                      <button type="button" onClick={() => setDocumentPrdId(change.prdId)} disabled={!source}>PRD 문서 이동</button>
                     </div>
                   </article>
                 );
               })}
-            </div>
-          </>
-        )}
+        </div>
       </aside>
+
+      {documentSource && (
+        <div className="pc-document-overlay" role="presentation" onClick={() => setDocumentPrdId(null)}>
+          <section className="pc-document-modal" role="dialog" aria-modal="true" aria-labelledby="pc-document-title" onClick={(e) => e.stopPropagation()}>
+            <header className="pc-document-head">
+              <div>
+                <div className="pc-summary-meta">
+                  <span className="pc-prd-id">PRD {documentSource.prdId}</span>
+                  <span className={`pc-source-status ${documentSource.sourceStatus}`}>{documentSource.sourceStatus}</span>
+                </div>
+                <h2 id="pc-document-title">{documentSource.title}</h2>
+                <p>Markdown 정책 문서 · {documentSource.version}</p>
+              </div>
+              <button className="pc-document-close" type="button" aria-label="정책 문서 닫기" onClick={() => setDocumentPrdId(null)}>×</button>
+            </header>
+            <div className="pc-document-body">
+              <div className="pc-summary-source">원본 정책 경로: {documentSource.sourcePath}</div>
+              <MarkdownSummary markdown={documentSource.summaryMarkdown} />
+            </div>
+          </section>
+        </div>
+      )}
     </>
   );
 }

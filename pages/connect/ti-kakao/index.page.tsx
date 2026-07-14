@@ -6,7 +6,7 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-kakao — 진료항목 카카오 노출 + 예약 신청 내역 + 운영 설정
  * 상태     : 현행(active)   버전: v14  최종수정: 2026-07-14
- * PRD      : GCP-1 · 2.2-review · documents/prd/2026-07-13-진료항목-카카오톡-예약하기-연동-구축.md
+ * PRD      : GCP-1 · 2.3-review · documents/prd/2026-07-13-진료항목-카카오톡-예약하기-연동-구축.md
  * 배포URL  : https://connect-sq-sandbox.github.io/out/ti-kakao.html
  * 관련 CSS : connectRegister.css + connectTiKakao.css
  * 기술제약 : react-only · plain CSS · mock · 네트워크 0
@@ -457,7 +457,7 @@ function ApptScreen({ showToast, devMode }: { showToast: (m: string) => void; de
           <DevNote title="예약 신청 내역 · 채널 통합" items={[
             <>목록 응답의 <code>channel</code> 값으로 굿닥·카카오 인입을 구분하고, 진료항목 다음 열에 채널 아이콘을 렌더링합니다.</>,
             <>채널이 달라도 상태 전이·검색·상세 진입은 동일한 예약 도메인 로직을 사용하며, 카카오 예약도 굿닥 예약 ID와 매핑되어야 합니다.</>,
-            <>상세에서는 예약자와 실제 방문자를 별도 객체로 유지하고, 카카오 추가 질문 응답은 질문·답변 순서를 보존해 표시합니다.</>
+            <>상세에서는 예약자와 실제 방문자를 별도 객체로 유지합니다. 카카오 추가 질문 응답은 예약 당시 문구·답변·순서를 snapshot으로 보존하고, 값이 있을 때만 요청사항 하위에 읽기 전용으로 표시합니다.</>
           ]} />
         )}
         {/* 탭 */}
@@ -556,22 +556,8 @@ function ApptScreen({ showToast, devMode }: { showToast: (m: string) => void; de
                 <DetailRow label="진료항목">{detail.itemName}{detail.itemAlias && detail.itemAlias !== detail.itemName ? ` (${detail.itemAlias})` : ''}</DetailRow>
                 <DetailRow label="가격 옵션">{detail.option}</DetailRow>
                 <DetailRow label="예상 결제 금액">{detail.priceText}</DetailRow>
-                <DetailRow label="요청사항">{detail.memo || '-'}</DetailRow>
                 <DetailRow label="신청일시">{detail.when}</DetailRow>
               </div>
-              {detail.answers && detail.answers.length > 0 && (
-                <div className="ap-dsec">
-                  <div className="ap-dsec-title">추가 질문·답변</div>
-                  <div className="ap-qa-list">
-                    {detail.answers.map((qa, i) => (
-                      <div key={i} className="ap-qa">
-                        <div className="ap-qa-q"><span className="ap-qa-mark">Q</span>{qa.q}</div>
-                        <div className="ap-qa-a"><span className="ap-qa-mark a">A</span>{qa.a}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
               <div className="ap-dsec">
                 <div className="ap-dsec-title">방문자 정보</div>
                 <DetailRow label="이름">{detail.visitor.name}</DetailRow>
@@ -584,6 +570,23 @@ function ApptScreen({ showToast, devMode }: { showToast: (m: string) => void; de
                 {detail.reserver.name === detail.visitor.name && detail.reserver.phone === detail.visitor.phone
                   ? <div className="ap-same-note">방문자와 동일해요.</div>
                   : (<><DetailRow label="이름">{detail.reserver.name}</DetailRow><DetailRow label="연락처">{detail.reserver.phone}</DetailRow></>)}
+              </div>
+              <div className="ap-dsec" data-policy-id="gcp1-appointment-additional-answers">
+                <div className="ap-dsec-title">요청사항</div>
+                <div className={`ap-request${detail.memo ? '' : ' empty'}`}>{detail.memo || '등록된 요청사항이 없어요.'}</div>
+                {detail.channel === 'kakao' && detail.answers && detail.answers.length > 0 && (
+                  <div className="ap-additional-answers">
+                    <div className="ap-additional-title"><KakaoMark /> 카카오톡 예약하기 추가 질문·답변</div>
+                    <div className="ap-qa-list">
+                      {detail.answers.map((qa, i) => (
+                        <div key={i} className="ap-qa">
+                          <div className="ap-qa-q"><span className="ap-qa-mark">Q</span>{qa.q}</div>
+                          <div className="ap-qa-a"><span className="ap-qa-mark a">A</span>{qa.a}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="ap-dsec">
                 <div className="ap-dsec-title">병원 메모<span className="ap-dsec-badge">병원만 볼 수 있어요</span></div>

@@ -1,7 +1,7 @@
 ---
 summary_id: GCP-1-PUBLIC-1
 source_prd_id: GCP-1
-source_version: 2.2-review
+source_version: 2.3-review
 source_status: review
 target_release_at: null
 visibility: public-summary
@@ -24,13 +24,14 @@ publication_status: baseline
 - V1에서는 굿닥에 노출 중인 진료항목만 카카오톡 예약하기에도 노출할 수 있습니다.
 - 굿닥 노출을 끄면 카카오 노출도 함께 끄고, 카카오만 끄는 것은 허용합니다.
 - 굿닥과 카카오 예약은 예약 신청 내역에서 채널을 구분해 함께 처리합니다.
+- 카카오에서 수집된 추가 질문·답변이 있는 경우, 모든 예약 상태의 개별 상세 `요청사항` 하위에 예약 당시 문구와 순서대로 표시합니다. 데이터가 없으면 추가 영역은 표시하지 않습니다.
 - 비급여 예약 운영 여부와 주요 조건은 Connect의 운영 설정에서 관리합니다.
 
 ## 원본 추적
 
 - **PRD ID:** `GCP-1`
 - **원본 제목:** 진료항목 카카오톡 예약하기 연동 구축
-- **원본 버전:** `2.2-review`
+- **원본 버전:** `2.3-review`
 - **원본 상태:** `review`
 - **예정 배포:** `미정`
 - **원본 위치:** `3-미션·기획/1-PRD/2026-07-13-진료항목-카카오톡-예약하기-연동-구축.md`

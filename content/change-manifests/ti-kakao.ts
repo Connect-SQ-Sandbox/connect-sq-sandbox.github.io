@@ -5,7 +5,7 @@ export const POLICY_SOURCES: Record<string, PolicySource> = {
   'GCP-1': {
     prdId: 'GCP-1',
     title: '진료항목 카카오톡 예약하기 연동 구축',
-    version: '2.2-review',
+    version: '2.3-review',
     sourceStatus: 'review',
     targetReleaseAt: null,
     sourcePath: '3-미션·기획/1-PRD/2026-07-13-진료항목-카카오톡-예약하기-연동-구축.md',
@@ -60,6 +60,18 @@ export const TI_KAKAO_CHANGES: PolicyChange[] = [
     title: '비급여 예약 운영 설정을 Connect에서 관리',
     before: '비급여 예약 운영 여부와 세부 조건을 한 흐름에서 확인하기 어려웠습니다.',
     after: '예약 운영 여부, 자동 확정, 당일 예약과 알림 설정을 Connect에서 함께 확인합니다.',
+    publicationStatus: 'baseline'
+  },
+  {
+    id: 'GCP-1-CHANGE-005',
+    prdId: 'GCP-1',
+    date: '2026-07-14',
+    prototypeVersion: 'v4',
+    view: 'appt',
+    targetId: 'gcp1-appointment-channel',
+    title: '카카오 추가 질문·답변을 요청사항 하위에 표시',
+    before: '요청사항과 카카오 추가 질문·답변이 서로 다른 영역에 표시됐습니다.',
+    after: '카카오에서 수집한 질문·답변이 있을 때만 개별 예약 상세의 요청사항 하위에 표시합니다.',
     publicationStatus: 'baseline'
   }
 ];

@@ -316,6 +316,11 @@
 
 /* 추가 질문·답변 (실제 상세의 추가 질문/답변 내용) */
 .ap-qa-list { display: flex; flex-direction: column; gap: 10px; margin-top: 2px; }
+.ap-request { min-height: 40px; padding: 10px 12px; border-radius: 8px; background: var(--gray-10); color: var(--gray-90); font: 500 14px/21px var(--font-sans); white-space: pre-wrap; word-break: break-word; }
+.ap-request.empty { color: var(--gray-50); }
+.ap-additional-answers { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--gray-20); }
+.ap-additional-title { display: flex; align-items: center; gap: 6px; margin-bottom: 9px; color: var(--gray-80); font: 600 13px/20px var(--font-sans); }
+.ap-additional-title svg { width: 18px; height: 18px; flex: none; }
 .ap-qa { background: var(--gray-10); border-radius: 8px; padding: 12px 14px; }
 .ap-qa-q { display: flex; gap: 6px; font: 600 14px/21px var(--font-sans); color: var(--gray-90); }
 .ap-qa-a { display: flex; gap: 6px; margin-top: 6px; font: 500 14px/21px var(--font-sans); color: var(--gray-80); }

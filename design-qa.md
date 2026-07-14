@@ -7,6 +7,7 @@
 - implementation screenshots:
   - `qa/kakao-booking/05-final-place.png`
   - `qa/kakao-booking/06-final-products.png`
+  - `qa/kakao-booking/07-post-rebase-place.png` (원격 main 통합 후 회귀 캡처)
 - viewport: 390 × 844 CSS px
 - states: 병원 장소 첫 화면, 상품 목록 스크롤 상태, 일정 선택, 카카오 동의, 굿닥 웹뷰, 완료
 - full-view comparison evidence: `qa/kakao-booking/05-final-place-comparison.png`
@@ -54,6 +55,7 @@
 
 - mobile prototype browser logs: none
 - hospital admin browser logs: none
+- 원격 main의 정책 변경 패널·예정 필터 통합 후 예약 E2E와 굿닥→카카오 노출 캐스케이드를 다시 통과했다.
 - self-contained build external references: 0
 
 ## Follow-up polish

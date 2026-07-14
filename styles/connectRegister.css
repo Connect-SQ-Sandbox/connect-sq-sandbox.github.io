@@ -58,6 +58,10 @@
 }
 .rg-input::placeholder { color: #a8aebd; font-weight: 500; }
 .rg-input:focus { outline: none; border-color: var(--blue-60, #0073fa); }
+/* 유효성 실패 필드 — 빨간 테두리 + 하단 빨간 메시지 (실제 서비스 컨벤션) */
+.rg-input.error, .rg-num.error { border-color: var(--red-60, #f5535f); }
+.rg-input.error:focus, .rg-num.error:focus { border-color: var(--red-60, #f5535f); }
+.rg-error { margin: 6px 0 0; font: 500 13px/18px var(--font-sans); color: var(--red-60, #f5535f); }
 
 .rg-search { position: relative; }
 .rg-search .rg-input { padding-right: 44px; }

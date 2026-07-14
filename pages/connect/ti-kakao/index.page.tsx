@@ -30,6 +30,7 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
  *   [폐기]      구버전 kakao-link(별도 연동관리 페이지형) → ti-kakao로 대체
  *
  * 변경 이력:
+ *   v18 2026-07-14 — 저장 유효성 실패를 실제 서비스 컨벤션대로 필드별 인라인 처리로 변경: 위반 필드 빨간 테두리 + 하단 빨간 메시지(다중 동시 표시), 첫 오류로 스크롤, 편집 시 해당 필드 에러 해제. (토스트 차단 방식 대체)
  *   v17 2026-07-14 — 저장 유효성 검증 추가: 진료항목명·가격명·유형별 금액 필수, 카카오 노출 시 질문 제목 필수·선택형 선택지(2개↑·빈 항목 금지). 위반 시 토스트 안내 후 저장 차단.
  *   v16 2026-07-14 — 질문 필드 글자 수 제한 정합: 질문 name 120자(API 명시·required) 유지, 설명 description 100자·선택지 항목 50자
  *                    (API 미명시 → 내부 관례 기반 권장값) 신규 적용. 목록 행 상태 라벨(노출중/미노출)·채널 사각 뱃지 Figma 반영.
@@ -287,24 +288,27 @@ function FieldHead({ label, optional, helpers }: { label: string; optional?: boo
     </div>
   );
 }
-function PriceRow({ p, onChange, onDelete }: { p: Price; onChange: (u: Partial<Price>) => void; onDelete: () => void }) {
+function PriceRow({ p, onChange, onDelete, titleErr, amountErr }: { p: Price; onChange: (u: Partial<Price>) => void; onDelete: () => void; titleErr?: string; amountErr?: string }) {
   const [open, setOpen] = useState(false);
   const cur = PRICE_TYPES.find((t) => t.value === p.type)!;
+  const numCls = `rg-num${amountErr ? ' error' : ''}`;
   return (
     <div className="rg-price-row tk-price-row">
       <div className="rg-drag" aria-label="순서 변경 핸들"><DragHandle /></div>
       <div className="rg-price-fields">
-        <input className="rg-input" placeholder="가격명을 입력해 주세요. (15자 권장, 최대 50자)" maxLength={50} value={p.title} onChange={(e) => onChange({ title: e.target.value })} />
+        <input className={`rg-input${titleErr ? ' error' : ''}`} placeholder="가격명을 입력해 주세요. (15자 권장, 최대 50자)" maxLength={50} value={p.title} onChange={(e) => onChange({ title: e.target.value })} />
+        {titleErr && <p className="rg-error">{titleErr}</p>}
         <input className="rg-input" placeholder="가격 설명을 입력해 주세요. (선택사항, 최대 100자)" maxLength={100} value={p.content} onChange={(e) => onChange({ content: e.target.value })} />
         <div className="rg-price-entry">
           <div className="rg-select-wrap">
             <button type="button" className={`rg-select${open ? ' open' : ''}`} onClick={() => setOpen((v) => !v)}>{cur.label}<span className="rg-select-ic"><SelectArrow /></span></button>
             {open && <div className="rg-select-menu" onMouseLeave={() => setOpen(false)}>{PRICE_TYPES.map((t) => (<button key={t.value} type="button" className={`rg-select-opt${t.value === p.type ? ' active' : ''}`} onClick={() => { onChange({ type: t.value }); setOpen(false); }}>{t.label}</button>))}</div>}
           </div>
-          {p.type === 'fixed' && (<><input className="rg-num" placeholder="0" value={p.amount} onChange={(e) => onChange({ amount: e.target.value.replace(/[^0-9]/g, '') })} /><span className="rg-unit">원</span></>)}
-          {p.type === 'discount' && (<><input className="rg-num" placeholder="정상가" value={p.original} onChange={(e) => onChange({ original: e.target.value.replace(/[^0-9]/g, '') })} /><span className="rg-price-arrow">→</span><input className="rg-num" placeholder="판매가" value={p.sale} onChange={(e) => onChange({ sale: e.target.value.replace(/[^0-9]/g, '') })} /><span className="rg-unit">원</span></>)}
+          {p.type === 'fixed' && (<><input className={numCls} placeholder="0" value={p.amount} onChange={(e) => onChange({ amount: e.target.value.replace(/[^0-9]/g, '') })} /><span className="rg-unit">원</span></>)}
+          {p.type === 'discount' && (<><input className={numCls} placeholder="정상가" value={p.original} onChange={(e) => onChange({ original: e.target.value.replace(/[^0-9]/g, '') })} /><span className="rg-price-arrow">→</span><input className={numCls} placeholder="판매가" value={p.sale} onChange={(e) => onChange({ sale: e.target.value.replace(/[^0-9]/g, '') })} /><span className="rg-unit">원</span></>)}
           {p.type === 'consult' && (<><input className="rg-num" value="0" disabled readOnly /><span className="rg-unit">원</span></>)}
         </div>
+        {amountErr && <p className="rg-error">{amountErr}</p>}
       </div>
       <button className="rg-price-del" onClick={onDelete} aria-label="삭제"><CloseIcon /></button>
     </div>
@@ -780,6 +784,7 @@ function TiKakao() {
   const [dragQ, setDragQ] = useState<number | null>(null);
   const [qTypeOpen, setQTypeOpen] = useState<number | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({}); // 저장 유효성 실패 필드별 메시지(키: name / price-<id>-title / price-<id>-amount / q-<id>-name / q-<id>-options)
   const [showPlanned, setShowPlanned] = useState(false);
   const [devMode, setDevMode] = useState(false);
   const hospitalLinked = true;
@@ -787,6 +792,7 @@ function TiKakao() {
   const showToast = (m: string) => { setToast(m); window.setTimeout(() => setToast(null), 2200); };
   const patch = (u: Partial<Item>) => setD((prev) => (prev ? { ...prev, ...u } : prev));
   const patchExtra = (u: Partial<Item['kExtra']>) => setD((prev) => (prev ? { ...prev, kExtra: { ...prev.kExtra, ...u } } : prev));
+  const clearErr = (...keys: string[]) => setErrors((e) => { if (!keys.some((k) => k in e)) return e; const n = { ...e }; keys.forEach((k) => delete n[k]); return n; });
 
   const cat1List = useMemo(() => CAT_ORDER.map((name) => ({ name, count: items.filter((i) => i.cat1 === name).length, custom: name === CUSTOM_CAT })).filter((c) => c.count > 0), [items]);
   const groups = useMemo(() => {
@@ -799,43 +805,46 @@ function TiKakao() {
   const customItems = useMemo(() => items.filter((i) => i.cat1 === selCat1), [items, selCat1]);
 
   const nav = (p: Page) => { setPage(p); if (p === 'items') setScreen('list'); };
-  const open = (it: Item) => { setSelId(it.id); setD({ ...it, prices: it.prices.map((p) => ({ ...p })), keywords: [...it.keywords], kExtra: { ...it.kExtra, questions: it.kExtra.questions.map((q) => ({ ...q, options: [...(q.options || [])] })) } }); setScreen('form'); };
-  const create = () => { setSelId(null); setD(mk({ id: UID++, name: '', cat1: selCat1 === CUSTOM_CAT ? CUSTOM_CAT : selCat1, cat2: groups[0]?.name || '' })); setScreen('form'); };
-  // 저장 유효성 검증 — 카카오 상품 API required 필드 기준. 위반 시 첫 오류 메시지 반환(없으면 null).
-  const validate = (v: Item): string | null => {
-    if (!v.name.trim()) return '진료항목명을 입력해 주세요.';
-    if (v.prices.length === 0) return '가격을 1개 이상 등록해 주세요.';
-    for (let i = 0; i < v.prices.length; i++) {
-      const p = v.prices[i]; const nth = v.prices.length > 1 ? `${i + 1}번째 ` : '';
-      if (!p.title.trim()) return `${nth}가격명을 입력해 주세요.`;
-      if (p.type === 'fixed' && !p.amount) return `${nth}가격 금액을 입력해 주세요.`;
-      if (p.type === 'discount' && (!p.original || !p.sale)) return `${nth}할인 가격(정상가·판매가)을 입력해 주세요.`;
-    }
+  const open = (it: Item) => { setErrors({}); setSelId(it.id); setD({ ...it, prices: it.prices.map((p) => ({ ...p })), keywords: [...it.keywords], kExtra: { ...it.kExtra, questions: it.kExtra.questions.map((q) => ({ ...q, options: [...(q.options || [])] })) } }); setScreen('form'); };
+  const create = () => { setErrors({}); setSelId(null); setD(mk({ id: UID++, name: '', cat1: selCat1 === CUSTOM_CAT ? CUSTOM_CAT : selCat1, cat2: groups[0]?.name || '' })); setScreen('form'); };
+  // 저장 유효성 검증 — 카카오 상품 API required 필드 기준. 위반 필드별 메시지 맵을 반환(빈 객체면 통과).
+  const collectErrors = (v: Item): Record<string, string> => {
+    const e: Record<string, string> = {};
+    if (!v.name.trim()) e['name'] = '진료항목명을 입력해 주세요.';
+    v.prices.forEach((p) => {
+      if (!p.title.trim()) e[`price-${p.id}-title`] = '가격명을 입력해 주세요.';
+      if (p.type === 'fixed' && !p.amount) e[`price-${p.id}-amount`] = '가격을 입력해 주세요.';
+      if (p.type === 'discount' && (!p.original || !p.sale)) e[`price-${p.id}-amount`] = '정상가와 판매가를 입력해 주세요.';
+    });
     // 카카오 추가 질문은 카카오 상품으로 전송될 때(kakaoOn)만 노출·검증 — 숨은 필드로 저장이 막히지 않도록.
     if (v.kakaoOn) {
-      const qs = v.kExtra.questions;
-      for (let i = 0; i < qs.length; i++) {
-        const q = qs[i];
-        if (!q.name.trim()) return `${i + 1}번째 질문의 제목을 입력해 주세요.`;
+      v.kExtra.questions.forEach((q) => {
+        if (!q.name.trim()) e[`q-${q.id}-name`] = '질문 제목을 입력해 주세요.';
         if (q.type !== 'text') {
-          if (q.options.length < K_Q_OPT_MIN) return `${i + 1}번째 질문의 선택지를 ${K_Q_OPT_MIN}개 이상 입력해 주세요.`;
-          if (q.options.some((o) => !o.trim())) return `${i + 1}번째 질문의 선택지 항목을 모두 입력해 주세요.`;
+          if (q.options.length < K_Q_OPT_MIN) e[`q-${q.id}-options`] = `선택지를 ${K_Q_OPT_MIN}개 이상 입력해 주세요.`;
+          else if (q.options.some((o) => !o.trim())) e[`q-${q.id}-options`] = '선택지 항목을 모두 입력해 주세요.';
         }
-      }
+      });
     }
-    return null;
+    return e;
   };
   const save = () => {
     if (!d) return;
-    const err = validate(d);
-    if (err) { showToast(err); return; }
+    const e = collectErrors(d);
+    if (Object.keys(e).length) {
+      setErrors(e);
+      // 첫 오류 필드로 스크롤 (렌더 후)
+      requestAnimationFrame(() => document.querySelector('.rg-input.error, .rg-num.error')?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+      return;
+    }
+    setErrors({});
     setItems((prev) => (selId === null ? [...prev, d] : prev.map((it) => (it.id === d.id ? d : it)))); setScreen('list'); showToast(selId === null ? '진료항목을 등록했어요.' : '진료항목을 저장했어요.');
   };
   const addDetailImg = () => d && d.detailImages < DETAIL_IMG_MAX && patch({ detailImages: d.detailImages + 1 });
   const delDetailImg = () => d && d.detailImages > 0 && patch({ detailImages: d.detailImages - 1 });
 
   const addKw = () => { if (!d) return; const t = kw.trim(); if (t && d.keywords.length < 20 && !d.keywords.includes(t)) patch({ keywords: [...d.keywords, t] }); setKw(''); };
-  const setPrice = (id: number, u: Partial<Price>) => d && patch({ prices: d.prices.map((p) => (p.id === id ? { ...p, ...u } : p)) });
+  const setPrice = (id: number, u: Partial<Price>) => { if (!d) return; clearErr(`price-${id}-title`, `price-${id}-amount`); patch({ prices: d.prices.map((p) => (p.id === id ? { ...p, ...u } : p)) }); };
   const addPrice = () => d && patch({ prices: [...d.prices, { id: UID++, title: '', content: '', type: 'fixed', amount: '', original: '', sale: '' }] });
   const delPrice = (id: number) => d && patch({ prices: d.prices.length > 1 ? d.prices.filter((p) => p.id !== id) : d.prices });
   const newQ = (type: QType): Question => ({ id: UID++, type, name: '', optional: true, description: '', options: type === 'text' ? [] : ['', ''] });
@@ -852,7 +861,7 @@ function TiKakao() {
   // '복수 선택' 토글 — 객관식 내에서 단수(radio)↔복수(select) 전환
   const setQMultiple = (id: number, multiple: boolean) => { const q = d?.kExtra.questions.find((x) => x.id === id); if (q && q.type !== 'text') setQ(id, { type: multiple ? 'select' : 'radio' }); };
   const moveQ = (from: number, to: number) => { if (!d || from === to) return; const arr = [...d.kExtra.questions]; const [m] = arr.splice(from, 1); arr.splice(to, 0, m); patchExtra({ questions: arr }); };
-  const setQ = (id: number, u: Partial<Question>) => d && patchExtra({ questions: d.kExtra.questions.map((q) => (q.id === id ? { ...q, ...u } : q)) });
+  const setQ = (id: number, u: Partial<Question>) => { if (!d) return; clearErr(`q-${id}-name`, `q-${id}-options`); patchExtra({ questions: d.kExtra.questions.map((q) => (q.id === id ? { ...q, ...u } : q)) }); };
   const delQ = (id: number) => d && patchExtra({ questions: d.kExtra.questions.filter((q) => q.id !== id) });
   const addOpt = (id: number) => { const q = d?.kExtra.questions.find((x) => x.id === id); if (q && q.options.length < K_Q_OPT_MAX) setQ(id, { options: [...q.options, ''] }); };
   const setOpt = (id: number, idx: number, v: string) => { const q = d?.kExtra.questions.find((x) => x.id === id); if (q) setQ(id, { options: q.options.map((o, i) => (i === idx ? v : o)) }); };
@@ -968,11 +977,12 @@ function TiKakao() {
                       <div className="rg-group-title">필수 정보</div>
                       <div className="rg-field">
                         <FieldHead label="진료항목" helpers={['등록할 비급여 진료항목명을 검색하거나 직접 입력해 주세요.']} />
-                        <div className="rg-search"><input className="rg-input" placeholder="진료항목을 검색해 주세요." value={d.name} onChange={(e) => patch({ name: e.target.value })} /><span className="rg-search-ic"><SearchIcon /></span></div>
+                        <div className="rg-search"><input className={`rg-input${errors.name ? ' error' : ''}`} placeholder="진료항목을 검색해 주세요." value={d.name} onChange={(e) => { patch({ name: e.target.value }); clearErr('name'); }} /><span className="rg-search-ic"><SearchIcon /></span></div>
+                        {errors.name && <p className="rg-error">{errors.name}</p>}
                       </div>
                       <div className="rg-field price">
                         <FieldHead label="가격 정보" helpers={['환자에게 보여줄 가격 정보를 설정해 주세요. (예: 횟수별, 시술명별 등)']} />
-                        <div className="rg-price-list">{d.prices.map((p) => (<PriceRow key={p.id} p={p} onChange={(u) => setPrice(p.id, u)} onDelete={() => delPrice(p.id)} />))}</div>
+                        <div className="rg-price-list">{d.prices.map((p) => (<PriceRow key={p.id} p={p} onChange={(u) => setPrice(p.id, u)} onDelete={() => delPrice(p.id)} titleErr={errors[`price-${p.id}-title`]} amountErr={errors[`price-${p.id}-amount`]} />))}</div>
                       </div>
                       <div className="rg-add-wrap"><button className="rg-add-btn" onClick={addPrice}><PlusIcon /> 가격 옵션 추가</button></div>
                     </section>
@@ -1056,8 +1066,9 @@ function TiKakao() {
                                     </div>
                                     <div className="tk-q-qrow">
                                       {!q.optional && <span className="tk-q-req">*</span>}
-                                      <input className="rg-input" placeholder="질문 입력" maxLength={K_Q_NAME_MAX} value={q.name} onChange={(e) => setQ(q.id, { name: e.target.value })} />
+                                      <input className={'rg-input' + (errors['q-' + q.id + '-name'] ? ' error' : '')} placeholder="질문 입력" maxLength={K_Q_NAME_MAX} value={q.name} onChange={(e) => setQ(q.id, { name: e.target.value })} />
                                     </div>
+                                    {errors['q-' + q.id + '-name'] && <p className="rg-error">{errors['q-' + q.id + '-name']}</p>}
                                     {q.type !== 'text' && (
                                       <div className="tk-q-choice">
                                         <input className="rg-input" placeholder="설명 입력 (선택)" maxLength={K_Q_DESC_MAX} value={q.description} onChange={(e) => setQ(q.id, { description: e.target.value })} />
@@ -1065,7 +1076,7 @@ function TiKakao() {
                                           {q.options.map((opt, i) => (
                                             <div key={i} className="tk-q-optrow">
                                               <span className={`tk-q-optmark ${q.type}`} />
-                                              <input className="rg-input" placeholder={`항목 ${i + 1}`} maxLength={K_Q_OPT_LEN_MAX} value={opt} onChange={(e) => setOpt(q.id, i, e.target.value)} />
+                                              <input className={'rg-input' + (errors['q-' + q.id + '-options'] && !opt.trim() ? ' error' : '')} placeholder={`항목 ${i + 1}`} maxLength={K_Q_OPT_LEN_MAX} value={opt} onChange={(e) => setOpt(q.id, i, e.target.value)} />
                                               <button className="rg-price-del" onClick={() => delOpt(q.id, i)} disabled={q.options.length <= K_Q_OPT_MIN} aria-label="항목 삭제"><CloseIcon /></button>
                                             </div>
                                           ))}
@@ -1073,6 +1084,7 @@ function TiKakao() {
                                             ? <button className="tk-add-xs" onClick={() => addOpt(q.id)}><PlusIcon /> 항목 추가</button>
                                             : <div className="rg-help">항목은 최대 {K_Q_OPT_MAX}개까지 추가할 수 있어요.</div>}
                                         </div>
+                                        {errors['q-' + q.id + '-options'] && <p className="rg-error">{errors['q-' + q.id + '-options']}</p>}
                                       </div>
                                     )}
                                     <div className="tk-q-bar">

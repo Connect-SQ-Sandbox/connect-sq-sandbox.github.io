@@ -11,6 +11,7 @@ export const SHARED_CSS = ['styles/globals.css', 'styles/connectShell.css', 'sty
 export const SCREEN_CSS = {
   'ti-kakao': ['styles/connectRegister.css', 'styles/connectTiKakao.css'],
   'kakao-booking': ['styles/kakaoBooking.css'],
+  'kakao-booking-ticket': ['styles/kakaoBookingTicket.css'],
   'kakao-link': ['styles/connectKakaoLink.css']
 };
 

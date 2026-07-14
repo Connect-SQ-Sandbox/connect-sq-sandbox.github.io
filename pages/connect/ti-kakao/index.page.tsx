@@ -222,6 +222,14 @@ const GoodocMark = () => (
     <path d="M13.1516 4.96207C5.90017 4.96207 0 10.832 0 18.0462C0 25.2603 5.90017 31.1302 13.1516 31.1302C20.403 31.1302 26.3032 25.2603 26.3032 18.0462C26.3032 10.832 20.403 4.96207 13.1516 4.96207ZM13.1516 24.498C9.5756 24.498 6.66646 21.6038 6.66646 18.0462C6.66646 14.4885 9.5756 11.5943 13.1516 11.5943C16.7276 11.5943 19.6367 14.4885 19.6367 18.0462C19.6367 21.6038 16.7276 24.498 13.1516 24.498V24.498Z" fill="#0073FA" />
   </svg>
 );
+/** 목록 채널 뱃지용 흰색 굿닥 글리프 (파란 사각 배경 위에 올림, 초록 포인트 유지) */
+const GoodocGlyphW = () => (
+  <svg viewBox="0 0 27 43" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M13.1516 36.3658C9.90902 36.3658 7.21826 33.9857 6.74251 30.8897H0.0390015C0.542057 37.65 6.2297 42.9981 13.1516 42.9981C20.0735 42.9981 25.7611 37.65 26.2642 30.8897H19.5587C19.0849 33.9857 16.3922 36.3658 13.1496 36.3658H13.1516Z" fill="#fff" />
+    <path d="M26.2895 0H19.5197V6.61479H26.2895V0Z" fill="#41D293" />
+    <path d="M13.1516 4.96207C5.90017 4.96207 0 10.832 0 18.0462C0 25.2603 5.90017 31.1302 13.1516 31.1302C20.403 31.1302 26.3032 25.2603 26.3032 18.0462C26.3032 10.832 20.403 4.96207 13.1516 4.96207ZM13.1516 24.498C9.5756 24.498 6.66646 21.6038 6.66646 18.0462C6.66646 14.4885 9.5756 11.5943 13.1516 11.5943C16.7276 11.5943 19.6367 14.4885 19.6367 18.0462C19.6367 21.6038 16.7276 24.498 13.1516 24.498V24.498Z" fill="#fff" />
+  </svg>
+);
 /** 채널 심볼 (예약내역 채널 컬럼·진료항목 목록 공용) */
 const ChannelIcon = ({ channel }: { channel: Channel }) => (channel === 'kakao' ? <KakaoMark /> : <GoodocMark />);
 
@@ -337,8 +345,8 @@ function ChannelMarks({ it }: { it: Item }) {
       : '카카오톡 예약하기에서 보임';
   return (
     <span className="tk-chans">
-      <span className={`tk-chan${it.gdVisible ? '' : ' dim'}`} title={it.gdVisible ? '굿닥에서 보임' : '굿닥에서 안 보임'}><GoodocMark /></span>
-      <span className={`tk-chan${kakaoShown ? '' : ' dim'}`} title={kakaoTitle}>
+      <span className={`tk-chan tk-chan-gd${it.gdVisible ? '' : ' dim'}`} title={it.gdVisible ? '굿닥에서 보임' : '굿닥에서 안 보임'}><GoodocGlyphW /></span>
+      <span className={`tk-chan tk-chan-kko${kakaoShown ? '' : ' dim'}`} title={kakaoTitle}>
         <KakaoMark />
       </span>
     </span>
@@ -354,6 +362,7 @@ function ItemRow({ it, onOpen, onToggle }: { it: Item; onOpen: () => void; onTog
         <span className="tk-l3-thumb">{it.hasImage ? <span className="tk-l3-thumb-img" /> : <ThumbIcon />}</span>
         <ChannelMarks it={it} />
       </button>
+      <span className={`tk-l3-visible${it.gdVisible ? ' on' : ''}`}>{it.gdVisible ? '노출중' : '노출 안 함'}</span>
       <button className={`rg-toggle${it.gdVisible ? '' : ' off'}`} onClick={onToggle} aria-label="굿닥 노출 토글"><span className="rg-toggle-knob" /></button>
       <span className="tk-l3-del" aria-hidden><CloseIcon /></span>
     </div>

@@ -111,10 +111,13 @@
 .tk-l3-del { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 36px; color: var(--gray-60); opacity: 0; pointer-events: none; transition: opacity .12s; }
 .tk-l3-del svg { width: 16px; height: 16px; }
 
-/* 인입 채널 표기 — 굿닥/카카오 심볼 아이콘만 (텍스트 없이) */
-.tk-chans { display: inline-flex; flex: none; align-items: center; gap: 10px; margin-right: 16px; }
-.tk-chan { position: relative; display: inline-flex; align-items: center; justify-content: center; height: 20px; }
-.tk-chan svg { display: block; height: 20px; width: auto; } /* 굿닥 심볼은 세로형이라 높이 기준 정렬 */
+/* 인입 채널 표기 — 굿닥/카카오 사각 뱃지 심볼 (Figma 진료항목_소분류_카카오추가 기준) */
+.tk-chans { display: inline-flex; flex: none; align-items: center; gap: 4px; margin-right: 12px; }
+.tk-chan { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 4px; overflow: hidden; }
+.tk-chan svg { display: block; }
+.tk-chan-gd { background: #0073fa; } /* 굿닥: 파란 사각 + 흰 글리프 */
+.tk-chan-gd svg { height: 12px; width: auto; }
+.tk-chan-kko svg { width: 18px; height: 18px; } /* 카카오: 노란 사각(심볼 자체가 배경) */
 .tk-chan.dim { filter: grayscale(1); opacity: 0.3; } /* 미노출: 흐린 회색 */
 
 /* ============================ 폼: 카카오 노출 섹션 ============================ */

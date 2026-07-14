@@ -248,7 +248,7 @@ function TitleBar() {
     </div>
   );
 }
-type Page = 'items' | 'appt' | 'settings';
+type Page = 'items' | 'appt' | 'settings' | 'hours';
 function SideNav({ page, onNav }: { page: Page; onNav: (p: Page) => void }) {
   const N = ({ label, sub, active, beta, ex, onClick }: { label: string; sub?: boolean; active?: boolean; beta?: boolean; ex?: 'r' | 'd'; onClick?: () => void }) => (
     <button className={`cn-nav-item${sub ? ' sub' : ''}${active ? ' active' : ''}`} onClick={onClick}>
@@ -270,6 +270,17 @@ function SideNav({ page, onNav }: { page: Page; onNav: (p: Page) => void }) {
         </div>
         <div className="cn-nav-divider"><span /></div>
         <div className="cn-nav-group">
+          <div className="cn-nav-header">병원 홍보</div>
+          <N label="병원 검색 정보" ex={page === 'hours' ? 'd' : 'r'} />
+          {page === 'hours' && <>
+            <N label="병원 정보" sub />
+            <N label="운영 시간" sub active onClick={() => onNav('hours')} />
+            <N label="의료진 소개" sub />
+          </>}
+          <N label="병원 소식 알림" ex="r" />
+        </div>
+        <div className="cn-nav-divider"><span /></div>
+        <div className="cn-nav-group">
           <div className="cn-nav-header">외부 플랫폼 연동</div>
           <N label="카카오톡 예약하기" ex="r" /><N label="연동 설정" />
         </div>
@@ -288,12 +299,12 @@ function FieldHead({ label, optional, helpers }: { label: string; optional?: boo
     </div>
   );
 }
-function PriceRow({ p, onChange, onDelete, titleErr, amountErr }: { p: Price; onChange: (u: Partial<Price>) => void; onDelete: () => void; titleErr?: string; amountErr?: string }) {
+function PriceRow({ p, onChange, onDelete, onDragStart, onDrop, titleErr, amountErr }: { p: Price; onChange: (u: Partial<Price>) => void; onDelete: () => void; onDragStart: () => void; onDrop: () => void; titleErr?: string; amountErr?: string }) {
   const [open, setOpen] = useState(false);
   const cur = PRICE_TYPES.find((t) => t.value === p.type)!;
   const numCls = `rg-num${amountErr ? ' error' : ''}`;
   return (
-    <div className="rg-price-row tk-price-row">
+    <div className="rg-price-row tk-price-row" draggable onDragStart={onDragStart} onDragOver={(e) => e.preventDefault()} onDrop={onDrop}>
       <div className="rg-drag" aria-label="순서 변경 핸들"><DragHandle /></div>
       <div className="rg-price-fields">
         <input className={`rg-input${titleErr ? ' error' : ''}`} placeholder="가격명을 입력해 주세요. (15자 권장, 최대 50자)" maxLength={50} value={p.title} onChange={(e) => onChange({ title: e.target.value })} />
@@ -361,9 +372,9 @@ function ChannelMarks({ it }: { it: Item }) {
     </span>
   );
 }
-function ItemRow({ it, onOpen, onToggle }: { it: Item; onOpen: () => void; onToggle: () => void }) {
+function ItemRow({ it, onOpen, onToggle, onDelete, onDragStart, onDrop }: { it: Item; onOpen: () => void; onToggle: () => void; onDelete: () => void; onDragStart: () => void; onDrop: () => void }) {
   return (
-    <div className="tk-l3">
+    <div className="tk-l3" draggable onDragStart={onDragStart} onDragOver={(e) => e.preventDefault()} onDrop={onDrop}>
       <span className="tk-l3-handle"><DragHandle /></span>
       <button className="tk-l3-detail" onClick={onOpen}>
         <span className="tk-l3-name">{it.alias || it.name}</span>
@@ -373,7 +384,7 @@ function ItemRow({ it, onOpen, onToggle }: { it: Item; onOpen: () => void; onTog
       </button>
       <span className={`tk-l3-visible${it.gdVisible ? ' on' : ''}`}>{it.gdVisible ? '노출중' : '미노출'}</span>
       <button className={`rg-toggle${it.gdVisible ? '' : ' off'}`} onClick={onToggle} aria-label="굿닥 노출 토글"><span className="rg-toggle-knob" /></button>
-      <span className="tk-l3-del" aria-hidden><CloseIcon /></span>
+      <button className="tk-l3-del" aria-label="삭제" onClick={onDelete}><CloseIcon /></button>
     </div>
   );
 }
@@ -425,7 +436,7 @@ function ApptScreen({ showToast, devMode }: { showToast: (m: string) => void; de
   const [applied, setApplied] = useState(''); // 실제 조회에 반영된 검색어(검색 버튼/Enter 시점)
   const [statusFilter, setStatusFilter] = useState('all');
   const [cancelId, setCancelId] = useState<number | null>(null);
-  const [cancelMemo, setCancelMemo] = useState('');
+  const [cancelReasonId, setCancelReasonId] = useState(CANCEL_TEMPLATES[0].id);
   const [detailId, setDetailId] = useState<number | null>(null);
 
   const tabDef = APPT_TABS.find((t) => t.v === tab)!;
@@ -449,18 +460,23 @@ function ApptScreen({ showToast, devMode }: { showToast: (m: string) => void; de
   const detail = appts.find((a) => a.id === detailId) || null;
 
   const patchAppt = (id: number, u: Partial<Appt>) => setAppts((prev) => prev.map((a) => (a.id === id ? { ...a, ...u } : a)));
-  const confirm = (id: number) => { patchAppt(id, { status: AS.CONFIRMED, statusAt: '방금 전' }); setDetailId(null); showToast('예약을 확정했어요.'); };
-  const complete = (id: number) => { patchAppt(id, { status: AS.COMPLETED, statusAt: '방금 전' }); setDetailId(null); showToast('진료 완료로 변경했어요.'); };
-  const del = (id: number) => { setAppts((prev) => prev.filter((a) => a.id !== id)); setDetailId(null); showToast('내역을 삭제했어요.'); };
-  const openCancel = (id: number) => { setDetailId(null); setCancelId(id); setCancelMemo(''); };
-  const doCancel = () => { if (cancelId == null) return; patchAppt(cancelId, { status: AS.CANCELED_HOSPITAL, cancelReason: cancelMemo, statusAt: '방금 전' }); setCancelId(null); showToast('예약을 취소했어요.'); };
+  const confirm = (id: number) => { patchAppt(id, { status: AS.CONFIRMED, statusAt: '방금 전' }); setDetailId(null); showToast('예약을 확정했습니다.'); };
+  const complete = (id: number) => { patchAppt(id, { status: AS.COMPLETED, statusAt: '방금 전' }); setDetailId(null); showToast('진료를 완료했습니다.'); };
+  const openCancel = (id: number) => { setDetailId(null); setCancelId(id); setCancelReasonId(CANCEL_TEMPLATES[0].id); };
+  const doCancel = () => {
+    if (cancelId == null) return;
+    const reason = CANCEL_TEMPLATES.find((template) => template.id === cancelReasonId) || CANCEL_TEMPLATES[0];
+    patchAppt(cancelId, { status: AS.CANCELED_HOSPITAL, cancelReason: reason.label, statusAt: '방금 전' });
+    setCancelId(null);
+    showToast('예약을 취소했습니다.');
+  };
   const handleSearch = () => setApplied(searchText);
   const handleReset = () => { setSearchText(''); setApplied(''); setPreset('last30d'); setStartDate(''); setEndDate(''); setStatusFilter('all'); };
 
   const statusActions = (a: Appt) => {
     if (a.status === AS.REQUESTED) return (<><button className="ap-btn primary" onClick={(e) => { e.stopPropagation(); confirm(a.id); }}>예약 확정</button><button className="ap-btn danger" onClick={(e) => { e.stopPropagation(); openCancel(a.id); }}>예약 취소</button></>);
-    if (a.status === AS.CONFIRMED) return (<><button className="ap-btn primary" onClick={(e) => { e.stopPropagation(); complete(a.id); }}>진료완료</button><button className="ap-btn danger" onClick={(e) => { e.stopPropagation(); openCancel(a.id); }}>예약 취소</button></>);
-    return (<button className="ap-btn danger" onClick={(e) => { e.stopPropagation(); del(a.id); }}>내역 삭제</button>);
+    if (a.status === AS.CONFIRMED) return (<><button className="ap-btn primary" onClick={(e) => { e.stopPropagation(); complete(a.id); }}>진료 종료</button><button className="ap-btn danger" onClick={(e) => { e.stopPropagation(); openCancel(a.id); }}>예약 취소</button></>);
+    return null;
   };
 
   return (
@@ -632,11 +648,14 @@ function ApptScreen({ showToast, devMode }: { showToast: (m: string) => void; de
       {cancelId != null && (
         <div className="ap-dim" onClick={() => setCancelId(null)}>
           <div className="ap-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="ap-modal-title">예약을 취소할까요?</div>
-            <div className="ap-modal-sub">취소 사유를 선택하면 예약자에게 안내돼요. 사유는 수정할 수 있어요.</div>
-            <div className="ap-reasons">{CANCEL_TEMPLATES.map((t) => (<button key={t.id} className="ap-reason" onClick={() => setCancelMemo(t.body)}>{t.label}</button>))}</div>
-            <textarea className="ap-textarea" placeholder="취소 사유를 입력해 주세요." value={cancelMemo} onChange={(e) => setCancelMemo(e.target.value)} />
-            <div className="ap-modal-btns"><button className="rg-btn-cancel" onClick={() => setCancelId(null)}>닫기</button><button className="ap-btn-cancel-confirm" disabled={!cancelMemo.trim()} onClick={doCancel}>예약 취소</button></div>
+            <div className="ap-modal-title">예약 취소 사유를 선택해 주세요</div>
+            <div className="ap-reason-radios">{CANCEL_TEMPLATES.map((t) => (
+              <label key={t.id} className={`ap-reason-radio${cancelReasonId === t.id ? ' selected' : ''}`}>
+                <input type="radio" name="cancelReason" checked={cancelReasonId === t.id} onChange={() => setCancelReasonId(t.id)} />
+                <span className="ap-radio-dot" /><span>{t.label}</span>
+              </label>
+            ))}</div>
+            <div className="ap-modal-btns"><button className="rg-btn-cancel" onClick={() => setCancelId(null)}>취소</button><button className="ap-btn-cancel-confirm" onClick={doCancel}>확인</button></div>
           </div>
         </div>
       )}
@@ -673,7 +692,7 @@ function SettingBox({ title, subNode, right }: { title: string; subNode: React.R
     </div>
   );
 }
-function SettingsScreen({ itemCount, showToast, devMode }: { itemCount: number; showToast: (m: string) => void; devMode: boolean }) {
+function SettingsScreen({ itemCount, showToast, devMode, onHours }: { itemCount: number; showToast: (m: string) => void; devMode: boolean; onHours: () => void }) {
   const [apptUsed, setApptUsed] = useState(true);
   const [autoConfirmed, setAutoConfirmed] = useState(true);
   const [todayApptUsed, setTodayApptUsed] = useState(true);
@@ -730,7 +749,7 @@ function SettingsScreen({ itemCount, showToast, devMode }: { itemCount: number; 
               <span className="set-banner-ic"><CautionIc /></span>
               <span className="set-banner-msg">병원 운영 시간에 맞춰 30분 단위로 예약을 받습니다.</span>
             </span>
-            <button type="button" className="set-banner-action" onClick={() => showToast('병원 운영시간 관리 화면으로 이동해요.')}>
+            <button type="button" className="set-banner-action" onClick={onHours}>
               병원 운영시간 관리<span className="set-banner-arrow"><ChevronR /></span>
             </button>
           </div>
@@ -772,6 +791,154 @@ function SettingsScreen({ itemCount, showToast, devMode }: { itemCount: number; 
   );
 }
 
+/* ============================ 병원 운영시간 관리 ============================ */
+type HourKey = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'weekdayLunch' | 'sat' | 'sun' | 'weekendLunch' | 'holiday';
+type HourValue = { from: string; to: string; off: boolean; allDay?: boolean };
+type HourForm = Record<HourKey, HourValue>;
+type TempDay = { id: number; name: string; date: string; from: string; to: string; off: boolean; allDay: boolean };
+const HOUR_DAY_META: { key: HourKey; label: string; section: '평일' | '주말' | '공휴일'; lunch?: boolean }[] = [
+  { key: 'mon', label: '월요일', section: '평일' }, { key: 'tue', label: '화요일', section: '평일' },
+  { key: 'wed', label: '수요일', section: '평일' }, { key: 'thu', label: '목요일', section: '평일' },
+  { key: 'fri', label: '금요일', section: '평일' }, { key: 'weekdayLunch', label: '평일 점심시간', section: '평일', lunch: true },
+  { key: 'sat', label: '토요일', section: '주말' }, { key: 'sun', label: '일요일', section: '주말' },
+  { key: 'weekendLunch', label: '주말 점심시간', section: '주말', lunch: true },
+  { key: 'holiday', label: '공휴일', section: '공휴일' }
+];
+const INITIAL_HOURS: HourForm = {
+  mon: { from: '09:00', to: '18:00', off: false }, tue: { from: '09:00', to: '09:10', off: false },
+  wed: { from: '09:00', to: '19:00', off: false }, thu: { from: '09:00', to: '19:00', off: false },
+  fri: { from: '09:00', to: '19:00', off: false }, weekdayLunch: { from: '12:00', to: '22:00', off: false },
+  sat: { from: '09:00', to: '16:00', off: false }, sun: { from: '09:00', to: '18:00', off: true },
+  weekendLunch: { from: '12:00', to: '13:00', off: false }, holiday: { from: '09:00', to: '18:00', off: true }
+};
+const cloneHours = (value: HourForm): HourForm => JSON.parse(JSON.stringify(value));
+const timeMinutes = (value: string) => { const [h, m] = value.split(':').map(Number); return h * 60 + m; };
+const validTimeRange = (value: HourValue) => value.off || timeMinutes(value.to) - timeMinutes(value.from) >= 30;
+
+function HoursScreen({ showToast, devMode, onBack }: { showToast: (m: string) => void; devMode: boolean; onBack: () => void }) {
+  const [hours, setHours] = useState<HourForm>(() => cloneHours(INITIAL_HOURS));
+  const [draft, setDraft] = useState<HourForm | null>(null);
+  const [errors, setErrors] = useState<Partial<Record<HourKey, string>>>({});
+  const [copySource, setCopySource] = useState<HourKey | null>(null);
+  const [copyTargets, setCopyTargets] = useState<HourKey[]>([]);
+  const [notice, setNotice] = useState('고길동 원장님은 점심 안드십니다.');
+  const [noticeDraft, setNoticeDraft] = useState<string | null>(null);
+  const [tempOpen, setTempOpen] = useState(false);
+  const [tempDays, setTempDays] = useState<TempDay[]>([]);
+  const [tempDraft, setTempDraft] = useState<TempDay[]>([]);
+  const [tempError, setTempError] = useState('');
+
+  const openHours = () => { setDraft(cloneHours(hours)); setErrors({}); };
+  const patchDay = (key: HourKey, update: Partial<HourValue>) => {
+    setDraft((prev) => prev ? { ...prev, [key]: { ...prev[key], ...update } } : prev);
+    setErrors((prev) => ({ ...prev, [key]: undefined }));
+  };
+  const toggleAllDay = (key: HourKey) => {
+    if (!draft) return;
+    const enabled = !draft[key].allDay;
+    patchDay(key, enabled ? { from: '00:00', to: '23:59', allDay: true, off: false } : { from: '09:00', to: '18:00', allDay: false });
+  };
+  const toggleOff = (key: HourKey) => {
+    if (!draft) return;
+    const off = !draft[key].off;
+    patchDay(key, off ? { off: true, allDay: false } : { from: '09:00', to: '18:00', off: false });
+  };
+  const saveHours = () => {
+    if (!draft) return;
+    const invalid = HOUR_DAY_META.filter(({ key }) => !validTimeRange(draft[key]));
+    if (invalid.length) {
+      setErrors(Object.fromEntries(invalid.map(({ key }) => [key, '최소 30분 이상 입력해 주세요.'])));
+      return;
+    }
+    setHours(cloneHours(draft)); setDraft(null); showToast('운영 시간을 저장했어요.');
+  };
+  const applyCopy = () => {
+    if (!draft || !copySource || copyTargets.length === 0) return;
+    const source = { ...draft[copySource] };
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev };
+      copyTargets.forEach((key) => { next[key] = { ...source }; });
+      return next;
+    });
+    setCopySource(null); setCopyTargets([]); showToast('운영 시간을 복사했어요.');
+  };
+  const openTemp = () => { setTempDraft(tempDays.map((day) => ({ ...day }))); setTempError(''); setTempOpen(true); };
+  const addTemp = () => {
+    if (tempDraft.length >= 20) return;
+    setTempDraft((prev) => [...prev, { id: UID++, name: '', date: '', from: '09:00', to: '18:00', off: false, allDay: false }]);
+  };
+  const patchTemp = (id: number, update: Partial<TempDay>) => setTempDraft((prev) => prev.map((day) => day.id === id ? { ...day, ...update } : day));
+  const saveTemp = () => {
+    const invalid = tempDraft.some((day) => !day.name.trim() || !day.date || (!day.off && timeMinutes(day.to) - timeMinutes(day.from) < 30));
+    if (invalid) { setTempError('명칭과 날짜를 입력하고 운영 시간을 30분 이상 설정해 주세요.'); return; }
+    setTempDays(tempDraft.map((day) => ({ ...day }))); setTempOpen(false); showToast('임시 운영일을 저장했어요.');
+  };
+  const displayTime = (value: HourValue) => value.off ? '휴진' : `${value.from} - ${value.to}`;
+
+  return (
+    <>
+      <div className="cn-header ht-header">
+        <button className="tk-back" onClick={onBack}><Back /> 비급여 예약 설정</button>
+        <div className="cn-header-title">운영 시간</div>
+        <div className="ap-sub">굿닥에 노출되는 우리 병원 운영 시간을 관리할 수 있어요.</div>
+      </div>
+      <div className="ht-body">
+        {devMode && <DevNote title="병원 운영시간 · 예약 슬롯 기준" items={[
+          <>요일별 운영시간은 비급여 예약 슬롯 생성의 기준이며, 저장 전 각 구간이 최소 30분 이상인지 검증합니다.</>,
+          <>24시간·진료안함·점심시간 없음은 시간 문자열과 별도 상태로 저장하고, 복사 시 원본 요일의 전체 상태를 대상 요일에 복제합니다.</>,
+          <>임시 운영일은 정규 운영시간보다 우선 적용하며, 새로고침 전까지 로컬 상태에서 최대 20개를 관리합니다.</>
+        ]} />}
+        <section className="ht-guide">
+          <div className="ht-guide-logo">g</div><div className="ht-guide-copy"><strong>굿닥에서 우리 병원 소개 페이지 보기</strong><span>굿닥 웹 · 앱에서 보여지는 우리 병원 소개 페이지를 확인해 보세요.</span></div>
+          <button onClick={() => showToast('굿닥 앱의 병원 소개 페이지를 열었어요.')}>앱에서 보기</button><button onClick={() => showToast('굿닥 웹의 병원 소개 페이지를 열었어요.')}>웹에서 보기</button>
+        </section>
+        <section className="ht-section">
+          <h2>운영 시간</h2>
+          <button className="ht-card" onClick={openHours}>
+            {(['평일', '주말', '공휴일'] as const).map((section) => (
+              <div className="ht-block" key={section}><strong>{section}</strong><div className="ht-days">
+                {HOUR_DAY_META.filter((day) => day.section === section && !day.lunch).map((day) => <div className="ht-display-row" key={day.key}><span>{day.label}</span><b>{displayTime(hours[day.key])}</b></div>)}
+              </div>{HOUR_DAY_META.filter((day) => day.section === section && day.lunch).map((day) => <div className="ht-lunch" key={day.key}><span>{day.label}</span><b>{hours[day.key].off ? '점심시간 없음' : displayTime(hours[day.key])}</b></div>)}</div>
+            ))}
+            <div className="ht-notice-preview"><span>운영 시간 안내</span><b>{notice || '등록된 안내가 없어요.'}</b></div>
+          </button>
+          <button className="ht-notice-card" onClick={() => setNoticeDraft(notice)}><span>운영 시간 안내</span><b>{notice || '등록된 안내가 없어요.'}</b><ChevronR /></button>
+        </section>
+        <section className="ht-section ht-temp-section"><h2>임시 운영일</h2><p>평상시와 다르게 운영하는 날짜가 있다면 입력해주세요.</p>
+          {tempDays.length > 0 && <div className="ht-temp-list">{tempDays.map((day) => <div key={day.id}><b>{day.date} · {day.name}</b><span>{day.off ? '휴진' : `${day.from} - ${day.to}`}</span></div>)}</div>}
+          <button className="ht-register" onClick={openTemp}>등록하기</button>
+        </section>
+      </div>
+
+      {draft && <div className="ap-dim" onClick={() => setDraft(null)}><div className="ap-modal ht-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="ap-modal-title">운영 시간</div><div className="ap-modal-sub">굿닥 앱에 표시될 병원의 운영 시간을 설정해 주세요.</div>
+        <div className="ht-form-scroll">{(['평일', '주말', '공휴일'] as const).map((section) => <section className="ht-form-section" key={section}><h3>{section}</h3>
+          {HOUR_DAY_META.filter((day) => day.section === section).map((day) => <div className={`ht-form-row${errors[day.key] ? ' error' : ''}`} key={day.key}>
+            <span className="ht-form-label">{day.label}</span><input type="time" value={draft[day.key].from} disabled={draft[day.key].off} onChange={(e) => patchDay(day.key, { from: e.target.value, allDay: false })}/><em>-</em><input type="time" value={draft[day.key].to} disabled={draft[day.key].off} onChange={(e) => patchDay(day.key, { to: e.target.value, allDay: false })}/>
+            {day.lunch ? <label className="ht-check"><input type="checkbox" checked={draft[day.key].off} onChange={() => toggleOff(day.key)}/>점심시간 없음</label> : <><label className="ht-check"><input type="checkbox" checked={!!draft[day.key].allDay} onChange={() => toggleAllDay(day.key)}/>24시간</label><label className="ht-check"><input type="checkbox" checked={draft[day.key].off} onChange={() => toggleOff(day.key)}/>진료안함</label><button className="ht-copy" aria-label={`${day.label} 운영시간 복사`} onClick={() => { setCopySource(day.key); setCopyTargets([]); }}>▣</button></>}
+            {errors[day.key] && <span className="ht-error">{errors[day.key]}</span>}
+          </div>)}</section>)}</div>
+        <div className="ap-modal-btns"><button className="rg-btn-cancel" onClick={() => setDraft(null)}>취소</button><button className="rg-btn-save" onClick={saveHours}>저장</button></div>
+      </div></div>}
+
+      {copySource && draft && <div className="ap-dim ht-nested" onClick={() => setCopySource(null)}><div className="ap-modal ht-copy-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="ap-modal-title">운영 시간 복사</div><div className="ap-modal-sub">운영 시간이 같은 요일을 선택해 주세요.</div>
+        <div className="ht-copy-banner">복사할 시간 : {displayTime(draft[copySource])}</div><div className="ht-copy-days">{HOUR_DAY_META.filter((day) => !day.lunch).map((day) => <button key={day.key} disabled={day.key === copySource} className={copyTargets.includes(day.key) ? 'on' : ''} onClick={() => setCopyTargets((prev) => prev.includes(day.key) ? prev.filter((key) => key !== day.key) : [...prev, day.key])}>{day.label === '공휴일' ? '공휴일' : day.label.slice(0, 1)}</button>)}</div>
+        <div className="ap-modal-btns"><button className="rg-btn-cancel" onClick={() => setCopySource(null)}>취소</button><button className="rg-btn-save" disabled={copyTargets.length === 0} onClick={applyCopy}>복사</button></div>
+      </div></div>}
+
+      {noticeDraft !== null && <div className="ap-dim" onClick={() => setNoticeDraft(null)}><div className="ap-modal ht-notice-modal" onClick={(e) => e.stopPropagation()}><div className="ap-modal-title">운영 시간 안내</div><div className="ap-modal-sub">운영 시간 관련 기타 정보를 안내할 수 있어요.</div>
+        <textarea maxLength={500} value={noticeDraft} onChange={(e) => setNoticeDraft(e.target.value)} placeholder={'어떤 내용을 써야 할지 고민되신다면, 아래 내용을 참고해 보세요.\n• 접수 마감 시간\n• 특수 검사/치료실 운영 시간\n• 점심시간 운영 방식\n• 예약 및 대기 안내'} /><div className="rg-counter"><span className="rg-counter-num">{noticeDraft.length}</span>/500자</div>
+        <div className="ap-modal-btns"><button className="rg-btn-cancel" onClick={() => setNoticeDraft(null)}>취소</button><button className="rg-btn-save" onClick={() => { setNotice(noticeDraft); setNoticeDraft(null); showToast('운영 시간 안내를 저장했어요.'); }}>저장</button></div></div></div>}
+
+      {tempOpen && <div className="ap-dim" onClick={() => setTempOpen(false)}><div className="ap-modal ht-temp-modal" onClick={(e) => e.stopPropagation()}><div className="ht-temp-head"><div><div className="ap-modal-title">임시 운영일 ({tempDraft.length}/20)</div><div className="ap-modal-sub">평상시와 다르게 운영하는 날짜가 있다면 등록해 주세요.</div></div><button className="ht-register" disabled={tempDraft.length >= 20} onClick={addTemp}><PlusIcon/> 임시 운영일 추가</button></div>
+        <div className="ht-temp-scroll">{tempDraft.length === 0 ? <div className="ap-empty">등록된 임시 운영일이 없어요.</div> : tempDraft.map((day) => <div className="ht-temp-row" key={day.id}><div><input maxLength={5} placeholder="예)휴가,세미나" value={day.name} onChange={(e) => patchTemp(day.id, { name: e.target.value })}/><small>{day.name.length}/5자</small></div><input type="date" value={day.date} onChange={(e) => patchTemp(day.id, { date: e.target.value })}/><input type="time" disabled={day.off} value={day.from} onChange={(e) => patchTemp(day.id, { from: e.target.value, allDay: false })}/><em>-</em><input type="time" disabled={day.off} value={day.to} onChange={(e) => patchTemp(day.id, { to: e.target.value, allDay: false })}/><label className="ht-check"><input type="checkbox" checked={day.allDay} onChange={() => patchTemp(day.id, day.allDay ? { allDay: false, from: '09:00', to: '18:00' } : { allDay: true, off: false, from: '00:00', to: '23:59' })}/>24시간</label><label className="ht-check"><input type="checkbox" checked={day.off} onChange={() => patchTemp(day.id, { off: !day.off, allDay: false })}/>진료안함</label><button className="rg-price-del" aria-label="삭제" onClick={() => setTempDraft((prev) => prev.filter((item) => item.id !== day.id))}><CloseIcon/></button></div>)}</div>
+        {tempError && <div className="ht-temp-error">{tempError}</div>}<div className="ap-modal-btns"><button className="rg-btn-cancel" onClick={() => setTempOpen(false)}>취소</button><button className="rg-btn-save" onClick={saveTemp}>저장</button></div></div></div>}
+    </>
+  );
+}
+
 /* ============================================================ */
 function TiKakao() {
   const [page, setPage] = useState<Page>('items');
@@ -783,6 +950,15 @@ function TiKakao() {
   const [kw, setKw] = useState('');
   const [dragQ, setDragQ] = useState<number | null>(null);
   const [qTypeOpen, setQTypeOpen] = useState<number | null>(null);
+  const [catOrder, setCatOrder] = useState<string[]>(CAT_ORDER);
+  const [dragCat, setDragCat] = useState<string | null>(null);
+  const [dragGroup, setDragGroup] = useState<string | null>(null);
+  const [dragItemId, setDragItemId] = useState<number | null>(null);
+  const [dragPriceId, setDragPriceId] = useState<number | null>(null);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [leaveOpen, setLeaveOpen] = useState(false);
+  const [formBaseline, setFormBaseline] = useState('');
+  const [formError, setFormError] = useState('');
   const [toast, setToast] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({}); // 저장 유효성 실패 필드별 메시지(키: name / price-<id>-title / price-<id>-amount / q-<id>-name / q-<id>-options)
   const [showPlanned, setShowPlanned] = useState(false);
@@ -794,7 +970,7 @@ function TiKakao() {
   const patchExtra = (u: Partial<Item['kExtra']>) => setD((prev) => (prev ? { ...prev, kExtra: { ...prev.kExtra, ...u } } : prev));
   const clearErr = (...keys: string[]) => setErrors((e) => { if (!keys.some((k) => k in e)) return e; const n = { ...e }; keys.forEach((k) => delete n[k]); return n; });
 
-  const cat1List = useMemo(() => CAT_ORDER.map((name) => ({ name, count: items.filter((i) => i.cat1 === name).length, custom: name === CUSTOM_CAT })).filter((c) => c.count > 0), [items]);
+  const cat1List = useMemo(() => catOrder.map((name) => ({ name, count: items.filter((i) => i.cat1 === name).length, custom: name === CUSTOM_CAT })).filter((c) => c.count > 0), [items, catOrder]);
   const groups = useMemo(() => {
     const inCat = items.filter((i) => i.cat1 === selCat1);
     const order: string[] = []; const map: Record<string, Item[]> = {};
@@ -805,8 +981,11 @@ function TiKakao() {
   const customItems = useMemo(() => items.filter((i) => i.cat1 === selCat1), [items, selCat1]);
 
   const nav = (p: Page) => { setPage(p); if (p === 'items') setScreen('list'); };
-  const open = (it: Item) => { setErrors({}); setSelId(it.id); setD({ ...it, prices: it.prices.map((p) => ({ ...p })), keywords: [...it.keywords], kExtra: { ...it.kExtra, questions: it.kExtra.questions.map((q) => ({ ...q, options: [...(q.options || [])] })) } }); setScreen('form'); };
-  const create = () => { setErrors({}); setSelId(null); setD(mk({ id: UID++, name: '', cat1: selCat1 === CUSTOM_CAT ? CUSTOM_CAT : selCat1, cat2: groups[0]?.name || '' })); setScreen('form'); };
+  const cloneItem = (it: Item): Item => ({ ...it, prices: it.prices.map((p) => ({ ...p })), keywords: [...it.keywords], kExtra: { ...it.kExtra, questions: it.kExtra.questions.map((q) => ({ ...q, options: [...(q.options || [])] })) } });
+  const open = (it: Item) => { const next = cloneItem(it); setErrors({}); setSelId(it.id); setD(next); setFormBaseline(JSON.stringify(next)); setFormError(''); setScreen('form'); };
+  const create = () => { const next = mk({ id: UID++, name: '', cat1: selCat1 === CUSTOM_CAT ? CUSTOM_CAT : selCat1, cat2: groups[0]?.name || '' }); setErrors({}); setSelId(null); setD(next); setFormBaseline(JSON.stringify(next)); setFormError(''); setScreen('form'); };
+  const closeForm = () => { setScreen('list'); setD(null); setLeaveOpen(false); setFormError(''); setErrors({}); };
+  const requestCloseForm = () => { if (d && JSON.stringify(d) !== formBaseline) setLeaveOpen(true); else closeForm(); };
   // 저장 유효성 검증 — 카카오 상품 API required 필드 기준. 위반 필드별 메시지 맵을 반환(빈 객체면 통과).
   const collectErrors = (v: Item): Record<string, string> => {
     const e: Record<string, string> = {};
@@ -814,7 +993,11 @@ function TiKakao() {
     v.prices.forEach((p) => {
       if (!p.title.trim()) e[`price-${p.id}-title`] = '가격명을 입력해 주세요.';
       if (p.type === 'fixed' && !p.amount) e[`price-${p.id}-amount`] = '가격을 입력해 주세요.';
-      if (p.type === 'discount' && (!p.original || !p.sale)) e[`price-${p.id}-amount`] = '정상가와 판매가를 입력해 주세요.';
+      if (p.type === 'discount') {
+        if (!p.original || !p.sale) e[`price-${p.id}-amount`] = '정상가와 판매가를 입력해 주세요.';
+        else if (Number(p.sale) >= Number(p.original)) e[`price-${p.id}-amount`] = '정상가보다 낮은 가격을 입력해 주세요.';
+        else if (Number(p.sale) < Number(p.original) * 0.51) e[`price-${p.id}-amount`] = '최대 49%까지 할인할 수 있어요.';
+      }
     });
     // 카카오 추가 질문은 카카오 상품으로 전송될 때(kakaoOn)만 노출·검증 — 숨은 필드로 저장이 막히지 않도록.
     if (v.kakaoOn) {
@@ -838,8 +1021,9 @@ function TiKakao() {
       return;
     }
     setErrors({});
-    setItems((prev) => (selId === null ? [...prev, d] : prev.map((it) => (it.id === d.id ? d : it)))); setScreen('list'); showToast(selId === null ? '진료항목을 등록했어요.' : '진료항목을 저장했어요.');
+    setItems((prev) => (selId === null ? [...prev, d] : prev.map((it) => (it.id === d.id ? d : it)))); closeForm(); showToast(selId === null ? '진료항목을 등록했어요.' : '진료항목을 저장했어요.');
   };
+  const confirmDelete = () => { if (deleteId == null) return; setItems((prev) => prev.filter((it) => it.id !== deleteId)); if (d?.id === deleteId) closeForm(); setDeleteId(null); showToast('진료항목을 삭제했어요.'); };
   const addDetailImg = () => d && d.detailImages < DETAIL_IMG_MAX && patch({ detailImages: d.detailImages + 1 });
   const delDetailImg = () => d && d.detailImages > 0 && patch({ detailImages: d.detailImages - 1 });
 
@@ -847,6 +1031,11 @@ function TiKakao() {
   const setPrice = (id: number, u: Partial<Price>) => { if (!d) return; clearErr(`price-${id}-title`, `price-${id}-amount`); patch({ prices: d.prices.map((p) => (p.id === id ? { ...p, ...u } : p)) }); };
   const addPrice = () => d && patch({ prices: [...d.prices, { id: UID++, title: '', content: '', type: 'fixed', amount: '', original: '', sale: '' }] });
   const delPrice = (id: number) => d && patch({ prices: d.prices.length > 1 ? d.prices.filter((p) => p.id !== id) : d.prices });
+  const movePrice = (toId: number) => {
+    if (!d || dragPriceId == null || dragPriceId === toId) return;
+    const list = [...d.prices]; const from = list.findIndex((price) => price.id === dragPriceId); const to = list.findIndex((price) => price.id === toId);
+    if (from < 0 || to < 0) return; const [moved] = list.splice(from, 1); list.splice(to, 0, moved); patch({ prices: list }); setDragPriceId(null);
+  };
   const newQ = (type: QType): Question => ({ id: UID++, type, name: '', optional: true, description: '', options: type === 'text' ? [] : ['', ''] });
   const textCount = () => (d ? d.kExtra.questions.filter((q) => q.type === 'text').length : 0);
   const choiceCount = () => (d ? d.kExtra.questions.filter((q) => q.type !== 'text').length : 0);
@@ -869,10 +1058,23 @@ function TiKakao() {
   const toggleGdVisible = (id: number) => setItems((prev) => prev.map((it) => {
     if (it.id !== id) return it;
     const gdVisible = !it.gdVisible;
+    showToast(gdVisible ? '해당 진료항목을 서비스에 노출합니다.' : '해당 진료항목을 서비스에 미노출합니다.');
     return { ...it, gdVisible, kakaoOn: gdVisible ? it.kakaoOn : false };
   }));
+  const moveCategory = (to: string) => {
+    if (!dragCat || dragCat === to) return;
+    setCatOrder((prev) => { const next = [...prev]; const fromIndex = next.indexOf(dragCat); const toIndex = next.indexOf(to); const [moved] = next.splice(fromIndex, 1); next.splice(toIndex, 0, moved); return next; }); setDragCat(null);
+  };
+  const moveItem = (toId: number) => {
+    if (dragItemId == null || dragItemId === toId) return;
+    setItems((prev) => { const next = [...prev]; const from = next.findIndex((item) => item.id === dragItemId); const to = next.findIndex((item) => item.id === toId); if (from < 0 || to < 0 || next[from].cat1 !== next[to].cat1 || next[from].cat2 !== next[to].cat2) return prev; const [moved] = next.splice(from, 1); next.splice(to, 0, moved); return next; }); setDragItemId(null);
+  };
+  const moveGroup = (toName: string) => {
+    if (!dragGroup || dragGroup === toName) return;
+    setItems((prev) => { const inCategory = prev.filter((item) => item.cat1 === selCat1); const names = Array.from(new Set(inCategory.map((item) => item.cat2 || '기타'))); const from = names.indexOf(dragGroup); const to = names.indexOf(toName); if (from < 0 || to < 0) return prev; const [moved] = names.splice(from, 1); names.splice(to, 0, moved); const sorted = names.flatMap((name) => inCategory.filter((item) => (item.cat2 || '기타') === name)); let index = 0; return prev.map((item) => item.cat1 === selCat1 ? sorted[index++] : item); }); setDragGroup(null);
+  };
 
-  const currentView: PrototypeView = page === 'items' ? (screen === 'form' ? 'items-form' : 'items-list') : page;
+  const currentView: PrototypeView = page === 'items' ? (screen === 'form' ? 'items-form' : 'items-list') : page === 'hours' ? 'settings' : page;
   const locatePolicyChange = (change: PolicyChange) => {
     if (change.view === 'items-list') { setPage('items'); setScreen('list'); }
     if (change.view === 'items-form') {
@@ -911,7 +1113,10 @@ function TiKakao() {
             {page === 'appt' && <ApptScreen showToast={showToast} devMode={devMode} />}
 
             {/* ========================= 운영 설정 ========================= */}
-            {page === 'settings' && <SettingsScreen itemCount={items.length} showToast={showToast} devMode={devMode} />}
+            {page === 'settings' && <SettingsScreen itemCount={items.length} showToast={showToast} devMode={devMode} onHours={() => setPage('hours')} />}
+
+            {/* ========================= 병원 운영시간 관리 ========================= */}
+            {page === 'hours' && <HoursScreen showToast={showToast} devMode={devMode} onBack={() => setPage('settings')} />}
 
             {/* ========================= 진료항목 목록 ========================= */}
             {page === 'items' && screen === 'list' && (
@@ -937,7 +1142,7 @@ function TiKakao() {
                     <div className="tk-grid-ihead"><span className="tk-grid-title">{selCat1}</span></div>
                     <nav className="tk-grid-clist" aria-label="진료항목 카테고리">
                       {cat1List.map((c) => (
-                        <button key={c.name} className={`tk-cat${c.name === selCat1 ? ' sel' : ''}`} onClick={() => setSelCat1(c.name)}>
+                        <button key={c.name} draggable className={`tk-cat${c.name === selCat1 ? ' sel' : ''}`} onClick={() => setSelCat1(c.name)} onDragStart={() => setDragCat(c.name)} onDragOver={(e) => e.preventDefault()} onDrop={() => moveCategory(c.name)}>
                           <span className="tk-cat-handle"><DragHandle /></span>
                           <span className="tk-cat-name">{c.name}</span>
                           <span className="tk-cat-count">{c.count}</span>
@@ -946,12 +1151,12 @@ function TiKakao() {
                     </nav>
                     <section className="tk-grid-ilist">
                       {isCustom ? (
-                        <div className="tk-l2-body">{customItems.map((it) => (<ItemRow key={it.id} it={it} onOpen={() => open(it)} onToggle={() => toggleGdVisible(it.id)} />))}</div>
+                        <div className="tk-l2-body">{customItems.map((it) => (<ItemRow key={it.id} it={it} onOpen={() => open(it)} onToggle={() => toggleGdVisible(it.id)} onDelete={() => setDeleteId(it.id)} onDragStart={() => setDragItemId(it.id)} onDrop={() => moveItem(it.id)} />))}</div>
                       ) : (
                         groups.map((g) => (
-                          <div key={g.name} className="tk-l2">
+                          <div key={g.name} className="tk-l2" draggable onDragStart={() => setDragGroup(g.name)} onDragOver={(e) => e.preventDefault()} onDrop={() => moveGroup(g.name)}>
                             <div className="tk-l2-head"><span className="tk-cat-handle"><DragHandle /></span><span className="tk-l2-name">{g.name}</span></div>
-                            <div className="tk-l2-body">{g.items.map((it) => (<ItemRow key={it.id} it={it} onOpen={() => open(it)} onToggle={() => toggleGdVisible(it.id)} />))}</div>
+                            <div className="tk-l2-body">{g.items.map((it) => (<ItemRow key={it.id} it={it} onOpen={() => open(it)} onToggle={() => toggleGdVisible(it.id)} onDelete={() => setDeleteId(it.id)} onDragStart={() => setDragItemId(it.id)} onDrop={() => moveItem(it.id)} />))}</div>
                             <div className="tk-l2-pad" />
                           </div>
                         ))
@@ -966,13 +1171,14 @@ function TiKakao() {
             {page === 'items' && screen === 'form' && d && (
               <>
                 <div className="cn-header tk-form-header">
-                  <button className="tk-back" onClick={() => setScreen('list')}><Back /> 목록</button>
+                  <button className="tk-back" onClick={requestCloseForm}><Back /> 목록</button>
                   <div className="rg-eyebrow">진료항목</div>
                   <div className="cn-header-title">{selId === null ? '진료항목 등록' : '진료항목 정보'}</div>
                 </div>
 
                 <div className="rg-container">
                   <div className="rg-form">
+                    {formError && <div className="tk-form-error"><WarnIc />{formError}</div>}
                     <section className="rg-card required">
                       <div className="rg-group-title">필수 정보</div>
                       <div className="rg-field">
@@ -982,7 +1188,7 @@ function TiKakao() {
                       </div>
                       <div className="rg-field price">
                         <FieldHead label="가격 정보" helpers={['환자에게 보여줄 가격 정보를 설정해 주세요. (예: 횟수별, 시술명별 등)']} />
-                        <div className="rg-price-list">{d.prices.map((p) => (<PriceRow key={p.id} p={p} onChange={(u) => setPrice(p.id, u)} onDelete={() => delPrice(p.id)} titleErr={errors[`price-${p.id}-title`]} amountErr={errors[`price-${p.id}-amount`]} />))}</div>
+                        <div className="rg-price-list">{d.prices.map((p) => (<PriceRow key={p.id} p={p} onChange={(u) => setPrice(p.id, u)} onDelete={() => delPrice(p.id)} onDragStart={() => setDragPriceId(p.id)} onDrop={() => movePrice(p.id)} titleErr={errors[`price-${p.id}-title`]} amountErr={errors[`price-${p.id}-amount`]} />))}</div>
                       </div>
                       <div className="rg-add-wrap"><button className="rg-add-btn" onClick={addPrice}><PlusIcon /> 가격 옵션 추가</button></div>
                     </section>
@@ -1113,8 +1319,9 @@ function TiKakao() {
 
                 <div className="rg-footer">
                   <div className="rg-footer-left">
-                    <button className="rg-btn-cancel" onClick={() => setScreen('list')}>취소</button>
+                    <button className="rg-btn-cancel" onClick={requestCloseForm}>취소</button>
                     <button className="rg-btn-save" onClick={save}>저장</button>
+                    {selId !== null && <button className="tk-detail-delete" onClick={() => setDeleteId(selId)}>삭제</button>}
                   </div>
                   <div className="rg-footer-right">
                     <span className="rg-footer-label">{d.gdVisible ? '환자들에게 진료항목을 노출합니다.' : '진료항목을 노출하지 않습니다.'}</span>
@@ -1122,6 +1329,23 @@ function TiKakao() {
                   </div>
                 </div>
               </>
+            )}
+
+            {deleteId !== null && (
+              <div className="ap-dim" onClick={() => setDeleteId(null)}><div className="ap-modal set-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="ap-modal-title">해당 진료항목을 삭제하시겠어요?</div>
+                <div className="set-modal-body">삭제하면 굿닥 서비스에 더 이상 노출되지 않으며,<br/>해당 항목으로 예약할 수 없게 됩니다.</div>
+                <div className="tk-delete-warning">한 번 삭제한 정보는 되돌릴 수 없으니 유의해 주세요.</div>
+                <div className="ap-modal-btns"><button className="rg-btn-cancel" onClick={() => setDeleteId(null)}>취소</button><button className="set-modal-danger" onClick={confirmDelete}>확인</button></div>
+              </div></div>
+            )}
+
+            {leaveOpen && (
+              <div className="ap-dim" onClick={() => setLeaveOpen(false)}><div className="ap-modal set-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="ap-modal-title">진료항목 정보 입력을 그만하시겠어요?</div>
+                <div className="set-modal-body">그만하면 지금까지 입력한 정보는 저장되지 않아요.</div>
+                <div className="ap-modal-btns"><button className="rg-btn-cancel" onClick={() => setLeaveOpen(false)}>취소</button><button className="rg-btn-save" onClick={closeForm}>확인</button></div>
+              </div></div>
             )}
 
             {toast && <div className="rg-toast">{toast}</div>}

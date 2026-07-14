@@ -818,7 +818,7 @@ function TiKakao() {
         <TitleBar />
         <div className="cn-body">
           <SideNav page={page} onNav={nav} />
-          <main className="cn-main rg-main tk-main">
+          <main className={`cn-main rg-main tk-main${page === 'items' && screen === 'form' ? ' is-form' : ''}`}>
 
             {/* ========================= 예약 신청 내역 ========================= */}
             {page === 'appt' && <ApptScreen showToast={showToast} />}

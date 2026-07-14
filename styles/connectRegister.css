@@ -242,18 +242,15 @@
 /* =========================================================
    하단 고정 풋터
    ========================================================= */
-/* 하단 액션 바 — 브라우저 뷰포트 최하단 고정(스티키). 1280 프레임에 맞춰 중앙 정렬. */
+/* 하단 액션 바 — 뷰포트 최하단 스티키 고정. 전체너비 레이아웃(overflow:visible)이라 sticky가 window 기준으로 동작. */
 .rg-footer {
-  position: fixed; left: 50%; transform: translateX(-50%); bottom: 0; width: 1280px; z-index: 40;
+  position: sticky; bottom: 0; z-index: 40;
   height: 64px;
   background: var(--white);
   border-top: 1px solid #e3e6ed;
-  border-radius: 0 0 16px 16px;
   padding: 0 64px;
   display: flex; align-items: center; gap: 8px;
 }
-/* 고정 바에 가리지 않도록 폼 본문 하단 여백 확보 */
-.cn-main.is-form { padding-bottom: 88px; }
 .rg-footer-left { flex: 1; display: flex; align-items: center; gap: 8px; }
 .rg-btn-cancel {
   width: 80px; height: 40px;

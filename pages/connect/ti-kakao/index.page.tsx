@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from 'react';
+import { ChangeDrawer, type PolicyChange, type PrototypeView } from '../../../components/prototype/ChangeDrawer';
+import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manifests/ti-kakao';
 
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-kakao — 진료항목 카카오 노출 + 예약 신청 내역 + 운영 설정
- * 상태     : 현행(active)   버전: v11  최종수정: 2026-07-13
- * PRD      : Notion "진료항목 카카오톡 예약하기 연동" PRD v0.4  (링크 붙이기)
+ * 상태     : 현행(active)   버전: v12  최종수정: 2026-07-14
+ * PRD      : GCP-1 · 2.1-review · 3-미션·기획/1-PRD/2026-07-13-진료항목-카카오톡-예약하기-연동-구축.md
  * 배포URL  : https://connect-sq-sandbox.github.io/out/ti-kakao.html
  * 관련 CSS : connectRegister.css + connectTiKakao.css
  * 기술제약 : react-only · plain CSS · mock · 네트워크 0
@@ -32,6 +34,7 @@ import React, { useMemo, useState } from 'react';
  *   - 규격위반 자동보정 정책 명문화
  *
  * 변경 이력:
+ *   v12 2026-07-14 — 공통 우측 정책 변경 패널 추가. 화면 위치 강조 + 공개 정책 요약 Markdown 열람 + PRD ID 추적.
  *   v11 2026-07-13 — 질문 입력 UI를 네이버 폼 참고로 개선: 유형=드롭다운(객관식/주관식), 답변 필수·복수 선택=토글, 질문 추가 단일 버튼.
  *                    '복수 선택'은 유형이 아닌 토글(객관식 내 radio↔select). 개수 상한 주관식 10 / 객관식(합산) 10.
  *   v10 2026-07-13 — 질문 생성 필드 디자인을 Figma 컴포넌트(18305:65068)에 맞춤: 필수/선택 버튼(w64·연한 테두리), 체크박스 18px,
@@ -464,7 +467,7 @@ function ApptScreen({ showToast }: { showToast: (m: string) => void }) {
         <div className="ap-sub">굿닥·카카오톡 예약하기 등 여러 채널에서 들어온 비급여 진료항목 예약을 함께 관리해요.</div>
       </div>
 
-      <div className="ap-body">
+      <div className="ap-body" data-policy-id="gcp1-appointment-channel">
         {/* 탭 */}
         <div className="ap-tabs">
           {APPT_TABS.map((t) => (
@@ -685,7 +688,7 @@ function SettingsScreen({ itemCount, showToast }: { itemCount: number; showToast
         <div className="ap-sub">굿닥에 등록한 비급여 진료항목으로 예약을 받을 수 있습니다.</div>
       </div>
 
-      <div className="set-body">
+      <div className="set-body" data-policy-id="gcp1-operation-settings">
         {/* 비급여 예약 받기 */}
         <SettingBox
           title="비급여 예약 받기"
@@ -812,6 +815,27 @@ function TiKakao() {
   const delOpt = (id: number, idx: number) => { const q = d?.kExtra.questions.find((x) => x.id === id); if (q && q.options.length > K_Q_OPT_MIN) setQ(id, { options: q.options.filter((_, i) => i !== idx) }); };
   const toggleGdVisible = (id: number) => setItems((prev) => prev.map((it) => (it.id === id ? { ...it, gdVisible: !it.gdVisible } : it)));
 
+  const currentView: PrototypeView = page === 'items' ? (screen === 'form' ? 'items-form' : 'items-list') : page;
+  const locatePolicyChange = (change: PolicyChange) => {
+    if (change.view === 'items-list') { setPage('items'); setScreen('list'); }
+    if (change.view === 'items-form') {
+      setPage('items');
+      const targetItem = items.find((item) => item.kakaoOn) || items[0];
+      if (targetItem) open(targetItem);
+    }
+    if (change.view === 'appt') setPage('appt');
+    if (change.view === 'settings') setPage('settings');
+
+    window.setTimeout(() => {
+      const target = document.querySelector(`[data-policy-id="${change.targetId}"]`);
+      if (!(target instanceof HTMLElement)) return;
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      target.classList.remove('pc-policy-highlight');
+      window.requestAnimationFrame(() => target.classList.add('pc-policy-highlight'));
+      window.setTimeout(() => target.classList.remove('pc-policy-highlight'), 2600);
+    }, 80);
+  };
+
   return (
     <div className="cn-artboard">
       <div className="cn-screen">
@@ -837,7 +861,7 @@ function TiKakao() {
                   <button className="tk-btn-primary" onClick={create}><PlusIcon /> 새 진료항목</button>
                 </div>
 
-                <div className="tk-list-body">
+                <div className="tk-list-body" data-policy-id="gcp1-channel-overview">
                   <div className="tk-grid">
                     <div className="tk-grid-chead"><span className="tk-grid-title">카테고리</span></div>
                     <div className="tk-grid-ihead"><span className="tk-grid-title">{selCat1}</span></div>
@@ -934,7 +958,7 @@ function TiKakao() {
                     </section>
 
                     {/* 카카오톡 예약하기에서도 보이기 */}
-                    <section className="rg-card tk-kcard">
+                    <section className="rg-card tk-kcard" data-policy-id="gcp1-channel-visibility">
                       <div className="tk-khead">
                         <div className="tk-khead-left"><KakaoMark cls="tk-khead-mark" /><div className="tk-khead-text"><div className="tk-khead-title">카카오톡 예약하기에서도 보이기</div><div className="rg-help">켜면 이 진료항목이 카카오톡 예약하기에도 상품으로 보여요. 끄면 카카오에서만 안 보이며 입력한 정보는 그대로 유지돼요.</div></div></div>
                         <button className={`rg-toggle${d.kakaoOn ? '' : ' off'}${hospitalLinked ? '' : ' disabled'}`} onClick={() => hospitalLinked && patch({ kakaoOn: !d.kakaoOn })}><span className="rg-toggle-knob" /></button>
@@ -1029,6 +1053,7 @@ function TiKakao() {
             {toast && <div className="rg-toast">{toast}</div>}
           </main>
         </div>
+        <ChangeDrawer currentView={currentView} changes={TI_KAKAO_CHANGES} sources={POLICY_SOURCES} onLocate={locatePolicyChange} />
       </div>
     </div>
   );

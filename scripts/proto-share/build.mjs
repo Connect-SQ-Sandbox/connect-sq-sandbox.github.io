@@ -17,6 +17,7 @@ import * as esbuild from 'esbuild';
 
 import { resolveCssFiles } from './css-manifest.mjs';
 import { renderHtml } from './template.mjs';
+import { validatePolicySummaries } from './validate-policy-summaries.mjs';
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(SCRIPT_DIR, '../..');
@@ -74,6 +75,14 @@ async function main() {
     args.out || path.basename(path.dirname(pageRel)) || 'prototype';
   const title = args.title || outName;
 
+  /* ---- 0) 공개 정책 요약 검증 ---- */
+  let policySummaries;
+  try {
+    policySummaries = validatePolicySummaries(REPO_ROOT);
+  } catch (error) {
+    fail(`정책 요약 검증 실패 — ${error.message}`);
+  }
+
   /* ---- 1) 프리플라이트 가드 ---- */
   const source = fs.readFileSync(pageAbs, 'utf8');
   for (const blocker of BLOCKERS) {
@@ -108,7 +117,7 @@ async function main() {
       minify: true,
       target: ['es2019'],
       define: { 'process.env.NODE_ENV': '"production"' },
-      loader: { '.svg': 'dataurl', '.png': 'dataurl', '.jpg': 'dataurl', '.gif': 'dataurl' },
+      loader: { '.svg': 'dataurl', '.png': 'dataurl', '.jpg': 'dataurl', '.gif': 'dataurl', '.md': 'text' },
       alias: { '@': REPO_ROOT },
       absWorkingDir: REPO_ROOT,
       legalComments: 'none'
@@ -151,6 +160,7 @@ async function main() {
   console.log(`  output : ${outPath}`);
   console.log(`  size   : ${sizeKb} KB`);
   console.log(`  외부참조: ${externalRefs}${externalRefs === 0 ? ' (OK)' : ' ⚠ 0이어야 합니다!'}`);
+  console.log(`  PRD 요약: ${policySummaries.map((item) => `${item.prdId}(${item.publicationStatus})`).join(', ')}`);
   console.log(`\n  → 이 경로를 Claude Artifact로 발행하면 공유 링크가 생성됩니다.\n`);
 
   if (externalRefs !== 0) process.exit(2);

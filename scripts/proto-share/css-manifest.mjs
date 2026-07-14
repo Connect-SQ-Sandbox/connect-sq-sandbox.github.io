@@ -5,7 +5,7 @@
  */
 
 /** 모든 connect 화면이 공유하는 기반 CSS (순서 유지) */
-export const SHARED_CSS = ['styles/globals.css', 'styles/connectShell.css'];
+export const SHARED_CSS = ['styles/globals.css', 'styles/connectShell.css', 'styles/prototypeChanges.css'];
 
 /** 페이지 디렉터리명 -> 화면 전용 CSS */
 export const SCREEN_CSS = {

@@ -13,6 +13,7 @@ webview together so product policy can be reviewed as an interactive screen.
 - Never treat `docs/policy-summaries/` as an editable policy source. It contains
   public-safe, derived summaries only.
 - Every summary and change entry must show a stable source `prd_id`.
+- Every source PRD requires `target_release_at` as an ISO date or `null`.
 - New approved changes require `status: approved`, `approved_by`, `approved_at`,
   and `version` in the canonical PRD.
 - Existing GCP-1 entries are a clearly labelled prototype baseline because the
@@ -24,6 +25,8 @@ webview together so product policy can be reviewed as an interactive screen.
 - Never copy a full internal PRD, customer data, credentials, commercial terms,
   private links, or unpublished operational detail into this repository.
 - Publish only the minimum policy summary needed to understand the prototype.
+- A draft or review summary may be published only as a clearly labelled planned
+  preview with a concrete screen target and no internal-only detail.
 
 ## Design and interaction
 
@@ -36,6 +39,10 @@ webview together so product policy can be reviewed as an interactive screen.
   feature. It is closed by default and overlays the webview without resizing it.
 - Clicking a change locates and highlights the affected screen section. The PRD
   action opens the public-safe Markdown summary inside the drawer.
+- Planned content is hidden by default. When enabled, the page must show a
+  persistent unapproved-preview notice and restore the current-state view when
+  the toggle is turned off.
+- Every change card shows the source target release date; `null` renders as `미정`.
 
 ## File contracts
 

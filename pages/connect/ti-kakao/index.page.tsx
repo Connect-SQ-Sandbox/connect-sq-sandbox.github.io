@@ -5,7 +5,7 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-kakao — 진료항목 카카오 노출 + 예약 신청 내역 + 운영 설정
- * 상태     : 현행(active)   버전: v12  최종수정: 2026-07-14
+ * 상태     : 현행(active)   버전: v13  최종수정: 2026-07-14
  * PRD      : GCP-1 · 2.1-review · 3-미션·기획/1-PRD/2026-07-13-진료항목-카카오톡-예약하기-연동-구축.md
  * 배포URL  : https://connect-sq-sandbox.github.io/out/ti-kakao.html
  * 관련 CSS : connectRegister.css + connectTiKakao.css
@@ -34,6 +34,7 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
  *   - 규격위반 자동보정 정책 명문화
  *
  * 변경 이력:
+ *   v13 2026-07-14 — 기본 OFF 예정 정책 필터 추가. ON 시 검토 중 PRD 카드와 예정 화면 표현, 예정 배포일 노출.
  *   v12 2026-07-14 — 공통 우측 정책 변경 패널 추가. 화면 위치 강조 + 공개 정책 요약 Markdown 열람 + PRD ID 추적.
  *   v11 2026-07-13 — 질문 입력 UI를 네이버 폼 참고로 개선: 유형=드롭다운(객관식/주관식), 답변 필수·복수 선택=토글, 질문 추가 단일 버튼.
  *                    '복수 선택'은 유형이 아닌 토글(객관식 내 radio↔select). 개수 상한 주관식 10 / 객관식(합산) 10.
@@ -351,12 +352,15 @@ function GoodocPreview({ d }: { d: Item }) {
 
 /* ============================ 목록: 인입 채널 표기 + 항목 행 ============================ */
 /** 굿닥/카카오 심볼 나란히. 보임=풀컬러, 안 보임=회색. 노출 캐스케이드(굿닥 OFF→카카오 OFF) 반영. */
-function ChannelMarks({ it }: { it: Item }) {
-  const w = kWarnCount(it);
-  const kakaoShown = it.kakaoOn && it.gdVisible;
-  const kakaoTitle = !it.kakaoOn
+function ChannelMarks({ it, plannedPreview = false }: { it: Item; plannedPreview?: boolean }) {
+  const previewItem = plannedPreview ? { ...it, kakaoOn: true } : it;
+  const w = kWarnCount(previewItem);
+  const kakaoShown = previewItem.kakaoOn && (plannedPreview || previewItem.gdVisible);
+  const kakaoTitle = plannedPreview
+    ? '예정안: 굿닥 노출과 무관하게 카카오톡 예약하기에서 보임'
+    : !previewItem.kakaoOn
     ? '카카오톡 예약하기에서 안 보임'
-    : !it.gdVisible
+    : !previewItem.gdVisible
       ? '굿닥 노출이 꺼져 있어 카카오에도 안 보임'
       : w > 0 ? `카카오톡 예약하기에서 보임 · 규격 검토 ${w}건` : '카카오톡 예약하기에서 보임';
   return (
@@ -368,15 +372,15 @@ function ChannelMarks({ it }: { it: Item }) {
     </span>
   );
 }
-function ItemRow({ it, onOpen, onToggle }: { it: Item; onOpen: () => void; onToggle: () => void }) {
+function ItemRow({ it, onOpen, onToggle, plannedPreview = false }: { it: Item; onOpen: () => void; onToggle: () => void; plannedPreview?: boolean }) {
   return (
     <div className="tk-l3">
       <span className="tk-l3-handle"><DragHandle /></span>
       <button className="tk-l3-detail" onClick={onOpen}>
-        <span className="tk-l3-name">{it.alias || it.name}</span>
+        <span className="tk-l3-name">{it.alias || it.name}{plannedPreview && <span className="pc-planned-row-badge">예정</span>}</span>
         <span className="tk-l3-price"><span className="tk-l3-price-text">{priceDisplay(it)}</span><span className="tk-l3-optcount">{it.prices.length}</span></span>
         <span className="tk-l3-thumb">{it.hasImage ? <span className="tk-l3-thumb-img" /> : <ThumbIcon />}</span>
-        <ChannelMarks it={it} />
+        <ChannelMarks it={it} plannedPreview={plannedPreview} />
       </button>
       <button className={`rg-toggle${it.gdVisible ? '' : ' off'}`} onClick={onToggle} aria-label="굿닥 노출 토글"><span className="rg-toggle-knob" /></button>
       <span className="tk-l3-del" aria-hidden><CloseIcon /></span>
@@ -764,6 +768,7 @@ function TiKakao() {
   const [dragQ, setDragQ] = useState<number | null>(null);
   const [qTypeOpen, setQTypeOpen] = useState<number | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [showPlanned, setShowPlanned] = useState(false);
   const hospitalLinked = true;
 
   const showToast = (m: string) => { setToast(m); window.setTimeout(() => setToast(null), 2200); };
@@ -782,6 +787,7 @@ function TiKakao() {
   }, [items, selCat1]);
   const isCustom = selCat1 === CUSTOM_CAT;
   const customItems = useMemo(() => items.filter((i) => i.cat1 === selCat1), [items, selCat1]);
+  const plannedPreviewItemId = showPlanned ? items.find((item) => !item.gdVisible)?.id ?? null : null;
 
   const nav = (p: Page) => { setPage(p); if (p === 'items') setScreen('list'); };
   const open = (it: Item) => { setSelId(it.id); setD({ ...it, prices: it.prices.map((p) => ({ ...p })), keywords: [...it.keywords], kExtra: { ...it.kExtra, questions: it.kExtra.questions.map((q) => ({ ...q, options: [...(q.options || [])] })) } }); setScreen('form'); };
@@ -843,6 +849,12 @@ function TiKakao() {
         <div className="cn-body">
           <SideNav page={page} onNav={nav} />
           <main className="cn-main rg-main tk-main">
+            {showPlanned && (
+              <div className="pc-planned-preview-banner" role="status">
+                <strong>예정 화면 미리보기</strong>
+                <span>확정 전 PRD를 시각화한 화면이며 실제 배포 시 변경될 수 있어요.</span>
+              </div>
+            )}
 
             {/* ========================= 예약 신청 내역 ========================= */}
             {page === 'appt' && <ApptScreen showToast={showToast} />}
@@ -876,12 +888,12 @@ function TiKakao() {
                     </nav>
                     <section className="tk-grid-ilist">
                       {isCustom ? (
-                        <div className="tk-l2-body">{customItems.map((it) => (<ItemRow key={it.id} it={it} onOpen={() => open(it)} onToggle={() => toggleGdVisible(it.id)} />))}</div>
+                        <div className="tk-l2-body">{customItems.map((it) => (<ItemRow key={it.id} it={it} plannedPreview={it.id === plannedPreviewItemId} onOpen={() => open(it)} onToggle={() => toggleGdVisible(it.id)} />))}</div>
                       ) : (
                         groups.map((g) => (
                           <div key={g.name} className="tk-l2">
                             <div className="tk-l2-head"><span className="tk-cat-handle"><DragHandle /></span><span className="tk-l2-name">{g.name}</span></div>
-                            <div className="tk-l2-body">{g.items.map((it) => (<ItemRow key={it.id} it={it} onOpen={() => open(it)} onToggle={() => toggleGdVisible(it.id)} />))}</div>
+                            <div className="tk-l2-body">{g.items.map((it) => (<ItemRow key={it.id} it={it} plannedPreview={it.id === plannedPreviewItemId} onOpen={() => open(it)} onToggle={() => toggleGdVisible(it.id)} />))}</div>
                             <div className="tk-l2-pad" />
                           </div>
                         ))
@@ -1053,7 +1065,14 @@ function TiKakao() {
             {toast && <div className="rg-toast">{toast}</div>}
           </main>
         </div>
-        <ChangeDrawer currentView={currentView} changes={TI_KAKAO_CHANGES} sources={POLICY_SOURCES} onLocate={locatePolicyChange} />
+        <ChangeDrawer
+          currentView={currentView}
+          changes={TI_KAKAO_CHANGES}
+          sources={POLICY_SOURCES}
+          showPlanned={showPlanned}
+          onShowPlannedChange={setShowPlanned}
+          onLocate={locatePolicyChange}
+        />
       </div>
     </div>
   );

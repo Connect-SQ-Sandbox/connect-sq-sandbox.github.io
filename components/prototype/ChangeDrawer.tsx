@@ -1,13 +1,14 @@
 import React, { useMemo, useState } from 'react';
 
 export type PrototypeView = 'items-list' | 'items-form' | 'appt' | 'settings';
-export type PublicationStatus = 'baseline' | 'approved';
+export type PublicationStatus = 'baseline' | 'approved' | 'planned';
 
 export type PolicySource = {
   prdId: string;
   title: string;
   version: string;
   sourceStatus: 'draft' | 'review' | 'approved' | 'superseded' | 'archived';
+  targetReleaseAt: string | null;
   sourcePath: string;
   summaryMarkdown: string;
 };
@@ -29,6 +30,8 @@ type Props = {
   currentView: PrototypeView;
   changes: PolicyChange[];
   sources: Record<string, PolicySource>;
+  showPlanned: boolean;
+  onShowPlannedChange: (show: boolean) => void;
   onLocate: (change: PolicyChange) => void;
 };
 
@@ -70,16 +73,29 @@ function MarkdownSummary({ markdown }: { markdown: string }) {
   );
 }
 
-export function ChangeDrawer({ currentView, changes, sources, onLocate }: Props) {
+const PUBLISH_LABEL: Record<PublicationStatus, string> = {
+  baseline: '현재 기준선',
+  approved: '승인 반영',
+  planned: '예정 · 확정 전'
+};
+
+const releaseLabel = (value: string | null) => value || '미정';
+
+export function ChangeDrawer({ currentView, changes, sources, showPlanned, onShowPlannedChange, onLocate }: Props) {
   const [open, setOpen] = useState(false);
   const [scope, setScope] = useState<'current' | 'all'>('current');
   const [summaryPrdId, setSummaryPrdId] = useState<string | null>(null);
 
-  const visible = useMemo(
-    () => changes.filter((change) => scope === 'all' || change.view === currentView),
-    [changes, currentView, scope]
+  const available = useMemo(
+    () => changes.filter((change) => showPlanned || change.publicationStatus !== 'planned'),
+    [changes, showPlanned]
   );
-  const currentCount = changes.filter((change) => change.view === currentView).length;
+  const visible = useMemo(
+    () => available.filter((change) => scope === 'all' || change.view === currentView),
+    [available, currentView, scope]
+  );
+  const currentCount = available.filter((change) => change.view === currentView).length;
+  const plannedCount = new Set(changes.filter((change) => change.publicationStatus === 'planned').map((change) => change.prdId)).size;
   const summary = summaryPrdId ? sources[summaryPrdId] : null;
 
   const close = () => { setOpen(false); setSummaryPrdId(null); };
@@ -112,6 +128,7 @@ export function ChangeDrawer({ currentView, changes, sources, onLocate }: Props)
               <span className="pc-prd-id">PRD {summary.prdId}</span>
               <span className={`pc-source-status ${summary.sourceStatus}`}>{summary.sourceStatus}</span>
             </div>
+            <div className="pc-summary-release">예정 배포 · {releaseLabel(summary.targetReleaseAt)}</div>
             <div className="pc-summary-source">원본: {summary.sourcePath}</div>
             <MarkdownSummary markdown={summary.summaryMarkdown} />
           </div>
@@ -120,12 +137,29 @@ export function ChangeDrawer({ currentView, changes, sources, onLocate }: Props)
             <div className="pc-drawer-title-wrap">
               <h2>정책 변경 내역</h2>
               <p>현재 화면에 반영된 정책과 원본 PRD를 확인할 수 있어요.</p>
+              <div className="pc-planned-filter">
+                <div>
+                  <strong>예정된 내용도 보기</strong>
+                  <span>확정 전 PRD {plannedCount}건</span>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-label="예정된 내용도 보기"
+                  aria-checked={showPlanned}
+                  className={`pc-switch${showPlanned ? ' on' : ''}`}
+                  onClick={() => onShowPlannedChange(!showPlanned)}
+                >
+                  <span />
+                </button>
+              </div>
+              {showPlanned && <div className="pc-planned-notice">예정 화면은 검토 중이며 실제 배포 시 변경될 수 있어요.</div>}
               <div className="pc-current-view">현재 화면 · {VIEW_LABEL[currentView]}</div>
             </div>
 
             <div className="pc-scope" role="tablist" aria-label="변경 범위">
               <button type="button" className={scope === 'current' ? 'active' : ''} onClick={() => setScope('current')}>현재 화면 <span>{currentCount}</span></button>
-              <button type="button" className={scope === 'all' ? 'active' : ''} onClick={() => setScope('all')}>전체 <span>{changes.length}</span></button>
+              <button type="button" className={scope === 'all' ? 'active' : ''} onClick={() => setScope('all')}>전체 <span>{available.length}</span></button>
             </div>
 
             <div className="pc-change-list">
@@ -133,11 +167,11 @@ export function ChangeDrawer({ currentView, changes, sources, onLocate }: Props)
               {visible.map((change) => {
                 const source = sources[change.prdId];
                 return (
-                  <article className="pc-change-card" key={change.id}>
+                  <article className={`pc-change-card${change.publicationStatus === 'planned' ? ' planned' : ''}`} key={change.id}>
                     <button className="pc-change-main" type="button" onClick={() => locate(change)}>
                       <div className="pc-change-meta">
                         <span className="pc-prd-id">PRD {change.prdId}</span>
-                        <span className={`pc-publish ${change.publicationStatus}`}>{change.publicationStatus === 'approved' ? '승인 반영' : '현재 기준선'}</span>
+                        <span className={`pc-publish ${change.publicationStatus}`}>{PUBLISH_LABEL[change.publicationStatus]}</span>
                         <time>{change.date}</time>
                       </div>
                       <h3>{change.title}</h3>
@@ -146,7 +180,7 @@ export function ChangeDrawer({ currentView, changes, sources, onLocate }: Props)
                       <div className="pc-locate-hint">화면에서 위치 보기 →</div>
                     </button>
                     <div className="pc-change-foot">
-                      <span>프로토타입 {change.prototypeVersion}</span>
+                      <span>프로토타입 {change.prototypeVersion} · 예정 배포 {releaseLabel(source?.targetReleaseAt ?? null)}</span>
                       <button type="button" onClick={() => setSummaryPrdId(change.prdId)} disabled={!source}>PRD 요약 보기</button>
                     </div>
                   </article>

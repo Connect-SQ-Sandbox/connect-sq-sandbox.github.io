@@ -30,6 +30,8 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
  *   [폐기]      구버전 kakao-link(별도 연동관리 페이지형) → ti-kakao로 대체
  *
  * 변경 이력:
+ *   v16 2026-07-14 — 질문 필드 글자 수 제한 정합: 질문 name 120자(API 명시·required) 유지, 설명 description 100자·선택지 항목 50자
+ *                    (API 미명시 → 내부 관례 기반 권장값) 신규 적용. 목록 행 상태 라벨(노출중/미노출)·채널 사각 뱃지 Figma 반영.
  *   v15 2026-07-14 — 제품 화면에 필요한 노출 설정과 안내만 유지.
  *   v11 2026-07-13 — 질문 입력 UI를 네이버 폼 참고로 개선: 유형=드롭다운(객관식/주관식), 답변 필수·복수 선택=토글, 질문 추가 단일 버튼.
  *                    '복수 선택'은 유형이 아닌 토글(객관식 내 radio↔select). 개수 상한 주관식 10 / 객관식(합산) 10.
@@ -116,7 +118,9 @@ const K_Q_TEXT_MAX = 10;      // 주관식(infos[]) — API 명시값
 const K_Q_CHOICE_MAX = 10;    // 객관식(단수 radioInfos + 복수 selectInfos 합산) — 권장. '복수 선택'은 유형이 아니라 토글
 const K_Q_OPT_MIN = 2;        // 선택형 선택지 최소 개수
 const K_Q_OPT_MAX = 10;       // 선택형 선택지 최대 개수 (권장)
-const K_Q_NAME_MAX = 120;     // 카카오 질문(부가정보 name) 최대 120자
+const K_Q_NAME_MAX = 120;     // 카카오 질문(부가정보 name) 최대 120자 — API 명시(주관식/단수/복수 공통, required)
+const K_Q_DESC_MAX = 100;     // 선택형 질문 설명(description) — API 제한 없음(선택 필드) → 권장값(가격 설명과 동일 100자)
+const K_Q_OPT_LEN_MAX = 50;   // 선택지 항목(value[]) 글자 수 — API 제한 없음 → 권장값(명칭 계열 50자, 상품명과 동일)
 const K_INFO_MAX = 2000;      // 카카오 이용 방법(information) 최대 2,000자
 const K_CANCEL_MAX = 100;     // 카카오 취소 유의사항(cancelNotice) 최대 100자
 const DETAIL_DESC_MAX = 2000; // 상세 소개(detailDescription) 최대 글자수 (요청 반영 — 실제 코드 MAX_LENGTH는 5,000)
@@ -1026,12 +1030,12 @@ function TiKakao() {
                                     </div>
                                     {q.type !== 'text' && (
                                       <div className="tk-q-choice">
-                                        <input className="rg-input" placeholder="설명 입력 (선택)" value={q.description} onChange={(e) => setQ(q.id, { description: e.target.value })} />
+                                        <input className="rg-input" placeholder="설명 입력 (선택)" maxLength={K_Q_DESC_MAX} value={q.description} onChange={(e) => setQ(q.id, { description: e.target.value })} />
                                         <div className="tk-q-opts">
                                           {q.options.map((opt, i) => (
                                             <div key={i} className="tk-q-optrow">
                                               <span className={`tk-q-optmark ${q.type}`} />
-                                              <input className="rg-input" placeholder={`항목 ${i + 1}`} value={opt} onChange={(e) => setOpt(q.id, i, e.target.value)} />
+                                              <input className="rg-input" placeholder={`항목 ${i + 1}`} maxLength={K_Q_OPT_LEN_MAX} value={opt} onChange={(e) => setOpt(q.id, i, e.target.value)} />
                                               <button className="rg-price-del" onClick={() => delOpt(q.id, i)} disabled={q.options.length <= K_Q_OPT_MIN} aria-label="항목 삭제"><CloseIcon /></button>
                                             </div>
                                           ))}

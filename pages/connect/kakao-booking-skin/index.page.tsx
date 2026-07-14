@@ -1,11 +1,11 @@
 import React, { useEffect } from 'react';
-import imgHero from '@/assets/kakao-reference/ab-ticket-hero.png';
+import imgHero from '@/assets/kakao-reference/ab-thumb-skin.png';
 
 /**
- * kakao-booking-ticket — 카카오톡 예약하기 · 진료항목 상세 (성형외과 신규예약)
- * 원본/참고: booking.kakao.com/detail/ticket/509667
- * 배포: https://connect-sq-sandbox.github.io/out/kakao-booking-ticket.html
- * 표준 클론(kakao-booking-clone.html)의 body+script를 dangerouslySetInnerHTML+useEffect로 주입(self-contained).
+ * kakao-booking-skin — 카카오톡 예약하기 · 피부클리닉 시술예약 (진료실 연동)
+ * 원본/참고: booking.kakao.com (진료실 연동 유형 예시)
+ * 배포: https://connect-sq-sandbox.github.io/out/kakao-booking-skin.html
+ * 표준 클론(kakao-booking-skin.html)의 body+script를 dangerouslySetInnerHTML+useEffect로 주입(self-contained).
  * 크로스링크는 out 배포명으로 매핑됨. 이미지는 assets 인라인.
  */
 
@@ -25,8 +25,8 @@ const BODY = `<div class="app">
   <div class="card">
     <div class="hero" style="background-image:linear-gradient(rgba(0,0,0,.04),rgba(0,0,0,.04)),url('__IMG_HERO__')"></div>
     <div class="product">
-      <h1 class="tit">성형외과 신규예약</h1>
-      <p class="desc">ABsolute beauty, 자연스럽게 더 나답게.</p>
+      <h1 class="tit">피부클리닉 시술예약</h1>
+      <p class="desc">AB SKIN CLINIC 오늘보다 내일 더, 빛나게</p>
     </div>
     <div class="chbanner" onclick="toast('채널이 추가되었습니다')">
       <span class="ch-ic">Ch+</span>
@@ -85,16 +85,6 @@ const BODY = `<div class="app">
       <div class="slots" id="amSlots"></div>
       <div class="tg-label">오후</div>
       <div class="slots" id="pmSlots"></div>
-    </div>
-
-    <!-- TREATMENT -->
-    <div class="treat-head disabled" id="treatHead">
-      <svg class="h-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
-      <span class="h-title">진료/시술을 선택하세요</span>
-    </div>
-    <div id="treatList" style="padding-bottom:8px;">
-      <div class="opt locked" data-name="신규상담"><span class="radio-c"></span><span class="o-name">신규상담</span></div>
-      <div class="opt locked" data-name="재진 (대표번호로 전화부탁드립니다)"><span class="radio-c"></span><span class="o-name">재진 (대표번호로 전화부탁드립니다)</span></div>
     </div>
 
   </section>
@@ -206,7 +196,7 @@ const SCRIPT = `const WD = ['일','월','화','수','목','금','토'];
   }
 
   function selectDate(d, col, btn){
-    state.date={d,col}; state.time=null; state.treat=null;
+    state.date={d,col}; state.time=null;
     document.querySelectorAll('.day.selected').forEach(e=>e.classList.remove('selected'));
     btn.classList.add('selected');
     document.getElementById('dateTitle').textContent='26.07.'+String(d).padStart(2,'0')+'('+WD[col]+')';
@@ -216,41 +206,26 @@ const SCRIPT = `const WD = ['일','월','화','수','목','금','토'];
     document.getElementById('timeTitle').textContent='시간을 선택하세요';
     setAcc('time',true);
     document.querySelectorAll('.slot.selected').forEach(e=>e.classList.remove('selected'));
-
-    // reset treatment
-    document.getElementById('treatHead').classList.add('disabled');
-    document.querySelectorAll('.opt').forEach(o=>{o.classList.remove('selected');o.classList.add('locked');});
     updateReserve();
   }
 
   function selectTime(period, t, el){
-    state.time={period,t}; state.treat=null;
+    state.time={period,t};
     document.querySelectorAll('.slot.selected').forEach(e=>e.classList.remove('selected'));
     el.classList.add('selected');
     document.getElementById('timeTitle').textContent=period+' '+t;
-
-    // enable treatment
-    document.getElementById('treatHead').classList.remove('disabled');
-    document.querySelectorAll('.opt').forEach(o=>{
-      o.classList.remove('locked','selected');
-      o.onclick=()=>selectTreat(o.dataset.name,o);
-    });
     updateReserve();
   }
 
-  function selectTreat(name, el){
-    state.treat=name;
-    document.querySelectorAll('.opt.selected').forEach(e=>e.classList.remove('selected'));
-    el.classList.add('selected');
-    updateReserve();
-  }
-
+  // 진료실 연동: 상품 자체가 진료실이라 별도 진료실 선택 없음 → 날짜·시간만으로 예약 가능
   function updateReserve(){
-    document.getElementById('reserveBtn').disabled = !(state.date&&state.time&&state.treat);
+    document.getElementById('reserveBtn').disabled = !(state.date&&state.time);
   }
 
   function onReserve(){
-    toast('예약 신청: 26.07.'+String(state.date.d).padStart(2,'0')+' '+state.time.period+' '+state.time.t+' · '+state.treat);
+    // 진료실 연동 예약: 선택 일시 저장 후 카카오 예약 확인·약관 동의 퍼널로 이동
+    try{ sessionStorage.setItem('gd_appt', JSON.stringify({d:state.date.d, wd:WD[state.date.col], period:state.time.period, t:state.time.t})); }catch(e){}
+    location.href='kakao-booking-skin-confirm.html';
   }
 
   // ---- accordions (date/time) ----

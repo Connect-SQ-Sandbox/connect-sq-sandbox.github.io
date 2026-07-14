@@ -5,11 +5,11 @@ import imgThumbSurgery from '@/assets/kakao-reference/ab-thumb-surgery.png';
 import imgThumbSkin from '@/assets/kakao-reference/ab-thumb-skin.png';
 
 /**
- * kakao-booking — 카카오톡 예약하기 "병원 상세" 픽셀 클론 (에이비성형외과의원)
- * 원본: https://booking.kakao.com/detail/ticketStore/212597
+ * kakao-booking — 카카오톡 예약하기 · 병원 상세 (에이비성형외과의원)
+ * 원본/참고: booking.kakao.com/detail/ticketStore/212597
  * 배포: https://connect-sq-sandbox.github.io/out/kakao-booking.html
- * 진료항목 클릭 → out/kakao-booking-ticket.html (하위 뎁스). 이미지는 assets 인라인(self-contained).
- * CSS: styles/kakaoBooking.css / 마크업·스크립트는 표준 클론을 그대로 주입(dangerouslySetInnerHTML+useEffect).
+ * 표준 클론(kakao-hospital-clone.html)의 body+script를 dangerouslySetInnerHTML+useEffect로 주입(self-contained).
+ * 크로스링크는 out 배포명으로 매핑됨. 이미지는 assets 인라인.
  */
 
 const BODY = `<div class="app">
@@ -76,7 +76,7 @@ const BODY = `<div class="app">
     <h4 class="sr-only" style="position:absolute;width:0;height:0;overflow:hidden;">티켓상품</h4>
 
     <div class="prodcard" onclick="location.href='kakao-booking-ticket.html'">
-      <div class="p-thumb" style="background-image:url('__IMG_THUMB_SURGERY__')"></div>
+      <div class="p-thumb" style="background-image:url('__IMG_IMG_THUMB_SURGERY__')"></div>
       <div class="p-body">
         <div class="p-tit">성형외과 신규예약</div>
         <div class="p-desc">ABsolute beauty, 자연스럽게 더 나답게.</div>
@@ -84,12 +84,12 @@ const BODY = `<div class="app">
       </div>
     </div>
 
-    <div class="prodcard" onclick="toast('피부클리닉 시술예약 상세(미구현)')">
-      <div class="p-thumb" style="background-image:url('__IMG_THUMB_SKIN__')"></div>
+    <div class="prodcard" onclick="location.href='kakao-booking-skin.html'">
+      <div class="p-thumb" style="background-image:url('__IMG_IMG_THUMB_SKIN__')"></div>
       <div class="p-body">
         <div class="p-tit">피부클리닉 시술예약</div>
         <div class="p-desc">AB SKIN CLINIC 오늘보다 내일 더, 빛나게</div>
-        <button class="p-btn" onclick="event.stopPropagation();toast('피부클리닉 시술예약 상세(미구현)')">예약하기</button>
+        <button class="p-btn" onclick="event.stopPropagation();location.href='kakao-booking-skin.html'">예약하기</button>
       </div>
     </div>
   </div>
@@ -277,8 +277,8 @@ const BODY = `<div class="app">
 
 const SCRIPT = `// carousel
   const SLIDES=[
-    "url('__IMG_CAROUSEL1__')",
-    "url('__IMG_CAROUSEL2__')",
+    "url('__IMG_IMG_CAROUSEL1__')",
+    "url('__IMG_IMG_CAROUSEL2__')",
     "linear-gradient(135deg,#c7ccd3,#e4e6ea)"
   ];
   let ci=0;
@@ -326,19 +326,13 @@ const SCRIPT = `// carousel
   function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),1700);}`;
 
 const IMAGES: Record<string, string> = {
-  '__IMG_CAROUSEL1__': imgCarousel1,
-  '__IMG_CAROUSEL2__': imgCarousel2,
-  '__IMG_THUMB_SURGERY__': imgThumbSurgery,
-  '__IMG_THUMB_SKIN__': imgThumbSkin
+  '__IMG_IMG_CAROUSEL1__': imgCarousel1,
+  '__IMG_IMG_CAROUSEL2__': imgCarousel2,
+  '__IMG_IMG_THUMB_SURGERY__': imgThumbSurgery,
+  '__IMG_IMG_THUMB_SKIN__': imgThumbSkin
 };
 
-function applyImages(text) {
-  let out = text;
-  for (const key of Object.keys(IMAGES)) {
-    out = out.split(key).join(IMAGES[key]);
-  }
-  return out;
-}
+function applyImages(text) { let out = text; for (const key of Object.keys(IMAGES)) out = out.split(key).join(IMAGES[key]); return out; }
 
 export default function Page() {
   useEffect(() => {

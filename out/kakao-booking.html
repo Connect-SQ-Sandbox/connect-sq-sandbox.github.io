@@ -630,7 +630,7 @@ Error generating stack: `+X.message+`
     <h4 class="sr-only" style="position:absolute;width:0;height:0;overflow:hidden;">\uD2F0\uCF13\uC0C1\uD488</h4>
 
     <div class="prodcard" onclick="location.href='kakao-booking-ticket.html'">
-      <div class="p-thumb" style="background-image:url('__IMG_THUMB_SURGERY__')"></div>
+      <div class="p-thumb" style="background-image:url('__IMG_IMG_THUMB_SURGERY__')"></div>
       <div class="p-body">
         <div class="p-tit">\uC131\uD615\uC678\uACFC \uC2E0\uADDC\uC608\uC57D</div>
         <div class="p-desc">ABsolute beauty, \uC790\uC5F0\uC2A4\uB7FD\uAC8C \uB354 \uB098\uB2F5\uAC8C.</div>
@@ -638,12 +638,12 @@ Error generating stack: `+X.message+`
       </div>
     </div>
 
-    <div class="prodcard" onclick="toast('\uD53C\uBD80\uD074\uB9AC\uB2C9 \uC2DC\uC220\uC608\uC57D \uC0C1\uC138(\uBBF8\uAD6C\uD604)')">
-      <div class="p-thumb" style="background-image:url('__IMG_THUMB_SKIN__')"></div>
+    <div class="prodcard" onclick="location.href='kakao-booking-skin.html'">
+      <div class="p-thumb" style="background-image:url('__IMG_IMG_THUMB_SKIN__')"></div>
       <div class="p-body">
         <div class="p-tit">\uD53C\uBD80\uD074\uB9AC\uB2C9 \uC2DC\uC220\uC608\uC57D</div>
         <div class="p-desc">AB SKIN CLINIC \uC624\uB298\uBCF4\uB2E4 \uB0B4\uC77C \uB354, \uBE5B\uB098\uAC8C</div>
-        <button class="p-btn" onclick="event.stopPropagation();toast('\uD53C\uBD80\uD074\uB9AC\uB2C9 \uC2DC\uC220\uC608\uC57D \uC0C1\uC138(\uBBF8\uAD6C\uD604)')">\uC608\uC57D\uD558\uAE30</button>
+        <button class="p-btn" onclick="event.stopPropagation();location.href='kakao-booking-skin.html'">\uC608\uC57D\uD558\uAE30</button>
       </div>
     </div>
   </div>
@@ -829,8 +829,8 @@ Error generating stack: `+X.message+`
 
 <div class="toast" id="toast"></div>`,Wd=`// carousel
   const SLIDES=[
-    "url('__IMG_CAROUSEL1__')",
-    "url('__IMG_CAROUSEL2__')",
+    "url('__IMG_IMG_CAROUSEL1__')",
+    "url('__IMG_IMG_CAROUSEL2__')",
     "linear-gradient(135deg,#c7ccd3,#e4e6ea)"
   ];
   let ci=0;
@@ -875,6 +875,6 @@ Error generating stack: `+X.message+`
 
   // toast
   let tt;
-  function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),1700);}`,wc={__IMG_CAROUSEL1__:Qc,__IMG_CAROUSEL2__:Tc,__IMG_THUMB_SURGERY__:Kc,__IMG_THUMB_SKIN__:kc};function Fc(e){let t=e;for(let n of Object.keys(wc))t=t.split(n).join(wc[n]);return t}function qo(){return(0,yc.useEffect)(()=>{let e=document.createElement("script");return e.textContent=Fc(Wd),document.body.appendChild(e),()=>{e.remove()}},[]),(0,zc.jsx)("div",{dangerouslySetInnerHTML:{__html:Fc(Ed)}})}var Yc=kt(tr());(0,Rc.createRoot)(document.getElementById("root")).render((0,Yc.jsx)(qo,{}));})();
+  function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),1700);}`,wc={__IMG_IMG_CAROUSEL1__:Qc,__IMG_IMG_CAROUSEL2__:Tc,__IMG_IMG_THUMB_SURGERY__:Kc,__IMG_IMG_THUMB_SKIN__:kc};function Fc(e){let t=e;for(let n of Object.keys(wc))t=t.split(n).join(wc[n]);return t}function qo(){return(0,yc.useEffect)(()=>{let e=document.createElement("script");return e.textContent=Fc(Wd),document.body.appendChild(e),()=>{e.remove()}},[]),(0,zc.jsx)("div",{dangerouslySetInnerHTML:{__html:Fc(Ed)}})}var Yc=kt(tr());(0,Rc.createRoot)(document.getElementById("root")).render((0,Yc.jsx)(qo,{}));})();
 
 </script>

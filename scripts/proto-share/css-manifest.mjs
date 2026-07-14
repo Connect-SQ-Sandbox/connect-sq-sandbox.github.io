@@ -12,6 +12,9 @@ export const SCREEN_CSS = {
   'ti-kakao': ['styles/connectRegister.css', 'styles/connectTiKakao.css'],
   'kakao-booking': ['styles/kakaoBooking.css'],
   'kakao-booking-ticket': ['styles/kakaoBookingTicket.css'],
+  'kakao-booking-skin': ['styles/kakaoBookingSkin.css'],
+  'kakao-booking-skin-confirm': ['styles/kakaoBookingSkinConfirm.css'],
+  'goodoc-webview': ['styles/goodocWebview.css'],
   'kakao-link': ['styles/connectKakaoLink.css']
 };
 

@@ -5,8 +5,8 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-kakao — 진료항목 카카오 노출 + 예약 신청 내역 + 운영 설정
- * 상태     : 현행(active)   버전: v13  최종수정: 2026-07-14
- * PRD      : GCP-1 · 2.1-review · 3-미션·기획/1-PRD/2026-07-13-진료항목-카카오톡-예약하기-연동-구축.md
+ * 상태     : 현행(active)   버전: v14  최종수정: 2026-07-14
+ * PRD      : GCP-1 · 2.2-review · documents/prd/2026-07-13-진료항목-카카오톡-예약하기-연동-구축.md
  * 배포URL  : https://connect-sq-sandbox.github.io/out/ti-kakao.html
  * 관련 CSS : connectRegister.css + connectTiKakao.css
  * 기술제약 : react-only · plain CSS · mock · 네트워크 0
@@ -18,6 +18,9 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
  *   [확정·PRD] 토글 워딩 = "카카오톡 예약하기에서도 보이기"
  *   [확정·PRD] 노출 캐스케이드 — 굿닥 노출 OFF → 카카오도 OFF
  *   [확정·PRD] 카카오 연동 활성화는 오직 진료항목 상세의 "…에서도 보이기" 토글로만. 리스트 일괄 연동 없음(리스트 채널 심볼은 읽기 전용 현황)
+ *   [확정·PRD] V1은 굿닥에 노출되는 진료항목만 카카오 노출 가능(카카오 단독 상품 불가)
+ *   [확정·PRD] 사용자 모델은 Item 없음. API 어댑터에서 DEFAULT Item 1개를 기술적으로 생성
+ *   [확정·PRD] Price=굿닥 가격 옵션, 금액은 Price.description 선두에 문자열로 합성
  *   [유지·자체] 채널 심볼 [굿닥][카카오] 아이콘만 표기(텍스트 없음)
  *   [유지·자체] 규격 검증 — 상품명50 / 가격명25 / 할인가 / 상담가 / 이미지
  *   [유지·자체] 미리보기는 굿닥 기준만(카카오 미리보기 없음)
@@ -34,6 +37,8 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
  *   - 규격위반 자동보정 정책 명문화
  *
  * 변경 이력:
+ *   v14 2026-07-14 — 카카오 단독 상품 차단, 토글 캐스케이드 강화, Product/DEFAULT Item/Price API 미리보기,
+ *                    Price.description 금액 합성 규칙(상담가 제외·할인 판매가·고정가·" - " 구분자) 반영.
  *   v13 2026-07-14 — 기본 OFF 예정 정책 필터 추가. ON 시 검토 중 PRD 카드와 예정 화면 표현, 예정 배포일 노출.
  *   v12 2026-07-14 — 공통 우측 정책 변경 패널 추가. 화면 위치 강조 + 공개 정책 요약 Markdown 열람 + PRD ID 추적.
  *   v11 2026-07-13 — 질문 입력 UI를 네이버 폼 참고로 개선: 유형=드롭다운(객관식/주관식), 답변 필수·복수 선택=토글, 질문 추가 단일 버튼.
@@ -79,6 +84,18 @@ type Item = {
 let UID = 1000;
 const emptyExtra = () => ({ open: false, questions: [] as Question[], howto: '', notice: '', cancelNotice: '' });
 const won = (s: string) => (s ? Number(s).toLocaleString('ko-KR') + '원' : '0원');
+/**
+ * 카카오 병원 API는 Price에 숫자 금액 필드가 없어 description(최대 100자)에 안내 문자열을 싣는다.
+ * - 상담 후 결정: 금액 문자열을 넣지 않음
+ * - 할인 가격: 판매가만 사용
+ * - 고정 가격: 고정가 사용
+ * - 굿닥 가격 설명이 있으면 금액 뒤에 " - "로 연결
+ */
+const kakaoPriceDescription = (p: Price) => {
+  const amount = p.type === 'consult' ? '' : p.type === 'discount' ? won(p.sale) : won(p.amount);
+  const note = p.content.trim();
+  return [amount, note].filter(Boolean).join(' - ');
+};
 
 const PRICE_TYPES: { value: PriceType; label: string }[] = [
   { value: 'fixed', label: '고정 가격' }, { value: 'discount', label: '할인 가격' }, { value: 'consult', label: '상담 후 결정' }
@@ -136,7 +153,8 @@ function kakaoWarns(it: Item): Warn[] {
   if (pname.length > K_NAME_MAX) w.push({ field: '상품명', msg: `카카오 상품명은 50자까지예요. 현재 ${pname.length}자 → 잘려서 노출돼요.`, level: 'warn' });
   it.prices.forEach((p) => { if (p.title.length > K_PRICE_MAX) w.push({ field: '가격명', msg: `"${p.title.slice(0, 10)}…" 카카오 25자까지 (현재 ${p.title.length}자)`, level: 'warn' }); });
   if (it.prices.some((p) => p.type === 'discount')) w.push({ field: '할인가', msg: '카카오는 정상가·할인율 없이 판매가만 참고가로 노출돼요.', level: 'warn' });
-  if (it.prices.some((p) => p.type !== 'consult')) w.push({ field: '가격', msg: '카카오는 결제 없이 참고가로만 노출돼요.', level: 'info' });
+  if (it.prices.some((p) => p.type !== 'consult')) w.push({ field: '가격', msg: '금액은 Price.description에 안내 문자열로 반영되며 카카오에서 결제되지는 않아요.', level: 'info' });
+  it.prices.forEach((p) => { if (kakaoPriceDescription(p).length > 100) w.push({ field: '가격 설명', msg: `"${p.title}"의 카카오 가격 설명이 100자를 초과해요.`, level: 'warn' }); });
   if (!it.hasImage) w.push({ field: '대표 이미지', msg: '이미지가 없어 카카오에선 병원 대표 이미지로 대체돼요.', level: 'info' });
   return w;
 }
@@ -286,6 +304,34 @@ function SideNav({ page, onNav }: { page: Page; onNav: (p: Page) => void }) {
   );
 }
 
+/** 화면에서는 Item 단계를 노출하지 않지만 카카오 Price API 경로상 itemId가 필수라 DEFAULT Item을 1개 생성한다. */
+function KakaoApiPreview({ d }: { d: Item }) {
+  const displayType = d.prices.length > 1 ? 'SELECT' : 'NOT_DISPLAY';
+  return (
+    <div className="tk-api-map" data-policy-id="gcp1-price-mapping">
+      <div className="tk-api-map-head">
+        <div><b>카카오 API 전송 구조</b><span>환자 화면에서는 Item 선택 단계를 숨겨요.</span></div>
+        <span className="tk-api-badge">{displayType}</span>
+      </div>
+      <div className="tk-api-tree">
+        <div className="tk-api-node"><span>Product</span><b>{d.alias || d.name || '진료항목명'}</b></div>
+        <div className="tk-api-arrow">↓</div>
+        <div className="tk-api-node muted"><span>DEFAULT Item · 기술용</span><b>{d.id}:DEFAULT</b></div>
+        <div className="tk-api-arrow">↓</div>
+        <div className="tk-api-prices">
+          {d.prices.map((p) => (
+            <div className="tk-api-price" key={p.id}>
+              <span className="tk-api-price-name">Price · {p.title || '가격 옵션명'}</span>
+              <span className="tk-api-price-desc">description: {kakaoPriceDescription(p) || '(미입력)'}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <p>가격 옵션이 1개면 일정만 선택하도록 <code>NOT_DISPLAY</code>, 2개 이상이면 <code>SELECT</code>를 사용해요. 이 값은 등록 후 수정할 수 없어 옵션 수 경계가 바뀌면 상품 재생성이 필요해요.</p>
+    </div>
+  );
+}
+
 /* ============================ 진료항목 폼 공용 ============================ */
 function FieldHead({ label, optional, helpers }: { label: string; optional?: boolean; helpers?: string[] }) {
   return (
@@ -315,7 +361,7 @@ function PriceRow({ p, kakaoOn, onChange, onDelete }: { p: Price; kakaoOn: boole
           {p.type === 'discount' && (<><input className="rg-num" placeholder="정상가" value={p.original} onChange={(e) => onChange({ original: e.target.value.replace(/[^0-9]/g, '') })} /><span className="rg-price-arrow">→</span><input className="rg-num" placeholder="판매가" value={p.sale} onChange={(e) => onChange({ sale: e.target.value.replace(/[^0-9]/g, '') })} /><span className="rg-unit">원</span></>)}
           {p.type === 'consult' && (<><input className="rg-num" value="0" disabled readOnly /><span className="rg-unit">원</span></>)}
         </div>
-        {kakaoOn && p.type === 'discount' && <div className="tk-finfo"><InfoIc /> 카카오엔 판매가 {won(p.sale)}만 참고가로 노출돼요.</div>}
+        {kakaoOn && <div className="tk-finfo"><InfoIc /> 카카오 Price.description: {kakaoPriceDescription(p) || '(금액 정보 없음)'}</div>}
       </div>
       <button className="rg-price-del" onClick={onDelete} aria-label="삭제"><CloseIcon /></button>
     </div>
@@ -787,7 +833,7 @@ function TiKakao() {
   }, [items, selCat1]);
   const isCustom = selCat1 === CUSTOM_CAT;
   const customItems = useMemo(() => items.filter((i) => i.cat1 === selCat1), [items, selCat1]);
-  const plannedPreviewItemId = showPlanned ? items.find((item) => !item.gdVisible)?.id ?? null : null;
+  const plannedPreviewItemId = null;
 
   const nav = (p: Page) => { setPage(p); if (p === 'items') setScreen('list'); };
   const open = (it: Item) => { setSelId(it.id); setD({ ...it, prices: it.prices.map((p) => ({ ...p })), keywords: [...it.keywords], kExtra: { ...it.kExtra, questions: it.kExtra.questions.map((q) => ({ ...q, options: [...(q.options || [])] })) } }); setScreen('form'); };
@@ -819,7 +865,11 @@ function TiKakao() {
   const addOpt = (id: number) => { const q = d?.kExtra.questions.find((x) => x.id === id); if (q && q.options.length < K_Q_OPT_MAX) setQ(id, { options: [...q.options, ''] }); };
   const setOpt = (id: number, idx: number, v: string) => { const q = d?.kExtra.questions.find((x) => x.id === id); if (q) setQ(id, { options: q.options.map((o, i) => (i === idx ? v : o)) }); };
   const delOpt = (id: number, idx: number) => { const q = d?.kExtra.questions.find((x) => x.id === id); if (q && q.options.length > K_Q_OPT_MIN) setQ(id, { options: q.options.filter((_, i) => i !== idx) }); };
-  const toggleGdVisible = (id: number) => setItems((prev) => prev.map((it) => (it.id === id ? { ...it, gdVisible: !it.gdVisible } : it)));
+  const toggleGdVisible = (id: number) => setItems((prev) => prev.map((it) => {
+    if (it.id !== id) return it;
+    const gdVisible = !it.gdVisible;
+    return { ...it, gdVisible, kakaoOn: gdVisible ? it.kakaoOn : false };
+  }));
 
   const currentView: PrototypeView = page === 'items' ? (screen === 'form' ? 'items-form' : 'items-list') : page;
   const locatePolicyChange = (change: PolicyChange) => {
@@ -973,15 +1023,16 @@ function TiKakao() {
                     <section className="rg-card tk-kcard" data-policy-id="gcp1-channel-visibility">
                       <div className="tk-khead">
                         <div className="tk-khead-left"><KakaoMark cls="tk-khead-mark" /><div className="tk-khead-text"><div className="tk-khead-title">카카오톡 예약하기에서도 보이기</div><div className="rg-help">켜면 이 진료항목이 카카오톡 예약하기에도 상품으로 보여요. 끄면 카카오에서만 안 보이며 입력한 정보는 그대로 유지돼요.</div></div></div>
-                        <button className={`rg-toggle${d.kakaoOn ? '' : ' off'}${hospitalLinked ? '' : ' disabled'}`} onClick={() => hospitalLinked && patch({ kakaoOn: !d.kakaoOn })}><span className="rg-toggle-knob" /></button>
+                        <button className={`rg-toggle${d.kakaoOn ? '' : ' off'}${hospitalLinked && d.gdVisible ? '' : ' disabled'}`} aria-label="카카오톡 예약하기에서도 보이기" aria-disabled={!hospitalLinked || !d.gdVisible} onClick={() => hospitalLinked && d.gdVisible && patch({ kakaoOn: !d.kakaoOn })}><span className="rg-toggle-knob" /></button>
                       </div>
+                      {!d.gdVisible && <div className="tk-kdependency"><WarnIc /> 굿닥에 노출 중인 진료항목만 카카오톡 예약하기에도 노출할 수 있어요. 먼저 하단의 굿닥 노출을 켜 주세요.</div>}
                       {d.kakaoOn && (
                         <div className="tk-kbody">
-                          {!d.gdVisible && <div className="tk-kcascade"><WarnIc /> 굿닥 노출이 꺼져 있어 지금은 카카오에도 노출되지 않아요. 굿닥 노출을 켜야 카카오에도 함께 보여요.</div>}
                           <div className="tk-kauto"><span className="tk-kauto-ic"><InfoIc /></span><span className="tk-kauto-txt">위에 입력한 굿닥 진료항목 정보가 카카오 상품으로 <b>자동 반영</b>돼요. 규격에 안 맞는 부분만 아래에서 확인하세요.</span></div>
                           {warns.length > 0 ? (
                             <div className="tk-warns">{warns.map((w, i) => (<div key={i} className={`tk-warn ${w.level}`}><span className="tk-warn-ic">{w.level === 'warn' ? <WarnIc /> : <InfoIc />}</span><div><span className="tk-warn-field">{w.field}</span><span className="tk-warn-msg">{w.msg}</span></div></div>))}</div>
                           ) : <div className="tk-ok">규격에 모두 맞아요. 그대로 노출돼요.</div>}
+                          <KakaoApiPreview d={d} />
                           <button className="tk-kextra-toggle" onClick={() => patchExtra({ open: !d.kExtra.open })}><span>카카오 전용 정보 추가 입력 <span className="rg-optional">(선택)</span></span><span className={`tk-kextra-chev${d.kExtra.open ? ' open' : ''}`}><ChevronD /></span></button>
                           {d.kExtra.open && (
                             <div className="tk-kextra">
@@ -1056,7 +1107,7 @@ function TiKakao() {
                   </div>
                   <div className="rg-footer-right">
                     <span className="rg-footer-label">{d.gdVisible ? '환자들에게 진료항목을 노출합니다.' : '진료항목을 노출하지 않습니다.'}</span>
-                    <button className={`rg-toggle${d.gdVisible ? '' : ' off'}`} onClick={() => patch({ gdVisible: !d.gdVisible })}><span className="rg-toggle-knob" /></button>
+                    <button className={`rg-toggle${d.gdVisible ? '' : ' off'}`} aria-label="굿닥 진료항목 노출" aria-pressed={d.gdVisible} onClick={() => { const gdVisible = !d.gdVisible; patch({ gdVisible, kakaoOn: gdVisible ? d.kakaoOn : false }); }}><span className="rg-toggle-knob" /></button>
                   </div>
                 </div>
               </>

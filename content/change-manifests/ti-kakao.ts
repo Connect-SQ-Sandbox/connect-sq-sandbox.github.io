@@ -5,7 +5,7 @@ export const POLICY_SOURCES: Record<string, PolicySource> = {
   'GCP-1': {
     prdId: 'GCP-1',
     title: '진료항목 카카오톡 예약하기 연동 구축',
-    version: '2.1-review',
+    version: '2.2-review',
     sourceStatus: 'review',
     targetReleaseAt: null,
     sourcePath: '3-미션·기획/1-PRD/2026-07-13-진료항목-카카오톡-예약하기-연동-구축.md',
@@ -18,12 +18,12 @@ export const TI_KAKAO_CHANGES: PolicyChange[] = [
     id: 'GCP-1-PLAN-001',
     prdId: 'GCP-1',
     date: '2026-07-14',
-    prototypeVersion: 'v13-planned',
-    view: 'items-list',
-    targetId: 'gcp1-channel-overview',
-    title: '굿닥과 카카오 노출을 독립적으로 운영',
-    before: '현재 프로토타입은 굿닥 노출을 끄면 카카오 노출도 함께 비활성화됩니다.',
-    after: '검토 중인 상품 마스터 정책에서는 굿닥을 끈 채 카카오에서만 노출할 수 있습니다.',
+    prototypeVersion: 'v14-planned',
+    view: 'items-form',
+    targetId: 'gcp1-price-mapping',
+    title: '굿닥 가격 옵션을 카카오 Price 설명으로 연결',
+    before: '가격 숫자 필드가 없는 카카오 병원 API에서 가격 안내 방식이 명확하지 않았습니다.',
+    after: '사용자에게는 Item 단계를 숨기고 기본 Item 아래 Price 설명에 굿닥 가격 문구를 연결합니다.',
     publicationStatus: 'planned'
   },
   {

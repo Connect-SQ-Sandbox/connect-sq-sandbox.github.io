@@ -36,18 +36,23 @@
       <span class="brand-name">굿닥 커넥트 · Connect SQ Sandbox</span>
     </div>
     <h1>진료항목 → 카카오 예약하기 연동 프로토타입</h1>
-    <p class="sub">굿닥 진료항목 정보를 기반으로 카카오톡 예약하기에 노출하고, 여러 채널의 예약 신청을 한 곳에서 관리하는 흐름의 프로토타입 모음입니다. 각 화면은 실제 클라이언트 로직이 그대로 도는 자체완결 데모예요. (창을 1360px 이상으로 넓혀서 보세요)</p>
+    <p class="sub">병원 어드민에서 진료항목을 카카오톡 예약하기에 노출하는 설정과, 환자가 카카오에서 예약한 뒤 굿닥 웹뷰로 이어지는 흐름을 함께 확인할 수 있습니다.</p>
 
     <div class="grid">
       <a class="card" href="out/ti-kakao.html">
-        <div class="card-top"><span class="card-title">진료항목 · 카카오 노출 + 예약 신청 내역</span><span class="tag now">현행</span></div>
-        <div class="card-desc">진료항목 목록(인입 채널 심볼) · 상세 폼(“카카오톡 예약하기에서도 보이기” 토글 + 자동 매핑·규격 검증 + 굿닥 미리보기) · 예약 신청 내역(채널 컬럼·상세 모달). 좌측 메뉴(LNB)로 화면 이동.</div>
+        <div class="card-top"><span class="card-title">병원 어드민 · 비급여 예약(beta)</span><span class="tag now">현행</span></div>
+        <div class="card-desc">예약 신청 내역 · 진료항목 관리 · 운영 설정. 진료항목 상세의 “카카오톡 예약하기에서도 보이기”와 Product/Price API 매핑을 확인합니다.</div>
         <div class="card-go">열어보기 →</div>
+      </a>
+      <a class="card" href="out/kakao-booking.html">
+        <div class="card-top"><span class="card-title">카카오톡 예약하기 신청 웹</span><span class="tag now">신규</span></div>
+        <div class="card-desc">첨부 화면·영상 기준 모바일 플로우. 병원 장소와 상품·일정을 선택하고 카카오 약관 동의 후 굿닥 병원 예약 웹뷰에서 주소·병원 약관을 입력합니다.</div>
+        <div class="card-go">모바일 플로우 열어보기 →</div>
       </a>
     </div>
 
     <p class="foot">
-      소스·빌드 방법은 <code>README.md</code> 참고. 새 프로토타입은 <code>pages/connect/&lt;name&gt;/</code>에 작성 후 <code>yarn proto:share</code>로 <code>out/&lt;name&gt;.html</code> 빌드.
+      소스·빌드 방법은 <code>README.md</code> 참고. 모바일 신청 웹은 390×844 기준으로 검증합니다.
     </p>
   </div>
 </body>

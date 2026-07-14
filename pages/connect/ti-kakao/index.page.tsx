@@ -30,6 +30,7 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
  *   [폐기]      구버전 kakao-link(별도 연동관리 페이지형) → ti-kakao로 대체
  *
  * 변경 이력:
+ *   v17 2026-07-14 — 저장 유효성 검증 추가: 진료항목명·가격명·유형별 금액 필수, 카카오 노출 시 질문 제목 필수·선택형 선택지(2개↑·빈 항목 금지). 위반 시 토스트 안내 후 저장 차단.
  *   v16 2026-07-14 — 질문 필드 글자 수 제한 정합: 질문 name 120자(API 명시·required) 유지, 설명 description 100자·선택지 항목 50자
  *                    (API 미명시 → 내부 관례 기반 권장값) 신규 적용. 목록 행 상태 라벨(노출중/미노출)·채널 사각 뱃지 Figma 반영.
  *   v15 2026-07-14 — 제품 화면에 필요한 노출 설정과 안내만 유지.
@@ -800,7 +801,36 @@ function TiKakao() {
   const nav = (p: Page) => { setPage(p); if (p === 'items') setScreen('list'); };
   const open = (it: Item) => { setSelId(it.id); setD({ ...it, prices: it.prices.map((p) => ({ ...p })), keywords: [...it.keywords], kExtra: { ...it.kExtra, questions: it.kExtra.questions.map((q) => ({ ...q, options: [...(q.options || [])] })) } }); setScreen('form'); };
   const create = () => { setSelId(null); setD(mk({ id: UID++, name: '', cat1: selCat1 === CUSTOM_CAT ? CUSTOM_CAT : selCat1, cat2: groups[0]?.name || '' })); setScreen('form'); };
-  const save = () => { if (!d) return; setItems((prev) => (selId === null ? [...prev, d] : prev.map((it) => (it.id === d.id ? d : it)))); setScreen('list'); showToast(selId === null ? '진료항목을 등록했어요.' : '진료항목을 저장했어요.'); };
+  // 저장 유효성 검증 — 카카오 상품 API required 필드 기준. 위반 시 첫 오류 메시지 반환(없으면 null).
+  const validate = (v: Item): string | null => {
+    if (!v.name.trim()) return '진료항목명을 입력해 주세요.';
+    if (v.prices.length === 0) return '가격을 1개 이상 등록해 주세요.';
+    for (let i = 0; i < v.prices.length; i++) {
+      const p = v.prices[i]; const nth = v.prices.length > 1 ? `${i + 1}번째 ` : '';
+      if (!p.title.trim()) return `${nth}가격명을 입력해 주세요.`;
+      if (p.type === 'fixed' && !p.amount) return `${nth}가격 금액을 입력해 주세요.`;
+      if (p.type === 'discount' && (!p.original || !p.sale)) return `${nth}할인 가격(정상가·판매가)을 입력해 주세요.`;
+    }
+    // 카카오 추가 질문은 카카오 상품으로 전송될 때(kakaoOn)만 노출·검증 — 숨은 필드로 저장이 막히지 않도록.
+    if (v.kakaoOn) {
+      const qs = v.kExtra.questions;
+      for (let i = 0; i < qs.length; i++) {
+        const q = qs[i];
+        if (!q.name.trim()) return `${i + 1}번째 질문의 제목을 입력해 주세요.`;
+        if (q.type !== 'text') {
+          if (q.options.length < K_Q_OPT_MIN) return `${i + 1}번째 질문의 선택지를 ${K_Q_OPT_MIN}개 이상 입력해 주세요.`;
+          if (q.options.some((o) => !o.trim())) return `${i + 1}번째 질문의 선택지 항목을 모두 입력해 주세요.`;
+        }
+      }
+    }
+    return null;
+  };
+  const save = () => {
+    if (!d) return;
+    const err = validate(d);
+    if (err) { showToast(err); return; }
+    setItems((prev) => (selId === null ? [...prev, d] : prev.map((it) => (it.id === d.id ? d : it)))); setScreen('list'); showToast(selId === null ? '진료항목을 등록했어요.' : '진료항목을 저장했어요.');
+  };
   const addDetailImg = () => d && d.detailImages < DETAIL_IMG_MAX && patch({ detailImages: d.detailImages + 1 });
   const delDetailImg = () => d && d.detailImages > 0 && patch({ detailImages: d.detailImages - 1 });
 

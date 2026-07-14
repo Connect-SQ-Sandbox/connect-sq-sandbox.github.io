@@ -1,6 +1,7 @@
 # connect-sq-sandbox — 굿닥 커넥트 프로토타입 샌드박스
 
 굿닥 커넥트(파트너스 웹뷰)의 **진료항목 → 카카오톡 예약하기 연동** 및 **예약 신청 내역** 프로토타입.
+확정 PRD의 공개 가능한 정책 요약과 화면 변경 지점을 연결해, 화면 우측의 기본 닫힘 패널에서 변경 전후와 원본 `PRD ID`를 추적한다.
 `react` 훅만 쓰는 **자체완결 React 화면**을, 모든 JS/CSS가 인라인된 **단일 HTML**(외부 요청 0)로 빌드한다.
 빌드 산출물(`out/*.html`)은 브라우저로 바로 열리고, **GitHub Pages로도 서빙**된다.
 
@@ -39,9 +40,12 @@ yarn proto:preview
 
 ```
 pages/connect/<name>/index.page.tsx   # 프로토타입 화면 (자체완결 React, default export)
+components/prototype/                 # 공통 프로토타입 메타 UI(변경 패널 등)
+content/change-manifests/             # 화면별 정책 변경 목록과 강조 대상
 styles/                               # globals·connectShell(공용 셸/토큰) + 화면 전용 CSS
 scripts/proto-share/                  # 빌드 파이프라인 (build.mjs·css-manifest·template·preview-server)
 out/                                  # 빌드 산출물(*.html) — 그대로 열거나 공유
+docs/policy-summaries/                # 공개 가능한 정책 요약 Markdown(PRD ID 파일명)
 docs/                                 # 기획/기능정의서
 ```
 
@@ -63,7 +67,7 @@ docs/                                 # 기획/기능정의서
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : <name> — 한 줄 설명
  * 상태     : 현행(active) | 폐기(deprecated)   버전: vN   최종수정: YYYY-MM-DD
- * PRD      : Notion "<PRD 제목>" (링크)
+ * PRD      : <PRD ID> · <원본 버전> · 3-미션·기획/1-PRD/<파일명>
  * 배포URL  : https://connect-sq-sandbox.github.io/out/<name>.html
  * 관련 CSS : <화면 전용 CSS 파일들>
  * 기술제약 : react-only · plain CSS · mock · 네트워크 0
@@ -86,6 +90,17 @@ docs/                                 # 기획/기능정의서
 
 결정마다 붙는 **출처 태그**가 핵심 — "PRD에서 확정된 것만 반영하고, 우리 임의 판단은 유지한다"는
 정책을 코드에 박아두는 장치다. 예시는 `ti-kakao`(현행)·`kakao-link`(폐기 사유 기록) 헤더 참고.
+
+## PRD → 프로토타입 동기화
+
+1. 원본 PRD는 Connect Squad 공유 폴더의 `3-미션·기획/1-PRD/`에서만 수정한다.
+2. `status: approved`, `approved_by`, `approved_at`, `version`을 모두 확인한다.
+3. 전체 PRD를 복제하지 말고 `docs/policy-summaries/<PRD-ID>.md`에 공개 가능한 요약만 작성한다.
+4. `content/change-manifests/`에 변경 전후, 대상 화면, `data-policy-id`를 연결한다.
+5. `npm run proto:validate`로 공개 요약 메타데이터를 확인한다.
+6. `npm run proto:share ...`로 HTML을 재생성하고 외부참조 `0 (OK)`를 확인한다.
+
+현재 `GCP-1`은 원본 PRD가 `review` 상태이므로 신규 승인 정책이 아니라 기존 공개 프로토타입의 **현재 기준선**으로 표시한다.
 
 ## 제약 (빌드 시 프리플라이트가 막음)
 

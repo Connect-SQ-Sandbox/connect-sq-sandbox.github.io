@@ -15,18 +15,6 @@ export const POLICY_SOURCES: Record<string, PolicySource> = {
 
 export const TI_KAKAO_CHANGES: PolicyChange[] = [
   {
-    id: 'GCP-1-PLAN-001',
-    prdId: 'GCP-1',
-    date: '2026-07-14',
-    prototypeVersion: 'v14-planned',
-    view: 'items-form',
-    targetId: 'gcp1-price-mapping',
-    title: '굿닥 가격 옵션을 카카오 Price 설명으로 연결',
-    before: '가격 숫자 필드가 없는 카카오 병원 API에서 가격 안내 방식이 명확하지 않았습니다.',
-    after: '사용자에게는 Item 단계를 숨기고 기본 Item 아래 Price 설명에 굿닥 가격 문구를 연결합니다.',
-    publicationStatus: 'planned'
-  },
-  {
     id: 'GCP-1-CHANGE-001',
     prdId: 'GCP-1',
     date: '2026-07-13',

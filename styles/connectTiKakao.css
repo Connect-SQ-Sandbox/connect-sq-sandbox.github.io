@@ -116,7 +116,6 @@
 .tk-chan { position: relative; display: inline-flex; align-items: center; justify-content: center; height: 20px; }
 .tk-chan svg { display: block; height: 20px; width: auto; } /* 굿닥 심볼은 세로형이라 높이 기준 정렬 */
 .tk-chan.dim { filter: grayscale(1); opacity: 0.3; } /* 미노출: 흐린 회색 */
-.tk-chan-dot { position: absolute; top: -2px; right: -2px; width: 9px; height: 9px; border-radius: 50%; background: var(--orange-60); border: 1.5px solid var(--white); } /* 카톡 검토 필요 */
 
 /* ============================ 폼: 카카오 노출 섹션 ============================ */
 .tk-kcard { padding: 0; overflow: hidden; }
@@ -144,43 +143,6 @@
 .tk-kcascade { display: flex; gap: 8px; align-items: flex-start; background: rgba(247,144,9,.08); border: 1px solid rgba(247,144,9,.28); border-radius: 8px; padding: 11px 13px; font: 500 13px/20px var(--font-sans); color: var(--orange-60); }
 .tk-kcascade svg { width: 16px; height: 16px; flex: none; margin-top: 2px; }
 
-/* 검증 결과 */
-.tk-warns { display: flex; flex-direction: column; gap: 8px; }
-.tk-warn { display: flex; gap: 10px; align-items: flex-start; padding: 11px 13px; border-radius: 8px; }
-.tk-warn.warn { background: rgba(247,144,9,.07); }
-.tk-warn.info { background: #f6f7f9; }
-.tk-warn-ic { flex: none; width: 16px; height: 16px; margin-top: 1px; }
-.tk-warn.warn .tk-warn-ic { color: var(--orange-60); }
-.tk-warn.info .tk-warn-ic { color: #8b95a1; }
-.tk-warn-field { display: inline-block; font: 600 13px/19px var(--font-sans); color: #31353f; margin-right: 6px; }
-.tk-warn-msg { font: 400 13px/19px var(--font-sans); color: #5d6474; }
-.tk-ok { font: 500 13px/20px var(--font-sans); color: var(--green-80); background: rgba(31,169,114,.07); padding: 11px 13px; border-radius: 8px; }
-
-/* 카카오 Product / 기술용 DEFAULT Item / Price 매핑 미리보기 */
-.tk-api-map { border: 1px solid var(--gray-30); border-radius: 10px; background: #fff; overflow: hidden; }
-.tk-api-map-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 14px; background: var(--gray-10); border-bottom: 1px solid var(--gray-20); }
-.tk-api-map-head > div { display: flex; flex-direction: column; gap: 2px; }
-.tk-api-map-head b { font: 700 13px/19px var(--font-sans); color: var(--gray-100); }
-.tk-api-map-head span { font: 500 12px/17px var(--font-sans); color: var(--gray-60); }
-.tk-api-badge { flex: none; border-radius: 999px; padding: 4px 8px; background: var(--alpha-blue-10); color: var(--blue-70) !important; font: 700 11px/15px var(--font-sans) !important; }
-.tk-api-tree { padding: 14px; display: flex; flex-direction: column; align-items: stretch; }
-.tk-api-node { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 11px; border: 1px solid var(--blue-30); border-radius: 8px; background: var(--alpha-blue-05); }
-.tk-api-node.muted { border-color: var(--gray-30); background: var(--gray-10); }
-.tk-api-node span { font: 700 12px/17px var(--font-sans); color: var(--blue-70); }
-.tk-api-node.muted span { color: var(--gray-60); }
-.tk-api-node b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 600 12px/17px var(--font-sans); color: var(--gray-90); }
-.tk-api-arrow { height: 20px; display: flex; align-items: center; justify-content: center; color: var(--gray-50); font-size: 14px; }
-.tk-api-prices { display: flex; flex-direction: column; gap: 6px; }
-.tk-api-price { display: flex; flex-direction: column; gap: 2px; padding: 9px 11px; border: 1px solid var(--gray-30); border-radius: 8px; }
-.tk-api-price-name { font: 700 12px/17px var(--font-sans); color: var(--gray-90); }
-.tk-api-price-desc { overflow-wrap: anywhere; font: 500 11px/16px var(--font-sans); color: var(--gray-60); }
-.tk-api-map > p { margin: 0; padding: 0 14px 14px; font: 500 11px/17px var(--font-sans); color: var(--gray-60); }
-.tk-api-map code { padding: 1px 5px; border-radius: 4px; background: var(--gray-20); color: var(--gray-80); font: 600 11px/16px ui-monospace, SFMono-Regular, Menlo, monospace; }
-
-/* 인라인 필드 경고 (가격 등) */
-.tk-fwarn { display: flex; align-items: center; gap: 5px; font: 500 12px/16px var(--font-sans); color: var(--orange-60); margin-top: -2px; }
-.tk-finfo { display: flex; align-items: center; gap: 5px; font: 400 12px/16px var(--font-sans); color: #8b95a1; }
-.tk-fwarn svg, .tk-finfo svg { width: 13px; height: 13px; flex: none; }
 .tk-price-row .rg-price-fields { gap: 6px; }
 /* 드래그 핸들: 실제 서비스(IconHandler) 크기 6×10로 (register 기본 8×12 override) */
 .tk-price-row .rg-drag svg { width: 6px; height: 10px; }
@@ -278,11 +240,6 @@
 .tk-pv-price-val { font: 700 14px/21px var(--font-sans); color: #16181d; white-space: nowrap; display: flex; align-items: baseline; gap: 6px; }
 .tk-pv-strike { font-weight: 500; color: #b0b8c1; text-decoration: line-through; }
 .tk-pv-tag { text-align: center; font: 500 12px/16px var(--font-sans); color: #8b95a1; padding: 10px 0; background: #fff; }
-
-/* ============================ 풋터 상태 ============================ */
-.tk-foot-warn { display: inline-flex; align-items: center; gap: 5px; font: 600 13px/20px var(--font-sans); color: var(--orange-60); margin-left: 8px; }
-.tk-foot-ok { display: inline-flex; align-items: center; gap: 5px; font: 600 13px/20px var(--font-sans); color: #6B5900; margin-left: 8px; }
-.tk-foot-warn svg, .tk-foot-ok svg { width: 15px; height: 15px; }
 
 /* ============================ 예약 신청 내역 (ap-*) ============================ */
 .ap-header { padding: 40px 64px 20px; }

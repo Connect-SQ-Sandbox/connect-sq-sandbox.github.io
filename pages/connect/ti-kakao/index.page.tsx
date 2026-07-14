@@ -35,7 +35,7 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
  *   v20 2026-07-14 — 입력 제한 값 정리(PO 협의용): 흩어져 있던 maxLength·개수 상한을 상단 상수 블록으로 일원화하고 [API]/[임의]/[서비스] 태그로 분류.
  *                    가격명·노출명·한 줄 소개·키워드 상한도 상수화. 값 변경 없음(PO 협의 후 상수만 수정하면 일괄 반영).
  *   v19 2026-07-14 — 카카오 전용 정보 영역을 Figma(18329:1260077)에 맞춤: 토글 앞 상태 라벨(노출중/미노출), 필드 라벨 (선택) 표기,
- *                    이용 방법·유의사항·취소 유의사항을 여러 줄 textarea로 변경(카운터 유지). '예약 시 받을 정보' 명칭은 Figma 확인 결과 그대로 유지.
+ *                    이용 방법은 여러 줄 textarea, 유의사항·취소 유의사항은 단일 라인 input(Figma 기준). '예약 시 받을 정보' 명칭은 Figma 확인 결과 그대로 유지.
  *   v18 2026-07-14 — 저장 유효성 실패를 실제 서비스 컨벤션대로 필드별 인라인 처리로 변경: 위반 필드 빨간 테두리 + 하단 빨간 메시지(다중 동시 표시), 첫 오류로 스크롤, 편집 시 해당 필드 에러 해제. (토스트 차단 방식 대체)
  *   v17 2026-07-14 — 저장 유효성 검증 추가: 진료항목명·가격명·유형별 금액 필수, 카카오 노출 시 질문 제목 필수·선택형 선택지(2개↑·빈 항목 금지). 위반 시 토스트 안내 후 저장 차단.
  *   v16 2026-07-14 — 질문 필드 글자 수 제한 정합: 질문 name 120자(API 명시·required) 유지, 설명 description 100자·선택지 항목 50자
@@ -1336,8 +1336,8 @@ function TiKakao() {
                               </div>
                               <div className="tk-kdivider" />
                               <div className="tk-kfield"><div className="tk-klabel">이용 방법 <span className="rg-optional">(선택)</span></div><textarea className="rg-textarea tk-ktextarea" placeholder="예: 접수처에 예약 내역을 보여 주세요." maxLength={K_INFO_MAX} value={d.kExtra.howto} onChange={(e) => patchExtra({ howto: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.howto.length}</span>/{K_INFO_MAX.toLocaleString('ko-KR')}자</div></div>
-                              <div className="tk-kfield"><div className="tk-klabel">유의사항 <span className="rg-optional">(선택)</span></div><textarea className="rg-textarea tk-ktextarea" placeholder="예: 방문 시 신분증을 지참해 주세요." value={d.kExtra.notice} onChange={(e) => patchExtra({ notice: e.target.value })} /></div>
-                              <div className="tk-kfield"><div className="tk-klabel">취소 유의사항 <span className="rg-optional">(선택)</span></div><textarea className="rg-textarea tk-ktextarea" placeholder="예: 방문 불가 시 취소 바랍니다." maxLength={K_CANCEL_MAX} value={d.kExtra.cancelNotice} onChange={(e) => patchExtra({ cancelNotice: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.cancelNotice.length}</span>/{K_CANCEL_MAX}자</div></div>
+                              <div className="tk-kfield"><div className="tk-klabel">유의사항 <span className="rg-optional">(선택)</span></div><input className="rg-input" placeholder="예: 방문 시 신분증을 지참해 주세요." value={d.kExtra.notice} onChange={(e) => patchExtra({ notice: e.target.value })} /></div>
+                              <div className="tk-kfield"><div className="tk-klabel">취소 유의사항 <span className="rg-optional">(선택)</span></div><input className="rg-input" placeholder="예: 방문 불가 시 취소 바랍니다." maxLength={K_CANCEL_MAX} value={d.kExtra.cancelNotice} onChange={(e) => patchExtra({ cancelNotice: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.cancelNotice.length}</span>/{K_CANCEL_MAX}자</div></div>
                           </div>
                         </div>
                       )}

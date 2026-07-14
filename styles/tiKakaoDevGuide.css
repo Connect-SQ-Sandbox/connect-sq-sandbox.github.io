@@ -2,20 +2,36 @@
    프론트 개발 핸드오프 가이드 임베드 실험용. 원본 ti-kakao에는 로드되지 않는다.
    (dg-* 프리픽스 = dev guide) */
 
-/* 목록 헤더 우측: 명세 뱃지 + 새 진료항목 버튼 */
-.tk-list-header-right { display: flex; align-items: center; gap: 10px; }
+/* ===== 진료항목 목록 스타일: 피그마 18290:66063 기준 (복제본 전용 오버라이드) ===== */
+/* 채널 아이콘: 굿닥=파란 라운드 사각 뱃지+흰 심볼, 카카오=노란 사각. 간격 4 */
+.tk-chans { gap: 4px; }
+.tk-chan-gd { width: 18px; height: 18px; border-radius: 4px; background: #0073fa; display: inline-flex; align-items: center; justify-content: center; }
+.tk-chan-gd svg { height: 11px; width: auto; display: block; }
+.tk-chan-kko { display: inline-flex; align-items: center; justify-content: center; }
+.tk-chan-kko svg { width: 18px; height: 18px; border-radius: 4px; display: block; }
+/* 노출중 라벨 (피그마: SemiBold 14, 노출중=#066AE5) */
+.tk-l3-visible { flex: none; padding-right: 8px; font: 600 14px/22px var(--font-sans); color: var(--gray-50); white-space: nowrap; }
+.tk-l3-visible.on { color: #066ae5; }
+/* 옵션 수 뱃지 (피그마: radius 3, 회색10% 배경, 10px) */
+.tk-l3-optcount { min-width: 20px; height: 20px; padding: 0 5px; border-radius: 3px; background: rgba(128,135,153,.1); color: #434956; font: 500 10px/20px var(--font-sans); }
 
-/* 명세 뱃지 (devMode ON 시 영역별 진입점) */
+/* 명세 뱃지 — 컴포넌트 레이아웃에 영향 없도록 그리드 위 오버레이(absolute)로 띄운다 */
+.tk-grid { position: relative; }
+.dg-badge-cluster { position: absolute; top: 12px; right: 16px; z-index: 6; display: flex; gap: 6px; }
 .dg-badge {
-  flex: none; height: 22px; padding: 0 9px;
+  flex: none; height: 24px; padding: 0 10px;
   border: 1px solid var(--blue-60); border-radius: 999px;
   background: var(--alpha-blue-10); color: var(--blue-60);
-  font: 700 11px/20px var(--font-sans); cursor: pointer; white-space: nowrap;
+  font: 700 11px/22px var(--font-sans); cursor: pointer; white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(22,24,29,.08);
 }
 .dg-badge:hover { background: var(--alpha-blue-15, rgba(0,115,250,.16)); }
-.dg-badge-row { align-self: center; margin: 0 8px; }
-.tk-l3 .dg-badge-row { opacity: 0; transition: opacity .12s; }
-.tk-l3:hover .dg-badge-row { opacity: 1; }
+
+/* 케이스 재현 중 배너 */
+.dg-case-banner { display: flex; align-items: center; gap: 8px; margin: 0 64px 12px; max-width: 1152px; padding: 10px 14px; border: 1px solid rgba(247,144,9,.36); border-radius: 8px; background: rgba(247,144,9,.07); font: 600 13px/20px var(--font-sans); color: #9a5800; }
+.dg-case-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: #f79009; }
+.dg-case-banner button { margin-left: auto; height: 28px; padding: 0 12px; border: 1px solid rgba(247,144,9,.4); border-radius: 6px; background: #fff; color: #9a5800; font: 600 12px/26px var(--font-sans); cursor: pointer; }
+.dg-case-banner button:hover { background: rgba(247,144,9,.08); }
 
 /* 빈 상태 (케이스 재현) */
 .tk-empty-state {
@@ -48,3 +64,4 @@
 .dg-cases-btns { display: flex; flex-wrap: wrap; gap: 8px; }
 .dg-cases-btns button { height: 34px; padding: 0 14px; border: 1px solid var(--gray-30); border-radius: 8px; background: #fff; color: var(--gray-90); font: 600 13px/32px var(--font-sans); cursor: pointer; }
 .dg-cases-btns button:hover { border-color: var(--blue-60); color: var(--blue-60); }
+.dg-cases-btns button.on { border-color: #f79009; background: rgba(247,144,9,.1); color: #9a5800; }

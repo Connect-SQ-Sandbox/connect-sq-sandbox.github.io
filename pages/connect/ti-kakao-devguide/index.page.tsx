@@ -400,6 +400,13 @@ function GoodocPreview({ d }: { d: Item }) {
 
 /* ============================ 목록: 인입 채널 표기 + 항목 행 ============================ */
 /** 굿닥/카카오 심볼 나란히. 보임=풀컬러, 안 보임=회색. 노출 캐스케이드(굿닥 OFF→카카오 OFF) 반영. */
+/* 피그마(18290:66063) 채널 아이콘: 굿닥 = 파란 라운드 사각 뱃지 + 흰색 굿닥 심볼 */
+const GoodocGlyph = () => (
+  <svg viewBox="0 0 27 43" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+    <path d="M13.1516 36.3658C9.90902 36.3658 7.21826 33.9857 6.74251 30.8897H0.0390015C0.542057 37.65 6.2297 42.9981 13.1516 42.9981C20.0735 42.9981 25.7611 37.65 26.2642 30.8897H19.5587C19.0849 33.9857 16.3922 36.3658 13.1496 36.3658H13.1516Z" fill="#fff" />
+    <path d="M13.1516 4.96207C5.90017 4.96207 0 10.832 0 18.0462C0 25.2603 5.90017 31.1302 13.1516 31.1302C20.403 31.1302 26.3032 25.2603 26.3032 18.0462C26.3032 10.832 20.403 4.96207 13.1516 4.96207ZM13.1516 24.498C9.5756 24.498 6.66646 21.6038 6.66646 18.0462C6.66646 14.4885 9.5756 11.5943 13.1516 11.5943C16.7276 11.5943 19.6367 14.4885 19.6367 18.0462C19.6367 21.6038 16.7276 24.498 13.1516 24.498V24.498Z" fill="#fff" />
+  </svg>
+);
 function ChannelMarks({ it, plannedPreview = false }: { it: Item; plannedPreview?: boolean }) {
   const previewItem = plannedPreview ? { ...it, kakaoOn: true } : it;
   const w = kWarnCount(previewItem);
@@ -413,8 +420,8 @@ function ChannelMarks({ it, plannedPreview = false }: { it: Item; plannedPreview
       : w > 0 ? `카카오톡 예약하기에서 보임 · 규격 검토 ${w}건` : '카카오톡 예약하기에서 보임';
   return (
     <span className="tk-chans">
-      <span className={`tk-chan${it.gdVisible ? '' : ' dim'}`} title={it.gdVisible ? '굿닥에서 보임' : '굿닥에서 안 보임'}><GoodocMark /></span>
-      <span className={`tk-chan${kakaoShown ? '' : ' dim'}`} title={kakaoTitle}>
+      <span className={`tk-chan tk-chan-gd${it.gdVisible ? '' : ' dim'}`} title={it.gdVisible ? '굿닥에서 보임' : '굿닥에서 안 보임'}><GoodocGlyph /></span>
+      <span className={`tk-chan tk-chan-kko${kakaoShown ? '' : ' dim'}`} title={kakaoTitle}>
         <KakaoMark />{kakaoShown && w > 0 && <span className="tk-chan-dot" />}
       </span>
     </span>
@@ -427,6 +434,7 @@ const DG_SPECS: Record<string, { title: string; lines: string[] }> = {
     lines: [
       '좌측에서 대분류 카테고리를 선택하면, 우측에 해당 카테고리의 진료항목이 중분류(그룹)별로 표시됩니다.',
       '각 행 = 노출명(없으면 진료항목명) · 대표가격(옵션 2개↑면 "최저가~") · 옵션 수 뱃지 · 채널 심볼 · 굿닥 노출 토글.',
+      '채널 심볼 컬럼(굿닥·카카오)은 병원이 카카오 연동된 경우에만 표시됩니다. 미연동 병원은 컬럼 전체가 미노출. → 아래 [카카오 미연동]으로 확인.',
       '항목이 없는 카테고리는 빈 상태 문구를 표시합니다. → 아래 [빈 상태 재현]으로 확인.',
       '행 hover 시 드래그 핸들·삭제 아이콘이 노출되고, 드래그로 순서를 바꿉니다.',
     ],
@@ -442,7 +450,7 @@ const DG_SPECS: Record<string, { title: string; lines: string[] }> = {
   },
 };
 
-function ItemRow({ it, onOpen, onToggle, plannedPreview = false, devMode = false, onSpec }: { it: Item; onOpen: () => void; onToggle: () => void; plannedPreview?: boolean; devMode?: boolean; onSpec?: () => void }) {
+function ItemRow({ it, onOpen, onToggle, plannedPreview = false, showChannels = true }: { it: Item; onOpen: () => void; onToggle: () => void; plannedPreview?: boolean; showChannels?: boolean }) {
   return (
     <div className="tk-l3">
       <span className="tk-l3-handle"><DragHandle /></span>
@@ -450,9 +458,9 @@ function ItemRow({ it, onOpen, onToggle, plannedPreview = false, devMode = false
         <span className="tk-l3-name">{it.alias || it.name}{plannedPreview && <span className="pc-planned-row-badge">예정</span>}</span>
         <span className="tk-l3-price"><span className="tk-l3-price-text">{priceDisplay(it)}</span><span className="tk-l3-optcount">{it.prices.length}</span></span>
         <span className="tk-l3-thumb">{it.hasImage ? <span className="tk-l3-thumb-img" /> : <ThumbIcon />}</span>
-        <ChannelMarks it={it} plannedPreview={plannedPreview} />
+        {showChannels && <ChannelMarks it={it} plannedPreview={plannedPreview} />}
       </button>
-      {devMode && <button className="dg-badge dg-badge-row" onClick={onSpec}>명세</button>}
+      <span className={`tk-l3-visible${it.gdVisible ? ' on' : ''}`}>{it.gdVisible ? '노출중' : '노출 안 함'}</span>
       <button className={`rg-toggle${it.gdVisible ? '' : ' off'}`} onClick={onToggle} aria-label="굿닥 노출 토글"><span className="rg-toggle-knob" /></button>
       <span className="tk-l3-del" aria-hidden><CloseIcon /></span>
     </div>
@@ -843,7 +851,7 @@ function TiKakao() {
   const [devMode, setDevMode] = useState(false);
   const [devSpec, setDevSpec] = useState<string | null>(null); // 열린 명세 팝오버 id (POC)
   const [emptyPreview, setEmptyPreview] = useState(false); // 목록 빈 상태 케이스 재현 (POC)
-  const hospitalLinked = true;
+  const [hospitalLinked, setHospitalLinked] = useState(true); // 병원 카카오 연동 여부 (POC 케이스: 미연동 시 채널 컬럼 비노출)
 
   const showToast = (m: string) => { setToast(m); window.setTimeout(() => setToast(null), 2200); };
   const patch = (u: Partial<Item>) => setD((prev) => (prev ? { ...prev, ...u } : prev));
@@ -948,14 +956,25 @@ function TiKakao() {
                     <div className="cn-header-title">진료항목</div>
                     <div className="tk-list-sub">굿닥에 노출되는 우리 병원 진료항목과 가격 정보를 관리할 수 있어요. 카카오톡 예약하기에서도 보이는지 여기서 확인해요.</div>
                   </div>
-                  <div className="tk-list-header-right">
-                    {devMode && <button className="dg-badge" onClick={() => setDevSpec('list-grid')}>명세</button>}
-                    <button className="tk-btn-primary" onClick={create}><PlusIcon /> 새 진료항목</button>
-                  </div>
+                  <button className="tk-btn-primary" onClick={create}><PlusIcon /> 새 진료항목</button>
                 </div>
+
+                {devMode && (emptyPreview || !hospitalLinked) && (
+                  <div className="dg-case-banner">
+                    <span className="dg-case-dot" />
+                    <span>케이스 재현 중 · {[emptyPreview && '빈 상태', !hospitalLinked && '카카오 미연동'].filter(Boolean).join(' · ')}</span>
+                    <button onClick={() => { setEmptyPreview(false); setHospitalLinked(true); }}>초기화</button>
+                  </div>
+                )}
 
                 <div className="tk-list-body" data-policy-id="gcp1-channel-overview">
                   <div className="tk-grid">
+                    {devMode && (
+                      <div className="dg-badge-cluster">
+                        <button className="dg-badge" onClick={() => setDevSpec('list-grid')}>목록 명세</button>
+                        <button className="dg-badge" onClick={() => setDevSpec('item-row')}>행 명세</button>
+                      </div>
+                    )}
                     <div className="tk-grid-chead"><span className="tk-grid-title">카테고리</span></div>
                     <div className="tk-grid-ihead"><span className="tk-grid-title">{selCat1}</span></div>
                     <nav className="tk-grid-clist" aria-label="진료항목 카테고리">
@@ -975,12 +994,12 @@ function TiKakao() {
                           <button className="dg-reset" onClick={() => setEmptyPreview(false)}>← 기본 상태로 (케이스 재현 해제)</button>
                         </div>
                       ) : isCustom ? (
-                        <div className="tk-l2-body">{customItems.map((it) => (<ItemRow key={it.id} it={it} plannedPreview={it.id === plannedPreviewItemId} devMode={devMode} onSpec={() => setDevSpec('item-row')} onOpen={() => open(it)} onToggle={() => toggleGdVisible(it.id)} />))}</div>
+                        <div className="tk-l2-body">{customItems.map((it) => (<ItemRow key={it.id} it={it} plannedPreview={it.id === plannedPreviewItemId} showChannels={hospitalLinked} onOpen={() => open(it)} onToggle={() => toggleGdVisible(it.id)} />))}</div>
                       ) : (
                         groups.map((g) => (
                           <div key={g.name} className="tk-l2">
                             <div className="tk-l2-head"><span className="tk-cat-handle"><DragHandle /></span><span className="tk-l2-name">{g.name}</span></div>
-                            <div className="tk-l2-body">{g.items.map((it) => (<ItemRow key={it.id} it={it} plannedPreview={it.id === plannedPreviewItemId} devMode={devMode} onSpec={() => setDevSpec('item-row')} onOpen={() => open(it)} onToggle={() => toggleGdVisible(it.id)} />))}</div>
+                            <div className="tk-l2-body">{g.items.map((it) => (<ItemRow key={it.id} it={it} plannedPreview={it.id === plannedPreviewItemId} showChannels={hospitalLinked} onOpen={() => open(it)} onToggle={() => toggleGdVisible(it.id)} />))}</div>
                             <div className="tk-l2-pad" />
                           </div>
                         ))
@@ -1166,8 +1185,9 @@ function TiKakao() {
                 <div className="dg-cases">
                   <span className="dg-cases-label">라이브 케이스 재현</span>
                   <div className="dg-cases-btns">
-                    <button onClick={() => { setEmptyPreview(true); setDevSpec(null); }}>빈 상태 재현</button>
-                    <button onClick={() => { setEmptyPreview(false); setDevSpec(null); }}>기본 상태</button>
+                    <button className={emptyPreview ? ' on' : ''} onClick={() => { setEmptyPreview(true); setDevSpec(null); }}>빈 상태 재현</button>
+                    <button className={!hospitalLinked ? ' on' : ''} onClick={() => { setHospitalLinked(false); setDevSpec(null); }}>카카오 미연동</button>
+                    <button onClick={() => { setEmptyPreview(false); setHospitalLinked(true); setDevSpec(null); }}>기본 상태</button>
                   </div>
                 </div>
               )}

@@ -864,10 +864,11 @@ a {
 /* 부가정보(질문) 3종: 주관식 / 단수 선택형 / 복수 선택형 */
 .tk-q-item { display: flex; flex-direction: column; gap: 10px; padding: 13px; border: 1px solid var(--gray-30); border-radius: 8px; background: #fff; transition: border-color .12s; }
 .tk-q-item:hover { border-color: var(--gray-50); }
-.tk-q-item.dragging { opacity: .5; border-color: var(--blue-60); }
+.tk-q-item.dragging { border-color: var(--gray-50); box-shadow: 0 2px 0.5px rgba(22,24,29,.02), 0 2px 4px rgba(22,24,29,.1); } /* Figma DND(node 9:3009): gray-50 테두리 + 그림자 (핑크 오버레이·반투명 없음) */
 /* 상단 중앙 드래그 핸들 (네이버 폼 참고) */
 .tk-q-drag { align-self: center; height: 12px; display: inline-flex; align-items: center; justify-content: center; color: var(--gray-40); cursor: grab; }
 .tk-q-drag svg { width: 6px; height: 10px; transform: rotate(90deg); }
+.tk-q-item:hover .tk-q-drag, .tk-q-item.dragging .tk-q-drag { color: var(--gray-70); } /* Figma: hover·DND 시 핸들 gray-40 → gray-70 */
 .tk-q-item.dragging .tk-q-drag { cursor: grabbing; }
 /* 유형 드롭다운(객관식/주관식) */
 .tk-q-typesel { align-self: flex-start; }

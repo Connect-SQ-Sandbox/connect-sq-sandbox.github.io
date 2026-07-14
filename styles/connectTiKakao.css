@@ -192,7 +192,11 @@
 .tk-q-typebtn { width: 200px; }
 .tk-q-typesel .rg-select-menu { min-width: 200px; }
 /* 질문 입력 행 (답변 필수 시 * 표시) */
+.tk-q-namefield { display: flex; flex-direction: column; gap: 4px; } /* Figma: 질문 입력 + 에러 문구 묶음(gap-4) */
 .tk-q-qrow { display: flex; align-items: center; gap: 6px; }
+/* 카드 내 유효성 문구 — Figma Error(node 9:2174): red-60 12/18, 해당 필드 바로 아래. 입력 테두리는 red-70 */
+.tk-q-err { margin: 0; font: 500 12px/18px var(--font-sans); color: var(--red-60); }
+.tk-q-item .rg-input.error { border-color: var(--red-70); }
 .tk-q-qrow .rg-input { flex: 1; }
 .tk-q-req { flex: none; color: var(--red-60); font: 700 15px/1 var(--font-sans); }
 /* 하단 바: 답변 필수 / 복수 선택 토글 + 삭제 */

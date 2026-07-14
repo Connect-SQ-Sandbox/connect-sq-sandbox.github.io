@@ -1297,11 +1297,13 @@ function TiKakao() {
                                         </div>
                                       )}
                                     </div>
-                                    <div className="tk-q-qrow">
-                                      {!q.optional && <span className="tk-q-req">*</span>}
-                                      <input className={'rg-input' + (errors['q-' + q.id + '-name'] ? ' error' : '')} placeholder="질문 입력" maxLength={K_Q_NAME_MAX} value={q.name} onChange={(e) => setQ(q.id, { name: e.target.value })} />
+                                    <div className="tk-q-namefield">
+                                      <div className="tk-q-qrow">
+                                        {!q.optional && <span className="tk-q-req">*</span>}
+                                        <input className={'rg-input' + (errors['q-' + q.id + '-name'] ? ' error' : '')} placeholder="질문 입력" maxLength={K_Q_NAME_MAX} value={q.name} onChange={(e) => setQ(q.id, { name: e.target.value })} />
+                                      </div>
+                                      {errors['q-' + q.id + '-name'] && <p className="tk-q-err">{errors['q-' + q.id + '-name']}</p>}
                                     </div>
-                                    {errors['q-' + q.id + '-name'] && <p className="rg-error">{errors['q-' + q.id + '-name']}</p>}
                                     {q.type !== 'text' && (
                                       <div className="tk-q-choice">
                                         <input className="rg-input" placeholder="설명 입력 (선택)" maxLength={K_Q_DESC_MAX} value={q.description} onChange={(e) => setQ(q.id, { description: e.target.value })} />
@@ -1317,7 +1319,7 @@ function TiKakao() {
                                             ? <button className="tk-add-xs" onClick={() => addOpt(q.id)}><PlusIcon /> 항목 추가</button>
                                             : <div className="rg-help">항목은 최대 {K_Q_OPT_MAX}개까지 추가할 수 있어요.</div>}
                                         </div>
-                                        {errors['q-' + q.id + '-options'] && <p className="rg-error">{errors['q-' + q.id + '-options']}</p>}
+                                        {errors['q-' + q.id + '-options'] && <p className="tk-q-err">{errors['q-' + q.id + '-options']}</p>}
                                       </div>
                                     )}
                                     <div className="tk-q-bar">

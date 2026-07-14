@@ -362,7 +362,7 @@ function ItemRow({ it, onOpen, onToggle }: { it: Item; onOpen: () => void; onTog
         <span className="tk-l3-thumb">{it.hasImage ? <span className="tk-l3-thumb-img" /> : <ThumbIcon />}</span>
         <ChannelMarks it={it} />
       </button>
-      <span className={`tk-l3-visible${it.gdVisible ? ' on' : ''}`}>{it.gdVisible ? '노출중' : '노출 안 함'}</span>
+      <span className={`tk-l3-visible${it.gdVisible ? ' on' : ''}`}>{it.gdVisible ? '노출중' : '미노출'}</span>
       <button className={`rg-toggle${it.gdVisible ? '' : ' off'}`} onClick={onToggle} aria-label="굿닥 노출 토글"><span className="rg-toggle-knob" /></button>
       <span className="tk-l3-del" aria-hidden><CloseIcon /></span>
     </div>

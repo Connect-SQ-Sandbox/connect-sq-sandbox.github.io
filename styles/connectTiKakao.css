@@ -121,13 +121,18 @@
 .tk-chan.dim { filter: grayscale(1); opacity: 0.3; } /* 미노출: 흐린 회색 */
 
 /* ============================ 폼: 카카오 노출 섹션 ============================ */
-.tk-kcard { padding: 0; overflow: hidden; }
-.tk-khead { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 20px 24px; }
-.tk-khead-left { display: flex; align-items: flex-start; gap: 12px; flex: 1; min-width: 0; }
-.tk-khead-text { flex: 1; min-width: 0; } /* 좁아져도 텍스트가 정상 줄바꿈되도록 (0폭 붕괴 방지) */
-.tk-khead-mark { width: 28px; height: 28px; flex: none; margin-top: 1px; }
-.tk-khead-title { font: 700 18px/26px var(--font-sans); color: #16181d; word-break: keep-all; }
-.tk-khead-right { display: inline-flex; align-items: center; gap: 8px; flex: none; }
+/* 카카오 노출 헤더 박스 — Figma(Setting_Detail, node 1:907/1:917) 기준 */
+.tk-kcard { padding: 0; overflow: hidden; border-color: #e3e6ed; }
+.tk-khead { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 24px; }
+.tk-khead-left { display: flex; align-items: center; gap: 16px; flex: 1; min-width: 0; }
+.tk-khead-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; } /* 좁아져도 텍스트가 정상 줄바꿈되도록 (0폭 붕괴 방지) */
+.tk-khead-badge { width: 40px; height: 40px; flex: none; border-radius: 8px; background: #fee500; display: inline-flex; align-items: center; justify-content: center; }
+.tk-khead-badge svg { width: 22px; height: 22px; display: block; }
+.tk-khead-title { font: 600 16px/24px var(--font-sans); color: #16181d; word-break: keep-all; }
+.tk-khead-desc { font: 400 14px/22px var(--font-sans); color: #5d6474; }
+.tk-khead-right { display: inline-flex; align-items: center; gap: 10px; flex: none; }
+.tk-khead-status { width: 85px; flex: none; text-align: right; font: 600 14px/22px var(--font-sans); color: #808799; }
+.tk-khead-status.on { color: #066ae5; }
 /* 카카오 전용 정보 — 여러 줄 입력(이용 방법·유의사항·취소 유의사항) */
 .tk-ktextarea { height: 88px; }
 .tk-kdependency { margin: 0 24px 20px; display: flex; gap: 8px; align-items: flex-start; background: rgba(247,144,9,.08); border: 1px solid rgba(247,144,9,.28); border-radius: 8px; padding: 11px 13px; font: 500 13px/20px var(--font-sans); color: var(--orange-60); }

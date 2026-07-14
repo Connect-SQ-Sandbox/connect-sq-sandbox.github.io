@@ -30,6 +30,8 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
  *   [폐기]      구버전 kakao-link(별도 연동관리 페이지형) → ti-kakao로 대체
  *
  * 변경 이력:
+ *   v21 2026-07-14 — [현행화 1] '카카오톡 예약하기에서도 보이기' 헤더 박스를 Figma(node 1:907/1:917)에 정밀 반영:
+ *                    채널 아이콘 40×40 노란 사각 뱃지, 제목 16/24, 설명 문구·색(gray-70) 교체, 헤더 패딩 24, 상태 라벨(w85 우측·미노출 gray-60/노출중 blue-70). 본문 하위 영역은 후속 뎁스에서 구체화.
  *   v20 2026-07-14 — 입력 제한 값 정리(PO 협의용): 흩어져 있던 maxLength·개수 상한을 상단 상수 블록으로 일원화하고 [API]/[임의]/[서비스] 태그로 분류.
  *                    가격명·노출명·한 줄 소개·키워드 상한도 상수화. 값 변경 없음(PO 협의 후 상수만 수정하면 일괄 반영).
  *   v19 2026-07-14 — 카카오 전용 정보 영역을 Figma(18329:1260077)에 맞춤: 토글 앞 상태 라벨(노출중/미노출), 필드 라벨 (선택) 표기,
@@ -242,6 +244,8 @@ const CalIcon = () => (<svg viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3.5
 /** 안내 배너 아이콘(실제 GuideBanner normal variant = ic_caution, gray-60) */
 const CautionIc = () => (<svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" fill="currentColor" /><rect x="9" y="5.2" width="2" height="6" rx="1" fill="#fff" /><circle cx="10" cy="13.7" r="1.1" fill="#fff" /></svg>);
 const KakaoMark = ({ cls }: { cls?: string }) => (<svg viewBox="0 0 20 20" fill="none" className={cls}><rect width="20" height="20" rx="5" fill="#FEE500" /><path d="M10 5.1c-2.9 0-5.2 1.8-5.2 4 0 1.4.95 2.62 2.38 3.32-.1.36-.37 1.34-.42 1.55 0 0-.02.09.04.12.06.03.13 0 .13 0 .17-.02 1.9-1.28 2.2-1.5.29.04.58.06.87.06 2.9 0 5.2-1.8 5.2-4S12.9 5.1 10 5.1z" fill="#3C1E1E" /></svg>);
+/** 카카오 말풍선 글리프 (헤더 노란 사각 뱃지 안에 올림) */
+const KakaoBubble = () => (<svg viewBox="0 0 20 20" fill="none"><path d="M10 5.1c-2.9 0-5.2 1.8-5.2 4 0 1.4.95 2.62 2.38 3.32-.1.36-.37 1.34-.42 1.55 0 0-.02.09.04.12.06.03.13 0 .13 0 .17-.02 1.9-1.28 2.2-1.5.29.04.58.06.87.06 2.9 0 5.2-1.8 5.2-4S12.9 5.1 10 5.1z" fill="#3C1E1E" /></svg>);
 const GoodocMark = () => (
   <svg viewBox="0 0 27 43" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M13.1516 36.3658C9.90902 36.3658 7.21826 33.9857 6.74251 30.8897H0.0390015C0.542057 37.65 6.2297 42.9981 13.1516 42.9981C20.0735 42.9981 25.7611 37.65 26.2642 30.8897H19.5587C19.0849 33.9857 16.3922 36.3658 13.1496 36.3658H13.1516Z" fill="#0073FA" />
@@ -1258,9 +1262,9 @@ function TiKakao() {
                     {/* 카카오톡 예약하기에서도 보이기 */}
                     <section className="rg-card tk-kcard" data-policy-id="gcp1-channel-visibility">
                       <div className="tk-khead">
-                        <div className="tk-khead-left"><KakaoMark cls="tk-khead-mark" /><div className="tk-khead-text"><div className="tk-khead-title">카카오톡 예약하기에서도 보이기</div><div className="rg-help">켜면 이 진료항목이 카카오톡 예약하기에도 상품으로 보여요. 끄면 카카오에서만 안 보이며 입력한 정보는 그대로 유지돼요.</div></div></div>
+                        <div className="tk-khead-left"><span className="tk-khead-badge"><KakaoBubble /></span><div className="tk-khead-text"><div className="tk-khead-title">카카오톡 예약하기에서도 보이기</div><div className="tk-khead-desc">카카오톡 예약하기에도 상품을 노출하고 예약을 받아요.</div></div></div>
                         <div className="tk-khead-right">
-                          <span className={`tk-l3-visible${d.kakaoOn ? ' on' : ''}`}>{d.kakaoOn ? '노출중' : '미노출'}</span>
+                          <span className={`tk-khead-status${d.kakaoOn ? ' on' : ''}`}>{d.kakaoOn ? '노출중' : '미노출'}</span>
                           <button className={`rg-toggle${d.kakaoOn ? '' : ' off'}${hospitalLinked && d.gdVisible ? '' : ' disabled'}`} aria-label="카카오톡 예약하기에서도 보이기" aria-disabled={!hospitalLinked || !d.gdVisible} onClick={() => hospitalLinked && d.gdVisible && patch({ kakaoOn: !d.kakaoOn })}><span className="rg-toggle-knob" /></button>
                         </div>
                       </div>

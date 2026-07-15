@@ -5,7 +5,7 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-kakao — 진료항목 카카오 노출 + 예약 신청 내역 + 운영 설정
- * 상태     : 현행(active)   버전: v14  최종수정: 2026-07-14
+ * 상태     : 현행(active)   버전: v22  최종수정: 2026-07-15
  * PRD      : GCP-1 · 2.3-review · documents/prd/2026-07-13-진료항목-카카오톡-예약하기-연동-구축.md
  * 배포URL  : https://connect-sq-sandbox.github.io/out/ti-kakao.html
  * 관련 CSS : connectRegister.css + connectTiKakao.css
@@ -30,6 +30,8 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
  *   [폐기]      구버전 kakao-link(별도 연동관리 페이지형) → ti-kakao로 대체
  *
  * 변경 이력:
+ *   v22 2026-07-15 — 우측 정책 카드와 개발 검토 노트에 병원 단위 카카오 연동 여부와 개별 상품 연동 여부를 분리해 명시.
+ *                    목록 카카오 정보·상세 카카오 설정·예약 채널 열의 병원 연동 노출 조건 및 DEFAULT 기술 Item 정책을 보강.
  *   v21 2026-07-14 — [현행화 1] '카카오톡 예약하기에서도 보이기' 헤더 박스를 Figma(node 1:907/1:917)에 정밀 반영:
  *                    채널 아이콘 40×40 노란 사각 뱃지, 제목 16/24, 설명 문구·색(gray-70) 교체, 헤더 패딩 24, 상태 라벨(w85 우측·미노출 gray-60/노출중 blue-70). 본문 하위 영역은 후속 뎁스에서 구체화.
  *   v20 2026-07-14 — 입력 제한 값 정리(PO 협의용): 흩어져 있던 maxLength·개수 상한을 상단 상수 블록으로 일원화하고 [API]/[임의]/[서비스] 태그로 분류.
@@ -515,8 +517,8 @@ function ApptScreen({ showToast, devMode }: { showToast: (m: string) => void; de
       <div className="ap-body" data-policy-id="gcp1-appointment-channel">
         {devMode && (
           <DevNote title="예약 신청 내역 · 채널 통합" items={[
-            <>목록 응답의 <code>channel</code> 값으로 굿닥·카카오 인입을 구분하고, 진료항목 다음 열에 채널 아이콘을 렌더링합니다.</>,
-            <>채널이 달라도 상태 전이·검색·상세 진입은 동일한 예약 도메인 로직을 사용하며, 카카오 예약도 굿닥 예약 ID와 매핑되어야 합니다.</>,
+            <>병원 단위 <code>hospitalLinked</code> 값이 카카오 채널 열의 노출 여부를 결정합니다. 개별 상품의 <code>kakaoOn</code>은 예약 목록의 채널 열 노출 조건으로 사용하지 않습니다.</>,
+            <>각 행은 목록 응답의 <code>channel</code> 값으로 실제 유입 채널을 표시합니다. 채널이 달라도 상태 전이·검색·상세 진입은 동일한 예약 도메인 로직을 사용합니다.</>,
             <>상세에서는 예약자와 실제 방문자를 별도 객체로 유지합니다. 카카오 추가 질문 응답은 예약 당시 문구·답변·순서를 snapshot으로 보존하고, 값이 있을 때만 요청사항 하위에 읽기 전용으로 표시합니다.</>
           ]} />
         )}
@@ -1158,7 +1160,7 @@ function TiKakao() {
                 <div className="tk-list-body" data-policy-id="gcp1-channel-overview">
                   {devMode && (
                     <DevNote title="진료항목 목록 · 채널 노출 상태" items={[
-                      <>행 단위 채널 표시는 <code>gdVisible</code>과 <code>kakaoOn</code>의 조합으로 계산하며, 카카오의 최종 노출 값은 <code>gdVisible &amp;&amp; kakaoOn</code>입니다.</>,
+                      <>병원 단위 <code>hospitalLinked</code> 값이 카카오 채널 UI의 노출 여부를 결정하고, 연동 병원 안에서 행 단위 카카오 상태는 <code>gdVisible &amp;&amp; kakaoOn</code>으로 계산합니다.</>,
                       <>굿닥 노출을 OFF로 변경하면 카카오 노출도 즉시 OFF 처리하고, 저장 API에도 두 값을 함께 반영합니다.</>,
                       <>카카오 규격 검토가 필요한 항목은 원본 데이터는 유지한 채 별도 validation 결과로 표시합니다.</>
                     ]} />
@@ -1272,7 +1274,8 @@ function TiKakao() {
                       {!d.gdVisible && <div className="tk-kdependency"><WarnIc /> 굿닥에 노출 중인 진료항목만 카카오톡 예약하기에도 노출할 수 있어요. 먼저 하단의 굿닥 노출을 켜 주세요.</div>}
                       {devMode && (
                         <DevNote title="진료항목 상세 · 카카오 상품 매핑" items={[
-                          <>카카오 <code>Product</code>는 굿닥 진료항목 1개와 1:1 매핑하고, <code>Item</code>은 별도 생성하지 않습니다.</>,
+                          <>병원 단위 <code>hospitalLinked</code> 값이 카카오 설정 영역 전체의 노출 여부를 결정합니다. 연동 병원 안에서 <code>gdVisible</code>은 토글 활성 조건, <code>kakaoOn</code>은 전용 입력 필드 노출 조건입니다.</>,
+                          <>사용자 UI에는 <code>Item</code> 입력·선택 단계를 두지 않지만, 카카오 <code>Product &gt; Item &gt; Price</code> 경로를 충족하도록 연동 어댑터가 Product별 DEFAULT 기술 Item 1개를 생성합니다.</>,
                           <>굿닥 가격 옵션 각각을 카카오 <code>Price</code>로 전송합니다. 병원 API에 가격 필드가 없어 금액은 <code>Price.description</code> 문자열에 포함합니다.</>,
                           <>상담 후 결정은 금액을 생략하고, 할인가는 판매가만, 고정가는 고정 금액을 사용합니다. 가격 설명이 있으면 금액 뒤에 <code> - </code>를 붙여 이어 씁니다.</>,
                           <>카카오 노출 ON 즉시 전용 입력 필드를 렌더링하며, 별도 "추가 입력" 토글 상태는 두지 않습니다.</>

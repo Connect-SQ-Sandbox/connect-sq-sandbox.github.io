@@ -23,6 +23,7 @@ export type PolicyChange = {
   title: string;
   before: string;
   after: string;
+  developerNotes?: string[];
   publicationStatus: PublicationStatus;
 };
 
@@ -158,7 +159,7 @@ export function ChangeDrawer({ currentView, changes, sources, showPlanned, onSho
                   <span />
                 </button>
               </div>
-              {devMode && <div className="pc-dev-notice">개발자 대상 참고 정보가 화면의 관련 영역에 노란색으로 표시됩니다.</div>}
+              {devMode && <div className="pc-dev-notice">개발자 대상 구현 조건은 아래 정책 카드 안에서만 표시됩니다.</div>}
               <div className="pc-current-view">현재 화면 · {VIEW_LABEL[currentView]}</div>
             </div>
 
@@ -182,6 +183,12 @@ export function ChangeDrawer({ currentView, changes, sources, showPlanned, onSho
                       <h3>{change.title}</h3>
                       <div className="pc-diff before"><span>이전</span><p>{change.before}</p></div>
                       <div className="pc-diff after"><span>변경</span><p>{change.after}</p></div>
+                      {devMode && change.developerNotes && change.developerNotes.length > 0 && (
+                        <div className="pc-developer-details" aria-label="개발 검토 내용">
+                          <div className="pc-developer-details-head"><span>DEV</span><strong>개발 검토 내용</strong></div>
+                          <ul>{change.developerNotes.map((note, index) => <li key={index}><Inline text={note} /></li>)}</ul>
+                        </div>
+                      )}
                       <div className="pc-locate-hint">화면에서 위치 보기 →</div>
                     </button>
                     <div className="pc-change-foot">

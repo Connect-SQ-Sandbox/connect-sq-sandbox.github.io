@@ -57,9 +57,15 @@ export const TI_KAKAO_CHANGES: PolicyChange[] = [
     prototypeVersion: 'v24',
     view: 'items-list',
     targetId: 'gcp1-channel-overview',
-    title: '상품별 외부 반영 상태와 재시도 제공',
+    title: '상품별 외부 반영 상태와 재시도 정책',
     before: '병원이 설정한 노출 값과 외부 채널에 실제 반영된 상태를 구분하기 어려웠습니다.',
-    after: '미연동·반영 중·노출 중·노출 보류·반영 실패·업데이트 필요를 구분하고 상태 필터와 실패 건 재시도를 제공합니다. 병원 전체 예약을 중지해도 상품별 노출 의도와 전용정보는 유지합니다.',
+    after: '미연동·반영 중·노출 중·노출 보류·반영 실패·업데이트 필요를 내부 상태로 구분하고 실패 작업만 안전하게 재처리합니다. 병원 전체 예약을 중지해도 상품별 노출 의도와 전용정보는 유지합니다.',
+    developerNotes: [
+      '병원 단위 `hospitalLinked`는 카카오 UI 사용 자격만 결정합니다. 실제 예약 가능 여부는 `apptUsed && gdVisible && kakaoOn && sync=SYNCED`와 가격 유효성을 함께 평가합니다.',
+      '개별 굿닥 노출 OFF는 `kakaoOn` 의도도 OFF로 바꾸지만, 병원 전체 `apptUsed=false`는 상품별 의도를 보존하고 Product·Schedule만 `ON_HOLD`로 전환합니다.',
+      '목록 상태는 채널 노출 의도와 객체별 외부 상태를 합성합니다. 재시도는 `FAILED`·`UPDATE_REQUIRED` 객체만 `PENDING`으로 바꿔 중복 Product 생성을 방지합니다.',
+      '상태 선택기·강제 실패 버튼·객체별 기술 상태표는 병원 제품 화면에 추가하지 않습니다.'
+    ],
     publicationStatus: 'baseline'
   },
   {
@@ -129,9 +135,15 @@ export const TI_KAKAO_CHANGES: PolicyChange[] = [
     prototypeVersion: 'v24',
     view: 'items-form',
     targetId: 'gcp1-channel-visibility',
-    title: '카카오 전용정보와 객체별 동기화 관리',
+    title: '카카오 전용정보와 객체별 동기화 정책',
     before: '카카오 전용 필드와 Product·Item·Price·Schedule의 반영 결과를 한 화면에서 확인할 수 없었습니다.',
-    after: '노출명·설명·이미지·키워드·추가 질문·이용 방법·유의사항·방문 안내를 관리하고 객체별 반영 상태와 실패 사유를 확인합니다. 굿닥 저장은 유지하면서 실패 객체만 다시 반영하며, 활성 예약이 있는 상품은 삭제 대신 운영 중지합니다.',
+    after: '노출명·설명·이미지·키워드·추가 질문·이용 방법·유의사항·방문 안내는 병원 화면에서 관리합니다. Product·Item·Price·Schedule 동기화와 실패 재처리는 내부적으로 분리하며, 활성 예약이 있는 상품은 삭제 대신 운영 중지합니다.',
+    developerNotes: [
+      '병원 단위 `hospitalLinked`가 카카오 설정 영역 전체의 노출 여부를 결정합니다. 연동 병원 안에서 `gdVisible`은 토글 활성 조건, `kakaoOn`은 전용 입력 필드 노출 조건입니다.',
+      '사용자 화면에는 Item 입력·선택 단계를 두지 않습니다. 연동 어댑터가 카카오 `Product > Item > Price` 경로를 위해 Product별 DEFAULT 기술 Item 한 개를 생성합니다.',
+      '굿닥 가격 옵션 각각을 카카오 `Price`로 전송하고, 금액은 `Price.description` 문자열에 포함합니다. 상담 후 결정은 금액을 생략하고 할인가에는 판매가만, 고정가에는 고정 금액만 사용합니다.',
+      '금액과 가격 설명이 모두 있으면 ` - `로 결합합니다. 카카오 노출 ON 즉시 전용 필드를 렌더링하며 별도 추가 입력 토글은 두지 않습니다.'
+    ],
     publicationStatus: 'baseline'
   },
   {
@@ -179,7 +191,12 @@ export const TI_KAKAO_CHANGES: PolicyChange[] = [
     targetId: 'gcp1-appointment-channel',
     title: '예약 당시 정보와 외부 상태 반영 결과 보존',
     before: '상품의 현재 정보와 예약 당시 정보, 외부 상태 반영 결과를 구분하기 어려웠습니다.',
-    after: '예약 당시 상품명·채널 노출명·가격 옵션·자동 확정 설정을 snapshot으로 유지합니다. 확정·취소·진료 완료의 외부 반영 상태와 실패 사유를 표시하고 실패 건만 재시도합니다.',
+    after: '예약 당시 상품명·채널 노출명·가격 옵션·자동 확정 설정을 snapshot으로 유지합니다. 확정·취소·진료 완료의 외부 반영과 실패 재처리는 예약 처리와 분리해 수행하며 내부 식별자와 진단 정보는 병원 화면에 노출하지 않습니다.',
+    developerNotes: [
+      '병원 단위 `hospitalLinked`가 채널 열의 노출 여부를 결정합니다. 개별 상품의 `kakaoOn`은 예약 목록 채널 UI의 노출 조건으로 사용하지 않습니다.',
+      '각 예약은 목록 응답의 `channel`과 예약 생성 당시 상품명·가격 옵션·자동 확정 설정 snapshot을 사용합니다. 현재 상품 설정으로 과거 예약을 덮어쓰지 않습니다.',
+      '굿닥 상태 변경은 즉시 저장하고 외부 상태 반영은 별도 비동기 작업으로 처리합니다. 병원 화면에는 간단한 실패 안내만 제공하고 외부 ID·요청 응답 등 상세 관제 정보는 운영 도구에서 관리합니다.'
+    ],
     publicationStatus: 'baseline'
   },
   {
@@ -192,6 +209,9 @@ export const TI_KAKAO_CHANGES: PolicyChange[] = [
     title: '카카오 추가 질문·답변을 요청사항 하위에 표시',
     before: '요청사항과 카카오 추가 질문·답변이 서로 다른 영역에 표시됐습니다.',
     after: '카카오 예약이면서 추가 질문·답변 데이터가 있을 때만 예약 신청·내원 예정·지난 내역의 상세 요청사항 하위에 예약 당시 문구와 순서대로 읽기 전용으로 표시합니다. 데이터가 없으면 추가 영역 전체를 숨깁니다.',
+    developerNotes: [
+      '예약자와 실제 방문자는 별도 객체로 유지합니다. 추가 질문의 문구·답변·순서는 예약 생성 당시 snapshot으로 보존하고 현재 질문 정의로 다시 계산하지 않습니다.'
+    ],
     publicationStatus: 'baseline'
   },
   {
@@ -239,7 +259,12 @@ export const TI_KAKAO_CHANGES: PolicyChange[] = [
     targetId: 'gcp1-operation-settings',
     title: '운영 설정을 모든 예약 채널에 공통 적용',
     before: '자동 확정·당일 예약·신규 예약 알림이 외부 채널 예약에도 적용되는지 확인하기 어려웠습니다.',
-    after: '자동 확정은 이후 생성 예약에 snapshot으로 적용하고, 당일 예약 설정은 미래 일정에 반영합니다. 굿닥·카카오 신규 예약은 같은 알림 설정을 사용하며 예약당 한 번만 알립니다. 설정 버전과 외부 적용 버전을 분리해 실패 시 해당 설정만 원복·재시도합니다.',
+    after: '자동 확정은 이후 생성 예약에 snapshot으로 적용하고, 당일 예약 설정은 미래 일정에 반영합니다. 굿닥·카카오 신규 예약은 같은 알림 설정을 사용하며 예약당 한 번만 알립니다. 설정 버전과 외부 적용 버전은 내부적으로 분리해 실패 시 해당 설정만 원복·재시도합니다.',
+    developerNotes: [
+      '`apptUsed=false`이면 채널과 무관하게 신규 비급여 예약을 차단하지만 상품별 노출 의도·외부 매핑·기존 예약은 유지합니다.',
+      '자동 확정·당일 예약·새 예약 알림 설정은 각각 독립 mutation으로 저장합니다. 외부 반영 실패가 공통 설정 저장을 되돌리지 않도록 설정 저장 결과와 채널 적용 결과를 분리합니다.',
+      '운영시간과 임시 운영일 변경은 향후 Schedule 동기화 이벤트를 생성하며, 동일 날짜 재등록 시 기존 일정 삭제 위험을 고려해 변경 범위만 갱신합니다.'
+    ],
     publicationStatus: 'baseline'
   }
 ];

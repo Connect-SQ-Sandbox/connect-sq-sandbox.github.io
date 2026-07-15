@@ -39,13 +39,6 @@
 .pc-planned-notice { margin-top: 8px; padding: 8px 10px; border-radius: 6px; background: rgba(247,144,9,.09); color: #9a5800; font: 500 11px/17px var(--font-sans); }
 .pc-dev-filter { margin-top: 10px; border-color: rgba(234, 179, 8, .48); background: #fffdf2; }
 .pc-dev-notice { margin-top: 8px; padding: 8px 10px; border: 1px solid rgba(234, 179, 8, .35); border-radius: 6px; background: #fff8cf; color: #745300; font: 600 11px/17px var(--font-sans); }
-.pc-dev-note { margin: 0 0 16px; padding: 13px 15px; border: 1px solid #e9bd32; border-left: 4px solid #e0a600; border-radius: 8px; background: #fff8cf; box-shadow: 0 2px 8px rgba(116,83,0,.06); color: #5f4700; }
-.pc-dev-note-head { display: flex; align-items: center; gap: 8px; }
-.pc-dev-note-head > span { padding: 2px 6px; border-radius: 4px; background: #e0a600; color: #fff; font: 800 10px/16px ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .04em; }
-.pc-dev-note-head strong { font: 700 13px/20px var(--font-sans); }
-.pc-dev-note ul { margin: 8px 0 0; padding-left: 18px; }
-.pc-dev-note li { margin-top: 4px; font: 500 12px/19px var(--font-sans); word-break: keep-all; }
-.pc-dev-note code { padding: 1px 4px; border-radius: 4px; background: rgba(116,83,0,.10); color: #604700; font: 600 11px/17px ui-monospace, SFMono-Regular, Menlo, monospace; }
 .pc-current-view { display: inline-flex; margin-top: 12px; padding: 5px 9px; border-radius: 6px; background: var(--alpha-blue-10); color: var(--blue-70); font: 600 12px/18px var(--font-sans); }
 .pc-scope { margin: 0 20px; padding: 3px; border-radius: 8px; background: var(--gray-20); display: grid; grid-template-columns: 1fr 1fr; flex: none; }
 .pc-scope button { height: 34px; border-radius: 6px; color: var(--gray-70); cursor: pointer; font: 600 13px/34px var(--font-sans); }
@@ -71,6 +64,13 @@
 .pc-diff p { margin: 0; color: var(--gray-70); font: 400 12px/19px var(--font-sans); }
 .pc-diff.before > span { background: var(--gray-20); color: var(--gray-60); }
 .pc-diff.after > span { background: var(--alpha-blue-10); color: var(--blue-70); }
+.pc-developer-details { margin-top: 12px; padding: 11px 12px; border: 1px solid #e9bd32; border-radius: 7px; background: #fff8cf; color: #5f4700; }
+.pc-developer-details-head { display: flex; align-items: center; gap: 7px; }
+.pc-developer-details-head > span { padding: 2px 5px; border-radius: 4px; background: #e0a600; color: #fff; font: 800 9px/14px ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .04em; }
+.pc-developer-details-head strong { font: 700 12px/18px var(--font-sans); }
+.pc-developer-details ul { margin: 7px 0 0; padding-left: 17px; }
+.pc-developer-details li { margin-top: 4px; font: 500 11px/18px var(--font-sans); word-break: keep-all; }
+.pc-developer-details code { padding: 1px 4px; border-radius: 4px; background: rgba(116,83,0,.10); color: #604700; font: 600 10px/16px ui-monospace, SFMono-Regular, Menlo, monospace; }
 .pc-locate-hint { margin-top: 12px; color: var(--blue-70); font: 600 12px/18px var(--font-sans); }
 .pc-change-foot { min-height: 40px; padding: 0 12px 0 15px; border-top: 1px solid var(--gray-20); background: var(--gray-10); display: flex; align-items: center; justify-content: space-between; }
 .pc-change-foot > span { color: var(--gray-60); font: 500 11px/16px var(--font-sans); }
@@ -108,9 +108,6 @@
 .pc-md-gap { height: 6px; }
 
 .pc-policy-highlight { animation: pc-policy-pulse 2.4s ease; outline: 3px solid var(--blue-60); outline-offset: 4px; border-radius: 8px; }
-.pc-planned-preview-banner { position: absolute; top: 12px; left: 50%; z-index: 40; transform: translateX(-50%); max-width: calc(100% - 40px); min-height: 36px; padding: 8px 13px; border: 1px solid rgba(247,144,9,.34); border-radius: 8px; background: rgba(255,249,235,.96); box-shadow: 0 4px 14px rgba(93,54,0,.08); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
-.pc-planned-preview-banner strong { color: #8a4d00; font: 700 12px/18px var(--font-sans); }
-.pc-planned-preview-banner span { overflow: hidden; text-overflow: ellipsis; color: #9a650e; font: 500 11px/18px var(--font-sans); }
 .pc-planned-row-badge { display: inline-flex; margin-left: 6px; padding: 1px 5px; border-radius: 4px; background: rgba(247,144,9,.12); color: #9a5800; vertical-align: 1px; font: 700 10px/15px var(--font-sans); }
 @keyframes pc-policy-pulse {
   0%, 100% { outline-color: transparent; box-shadow: none; }

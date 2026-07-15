@@ -1275,7 +1275,6 @@ function TiKakao() {
                       <div className="tk-khead">
                         <div className="tk-khead-left"><span className="tk-khead-badge"><KakaoBubble /></span><div className="tk-khead-text"><div className="tk-khead-title">카카오톡 예약하기에서도 보이기</div><div className="tk-khead-desc">카카오톡 예약하기에도 상품을 노출하고 예약을 받아요.</div></div></div>
                         <div className="tk-khead-right">
-                          <span className={`tk-khead-status${d.kakaoOn ? ' on' : ''}`}>{d.kakaoOn ? '노출중' : '미노출'}</span>
                           <button className={`rg-toggle${d.kakaoOn ? '' : ' off'}${hospitalLinked && d.gdVisible ? '' : ' disabled'}`} aria-label="카카오톡 예약하기에서도 보이기" aria-disabled={!hospitalLinked || !d.gdVisible} onClick={() => hospitalLinked && d.gdVisible && patch({ kakaoOn: !d.kakaoOn })}><span className="rg-toggle-knob" /></button>
                         </div>
                       </div>

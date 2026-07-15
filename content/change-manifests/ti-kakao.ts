@@ -8,7 +8,7 @@ export const POLICY_SOURCES: Record<string, PolicySource> = {
     version: '2.3-review',
     sourceStatus: 'review',
     targetReleaseAt: null,
-    sourcePath: '3-미션·기획/1-PRD/2026-07-13-진료항목-카카오톡-예약하기-연동-구축.md',
+    sourcePath: 'documents/prd/2026-07-13-진료항목-카카오톡-예약하기-연동-구축.md',
     summaryMarkdown: gcp1Summary
   }
 };
@@ -36,7 +36,7 @@ export const TI_KAKAO_CHANGES: PolicyChange[] = [
     title: '병원 연동 여부에 따라 카카오 채널 정보 노출',
     before: '병원 연동 상태와 개별 진료항목의 카카오 노출 상태가 하나의 조건처럼 보일 수 있었습니다.',
     after: '병원 단위 카카오톡 예약하기 연동이 활성화된 병원에만 목록의 카카오 채널 심볼과 노출 정보를 표시합니다. 개별 진료항목의 카카오 연동 여부는 이 영역 자체의 노출 조건과 무관합니다.',
-    publicationStatus: 'planned'
+    publicationStatus: 'baseline'
   },
   {
     id: 'GCP-1-CHANGE-007',
@@ -47,7 +47,19 @@ export const TI_KAKAO_CHANGES: PolicyChange[] = [
     targetId: 'gcp1-channel-overview',
     title: '병원 연동과 상품별 노출 상태를 분리',
     before: '병원이 카카오에 연동되면 모든 진료항목이 카카오에도 노출 중인 것처럼 보일 수 있었습니다.',
-    after: '병원 연동은 목록의 카카오 UI 노출 여부를 결정하고, 개별 진료항목의 굿닥·카카오 노출 값은 각 행의 활성·비활성 상태를 결정합니다. 카카오 최종 노출은 굿닥 노출과 항목별 카카오 노출이 모두 ON일 때만 성립합니다.',
+    after: '병원 연동은 목록의 카카오 UI 노출 여부를 결정합니다. 실제 카카오 예약 가능 상태는 병원 예약 운영, 굿닥·카카오 상품별 노출 의도, 가격 유효성, 외부 동기화 성공을 모두 충족할 때만 성립합니다.',
+    publicationStatus: 'baseline'
+  },
+  {
+    id: 'GCP-1-CHANGE-017',
+    prdId: 'GCP-1',
+    date: '2026-07-15',
+    prototypeVersion: 'v24',
+    view: 'items-list',
+    targetId: 'gcp1-channel-overview',
+    title: '상품별 외부 반영 상태와 재시도 제공',
+    before: '병원이 설정한 노출 값과 외부 채널에 실제 반영된 상태를 구분하기 어려웠습니다.',
+    after: '미연동·반영 중·노출 중·노출 보류·반영 실패·업데이트 필요를 구분하고 상태 필터와 실패 건 재시도를 제공합니다. 병원 전체 예약을 중지해도 상품별 노출 의도와 전용정보는 유지합니다.',
     publicationStatus: 'baseline'
   },
   {
@@ -72,7 +84,7 @@ export const TI_KAKAO_CHANGES: PolicyChange[] = [
     title: '연동 병원에만 카카오 설정 영역 노출',
     before: '카카오 설정 영역이 어떤 병원에 표시되는지 노출 조건이 명확하지 않았습니다.',
     after: '병원 단위 카카오톡 예약하기 연동이 활성화된 경우에만 `카카오톡 예약하기에서도 보이기` 영역 전체를 표시합니다. 미연동 병원에는 영역을 표시하지 않으며, 개별 상품 연동 여부는 이 영역의 노출 조건과 무관합니다.',
-    publicationStatus: 'planned'
+    publicationStatus: 'baseline'
   },
   {
     id: 'GCP-1-CHANGE-009',
@@ -95,7 +107,7 @@ export const TI_KAKAO_CHANGES: PolicyChange[] = [
     targetId: 'gcp1-channel-visibility',
     title: '카카오 ON 시 전용 입력 필드를 즉시 노출',
     before: '카카오 전용 정보를 표시하기 위한 별도 단계가 필요한지 명확하지 않았습니다.',
-    after: '카카오 노출을 ON하면 예약 추가 질문·이용 방법·유의사항·취소 유의사항 입력 필드를 별도 추가 토글 없이 즉시 표시합니다. OFF하면 입력 영역만 숨기고 저장된 카카오 전용 정보는 유지합니다.',
+    after: '카카오 노출을 최초 ON하면 공통정보로 전용 필드를 채우고 즉시 표시합니다. 이후 공통정보 변경으로 자동 덮어쓰지 않으며, OFF하면 입력 영역만 숨기고 저장된 값은 유지합니다. 실제 외부 반영은 상세 저장 시 시작합니다.',
     publicationStatus: 'baseline'
   },
   {
@@ -108,7 +120,19 @@ export const TI_KAKAO_CHANGES: PolicyChange[] = [
     title: '카카오 가격 표시 문구 생성 및 100자 검증',
     before: '굿닥 가격 옵션이 카카오 상품에 어떤 문자열로 전달되는지 확인하기 어려웠습니다.',
     after: '상담 후 결정은 금액을 생략하고, 할인가는 판매가만, 고정가는 고정 금액을 Price.description에 사용합니다. 가격과 설명이 모두 있으면 `가격 - 설명`으로 조합하며 최종 문구가 100자를 넘으면 저장과 동기화를 차단합니다.',
-    publicationStatus: 'planned'
+    publicationStatus: 'baseline'
+  },
+  {
+    id: 'GCP-1-CHANGE-018',
+    prdId: 'GCP-1',
+    date: '2026-07-15',
+    prototypeVersion: 'v24',
+    view: 'items-form',
+    targetId: 'gcp1-channel-visibility',
+    title: '카카오 전용정보와 객체별 동기화 관리',
+    before: '카카오 전용 필드와 Product·Item·Price·Schedule의 반영 결과를 한 화면에서 확인할 수 없었습니다.',
+    after: '노출명·설명·이미지·키워드·추가 질문·이용 방법·유의사항·방문 안내를 관리하고 객체별 반영 상태와 실패 사유를 확인합니다. 굿닥 저장은 유지하면서 실패 객체만 다시 반영하며, 활성 예약이 있는 상품은 삭제 대신 운영 중지합니다.',
+    publicationStatus: 'baseline'
   },
   {
     id: 'GCP-1-CHANGE-003',
@@ -132,7 +156,7 @@ export const TI_KAKAO_CHANGES: PolicyChange[] = [
     title: '연동 병원의 예약 목록에만 채널 열 노출',
     before: '예약 목록의 채널 열이 어떤 조건에서 추가되는지 명확하지 않았습니다.',
     after: '병원 단위 카카오톡 예약하기 연동이 활성화된 경우에만 진료항목과 방문자 사이에 `채널` 열을 표시합니다. 개별 진료항목의 카카오 연동 여부는 이 채널 열의 노출 조건과 무관합니다.',
-    publicationStatus: 'planned'
+    publicationStatus: 'baseline'
   },
   {
     id: 'GCP-1-CHANGE-013',
@@ -147,12 +171,24 @@ export const TI_KAKAO_CHANGES: PolicyChange[] = [
     publicationStatus: 'baseline'
   },
   {
+    id: 'GCP-1-CHANGE-019',
+    prdId: 'GCP-1',
+    date: '2026-07-15',
+    prototypeVersion: 'v24',
+    view: 'appt',
+    targetId: 'gcp1-appointment-channel',
+    title: '예약 당시 정보와 외부 상태 반영 결과 보존',
+    before: '상품의 현재 정보와 예약 당시 정보, 외부 상태 반영 결과를 구분하기 어려웠습니다.',
+    after: '예약 당시 상품명·채널 노출명·가격 옵션·자동 확정 설정을 snapshot으로 유지합니다. 확정·취소·진료 완료의 외부 반영 상태와 실패 사유를 표시하고 실패 건만 재시도합니다.',
+    publicationStatus: 'baseline'
+  },
+  {
     id: 'GCP-1-CHANGE-005',
     prdId: 'GCP-1',
     date: '2026-07-14',
     prototypeVersion: 'v4',
     view: 'appt',
-    targetId: 'gcp1-appointment-channel',
+    targetId: 'gcp1-appointment-additional-answers',
     title: '카카오 추가 질문·답변을 요청사항 하위에 표시',
     before: '요청사항과 카카오 추가 질문·답변이 서로 다른 영역에 표시됐습니다.',
     after: '카카오 예약이면서 추가 질문·답변 데이터가 있을 때만 예약 신청·내원 예정·지난 내역의 상세 요청사항 하위에 예약 당시 문구와 순서대로 읽기 전용으로 표시합니다. 데이터가 없으면 추가 영역 전체를 숨깁니다.',
@@ -179,7 +215,7 @@ export const TI_KAKAO_CHANGES: PolicyChange[] = [
     targetId: 'gcp1-operation-settings',
     title: '비급여 예약 중지 시 기존 데이터 유지',
     before: '예약을 중지하면 등록된 진료항목과 기존 예약에 미치는 영향을 확인하기 어려웠습니다.',
-    after: '비급여 예약 받기를 OFF하면 확인 모달을 거쳐 채널과 무관하게 신규 예약 슬롯 제공을 중단합니다. 등록된 진료항목과 기존 예약은 삭제하지 않으며 이후 다시 예약을 시작할 수 있습니다.',
+    after: '비급여 예약 받기를 OFF하면 굿닥 신규 예약을 즉시 차단하고 카카오 Product·향후 Schedule을 노출 보류로 전환합니다. 상품별 노출 의도·외부 ID·전용정보·기존 예약은 보존하고, 다시 ON하면 유효한 상품만 외부 반영 성공 후 복원합니다.',
     publicationStatus: 'baseline'
   },
   {
@@ -192,6 +228,18 @@ export const TI_KAKAO_CHANGES: PolicyChange[] = [
     title: '예약 세부 설정을 독립적으로 변경',
     before: '예약 운영 여부와 자동 확정·당일 예약·알림 설정의 관계가 명확하지 않았습니다.',
     after: '자동 확정, 당일 예약 허용, 새 예약 알림은 각각 독립적으로 변경합니다. 설정 변경이 실패하면 다른 설정에 영향을 주지 않고 해당 값을 변경 전 상태로 복구합니다.',
+    publicationStatus: 'baseline'
+  },
+  {
+    id: 'GCP-1-CHANGE-020',
+    prdId: 'GCP-1',
+    date: '2026-07-15',
+    prototypeVersion: 'v24',
+    view: 'settings',
+    targetId: 'gcp1-operation-settings',
+    title: '운영 설정을 모든 예약 채널에 공통 적용',
+    before: '자동 확정·당일 예약·신규 예약 알림이 외부 채널 예약에도 적용되는지 확인하기 어려웠습니다.',
+    after: '자동 확정은 이후 생성 예약에 snapshot으로 적용하고, 당일 예약 설정은 미래 일정에 반영합니다. 굿닥·카카오 신규 예약은 같은 알림 설정을 사용하며 예약당 한 번만 알립니다. 설정 버전과 외부 적용 버전을 분리해 실패 시 해당 설정만 원복·재시도합니다.',
     publicationStatus: 'baseline'
   }
 ];

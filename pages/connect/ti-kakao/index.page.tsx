@@ -1,11 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ChangeDrawer, type PolicyChange, type PrototypeView } from '../../../components/prototype/ChangeDrawer';
 import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manifests/ti-kakao';
 
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-kakao — 진료항목 카카오 노출 + 예약 신청 내역 + 운영 설정
- * 상태     : 현행(active)   버전: v22  최종수정: 2026-07-15
+ * 상태     : 현행(active)   버전: v24  최종수정: 2026-07-15
  * PRD      : GCP-1 · 2.3-review · documents/prd/2026-07-13-진료항목-카카오톡-예약하기-연동-구축.md
  * 배포URL  : https://connect-sq-sandbox.github.io/out/ti-kakao.html
  * 관련 CSS : connectRegister.css + connectTiKakao.css
@@ -22,7 +22,7 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
  *   [유지·자체] 채널 심볼 [굿닥][카카오] 아이콘만 표기(텍스트 없음)
  *   [유지·자체] 미리보기는 굿닥 기준만(카카오 미리보기 없음)
  *   [유지·자체] 카카오 전용 목록 없음 → 진료항목 목록에 인입 채널 심볼만 병합
- *   [유지·자체] 카카오 전용 정보는 옵션 아코디언으로 추가 입력
+ *   [확정·PRD] 카카오 노출 ON 시 전용 정보 입력 필드를 즉시 표시(별도 추가 입력 토글 없음)
  *   [유지·자체] 예약 신청 내역 = 실제 TreatmentItemApptListView 재현
  *              (카카오·굿닥 예약이 같은 테이블에 혼재 + "채널" 컬럼만 추가)
  *   [유지·자체] 운영 설정 = 실제 non-payment-reservations/operation 재현
@@ -30,6 +30,8 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
  *   [폐기]      구버전 kakao-link(별도 연동관리 페이지형) → ti-kakao로 대체
  *
  * 변경 이력:
+ *   v24 2026-07-15 — 공유 정책 가이드를 프로토타입 동작 기준으로 반영: 병원 연동 조건부 UI, 의도/실효/외부/동기화 상태,
+ *                    Price.description 미리보기·검증, 객체별 실패·재시도, 운영 설정 전파, 채널 필터와 예약 상태 동기화를 실제 조작 가능하게 구성.
  *   v23 2026-07-15 — 예약 상세 모달 디자인을 실제 제품(receipt-web connect/reservations DetailModal)에 맞춰 이식: 섹션 라벨 gray-70 + 정보 카드(border #e3e6ed·라벨 64px #808799·값 #31353f·행높이 32), 섹션 간 gap24, 요청/메모 bordered 카드, 하단 버튼 40px·솔리드 블루/레드틴트, 예약자 '방문자와 동일' 미니태그. 데이터·필드(카카오 답변·병원 메모·상태 이력 등)는 전부 유지.
  *   v22 2026-07-15 — 우측 정책 카드와 개발 검토 노트에 병원 단위 카카오 연동 여부와 개별 상품 연동 여부를 분리해 명시.
  *                    목록 카카오 정보·상세 카카오 설정·예약 채널 열의 병원 연동 노출 조건 및 DEFAULT 기술 Item 정책을 보강.
@@ -69,10 +71,25 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
 /* ============================ 진료항목 타입 & mock ============================ */
 type PriceType = 'fixed' | 'discount' | 'consult';
 type Price = { id: number; title: string; content: string; type: PriceType; amount: string; original: string; sale: string };
+type SyncState = 'NOT_LINKED' | 'PENDING' | 'SYNCED' | 'FAILED' | 'ON_HOLD' | 'UPDATE_REQUIRED';
+type SyncObject = 'product' | 'item' | 'price' | 'schedule';
+type SyncInfo = Record<SyncObject, SyncState> & { lastAt: string; error?: string; attempts: number };
 // 카카오 예약 부가정보 3종: 주관식(infos) / 단수 선택형(radioInfos) / 복수 선택형(selectInfos)
 type QType = 'text' | 'radio' | 'select';
 type Question = { id: number; type: QType; name: string; optional: boolean; description: string; options: string[] };
 const QTYPE_LABEL: Record<QType, string> = { text: '주관식', radio: '단수 선택형', select: '복수 선택형' };
+type KakaoExtra = {
+  initialized: boolean;
+  displayName: string;
+  description: string;
+  hasImage: boolean;
+  keywords: string[];
+  questions: Question[];
+  howto: string;
+  notice: string;
+  visitGuide: string;
+  cancelNotice: string;
+};
 type Item = {
   id: number;
   cat1: string; cat2: string;
@@ -81,12 +98,33 @@ type Item = {
   prices: Price[];
   gdVisible: boolean;
   kakaoOn: boolean;
-  kExtra: { open: boolean; questions: Question[]; howto: string; notice: string; cancelNotice: string };
+  kExtra: KakaoExtra;
+  sync: SyncInfo;
+  updatedAt: string;
+  activeReservations: number;
 };
 
 let UID = 1000;
-const emptyExtra = () => ({ open: false, questions: [] as Question[], howto: '', notice: '', cancelNotice: '' });
+const emptyExtra = (): KakaoExtra => ({ initialized: false, displayName: '', description: '', hasImage: false, keywords: [], questions: [], howto: '', notice: '', visitGuide: '', cancelNotice: '' });
+const makeSync = (state: SyncState, error?: string): SyncInfo => ({ product: state, item: state, price: state, schedule: state, lastAt: state === 'NOT_LINKED' ? '-' : '2026.07.15 10:42', error, attempts: 0 });
 const won = (s: string) => (s ? Number(s).toLocaleString('ko-KR') + '원' : '0원');
+const kakaoPriceDescription = (p: Price) => {
+  const amount = p.type === 'consult' ? '' : p.type === 'discount' ? won(p.sale) : won(p.amount);
+  return [amount, p.content.trim()].filter(Boolean).join(' - ');
+};
+const syncSummary = (sync: SyncInfo): SyncState => {
+  const states = [sync.product, sync.item, sync.price, sync.schedule];
+  if (states.includes('FAILED')) return 'FAILED';
+  if (states.includes('UPDATE_REQUIRED')) return 'UPDATE_REQUIRED';
+  if (states.includes('PENDING')) return 'PENDING';
+  if (states.includes('ON_HOLD')) return 'ON_HOLD';
+  if (states.every((state) => state === 'SYNCED')) return 'SYNCED';
+  return 'NOT_LINKED';
+};
+const SYNC_LABEL: Record<SyncState, string> = {
+  NOT_LINKED: '미연동', PENDING: '반영 중', SYNCED: '노출 중', FAILED: '반영 실패', ON_HOLD: '노출 보류', UPDATE_REQUIRED: '업데이트 필요'
+};
+const APPLY_SYNC_LABEL: Record<SyncState, string> = { ...SYNC_LABEL, NOT_LINKED: '미반영', SYNCED: '반영 완료', ON_HOLD: '반영 보류' };
 
 const PRICE_TYPES: { value: PriceType; label: string }[] = [
   { value: 'fixed', label: '고정 가격' }, { value: 'discount', label: '할인 가격' }, { value: 'consult', label: '상담 후 결정' }
@@ -95,31 +133,37 @@ const PRICE_TYPES: { value: PriceType; label: string }[] = [
 const CAT_ORDER = ['피부·미용', '성형·윤곽', '주사·수액', '직접 입력 항목'];
 const CUSTOM_CAT = '직접 입력 항목';
 
-const mk = (p: Partial<Item> & { id: number; name: string; cat1: string; cat2: string }): Item => ({
-  alias: '', intro: '', detail: '', keywords: [], hasImage: false, detailImages: 0,
-  prices: [{ id: UID++, title: '기본', content: '', type: 'fixed', amount: '', original: '', sale: '' }],
-  gdVisible: true, kakaoOn: false, kExtra: emptyExtra(), ...p
-});
+const mk = (p: Partial<Item> & { id: number; name: string; cat1: string; cat2: string }): Item => {
+  const item: Item = {
+    alias: '', intro: '', detail: '', keywords: [], hasImage: false, detailImages: 0,
+    prices: [{ id: UID++, title: '기본', content: '', type: 'fixed', amount: '', original: '', sale: '' }],
+    gdVisible: true, kakaoOn: false, kExtra: emptyExtra(), sync: makeSync('NOT_LINKED'), updatedAt: '2026.07.14', activeReservations: 0,
+    ...p
+  };
+  if (!p.sync) item.sync = makeSync(item.kakaoOn ? 'SYNCED' : 'NOT_LINKED');
+  return item;
+};
 
 const INITIAL: Item[] = [
   mk({ id: 1, cat1: '피부·미용', cat2: '스킨부스터', name: '리쥬란 힐러', alias: '', intro: '피부 재생 스킨부스터', detail: '리쥬란 힐러는 연어에서 추출한 PDRN 성분으로 손상된 피부를 근본부터 재생시키는 스킨부스터예요.\n\n· 잔주름·모공·탄력 개선\n· 시술 후 즉시 일상생활 가능\n· 3~4주 간격 3회 권장', keywords: ['리쥬란', '스킨부스터'], hasImage: true, detailImages: 3,
-    prices: [{ id: UID++, title: '1회', content: '', type: 'fixed', amount: '250000', original: '', sale: '' }, { id: UID++, title: '3회 패키지 (사후관리 포함)', content: '재생관리 포함', type: 'discount', amount: '', original: '750000', sale: '600000' }], gdVisible: true, kakaoOn: false }),
+    prices: [{ id: UID++, title: '1회', content: '', type: 'fixed', amount: '250000', original: '', sale: '' }, { id: UID++, title: '3회 패키지 (사후관리 포함)', content: '재생관리 포함', type: 'discount', amount: '', original: '750000', sale: '600000' }], gdVisible: true, kakaoOn: false, activeReservations: 1 }),
   mk({ id: 2, cat1: '피부·미용', cat2: '스킨부스터', name: '물광주사', intro: '수분 광채 물광주사', keywords: ['물광주사'], hasImage: true,
-    prices: [{ id: UID++, title: '1회', content: '', type: 'fixed', amount: '120000', original: '', sale: '' }], gdVisible: true, kakaoOn: true }),
+    prices: [{ id: UID++, title: '1회', content: '', type: 'fixed', amount: '120000', original: '', sale: '' }], gdVisible: true, kakaoOn: true, activeReservations: 1 }),
   mk({ id: 3, cat1: '피부·미용', cat2: '리프팅', name: '실 리프팅', intro: '', keywords: [], hasImage: false,
     prices: [{ id: UID++, title: '상담 후 결정', content: '', type: 'consult', amount: '', original: '', sale: '' }], gdVisible: false, kakaoOn: false }),
   mk({ id: 4, cat1: '피부·미용', cat2: '리프팅', name: '슈링크 유니버스', intro: '집중 리프팅', keywords: ['슈링크'], hasImage: true,
     prices: [{ id: UID++, title: '300샷', content: '', type: 'fixed', amount: '300000', original: '', sale: '' }], gdVisible: true, kakaoOn: false }),
   mk({ id: 5, cat1: '피부·미용', cat2: '색소·톤', name: '레이저 토닝', intro: '색소·톤 개선 레이저', detail: '레이저 토닝은 미세한 저출력 레이저를 반복 조사해 기미·잡티·색소 침착을 단계적으로 옅게 만드는 시술이에요.\n\n· 다운타임 거의 없음\n· 2주 간격 꾸준한 관리 권장', keywords: ['레이저토닝'], hasImage: true, detailImages: 2,
-    prices: [{ id: UID++, title: '1회', content: '', type: 'fixed', amount: '80000', original: '', sale: '' }, { id: UID++, title: '5회', content: '', type: 'fixed', amount: '350000', original: '', sale: '' }], kExtra: { open: true, questions: [
+    prices: [{ id: UID++, title: '1회', content: '', type: 'fixed', amount: '80000', original: '', sale: '' }, { id: UID++, title: '5회', content: '', type: 'fixed', amount: '350000', original: '', sale: '' }], kExtra: { initialized: true, displayName: '레이저 토닝', description: '색소·톤 개선 레이저', hasImage: true, keywords: ['레이저토닝'], questions: [
       { id: 9001, type: 'text', name: '주로 신경 쓰이는 부위가 어디인가요?', optional: false, description: '', options: [] },
       { id: 9002, type: 'radio', name: '레이저 시술 경험이 있으신가요?', optional: true, description: '', options: ['처음이에요', '1~2회', '3회 이상'] },
       { id: 9003, type: 'select', name: '함께 상담받고 싶은 항목을 선택해 주세요.', optional: true, description: '복수 선택할 수 있어요.', options: ['색소·잡티', '모공', '홍조', '피부결'] }
-    ], howto: '', notice: '', cancelNotice: '' }, gdVisible: true, kakaoOn: true }),
+    ], howto: '예약 시간 10분 전까지 방문해 주세요.', notice: '시술 전 복용 중인 약이 있다면 알려주세요.', visitGuide: '3층 접수 데스크에서 예약자 성함을 말씀해 주세요.', cancelNotice: '예약 변경·취소는 하루 전까지 병원으로 연락해 주세요.' }, gdVisible: true, kakaoOn: true, activeReservations: 1 }),
   mk({ id: 6, cat1: '성형·윤곽', cat2: '지방흡입', name: '얼굴지방흡입', alias: '얼굴 지방흡입', intro: '갸름한 얼굴라인을 위한 지방흡입', keywords: ['지방흡입', '얼굴윤곽'], hasImage: true,
     prices: [{ id: UID++, title: '기본', content: '', type: 'fixed', amount: '3500000', original: '', sale: '' }], gdVisible: true, kakaoOn: true }),
   mk({ id: 7, cat1: '주사·수액', cat2: '보톡스', name: '보톡스 (이마)', intro: '이마 주름 개선', keywords: ['보톡스'], hasImage: false,
-    prices: [{ id: UID++, title: '이마', content: '', type: 'discount', amount: '', original: '150000', sale: '99000' }], gdVisible: true, kakaoOn: true }),
+    prices: [{ id: UID++, title: '이마', content: '', type: 'discount', amount: '', original: '150000', sale: '99000' }], gdVisible: true, kakaoOn: true, activeReservations: 1,
+    sync: { product: 'SYNCED', item: 'SYNCED', price: 'FAILED', schedule: 'ON_HOLD', lastAt: '2026.07.15 10:31', error: 'Price.description 반영에 실패했어요.', attempts: 2 } }),
   mk({ id: 8, cat1: CUSTOM_CAT, cat2: '', name: '우리병원 시그니처 관리', intro: '원장 직접 시술', keywords: [], hasImage: false,
     prices: [{ id: UID++, title: '1회', content: '', type: 'fixed', amount: '150000', original: '', sale: '' }], gdVisible: true, kakaoOn: false })
 ];
@@ -189,6 +233,7 @@ const DATETIME_HEADER: Record<ApptTab, string> = { request: '예약희망 / 신�
 const DATE_PRESETS: [string, string][] = [['last30d', '최근 30일'], ['last7d', '최근 7일'], ['today', '오늘'], ['all', '전체'], ['custom', '직접 설정']];
 const SEARCH_TYPES: [string, string][] = [['PATIENT_NAME', '환자명'], ['RESERVER_NAME', '예약자명'], ['PHONE', '연락처'], ['TREATMENT_ITEM_NAME', '진료항목명']];
 const SEARCH_PH: Record<string, string> = { PATIENT_NAME: '환자명을 입력해 주세요', RESERVER_NAME: '예약자명을 입력해 주세요', PHONE: '연락처를 입력해 주세요', TREATMENT_ITEM_NAME: '진료항목 또는 가격명을 입력해 주세요' };
+const CHANNEL_FILTER_OPTIONS: [string, string][] = [['all', '전체 채널'], ['goodoc', '굿닥'], ['kakao', '카카오톡']];
 const STATUS_FILTER_OPTIONS: [string, string][] = [['all', '전체'], [AS.COMPLETED, '진료완료'], [AS.CANCELED_HOSPITAL, '병원취소'], [AS.CANCELED_PATIENT, '환자취소'], [AS.REJECTED, '예약 실패'], [AS.CANCEL_REQ, '취소 요청']];
 const CANCEL_TEMPLATES = [
   { id: 'schedule', label: '일정 불가', body: '선택하신 시간에는 병원 사정으로 방문이 어렵습니다. 다른 시간으로 다시 예약해 주세요.' },
@@ -208,16 +253,43 @@ type Appt = {
   memo?: string; cancelReason?: string;
   answers?: QA[]; // 추가 질문·답변 (예약 시점 스냅샷)
   hospitalMemo?: string; // 병원 내부 메모 (환자 비노출)
+  externalSync?: SyncState; // 외부 예약 상태 반영 상태
+  externalError?: string;
+  autoConfirmSnapshot?: boolean;
+  notificationSent?: boolean;
+  externalId?: string;
 };
 const INITIAL_APPTS: Appt[] = [
-  { id: 201, channel: 'kakao', status: AS.REQUESTED, visit: '2026.07.11(토) 15:00', when: '2026.07.10(금) 09:12', itemName: '레이저 토닝', option: '1회', priceText: '80,000원', visitor: { name: '김민지', gender: '여', birth: '1996.05.20 (만 30세)', phone: '010-2345-6789' }, reserver: { name: '김민지', gender: '여', birth: '1996.05.20 (만 30세)', phone: '010-2345-6789' }, memo: '기미 위주로 봐주세요', answers: [{ q: '주로 신경 쓰이는 부위가 어디인가요?', a: '양 볼 기미와 잔잔한 잡티요.' }, { q: '레이저 시술 경험이 있으신가요?', a: '아니요, 처음이에요.' }] },
+  { id: 201, channel: 'kakao', status: AS.REQUESTED, visit: '2026.07.11(토) 15:00', when: '2026.07.10(금) 09:12', itemName: '레이저 토닝', option: '1회', priceText: '80,000원', visitor: { name: '김민지', gender: '여', birth: '1996.05.20 (만 30세)', phone: '010-2345-6789' }, reserver: { name: '김민지', gender: '여', birth: '1996.05.20 (만 30세)', phone: '010-2345-6789' }, memo: '기미 위주로 봐주세요', answers: [{ q: '주로 신경 쓰이는 부위가 어디인가요?', a: '양 볼 기미와 잔잔한 잡티요.' }, { q: '레이저 시술 경험이 있으신가요?', a: '아니요, 처음이에요.' }], externalSync: 'SYNCED', autoConfirmSnapshot: false, notificationSent: true, externalId: 'KB-240710-201' },
   { id: 202, channel: 'goodoc', status: AS.REQUESTED, visit: '2026.07.11(토) 11:30', when: '2026.07.10(금) 08:40', itemName: '물광주사', option: '1회', priceText: '120,000원', visitor: { name: '이서연', gender: '여', birth: '1990.11.02 (만 35세)', phone: '010-3456-7890' }, reserver: { name: '이서연', gender: '여', birth: '1990.11.02 (만 35세)', phone: '010-3456-7890' } },
-  { id: 203, channel: 'kakao', status: AS.CONFIRMED, visit: '2026.07.12(일) 14:00', when: '2026.07.10(금) 10:02', statusAt: '2026.07.10(금) 10:31', itemName: '보톡스 (이마)', option: '이마', priceText: '99,000원', visitor: { name: '박도윤', gender: '남', birth: '1988.07.15 (만 37세)', phone: '010-4567-8901' }, reserver: { name: '박도윤', gender: '남', birth: '1988.07.15 (만 37세)', phone: '010-4567-8901' }, memo: '주차 가능한가요?', answers: [{ q: '시술 희망 부위를 알려주세요.', a: '이마 가로 주름이요.' }], hospitalMemo: '지난 상담 시 보톡스 부작용 이력 없음 확인. 이마만 진행 예정.' },
+  { id: 203, channel: 'kakao', status: AS.CONFIRMED, visit: '2026.07.12(일) 14:00', when: '2026.07.10(금) 10:02', statusAt: '2026.07.10(금) 10:31', itemName: '보톡스 (이마)', option: '이마', priceText: '99,000원', visitor: { name: '박도윤', gender: '남', birth: '1988.07.15 (만 37세)', phone: '010-4567-8901' }, reserver: { name: '박도윤', gender: '남', birth: '1988.07.15 (만 37세)', phone: '010-4567-8901' }, memo: '주차 가능한가요?', answers: [{ q: '시술 희망 부위를 알려주세요.', a: '이마 가로 주름이요.' }], hospitalMemo: '지난 상담 시 보톡스 부작용 이력 없음 확인. 이마만 진행 예정.', externalSync: 'FAILED', externalError: '카카오 예약 상태 반영이 지연되고 있어요.', autoConfirmSnapshot: true, notificationSent: true, externalId: 'KB-240710-203' },
   { id: 204, channel: 'goodoc', status: AS.CONFIRMED, visit: '2026.07.12(일) 16:30', when: '2026.07.09(목) 17:20', statusAt: '2026.07.09(목) 18:02', itemName: '얼굴 지방흡입', option: '기본', priceText: '3,500,000원', visitor: { name: '최지우', gender: '여', birth: '2001.02.28 (만 25세)', phone: '010-5678-9012' }, reserver: { name: '최지우 모', gender: '여', birth: '1975.09.10 (만 50세)', phone: '010-9999-0000' }, hospitalMemo: '미성년 보호자(모) 동반 예약. 수술 전 대면 상담 일정 별도 안내 필요.' },
-  { id: 205, channel: 'kakao', status: AS.COMPLETED, visit: '2026.07.05(일) 13:00', when: '2026.07.05(일) 09:40', statusAt: '2026.07.05(일) 13:55', itemName: '실 리프팅', option: '상담', priceText: '상담 후 결정', visitor: { name: '정하윤', gender: '여', birth: '1993.01.05 (만 33세)', phone: '010-6789-0123' }, reserver: { name: '정하윤', gender: '여', birth: '1993.01.05 (만 33세)', phone: '010-6789-0123' }, answers: [{ q: '상담 희망 내용을 적어주세요.', a: '처진 볼 라인 리프팅 상담 원해요.' }] },
+  { id: 205, channel: 'kakao', status: AS.COMPLETED, visit: '2026.07.05(일) 13:00', when: '2026.07.05(일) 09:40', statusAt: '2026.07.05(일) 13:55', itemName: '실 리프팅', option: '상담', priceText: '상담 후 결정', visitor: { name: '정하윤', gender: '여', birth: '1993.01.05 (만 33세)', phone: '010-6789-0123' }, reserver: { name: '정하윤', gender: '여', birth: '1993.01.05 (만 33세)', phone: '010-6789-0123' }, answers: [{ q: '상담 희망 내용을 적어주세요.', a: '처진 볼 라인 리프팅 상담 원해요.' }], externalSync: 'SYNCED', autoConfirmSnapshot: true, notificationSent: true, externalId: 'KB-240705-205' },
   { id: 206, channel: 'goodoc', status: AS.CANCELED_PATIENT, visit: '2026.07.06(월) 10:00', when: '2026.07.05(일) 20:10', statusAt: '2026.07.06(월) 08:12', itemName: '리쥬란 힐러', option: '3회 패키지 (사후관리 포함)', priceText: '600,000원', visitor: { name: '강서진', gender: '남', birth: '1997.12.24 (만 28세)', phone: '010-7890-1234' }, reserver: { name: '강서진', gender: '남', birth: '1997.12.24 (만 28세)', phone: '010-7890-1234' }, cancelReason: '개인 사정으로 방문이 어려워 취소했습니다.' },
-  { id: 207, channel: 'kakao', status: AS.CANCELED_HOSPITAL, visit: '2026.07.06(월) 18:00', when: '2026.07.06(월) 09:30', statusAt: '2026.07.06(월) 12:30', itemName: '슈링크 유니버스', option: '300샷', priceText: '300,000원', visitor: { name: '윤예은', gender: '여', birth: '1992.08.19 (만 33세)', phone: '010-8901-2345' }, reserver: { name: '윤예은', gender: '여', birth: '1992.08.19 (만 33세)', phone: '010-8901-2345' }, answers: [{ q: '시술 희망 부위와 샷 수를 알려주세요.', a: '얼굴 전체 300샷 원해요.' }], cancelReason: '선택하신 시간에는 병원 사정으로 방문이 어렵습니다. 다른 시간으로 다시 예약해 주세요.' }
+  { id: 207, channel: 'kakao', status: AS.CANCELED_HOSPITAL, visit: '2026.07.06(월) 18:00', when: '2026.07.06(월) 09:30', statusAt: '2026.07.06(월) 12:30', itemName: '슈링크 유니버스', option: '300샷', priceText: '300,000원', visitor: { name: '윤예은', gender: '여', birth: '1992.08.19 (만 33세)', phone: '010-8901-2345' }, reserver: { name: '윤예은', gender: '여', birth: '1992.08.19 (만 33세)', phone: '010-8901-2345' }, answers: [{ q: '시술 희망 부위와 샷 수를 알려주세요.', a: '얼굴 전체 300샷 원해요.' }], cancelReason: '선택하신 시간에는 병원 사정으로 방문이 어렵습니다. 다른 시간으로 다시 예약해 주세요.', externalSync: 'SYNCED', autoConfirmSnapshot: false, notificationSent: true, externalId: 'KB-240706-207' }
 ];
+
+type OperationSettings = {
+  apptUsed: boolean;
+  autoConfirmed: boolean;
+  todayApptUsed: boolean;
+  newApptNotified: boolean;
+  version: number;
+  appliedVersion: number;
+  syncState: SyncState;
+  lastAt: string;
+  error?: string;
+};
+const INITIAL_OPERATION: OperationSettings = {
+  apptUsed: true,
+  autoConfirmed: true,
+  todayApptUsed: true,
+  newApptNotified: true,
+  version: 12,
+  appliedVersion: 12,
+  syncState: 'SYNCED',
+  lastAt: '2026.07.15 10:42'
+};
 /** 상태 변경 이력 (mock 파생): 신청 → 현재 상태까지 타임라인. */
 function buildHistory(a: Appt): { label: string; at: string }[] {
   const h = [{ label: '예약 신청', at: a.when }];
@@ -384,24 +456,30 @@ function GoodocPreview({ d }: { d: Item }) {
 }
 
 /* ============================ 목록: 인입 채널 표기 + 항목 행 ============================ */
-/** 굿닥/카카오 심볼 나란히. 보임=풀컬러, 안 보임=회색. 노출 캐스케이드(굿닥 OFF→카카오 OFF) 반영. */
-function ChannelMarks({ it }: { it: Item }) {
-  const kakaoShown = it.kakaoOn && it.gdVisible;
+function SyncBadge({ state, compact = false, label }: { state: SyncState; compact?: boolean; label?: string }) {
+  return <span className={`tk-sync-badge ${state.toLowerCase()}${compact ? ' compact' : ''}`}>{label || SYNC_LABEL[state]}</span>;
+}
+
+/** 의도와 실제 외부 상태를 구분한다. 카카오 심볼은 외부 동기화 성공 때만 풀컬러로 표시한다. */
+function ChannelMarks({ it, hospitalLinked, apptUsed }: { it: Item; hospitalLinked: boolean; apptUsed: boolean }) {
+  const state = syncSummary(it.sync);
+  const kakaoShown = hospitalLinked && apptUsed && it.kakaoOn && it.gdVisible && state === 'SYNCED';
   const kakaoTitle = !it.kakaoOn
     ? '카카오톡 예약하기에서 안 보임'
+    : !apptUsed
+      ? '병원 비급여 예약이 중지되어 카카오 노출 보류'
     : !it.gdVisible
       ? '굿닥 노출이 꺼져 있어 카카오에도 안 보임'
-      : '카카오톡 예약하기에서 보임';
+      : state === 'SYNCED' ? '카카오톡 예약하기에서 보임' : `카카오 반영 상태: ${SYNC_LABEL[state]}`;
   return (
     <span className="tk-chans">
       <span className={`tk-chan tk-chan-gd${it.gdVisible ? '' : ' dim'}`} title={it.gdVisible ? '굿닥에서 보임' : '굿닥에서 안 보임'}><GoodocGlyphW /></span>
-      <span className={`tk-chan tk-chan-kko${kakaoShown ? '' : ' dim'}`} title={kakaoTitle}>
-        <KakaoMark />
-      </span>
+      {hospitalLinked && <span className={`tk-chan tk-chan-kko${kakaoShown ? '' : ' dim'}`} title={kakaoTitle}><KakaoMark /></span>}
     </span>
   );
 }
-function ItemRow({ it, onOpen, onToggle, onDelete, onDragStart, onDrop }: { it: Item; onOpen: () => void; onToggle: () => void; onDelete: () => void; onDragStart: () => void; onDrop: () => void }) {
+function ItemRow({ it, hospitalLinked, apptUsed, onOpen, onToggle, onDelete, onRetry, onDragStart, onDrop }: { it: Item; hospitalLinked: boolean; apptUsed: boolean; onOpen: () => void; onToggle: () => void; onDelete: () => void; onRetry: () => void; onDragStart: () => void; onDrop: () => void }) {
+  const state = syncSummary(it.sync);
   return (
     <div className="tk-l3" draggable onDragStart={onDragStart} onDragOver={(e) => e.preventDefault()} onDrop={onDrop}>
       <span className="tk-l3-handle"><DragHandle /></span>
@@ -409,8 +487,9 @@ function ItemRow({ it, onOpen, onToggle, onDelete, onDragStart, onDrop }: { it: 
         <span className="tk-l3-name">{it.alias || it.name}</span>
         <span className="tk-l3-price"><span className="tk-l3-price-text">{priceDisplay(it)}</span><span className="tk-l3-optcount">{it.prices.length}</span></span>
         <span className="tk-l3-thumb">{it.hasImage ? <span className="tk-l3-thumb-img" /> : <ThumbIcon />}</span>
-        <ChannelMarks it={it} />
+        <ChannelMarks it={it} hospitalLinked={hospitalLinked} apptUsed={apptUsed} />
       </button>
+      {hospitalLinked && it.kakaoOn && <span className="tk-l3-sync" title={`${it.sync.error || '최근 동기화'} · ${it.sync.lastAt}`}><SyncBadge state={state} compact />{(state === 'FAILED' || state === 'UPDATE_REQUIRED') && <button className="tk-retry-link" onClick={onRetry}>재시도</button>}</span>}
       <span className={`tk-l3-visible${it.gdVisible ? ' on' : ''}`}>{it.gdVisible ? '노출중' : '미노출'}</span>
       <button className={`rg-toggle${it.gdVisible ? '' : ' off'}`} onClick={onToggle} aria-label="굿닥 노출 토글"><span className="rg-toggle-knob" /></button>
       <button className="tk-l3-del" aria-label="삭제" onClick={onDelete}><CloseIcon /></button>
@@ -454,8 +533,17 @@ function DevNote({ title, items }: { title: string; items: React.ReactNode[] }) 
   );
 }
 
-function ApptScreen({ showToast, devMode }: { showToast: (m: string) => void; devMode: boolean }) {
-  const [appts, setAppts] = useState<Appt[]>(INITIAL_APPTS);
+function ApptScreen({ appts, setAppts, hospitalLinked, operation, failNextSync, consumeFailure, focusAdditionalToken, showToast, devMode }: {
+  appts: Appt[];
+  setAppts: React.Dispatch<React.SetStateAction<Appt[]>>;
+  hospitalLinked: boolean;
+  operation: OperationSettings;
+  failNextSync: boolean;
+  consumeFailure: () => void;
+  focusAdditionalToken: number;
+  showToast: (m: string) => void;
+  devMode: boolean;
+}) {
   const [tab, setTab] = useState<ApptTab>('request');
   const [preset, setPreset] = useState('last30d');
   const [startDate, setStartDate] = useState('');
@@ -464,9 +552,16 @@ function ApptScreen({ showToast, devMode }: { showToast: (m: string) => void; de
   const [searchText, setSearchText] = useState('');
   const [applied, setApplied] = useState(''); // 실제 조회에 반영된 검색어(검색 버튼/Enter 시점)
   const [statusFilter, setStatusFilter] = useState('all');
+  const [channelFilter, setChannelFilter] = useState('all');
   const [cancelId, setCancelId] = useState<number | null>(null);
   const [cancelReasonId, setCancelReasonId] = useState(CANCEL_TEMPLATES[0].id);
   const [detailId, setDetailId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!focusAdditionalToken) return;
+    const withAnswers = appts.find((appt) => appt.channel === 'kakao' && appt.answers?.length);
+    if (withAnswers) setDetailId(withAnswers.id);
+  }, [focusAdditionalToken]);
 
   const tabDef = APPT_TABS.find((t) => t.v === tab)!;
   const counts = useMemo(() => Object.fromEntries(APPT_TABS.map((t) => [t.v, appts.filter((a) => t.statuses.includes(a.status as never)).length])), [appts]);
@@ -474,33 +569,62 @@ function ApptScreen({ showToast, devMode }: { showToast: (m: string) => void; de
   const rows = useMemo(() => {
     let r = appts.filter((a) => tabDef.statuses.includes(a.status as never));
     if (tab === 'closed' && statusFilter !== 'all') r = r.filter((a) => a.status === statusFilter);
+    if (hospitalLinked && channelFilter !== 'all') r = r.filter((a) => a.channel === channelFilter);
+    const dateOf = (a: Appt) => {
+      const match = a.visit.match(/(\d{4})\.(\d{2})\.(\d{2})/);
+      return match ? `${match[1]}-${match[2]}-${match[3]}` : '';
+    };
+    if (preset === 'today') r = r.filter((a) => dateOf(a) === '2026-07-15');
+    if (preset === 'last7d') r = r.filter((a) => dateOf(a) >= '2026-07-08');
+    if (preset === 'custom' && startDate) r = r.filter((a) => dateOf(a) >= startDate);
+    if (preset === 'custom' && endDate) r = r.filter((a) => dateOf(a) <= endDate);
     const q = applied.trim();
     if (q) {
       r = r.filter((a) => {
         if (searchType === 'PATIENT_NAME') return a.visitor.name.includes(q);
         if (searchType === 'RESERVER_NAME') return a.reserver.name.includes(q);
         if (searchType === 'PHONE') return (a.visitor.phone + a.reserver.phone).replace(/[^0-9]/g, '').includes(q.replace(/[^0-9]/g, ''));
-        return a.itemName.includes(q);
+        return a.itemName.includes(q) || a.option.includes(q);
       });
     }
     return r;
-  }, [appts, tab, tabDef, statusFilter, applied, searchType]);
+  }, [appts, tab, tabDef, statusFilter, hospitalLinked, channelFilter, preset, startDate, endDate, applied, searchType]);
 
   const detail = appts.find((a) => a.id === detailId) || null;
 
   const patchAppt = (id: number, u: Partial<Appt>) => setAppts((prev) => prev.map((a) => (a.id === id ? { ...a, ...u } : a)));
-  const confirm = (id: number) => { patchAppt(id, { status: AS.CONFIRMED, statusAt: '방금 전' }); setDetailId(null); showToast('예약을 확정했습니다.'); };
-  const complete = (id: number) => { patchAppt(id, { status: AS.COMPLETED, statusAt: '방금 전' }); setDetailId(null); showToast('진료를 완료했습니다.'); };
+  const syncReservation = (id: number, update: Partial<Appt>, successMessage: string) => {
+    const current = appts.find((appt) => appt.id === id);
+    const isExternal = current?.channel === 'kakao';
+    patchAppt(id, { ...update, ...(isExternal ? { externalSync: 'PENDING', externalError: undefined } : {}) });
+    setDetailId(null);
+    if (!isExternal) { showToast(successMessage); return; }
+    const shouldFail = failNextSync;
+    if (shouldFail) consumeFailure();
+    showToast(`${successMessage} 카카오에 반영 중이에요.`);
+    window.setTimeout(() => {
+      patchAppt(id, shouldFail
+        ? { externalSync: 'FAILED', externalError: '카카오 상태 반영에 실패했어요. 예약 처리는 굿닥에 저장됐습니다.' }
+        : { externalSync: 'SYNCED', externalError: undefined });
+    }, 650);
+  };
+  const confirm = (id: number) => syncReservation(id, { status: AS.CONFIRMED, statusAt: '방금 전' }, '예약을 확정했습니다.');
+  const complete = (id: number) => syncReservation(id, { status: AS.COMPLETED, statusAt: '방금 전' }, '진료를 완료했습니다.');
   const openCancel = (id: number) => { setDetailId(null); setCancelId(id); setCancelReasonId(CANCEL_TEMPLATES[0].id); };
   const doCancel = () => {
     if (cancelId == null) return;
     const reason = CANCEL_TEMPLATES.find((template) => template.id === cancelReasonId) || CANCEL_TEMPLATES[0];
-    patchAppt(cancelId, { status: AS.CANCELED_HOSPITAL, cancelReason: reason.label, statusAt: '방금 전' });
+    const id = cancelId;
     setCancelId(null);
-    showToast('예약을 취소했습니다.');
+    syncReservation(id, { status: AS.CANCELED_HOSPITAL, cancelReason: reason.body, statusAt: '방금 전' }, '예약을 취소했습니다.');
+  };
+  const retryExternal = (id: number) => {
+    patchAppt(id, { externalSync: 'PENDING', externalError: undefined });
+    showToast('카카오 상태 반영을 다시 시도합니다.');
+    window.setTimeout(() => patchAppt(id, { externalSync: 'SYNCED', externalError: undefined }), 650);
   };
   const handleSearch = () => setApplied(searchText);
-  const handleReset = () => { setSearchText(''); setApplied(''); setPreset('last30d'); setStartDate(''); setEndDate(''); setStatusFilter('all'); };
+  const handleReset = () => { setSearchText(''); setApplied(''); setPreset('last30d'); setStartDate(''); setEndDate(''); setStatusFilter('all'); setChannelFilter('all'); };
 
   const statusActions = (a: Appt) => {
     if (a.status === AS.REQUESTED) return (<><button className="ap-btn primary" onClick={(e) => { e.stopPropagation(); confirm(a.id); }}>예약 확정</button><button className="ap-btn danger" onClick={(e) => { e.stopPropagation(); openCancel(a.id); }}>예약 취소</button></>);
@@ -516,6 +640,7 @@ function ApptScreen({ showToast, devMode }: { showToast: (m: string) => void; de
       </div>
 
       <div className="ap-body" data-policy-id="gcp1-appointment-channel">
+        {!operation.apptUsed && <div className="tk-operation-banner"><WarnIc /><span><strong>비급여 신규 예약이 중지됐어요.</strong> 기존 예약은 계속 조회하고 상태를 처리할 수 있어요.</span></div>}
         {devMode && (
           <DevNote title="예약 신청 내역 · 채널 통합" items={[
             <>병원 단위 <code>hospitalLinked</code> 값이 카카오 채널 열의 노출 여부를 결정합니다. 개별 상품의 <code>kakaoOn</code>은 예약 목록의 채널 열 노출 조건으로 사용하지 않습니다.</>,
@@ -559,6 +684,7 @@ function ApptScreen({ showToast, devMode }: { showToast: (m: string) => void; de
             {tab === 'closed' && (
               <div className="ap-status-group"><span className="ap-flabel sm">상태</span><Dropdown value={statusFilter} options={STATUS_FILTER_OPTIONS} onChange={setStatusFilter} width={140} /></div>
             )}
+            {hospitalLinked && <div className="ap-status-group"><span className="ap-flabel sm">채널</span><Dropdown value={channelFilter} options={CHANNEL_FILTER_OPTIONS} onChange={setChannelFilter} width={140} /></div>}
             <div className="ap-actions-btns">
               <button className="ap-reset" onClick={handleReset}>초기화</button>
               <button className="ap-submit" onClick={handleSearch}>검색</button>
@@ -567,18 +693,18 @@ function ApptScreen({ showToast, devMode }: { showToast: (m: string) => void; de
         </div>
 
         {/* 테이블 */}
-        <div className="ap-table">
+        <div className={`ap-table${hospitalLinked ? '' : ' no-channel'}`}>
           <div className="ap-tr ap-th">
-            <span>상태</span><span>{DATETIME_HEADER[tab]}</span><span>진료항목</span><span>채널</span><span>방문자</span><span>예약자</span><span>요청사항</span>
+            <span>상태</span><span>{DATETIME_HEADER[tab]}</span><span>진료항목</span>{hospitalLinked && <span>채널</span>}<span>방문자</span><span>예약자</span><span>요청사항</span>
           </div>
           {rows.length === 0 ? (
             <div className="ap-empty">{applied.trim() ? '조건에 맞는 예약이 없어요' : tab === 'request' ? '조회된 예약 신청이 없어요' : tab === 'upcoming' ? '조회된 내원 예정 일정이 없어요' : '조회된 지난 내역이 없어요'}</div>
           ) : rows.map((a) => (
             <div key={a.id} className="ap-tr ap-row" onClick={() => setDetailId(a.id)}>
-              <span><span className={`ap-tag ${AS_TAG[a.status] || 'gray'}`}>{AS_LABEL[a.status] || a.status}</span></span>
+              <span className="ap-status-stack"><span className={`ap-tag ${AS_TAG[a.status] || 'gray'}`}>{AS_LABEL[a.status] || a.status}</span>{hospitalLinked && a.channel === 'kakao' && a.externalSync && <SyncBadge state={a.externalSync} compact label={APPLY_SYNC_LABEL[a.externalSync]} />}</span>
               <span><TwoLine primary={a.visit} sub={a.when} /></span>
               <span><TwoLine primary={a.itemName} sub={a.priceText} /></span>
-              <span><span className="ap-chan-ic only" title={`${CHANNEL_LABEL[a.channel]}에서 신청`}><ChannelIcon channel={a.channel} /></span></span>
+              {hospitalLinked && <span><span className="ap-chan-ic only" title={`${CHANNEL_LABEL[a.channel]}에서 신청`}><ChannelIcon channel={a.channel} /></span></span>}
               <span><TwoLine primary={a.visitor.name} sub={a.visitor.phone} /></span>
               <span><TwoLine primary={a.reserver.name} sub={a.reserver.phone} /></span>
               <span className="ap-memo-cell">
@@ -605,7 +731,7 @@ function ApptScreen({ showToast, devMode }: { showToast: (m: string) => void; de
                 <div className="ap-rsv-card">
                   <div className="ap-rsv-head">
                     <span className={`ap-tag ${AS_TAG[detail.status] || 'gray'}`}>{AS_LABEL[detail.status] || detail.status}</span>
-                    <span className="ap-detail-chan"><span className="ap-chan-ic"><ChannelIcon channel={detail.channel} /></span>{CHANNEL_LABEL[detail.channel]} 신청</span>
+                    {hospitalLinked && <span className="ap-detail-chan"><span className="ap-chan-ic"><ChannelIcon channel={detail.channel} /></span>{CHANNEL_LABEL[detail.channel]} 신청</span>}
                   </div>
                   <div className="ap-rsv-daterow">
                     <span className="ap-rsv-main">{detail.visit}</span>
@@ -626,6 +752,18 @@ function ApptScreen({ showToast, devMode }: { showToast: (m: string) => void; de
                   <DetailRow label="예상 결제 금액">{detail.priceText}</DetailRow>
                 </div>
               </div>
+              {hospitalLinked && detail.channel === 'kakao' && (
+                <div className="ap-dsec">
+                  <div className="ap-dsec-title">외부 채널 반영</div>
+                  <div className="ap-card wide ap-sync-card">
+                    <DetailRow label="반영 상태"><SyncBadge state={detail.externalSync || 'SYNCED'} label={APPLY_SYNC_LABEL[detail.externalSync || 'SYNCED']} /></DetailRow>
+                    <DetailRow label="예약 기준">{detail.autoConfirmSnapshot ? '자동 확정 ON' : '수동 확정'} · 예약 생성 시점 snapshot</DetailRow>
+                    <DetailRow label="신규 알림">{detail.notificationSent ? 'Windows 알림 발행 완료' : '알림 설정 OFF · 미발행'}</DetailRow>
+                    {detail.externalId && <DetailRow label="외부 예약 ID">{detail.externalId}</DetailRow>}
+                    {detail.externalError && <div className="tk-sync-error"><WarnIc />{detail.externalError}<button onClick={() => retryExternal(detail.id)}>재시도</button></div>}
+                  </div>
+                </div>
+              )}
               <div className="ap-dsec">
                 <div className="ap-dsec-title">방문자 정보</div>
                 <div className="ap-card">
@@ -728,25 +866,31 @@ function SettingBox({ title, subNode, right }: { title: string; subNode: React.R
     </div>
   );
 }
-function SettingsScreen({ itemCount, showToast, devMode, onHours }: { itemCount: number; showToast: (m: string) => void; devMode: boolean; onHours: () => void }) {
-  const [apptUsed, setApptUsed] = useState(true);
-  const [autoConfirmed, setAutoConfirmed] = useState(true);
-  const [todayApptUsed, setTodayApptUsed] = useState(true);
-  const [newApptNotified, setNewApptNotified] = useState(true);
+function SettingsScreen({ itemCount, operation, hospitalLinked, onGlobalChange, onSettingChange, onRetry, showToast, devMode, onHours }: {
+  itemCount: number;
+  operation: OperationSettings;
+  hospitalLinked: boolean;
+  onGlobalChange: (enabled: boolean) => void;
+  onSettingChange: (key: 'autoConfirmed' | 'todayApptUsed' | 'newApptNotified') => void;
+  onRetry: () => void;
+  showToast: (m: string) => void;
+  devMode: boolean;
+  onHours: () => void;
+}) {
   const [stopOpen, setStopOpen] = useState(false);
 
   const handleApptUsed = () => {
-    if (!apptUsed) {
-      setApptUsed(true);
-      showToast('진료항목 비급여 예약을 시작했어요.');
+    if (!operation.apptUsed) {
+      onGlobalChange(true);
+      showToast('비급여 예약을 시작했고 유효한 외부 상품을 다시 반영 중입니다.');
       return;
     }
     setStopOpen(true);
   };
   const confirmStop = () => {
-    setApptUsed(false);
+    onGlobalChange(false);
     setStopOpen(false);
-    showToast('진료항목 비급여 예약을 중지했어요.');
+    showToast('신규 예약을 차단했고 외부 상품을 중지 중입니다.');
   };
 
   return (
@@ -767,14 +911,22 @@ function SettingsScreen({ itemCount, showToast, devMode, onHours }: { itemCount:
         {/* 비급여 예약 받기 */}
         <SettingBox
           title="비급여 예약 받기"
-          subNode={<><span className="set-count">{itemCount}개의 진료항목이</span><span className="set-count-rest"> 등록되어 있어요.</span></>}
+          subNode={<><span className="set-count">{itemCount}개의 진료항목이</span><span className="set-count-rest"> 등록되어 있어요. OFF해도 상품별 노출 의도와 기존 예약은 보존돼요.</span></>}
           right={
             <div className="set-status-toggle">
-              <span className={`set-status${apptUsed ? '' : ' off'}`}>{apptUsed ? '운영중' : '미운영'}</span>
-              <SettingToggle checked={apptUsed} onChange={handleApptUsed} />
+              <span className={`set-status${operation.apptUsed ? '' : ' off'}`}>{operation.apptUsed ? '운영중' : '미운영'}</span>
+              <SettingToggle checked={operation.apptUsed} onChange={handleApptUsed} />
             </div>
           }
         />
+
+        {hospitalLinked && (
+          <section className="set-sync-panel" aria-label="외부 채널 설정 반영 상태">
+            <div className="set-sync-copy"><strong>외부 채널 설정 반영</strong><span>설정 v{operation.version} · 카카오 적용 v{operation.appliedVersion} · 최근 {operation.lastAt}</span></div>
+            <SyncBadge state={operation.syncState} label={APPLY_SYNC_LABEL[operation.syncState]} />
+            {operation.error && <div className="tk-sync-error"><WarnIc />{operation.error}<button onClick={onRetry}>재시도</button></div>}
+          </section>
+        )}
 
         {/* 설정 */}
         <section className="set-section">
@@ -793,17 +945,17 @@ function SettingsScreen({ itemCount, showToast, devMode, onHours }: { itemCount:
           <SettingBox
             title="예약 자동 확정"
             subNode="자동 확정 사용 시, 별도 승인 없이 예약 신청과 동시에 자동으로 확정됩니다."
-            right={<SettingToggle checked={autoConfirmed} onChange={() => setAutoConfirmed((v) => !v)} />}
+            right={<SettingToggle checked={operation.autoConfirmed} onChange={() => onSettingChange('autoConfirmed')} />}
           />
           <SettingBox
             title="당일 예약 허용"
             subNode="당일 예약 허용 시, 현재 시간 기준 1시간 이후부터 당일 예약을 받습니다."
-            right={<SettingToggle checked={todayApptUsed} onChange={() => setTodayApptUsed((v) => !v)} />}
+            right={<SettingToggle checked={operation.todayApptUsed} onChange={() => onSettingChange('todayApptUsed')} />}
           />
           <SettingBox
             title="새 예약 알림 받기"
             subNode="새 예약 신청이 발생하면, 이 PC에서 윈도우 알림을 받습니다."
-            right={<SettingToggle checked={newApptNotified} onChange={() => setNewApptNotified((v) => !v)} />}
+            right={<SettingToggle checked={operation.newApptNotified} onChange={() => onSettingChange('newApptNotified')} />}
           />
         </section>
       </div>
@@ -814,7 +966,7 @@ function SettingsScreen({ itemCount, showToast, devMode, onHours }: { itemCount:
           <div className="ap-modal set-modal" onClick={(e) => e.stopPropagation()}>
             <div className="ap-modal-title">비급여 예약을 그만 받으시겠어요?</div>
             <div className="set-modal-body">
-              그만 받기를 누르면 굿닥에서 진료항목 노출과 예약 신청이 모두 중단돼요. 등록된 진료항목은 그대로 유지되며, 다시 시작하면 바로 예약을 받을 수 있어요.
+              그만 받기를 누르면 굿닥 신규 예약을 즉시 차단하고 카카오에 연동된 Product·향후 Schedule도 노출 보류로 전환해요. 상품별 노출 설정, 외부 ID, 전용정보와 기존 예약은 그대로 유지되며, 다시 시작하면 유효한 상품만 선별해 복원합니다.
             </div>
             <div className="ap-modal-btns">
               <button className="rg-btn-cancel" onClick={() => setStopOpen(false)}>취소</button>
@@ -851,16 +1003,24 @@ const cloneHours = (value: HourForm): HourForm => JSON.parse(JSON.stringify(valu
 const timeMinutes = (value: string) => { const [h, m] = value.split(':').map(Number); return h * 60 + m; };
 const validTimeRange = (value: HourValue) => value.off || timeMinutes(value.to) - timeMinutes(value.from) >= 30;
 
-function HoursScreen({ showToast, devMode, onBack }: { showToast: (m: string) => void; devMode: boolean; onBack: () => void }) {
-  const [hours, setHours] = useState<HourForm>(() => cloneHours(INITIAL_HOURS));
+function HoursScreen({ hours, setHours, notice, setNotice, tempDays, setTempDays, onScheduleChanged, showToast, devMode, onBack }: {
+  hours: HourForm;
+  setHours: React.Dispatch<React.SetStateAction<HourForm>>;
+  notice: string;
+  setNotice: React.Dispatch<React.SetStateAction<string>>;
+  tempDays: TempDay[];
+  setTempDays: React.Dispatch<React.SetStateAction<TempDay[]>>;
+  onScheduleChanged: () => void;
+  showToast: (m: string) => void;
+  devMode: boolean;
+  onBack: () => void;
+}) {
   const [draft, setDraft] = useState<HourForm | null>(null);
   const [errors, setErrors] = useState<Partial<Record<HourKey, string>>>({});
   const [copySource, setCopySource] = useState<HourKey | null>(null);
   const [copyTargets, setCopyTargets] = useState<HourKey[]>([]);
-  const [notice, setNotice] = useState('고길동 원장님은 점심 안드십니다.');
   const [noticeDraft, setNoticeDraft] = useState<string | null>(null);
   const [tempOpen, setTempOpen] = useState(false);
-  const [tempDays, setTempDays] = useState<TempDay[]>([]);
   const [tempDraft, setTempDraft] = useState<TempDay[]>([]);
   const [tempError, setTempError] = useState('');
 
@@ -886,7 +1046,7 @@ function HoursScreen({ showToast, devMode, onBack }: { showToast: (m: string) =>
       setErrors(Object.fromEntries(invalid.map(({ key }) => [key, '최소 30분 이상 입력해 주세요.'])));
       return;
     }
-    setHours(cloneHours(draft)); setDraft(null); showToast('운영 시간을 저장했어요.');
+    setHours(cloneHours(draft)); setDraft(null); onScheduleChanged(); showToast('운영 시간을 저장했고 외부 미래 일정을 반영 중이에요.');
   };
   const applyCopy = () => {
     if (!draft || !copySource || copyTargets.length === 0) return;
@@ -908,7 +1068,7 @@ function HoursScreen({ showToast, devMode, onBack }: { showToast: (m: string) =>
   const saveTemp = () => {
     const invalid = tempDraft.some((day) => !day.name.trim() || !day.date || (!day.off && timeMinutes(day.to) - timeMinutes(day.from) < 30));
     if (invalid) { setTempError('명칭과 날짜를 입력하고 운영 시간을 30분 이상 설정해 주세요.'); return; }
-    setTempDays(tempDraft.map((day) => ({ ...day }))); setTempOpen(false); showToast('임시 운영일을 저장했어요.');
+    setTempDays(tempDraft.map((day) => ({ ...day }))); setTempOpen(false); onScheduleChanged(); showToast('임시 운영일을 저장했고 외부 미래 일정을 반영 중이에요.');
   };
   const displayTime = (value: HourValue) => value.off ? '휴진' : `${value.from} - ${value.to}`;
 
@@ -979,6 +1139,16 @@ function HoursScreen({ showToast, devMode, onBack }: { showToast: (m: string) =>
 function TiKakao() {
   const [page, setPage] = useState<Page>('items');
   const [items, setItems] = useState<Item[]>(INITIAL);
+  const [appts, setAppts] = useState<Appt[]>(INITIAL_APPTS);
+  const [operation, setOperation] = useState<OperationSettings>(INITIAL_OPERATION);
+  const [hours, setHours] = useState<HourForm>(() => cloneHours(INITIAL_HOURS));
+  const [hoursNotice, setHoursNotice] = useState('고길동 원장님은 점심 안드십니다.');
+  const [tempDays, setTempDays] = useState<TempDay[]>([]);
+  const [hospitalLinked, setHospitalLinked] = useState(true);
+  const [failNextSync, setFailNextSync] = useState(false);
+  const [slotFull, setSlotFull] = useState(false);
+  const [focusAdditionalToken, setFocusAdditionalToken] = useState(0);
+  const [itemFilter, setItemFilter] = useState<'all' | 'goodoc' | 'kakao' | 'issue' | 'hold'>('all');
   const [screen, setScreen] = useState<'list' | 'form'>('list');
   const [selCat1, setSelCat1] = useState<string>('피부·미용');
   const [selId, setSelId] = useState<number | null>(null);
@@ -994,32 +1164,56 @@ function TiKakao() {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [formBaseline, setFormBaseline] = useState('');
+  const [openingPriceCount, setOpeningPriceCount] = useState(1);
   const [formError, setFormError] = useState('');
   const [toast, setToast] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({}); // 저장 유효성 실패 필드별 메시지(키: name / price-<id>-title / price-<id>-amount / q-<id>-name / q-<id>-options)
   const [showPlanned, setShowPlanned] = useState(false);
   const [devMode, setDevMode] = useState(false);
-  const hospitalLinked = true;
 
   const showToast = (m: string) => { setToast(m); window.setTimeout(() => setToast(null), 2200); };
   const patch = (u: Partial<Item>) => setD((prev) => (prev ? { ...prev, ...u } : prev));
   const patchExtra = (u: Partial<Item['kExtra']>) => setD((prev) => (prev ? { ...prev, kExtra: { ...prev.kExtra, ...u } } : prev));
+  const toggleKakaoDraft = () => setD((prev) => {
+    if (!prev || !hospitalLinked || !prev.gdVisible) return prev;
+    const kakaoOn = !prev.kakaoOn;
+    if (!kakaoOn || prev.kExtra.initialized) return { ...prev, kakaoOn };
+    return {
+      ...prev,
+      kakaoOn,
+      kExtra: {
+        ...prev.kExtra,
+        initialized: true,
+        displayName: prev.alias || prev.name,
+        description: prev.intro || prev.detail,
+        hasImage: prev.hasImage,
+        keywords: [...prev.keywords]
+      }
+    };
+  });
   const clearErr = (...keys: string[]) => setErrors((e) => { if (!keys.some((k) => k in e)) return e; const n = { ...e }; keys.forEach((k) => delete n[k]); return n; });
 
+  const visibleItems = useMemo(() => items.filter((item) => {
+    if (itemFilter === 'goodoc') return item.gdVisible && !item.kakaoOn;
+    if (itemFilter === 'kakao') return item.kakaoOn;
+    if (itemFilter === 'issue') return ['FAILED', 'UPDATE_REQUIRED'].includes(syncSummary(item.sync));
+    if (itemFilter === 'hold') return syncSummary(item.sync) === 'ON_HOLD';
+    return true;
+  }), [items, itemFilter]);
   const cat1List = useMemo(() => catOrder.map((name) => ({ name, count: items.filter((i) => i.cat1 === name).length, custom: name === CUSTOM_CAT })).filter((c) => c.count > 0), [items, catOrder]);
   const groups = useMemo(() => {
-    const inCat = items.filter((i) => i.cat1 === selCat1);
+    const inCat = visibleItems.filter((i) => i.cat1 === selCat1);
     const order: string[] = []; const map: Record<string, Item[]> = {};
     inCat.forEach((it) => { const k = it.cat2 || '기타'; if (!map[k]) { map[k] = []; order.push(k); } map[k].push(it); });
     return order.map((name) => ({ name, items: map[name] }));
-  }, [items, selCat1]);
+  }, [visibleItems, selCat1]);
   const isCustom = selCat1 === CUSTOM_CAT;
-  const customItems = useMemo(() => items.filter((i) => i.cat1 === selCat1), [items, selCat1]);
+  const customItems = useMemo(() => visibleItems.filter((i) => i.cat1 === selCat1), [visibleItems, selCat1]);
 
   const nav = (p: Page) => { setPage(p); if (p === 'items') setScreen('list'); };
-  const cloneItem = (it: Item): Item => ({ ...it, prices: it.prices.map((p) => ({ ...p })), keywords: [...it.keywords], kExtra: { ...it.kExtra, questions: it.kExtra.questions.map((q) => ({ ...q, options: [...(q.options || [])] })) } });
-  const open = (it: Item) => { const next = cloneItem(it); setErrors({}); setSelId(it.id); setD(next); setFormBaseline(JSON.stringify(next)); setFormError(''); setScreen('form'); };
-  const create = () => { const next = mk({ id: UID++, name: '', cat1: selCat1 === CUSTOM_CAT ? CUSTOM_CAT : selCat1, cat2: groups[0]?.name || '' }); setErrors({}); setSelId(null); setD(next); setFormBaseline(JSON.stringify(next)); setFormError(''); setScreen('form'); };
+  const cloneItem = (it: Item): Item => ({ ...it, prices: it.prices.map((p) => ({ ...p })), keywords: [...it.keywords], sync: { ...it.sync }, kExtra: { ...it.kExtra, keywords: [...it.kExtra.keywords], questions: it.kExtra.questions.map((q) => ({ ...q, options: [...(q.options || [])] })) } });
+  const open = (it: Item) => { const next = cloneItem(it); setErrors({}); setSelId(it.id); setD(next); setOpeningPriceCount(it.prices.length); setFormBaseline(JSON.stringify(next)); setFormError(''); setScreen('form'); };
+  const create = () => { const next = mk({ id: UID++, name: '', cat1: selCat1 === CUSTOM_CAT ? CUSTOM_CAT : selCat1, cat2: groups[0]?.name || '' }); setErrors({}); setSelId(null); setD(next); setOpeningPriceCount(next.prices.length); setFormBaseline(JSON.stringify(next)); setFormError(''); setScreen('form'); };
   const closeForm = () => { setScreen('list'); setD(null); setLeaveOpen(false); setFormError(''); setErrors({}); };
   const requestCloseForm = () => { if (d && JSON.stringify(d) !== formBaseline) setLeaveOpen(true); else closeForm(); };
   // 저장 유효성 검증 — 카카오 상품 API required 필드 기준. 위반 필드별 메시지 맵을 반환(빈 객체면 통과).
@@ -1037,6 +1231,10 @@ function TiKakao() {
     });
     // 카카오 추가 질문은 카카오 상품으로 전송될 때(kakaoOn)만 노출·검증 — 숨은 필드로 저장이 막히지 않도록.
     if (v.kakaoOn) {
+      v.prices.forEach((p) => {
+        if (p.title.length > 25) e[`price-${p.id}-kakao`] = '카카오 가격명은 최대 25자예요.';
+        if (kakaoPriceDescription(p).length > PRICE_DESC_MAX) e[`price-${p.id}-kakao`] = `카카오 가격 안내 문구는 최종 ${PRICE_DESC_MAX}자 이하여야 해요.`;
+      });
       v.kExtra.questions.forEach((q) => {
         if (!q.name.trim()) e[`q-${q.id}-name`] = '질문 제목을 입력해 주세요.';
         if (q.type !== 'text') {
@@ -1049,6 +1247,11 @@ function TiKakao() {
   };
   const save = () => {
     if (!d) return;
+    if (selId !== null && (openingPriceCount === 1) !== (d.prices.length === 1)) {
+      setFormError('가격 표시 방식은 카카오 Product 생성 후 변경할 수 있어요. 옵션 수 1개↔복수 변경 정책 확정 전에는 저장할 수 없습니다.');
+      requestAnimationFrame(() => document.querySelector('.tk-price-preview')?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+      return;
+    }
     const e = collectErrors(d);
     if (Object.keys(e).length) {
       setErrors(e);
@@ -1057,16 +1260,51 @@ function TiKakao() {
       return;
     }
     setErrors({});
-    setItems((prev) => (selId === null ? [...prev, d] : prev.map((it) => (it.id === d.id ? d : it)))); closeForm(); showToast(selId === null ? '진료항목을 등록했어요.' : '진료항목을 저장했어요.');
+    const shouldFail = d.kakaoOn && failNextSync;
+    if (shouldFail) setFailNextSync(false);
+    const wasLinked = d.sync.item !== 'NOT_LINKED';
+    const pendingSync: SyncInfo = d.kakaoOn
+      ? {
+          product: operation.apptUsed ? 'PENDING' : 'ON_HOLD',
+          item: 'PENDING',
+          price: 'PENDING',
+          schedule: operation.apptUsed ? 'PENDING' : 'ON_HOLD',
+          lastAt: '방금 전', attempts: d.sync.attempts, error: undefined
+        }
+      : wasLinked
+        ? { ...d.sync, product: 'ON_HOLD', schedule: 'ON_HOLD', lastAt: '방금 전', error: undefined }
+        : makeSync('NOT_LINKED');
+    const saved = { ...d, sync: pendingSync, updatedAt: '2026.07.15' };
+    setItems((prev) => (selId === null ? [...prev, saved] : prev.map((it) => (it.id === saved.id ? saved : it))));
+    closeForm();
+    showToast(d.kakaoOn ? '굿닥에 저장했고 카카오에 반영 중이에요.' : selId === null ? '진료항목을 등록했어요.' : '진료항목을 저장했어요.');
+    if (d.kakaoOn) {
+      window.setTimeout(() => setItems((prev) => prev.map((item) => {
+        if (item.id !== saved.id) return item;
+        if (shouldFail) return { ...item, sync: { ...item.sync, item: 'SYNCED', product: operation.apptUsed ? 'SYNCED' : 'ON_HOLD', price: 'FAILED', schedule: operation.apptUsed ? 'SYNCED' : 'ON_HOLD', error: 'Price.description 반영에 실패했어요. 굿닥 저장 내용은 유지됩니다.', attempts: item.sync.attempts + 1, lastAt: '방금 전' } };
+        return { ...item, sync: { ...item.sync, item: 'SYNCED', price: 'SYNCED', product: operation.apptUsed ? 'SYNCED' : 'ON_HOLD', schedule: operation.apptUsed ? 'SYNCED' : 'ON_HOLD', error: undefined, lastAt: '방금 전' } };
+      })), 700);
+    }
   };
-  const confirmDelete = () => { if (deleteId == null) return; setItems((prev) => prev.filter((it) => it.id !== deleteId)); if (d?.id === deleteId) closeForm(); setDeleteId(null); showToast('진료항목을 삭제했어요.'); };
+  const confirmDelete = () => {
+    if (deleteId == null) return;
+    const target = items.find((item) => item.id === deleteId);
+    if (target && target.activeReservations > 0) {
+      setItems((prev) => prev.map((item) => item.id === deleteId ? { ...item, gdVisible: false, kakaoOn: false, sync: { ...item.sync, product: 'ON_HOLD', schedule: 'ON_HOLD', lastAt: '방금 전' } } : item));
+      if (d?.id === deleteId) closeForm();
+      setDeleteId(null);
+      showToast('활성 예약이 있어 삭제하지 않고 운영을 중지했어요.');
+      return;
+    }
+    setItems((prev) => prev.filter((it) => it.id !== deleteId)); if (d?.id === deleteId) closeForm(); setDeleteId(null); showToast('진료항목을 삭제했어요.');
+  };
   const addDetailImg = () => d && d.detailImages < DETAIL_IMG_MAX && patch({ detailImages: d.detailImages + 1 });
   const delDetailImg = () => d && d.detailImages > 0 && patch({ detailImages: d.detailImages - 1 });
 
   const addKw = () => { if (!d) return; const t = kw.trim(); if (t && d.keywords.length < KEYWORD_MAX && !d.keywords.includes(t)) patch({ keywords: [...d.keywords, t] }); setKw(''); };
-  const setPrice = (id: number, u: Partial<Price>) => { if (!d) return; clearErr(`price-${id}-title`, `price-${id}-amount`); patch({ prices: d.prices.map((p) => (p.id === id ? { ...p, ...u } : p)) }); };
-  const addPrice = () => d && patch({ prices: [...d.prices, { id: UID++, title: '', content: '', type: 'fixed', amount: '', original: '', sale: '' }] });
-  const delPrice = (id: number) => d && patch({ prices: d.prices.length > 1 ? d.prices.filter((p) => p.id !== id) : d.prices });
+  const setPrice = (id: number, u: Partial<Price>) => { if (!d) return; clearErr(`price-${id}-title`, `price-${id}-amount`, `price-${id}-kakao`); patch({ prices: d.prices.map((p) => (p.id === id ? { ...p, ...u } : p)) }); };
+  const addPrice = () => { setFormError(''); if (d) patch({ prices: [...d.prices, { id: UID++, title: '', content: '', type: 'fixed', amount: '', original: '', sale: '' }] }); };
+  const delPrice = (id: number) => { setFormError(''); if (d) patch({ prices: d.prices.length > 1 ? d.prices.filter((p) => p.id !== id) : d.prices }); };
   const movePrice = (toId: number) => {
     if (!d || dragPriceId == null || dragPriceId === toId) return;
     const list = [...d.prices]; const from = list.findIndex((price) => price.id === dragPriceId); const to = list.findIndex((price) => price.id === toId);
@@ -1095,8 +1333,98 @@ function TiKakao() {
     if (it.id !== id) return it;
     const gdVisible = !it.gdVisible;
     showToast(gdVisible ? '해당 진료항목을 서비스에 노출합니다.' : '해당 진료항목을 서비스에 미노출합니다.');
-    return { ...it, gdVisible, kakaoOn: gdVisible ? it.kakaoOn : false };
+    return gdVisible
+      ? { ...it, gdVisible }
+      : { ...it, gdVisible, kakaoOn: false, sync: it.sync.item === 'NOT_LINKED' ? it.sync : { ...it.sync, product: 'ON_HOLD', schedule: 'ON_HOLD', lastAt: '방금 전' } };
   }));
+  const retryItemSync = (id: number) => {
+    setItems((prev) => prev.map((item) => {
+      if (item.id !== id) return item;
+      const next = { ...item.sync, error: undefined, attempts: item.sync.attempts + 1, lastAt: '방금 전' };
+      (['product', 'item', 'price', 'schedule'] as SyncObject[]).forEach((key) => {
+        if (next[key] === 'FAILED' || next[key] === 'UPDATE_REQUIRED') next[key] = 'PENDING';
+      });
+      return { ...item, sync: next };
+    }));
+    showToast('실패한 객체만 다시 반영합니다.');
+    window.setTimeout(() => setItems((prev) => prev.map((item) => {
+      if (item.id !== id) return item;
+      const next = { ...item.sync, error: undefined, lastAt: '방금 전' };
+      (['product', 'item', 'price', 'schedule'] as SyncObject[]).forEach((key) => { if (next[key] === 'PENDING') next[key] = operation.apptUsed || (key !== 'product' && key !== 'schedule') ? 'SYNCED' : 'ON_HOLD'; });
+      return { ...item, sync: next };
+    })), 650);
+  };
+  const changeGlobalOperation = (enabled: boolean) => {
+    const nextVersion = operation.version + 1;
+    setOperation((prev) => ({ ...prev, apptUsed: enabled, version: nextVersion, syncState: hospitalLinked ? 'PENDING' : 'SYNCED', error: undefined, lastAt: '방금 전' }));
+    setItems((prev) => prev.map((item) => {
+      if (!item.kakaoOn || !item.gdVisible) return item;
+      if (!enabled) return { ...item, sync: { ...item.sync, product: 'ON_HOLD', schedule: 'ON_HOLD', lastAt: '방금 전' } };
+      if (syncSummary(item.sync) === 'FAILED') return item;
+      return { ...item, sync: { ...item.sync, product: 'PENDING', schedule: 'PENDING', lastAt: '방금 전' } };
+    }));
+    window.setTimeout(() => {
+      setItems((prev) => prev.map((item) => {
+        if (!enabled || !item.kakaoOn || !item.gdVisible || syncSummary(item.sync) === 'FAILED') return item;
+        return { ...item, sync: { ...item.sync, product: 'SYNCED', schedule: 'SYNCED', lastAt: '방금 전' } };
+      }));
+      setOperation((prev) => ({ ...prev, appliedVersion: nextVersion, syncState: 'SYNCED', error: undefined, lastAt: '방금 전' }));
+    }, 700);
+  };
+  const changeOperationSetting = (key: 'autoConfirmed' | 'todayApptUsed' | 'newApptNotified') => {
+    const before = operation[key];
+    const nextVersion = operation.version + 1;
+    const requiresExternal = hospitalLinked && key !== 'newApptNotified';
+    const shouldFail = requiresExternal && failNextSync;
+    if (shouldFail) setFailNextSync(false);
+    setOperation((prev) => ({ ...prev, [key]: !before, version: nextVersion, syncState: requiresExternal ? 'PENDING' : 'SYNCED', appliedVersion: requiresExternal ? prev.appliedVersion : nextVersion, error: undefined, lastAt: '방금 전' }));
+    if (key === 'todayApptUsed') setItems((prev) => prev.map((item) => item.kakaoOn ? { ...item, sync: { ...item.sync, schedule: 'PENDING', lastAt: '방금 전' } } : item));
+    showToast(key === 'newApptNotified' ? '새 예약 알림 설정을 저장했어요.' : '굿닥 설정을 저장했고 카카오에 반영 중이에요.');
+    if (!requiresExternal) return;
+    window.setTimeout(() => {
+      if (shouldFail) {
+        setOperation((prev) => ({ ...prev, [key]: before, syncState: 'FAILED', error: '카카오 설정 반영에 실패해 이 설정만 이전 값으로 되돌렸어요.', lastAt: '방금 전' }));
+        if (key === 'todayApptUsed') setItems((prev) => prev.map((item) => item.kakaoOn ? { ...item, sync: { ...item.sync, schedule: 'FAILED', error: 'Schedule 설정 반영에 실패했어요.', lastAt: '방금 전' } } : item));
+        return;
+      }
+      setOperation((prev) => ({ ...prev, appliedVersion: nextVersion, syncState: 'SYNCED', error: undefined, lastAt: '방금 전' }));
+      if (key === 'todayApptUsed') setItems((prev) => prev.map((item) => item.kakaoOn ? { ...item, sync: { ...item.sync, schedule: operation.apptUsed ? 'SYNCED' : 'ON_HOLD', error: undefined, lastAt: '방금 전' } } : item));
+    }, 650);
+  };
+  const retryOperation = () => {
+    setOperation((prev) => ({ ...prev, syncState: 'PENDING', error: undefined, lastAt: '방금 전' }));
+    window.setTimeout(() => setOperation((prev) => ({ ...prev, appliedVersion: prev.version, syncState: 'SYNCED', error: undefined, lastAt: '방금 전' })), 650);
+    setItems((prev) => prev.map((item) => syncSummary(item.sync) === 'FAILED' && item.kakaoOn ? { ...item, sync: { ...item.sync, schedule: 'PENDING', error: undefined } } : item));
+    window.setTimeout(() => setItems((prev) => prev.map((item) => item.sync.schedule === 'PENDING' ? { ...item, sync: { ...item.sync, schedule: operation.apptUsed ? 'SYNCED' : 'ON_HOLD', error: undefined, lastAt: '방금 전' } } : item)), 650);
+    showToast('실패한 외부 설정을 다시 반영합니다.');
+  };
+  const syncSchedulesAfterHoursChange = () => {
+    const shouldFail = hospitalLinked && failNextSync;
+    if (shouldFail) setFailNextSync(false);
+    setItems((prev) => prev.map((item) => item.kakaoOn ? { ...item, sync: { ...item.sync, schedule: operation.apptUsed ? 'PENDING' : 'ON_HOLD', error: undefined, lastAt: '방금 전' } } : item));
+    if (!hospitalLinked || !operation.apptUsed) return;
+    window.setTimeout(() => setItems((prev) => prev.map((item) => {
+      if (!item.kakaoOn || item.sync.schedule !== 'PENDING') return item;
+      return shouldFail
+        ? { ...item, sync: { ...item.sync, schedule: 'FAILED', error: '변경한 운영 시간의 Schedule 반영에 실패했어요.', attempts: item.sync.attempts + 1, lastAt: '방금 전' } }
+        : { ...item, sync: { ...item.sync, schedule: 'SYNCED', error: undefined, lastAt: '방금 전' } };
+    })), 650);
+  };
+  const simulateKakaoReservation = () => {
+    if (!hospitalLinked || !operation.apptUsed) { showToast('현재 운영 조건에서는 카카오 신규 예약을 받을 수 없어요.'); return; }
+    if (slotFull) { showToast('공통 슬롯 최종 검증에서 마감되어 다른 시간을 선택하도록 안내했어요.'); return; }
+    if (appts.some((appt) => appt.externalId === 'KB-DEMO-001')) { showToast('동일한 외부 예약 ID는 중복 저장하지 않아요.'); return; }
+    const status = operation.autoConfirmed ? AS.CONFIRMED : AS.REQUESTED;
+    setAppts((prev) => [{
+      id: 299, channel: 'kakao', status, visit: '2026.07.15(수) 17:00', when: '방금 전', statusAt: operation.autoConfirmed ? '방금 전' : undefined,
+      itemName: '레이저 토닝', itemAlias: '맑은 피부 레이저 토닝', option: '1회', priceText: '80,000원',
+      visitor: { name: '홍길동', gender: '여', birth: '1995.04.12 (만 31세)', phone: '010-1111-2222' },
+      reserver: { name: '홍길동', gender: '여', birth: '1995.04.12 (만 31세)', phone: '010-1111-2222' },
+      memo: '볼 쪽 색소 상담을 원해요.', answers: [{ q: '주로 신경 쓰이는 부위가 어디인가요?', a: '양 볼과 코 주변이에요.' }],
+      externalSync: 'SYNCED', autoConfirmSnapshot: operation.autoConfirmed, notificationSent: operation.newApptNotified, externalId: 'KB-DEMO-001'
+    }, ...prev]);
+    showToast(operation.newApptNotified ? '신규 예약을 저장하고 Windows 알림을 1회 발행했어요.' : '신규 예약을 저장했어요. 알림 설정이 OFF라 알림은 발행하지 않았어요.');
+  };
   const moveCategory = (to: string) => {
     if (!dragCat || dragCat === to) return;
     setCatOrder((prev) => { const next = [...prev]; const fromIndex = next.indexOf(dragCat); const toIndex = next.indexOf(to); const [moved] = next.splice(fromIndex, 1); next.splice(toIndex, 0, moved); return next; }); setDragCat(null);
@@ -1110,6 +1438,7 @@ function TiKakao() {
     setItems((prev) => { const inCategory = prev.filter((item) => item.cat1 === selCat1); const names = Array.from(new Set(inCategory.map((item) => item.cat2 || '기타'))); const from = names.indexOf(dragGroup); const to = names.indexOf(toName); if (from < 0 || to < 0) return prev; const [moved] = names.splice(from, 1); names.splice(to, 0, moved); const sorted = names.flatMap((name) => inCategory.filter((item) => (item.cat2 || '기타') === name)); let index = 0; return prev.map((item) => item.cat1 === selCat1 ? sorted[index++] : item); }); setDragGroup(null);
   };
 
+  const deleteTarget = deleteId == null ? null : items.find((item) => item.id === deleteId) || null;
   const currentView: PrototypeView = page === 'items' ? (screen === 'form' ? 'items-form' : 'items-list') : page === 'hours' ? 'settings' : page;
   const locatePolicyChange = (change: PolicyChange) => {
     if (change.view === 'items-list') { setPage('items'); setScreen('list'); }
@@ -1118,7 +1447,10 @@ function TiKakao() {
       const targetItem = items.find((item) => item.kakaoOn) || items[0];
       if (targetItem) open(targetItem);
     }
-    if (change.view === 'appt') setPage('appt');
+    if (change.view === 'appt') {
+      setPage('appt');
+      if (change.targetId === 'gcp1-appointment-additional-answers') setFocusAdditionalToken((value) => value + 1);
+    }
     if (change.view === 'settings') setPage('settings');
 
     window.setTimeout(() => {
@@ -1144,15 +1476,25 @@ function TiKakao() {
                 <span>확정 전 PRD를 시각화한 화면이며 실제 배포 시 변경될 수 있어요.</span>
               </div>
             )}
+            {devMode && (
+              <aside className="pc-dev-scenario" aria-label="개발 검토 시나리오">
+                <div className="pc-dev-scenario-copy"><strong>DEV 시나리오 제어</strong><span>새로고침하면 아래 상태와 화면 데이터가 모두 초기화됩니다.</span></div>
+                <label>병원 카카오 연동 <SettingToggle checked={hospitalLinked} onChange={() => setHospitalLinked((value) => !value)} /></label>
+                <label>다음 외부 반영 실패 <SettingToggle checked={failNextSync} onChange={() => setFailNextSync((value) => !value)} /></label>
+                <label>공통 슬롯 마감 <SettingToggle checked={slotFull} onChange={() => setSlotFull((value) => !value)} /></label>
+                <button onClick={simulateKakaoReservation}>카카오 신규 예약 수신</button>
+                <button onClick={() => window.location.reload()}>초기 상태로</button>
+              </aside>
+            )}
 
             {/* ========================= 예약 신청 내역 ========================= */}
-            {page === 'appt' && <ApptScreen showToast={showToast} devMode={devMode} />}
+            {page === 'appt' && <ApptScreen appts={appts} setAppts={setAppts} hospitalLinked={hospitalLinked} operation={operation} failNextSync={failNextSync} consumeFailure={() => setFailNextSync(false)} focusAdditionalToken={focusAdditionalToken} showToast={showToast} devMode={devMode} />}
 
             {/* ========================= 운영 설정 ========================= */}
-            {page === 'settings' && <SettingsScreen itemCount={items.length} showToast={showToast} devMode={devMode} onHours={() => setPage('hours')} />}
+            {page === 'settings' && <SettingsScreen itemCount={items.length} operation={operation} hospitalLinked={hospitalLinked} onGlobalChange={changeGlobalOperation} onSettingChange={changeOperationSetting} onRetry={retryOperation} showToast={showToast} devMode={devMode} onHours={() => setPage('hours')} />}
 
             {/* ========================= 병원 운영시간 관리 ========================= */}
-            {page === 'hours' && <HoursScreen showToast={showToast} devMode={devMode} onBack={() => setPage('settings')} />}
+            {page === 'hours' && <HoursScreen hours={hours} setHours={setHours} notice={hoursNotice} setNotice={setHoursNotice} tempDays={tempDays} setTempDays={setTempDays} onScheduleChanged={syncSchedulesAfterHoursChange} showToast={showToast} devMode={devMode} onBack={() => setPage('settings')} />}
 
             {/* ========================= 진료항목 목록 ========================= */}
             {page === 'items' && screen === 'list' && (
@@ -1168,11 +1510,29 @@ function TiKakao() {
                 <div className="tk-list-body" data-policy-id="gcp1-channel-overview">
                   {devMode && (
                     <DevNote title="진료항목 목록 · 채널 노출 상태" items={[
-                      <>병원 단위 <code>hospitalLinked</code> 값이 카카오 채널 UI의 노출 여부를 결정하고, 연동 병원 안에서 행 단위 카카오 상태는 <code>gdVisible &amp;&amp; kakaoOn</code>으로 계산합니다.</>,
-                      <>굿닥 노출을 OFF로 변경하면 카카오 노출도 즉시 OFF 처리하고, 저장 API에도 두 값을 함께 반영합니다.</>,
-                      <>카카오 규격 검토가 필요한 항목은 원본 데이터는 유지한 채 별도 validation 결과로 표시합니다.</>
+                      <>병원 단위 <code>hospitalLinked</code>는 카카오 UI 자격만 결정합니다. 실제 예약 가능은 <code>apptUsed &amp;&amp; gdVisible &amp;&amp; kakaoOn &amp;&amp; sync=SYNCED</code>와 가격 유효성을 함께 평가합니다.</>,
+                      <>개별 굿닥 노출 OFF는 <code>kakaoOn</code> 의도도 OFF로 바꾸지만, 병원 전체 <code>apptUsed=false</code>는 상품별 의도를 보존하고 Product·Schedule만 <code>ON_HOLD</code>로 전환합니다.</>,
+                      <>목록 상태는 channel listing의 의도 값과 객체별 외부 상태를 합성합니다. 실패 재시도는 FAILED·UPDATE_REQUIRED 객체만 PENDING으로 바꿔 중복 Product 생성을 막습니다.</>
                     ]} />
                   )}
+                  {!operation.apptUsed && <div className="tk-operation-banner"><WarnIc /><span><strong>병원 전체 예약이 일시 중지됐어요.</strong> 행의 노출 설정은 보존되지만 외부 실제 상태는 노출 보류예요.</span></div>}
+                  <div className="tk-list-filters" aria-label="진료항목 채널 상태 필터">
+                    {([
+                      ['all', '전체'],
+                      ['goodoc', '굿닥 전용'],
+                      ['kakao', '굿닥 + 카카오'],
+                      ['issue', '반영 실패'],
+                      ['hold', '노출 보류']
+                    ] as const).filter(([value]) => hospitalLinked || !['kakao', 'issue', 'hold'].includes(value)).map(([value, label]) => (
+                      <button key={value} className={itemFilter === value ? 'on' : ''} onClick={() => setItemFilter(value)}>{label}<span>{items.filter((item) => {
+                        if (value === 'all') return true;
+                        if (value === 'goodoc') return item.gdVisible && !item.kakaoOn;
+                        if (value === 'kakao') return item.kakaoOn;
+                        if (value === 'issue') return ['FAILED', 'UPDATE_REQUIRED'].includes(syncSummary(item.sync));
+                        return syncSummary(item.sync) === 'ON_HOLD';
+                      }).length}</span></button>
+                    ))}
+                  </div>
                   <div className="tk-grid">
                     <div className="tk-grid-chead"><span className="tk-grid-title">카테고리</span></div>
                     <div className="tk-grid-ihead"><span className="tk-grid-title">{selCat1}</span></div>
@@ -1187,12 +1547,12 @@ function TiKakao() {
                     </nav>
                     <section className="tk-grid-ilist">
                       {isCustom ? (
-                        <div className="tk-l2-body">{customItems.map((it) => (<ItemRow key={it.id} it={it} onOpen={() => open(it)} onToggle={() => toggleGdVisible(it.id)} onDelete={() => setDeleteId(it.id)} onDragStart={() => setDragItemId(it.id)} onDrop={() => moveItem(it.id)} />))}</div>
+                        <div className="tk-l2-body">{customItems.map((it) => (<ItemRow key={it.id} it={it} hospitalLinked={hospitalLinked} apptUsed={operation.apptUsed} onOpen={() => open(it)} onToggle={() => toggleGdVisible(it.id)} onDelete={() => setDeleteId(it.id)} onRetry={() => retryItemSync(it.id)} onDragStart={() => setDragItemId(it.id)} onDrop={() => moveItem(it.id)} />))}</div>
                       ) : (
                         groups.map((g) => (
                           <div key={g.name} className="tk-l2" draggable onDragStart={() => setDragGroup(g.name)} onDragOver={(e) => e.preventDefault()} onDrop={() => moveGroup(g.name)}>
                             <div className="tk-l2-head"><span className="tk-cat-handle"><DragHandle /></span><span className="tk-l2-name">{g.name}</span></div>
-                            <div className="tk-l2-body">{g.items.map((it) => (<ItemRow key={it.id} it={it} onOpen={() => open(it)} onToggle={() => toggleGdVisible(it.id)} onDelete={() => setDeleteId(it.id)} onDragStart={() => setDragItemId(it.id)} onDrop={() => moveItem(it.id)} />))}</div>
+                            <div className="tk-l2-body">{g.items.map((it) => (<ItemRow key={it.id} it={it} hospitalLinked={hospitalLinked} apptUsed={operation.apptUsed} onOpen={() => open(it)} onToggle={() => toggleGdVisible(it.id)} onDelete={() => setDeleteId(it.id)} onRetry={() => retryItemSync(it.id)} onDragStart={() => setDragItemId(it.id)} onDrop={() => moveItem(it.id)} />))}</div>
                             <div className="tk-l2-pad" />
                           </div>
                         ))
@@ -1271,11 +1631,12 @@ function TiKakao() {
                     </section>
 
                     {/* 카카오톡 예약하기에서도 보이기 */}
-                    <section className="rg-card tk-kcard" data-policy-id="gcp1-channel-visibility">
+                    {hospitalLinked && <section className="rg-card tk-kcard" data-policy-id="gcp1-channel-visibility">
                       <div className="tk-khead">
                         <div className="tk-khead-left"><span className="tk-khead-badge"><KakaoBubble /></span><div className="tk-khead-text"><div className="tk-khead-title">카카오톡 예약하기에서도 보이기</div><div className="tk-khead-desc">카카오톡 예약하기에도 상품을 노출하고 예약을 받아요.</div></div></div>
                         <div className="tk-khead-right">
-                          <button className={`rg-toggle${d.kakaoOn ? '' : ' off'}${hospitalLinked && d.gdVisible ? '' : ' disabled'}`} aria-label="카카오톡 예약하기에서도 보이기" aria-disabled={!hospitalLinked || !d.gdVisible} onClick={() => hospitalLinked && d.gdVisible && patch({ kakaoOn: !d.kakaoOn })}><span className="rg-toggle-knob" /></button>
+                          {d.kakaoOn && <SyncBadge state={operation.apptUsed ? syncSummary(d.sync) : 'ON_HOLD'} compact />}
+                          <button className={`rg-toggle${d.kakaoOn ? '' : ' off'}${d.gdVisible ? '' : ' disabled'}`} aria-label="카카오톡 예약하기에서도 보이기" aria-disabled={!d.gdVisible} onClick={toggleKakaoDraft}><span className="rg-toggle-knob" /></button>
                         </div>
                       </div>
                       {!d.gdVisible && <div className="tk-kdependency"><WarnIc /> 굿닥에 노출 중인 진료항목만 카카오톡 예약하기에도 노출할 수 있어요. 먼저 하단의 굿닥 노출을 켜 주세요.</div>}
@@ -1292,6 +1653,24 @@ function TiKakao() {
                         <div className="tk-kbody">
                           <div className="tk-kauto"><span className="tk-kauto-ic"><CautionIc /></span><span className="tk-kauto-txt">위에 입력한 진료항목 정보가 카카오톡 예약하기에도 함께 표시돼요.</span></div>
                           <div className="tk-kextra">
+                              <div className="tk-kfield-grid">
+                                <div className="tk-kfield"><div className="tk-klabel">카카오 노출명 <span className="rg-optional">(선택)</span></div><input className="rg-input" maxLength={ALIAS_MAX} value={d.kExtra.displayName} onChange={(e) => patchExtra({ displayName: e.target.value })} placeholder={d.alias || d.name || '카카오에 보여줄 이름'} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.displayName.length}</span>/{ALIAS_MAX}자</div></div>
+                                <div className="tk-kfield"><div className="tk-klabel">카카오 대표 이미지 <span className="rg-optional">(선택)</span></div>{d.kExtra.hasImage ? <div className="tk-thumb"><span>카카오 대표 이미지</span><button onClick={() => patchExtra({ hasImage: false })} aria-label="삭제"><CloseIcon /></button></div> : <button className="rg-upload tk-upload-inline" onClick={() => patchExtra({ hasImage: true })}><PhotoIcon /><span className="rg-upload-label">사진 추가</span></button>}</div>
+                              </div>
+                              <div className="tk-kfield"><div className="tk-klabel">카카오 설명 <span className="rg-optional">(선택)</span></div><textarea className="rg-textarea tk-ktextarea" maxLength={DETAIL_DESC_MAX} value={d.kExtra.description} onChange={(e) => patchExtra({ description: e.target.value })} placeholder="카카오 상품에 보여줄 설명을 입력해 주세요." /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.description.length}</span>/{DETAIL_DESC_MAX.toLocaleString('ko-KR')}자</div></div>
+                              <div className="tk-kfield"><div className="tk-klabel">카카오 키워드 <span className="rg-optional">(선택)</span></div><input className="rg-input" value={d.kExtra.keywords.join(', ')} onChange={(e) => patchExtra({ keywords: e.target.value.split(',').map((value) => value.trim()).filter(Boolean).slice(0, KEYWORD_MAX) })} placeholder="쉼표로 구분해 입력해 주세요." /><div className="rg-help">최초 ON 때 공통정보를 복사하며, 이후 공통정보 수정으로 자동 덮어쓰지 않아요.</div></div>
+                              <div className="tk-kdivider" />
+                              <div className="tk-kfield tk-price-preview">
+                                <div className="tk-klabel">카카오 가격 안내 미리보기 <span className="tk-klabel-count">Price.description</span></div>
+                                <div className="tk-price-type-row"><span>가격 표시 방식</span><strong>{d.prices.length > 1 ? 'SELECT · 옵션 선택' : 'NOT_DISPLAY · 단일 옵션'}</strong></div>
+                                {(openingPriceCount === 1) !== (d.prices.length === 1) && <div className="tk-kdependency"><WarnIc /> 가격 옵션이 1개↔복수 경계를 넘으면 카카오 Product 교체 정책이 필요해요. 확정 전에는 저장하지 마세요.</div>}
+                                {d.prices.map((price) => {
+                                  const description = kakaoPriceDescription(price);
+                                  const error = errors[`price-${price.id}-kakao`];
+                                  return <div key={price.id} className={`tk-price-preview-row${error ? ' error' : ''}`}><span>{price.title || '가격명 없음'}</span><strong>{description || '전송할 가격 문구 없음'}</strong><em>{description.length}/{PRICE_DESC_MAX}자</em>{error && <p className="rg-error">{error}</p>}</div>;
+                                })}
+                              </div>
+                              <div className="tk-kdivider" />
                               <div className="tk-kfield">
                                 <div className="tk-klabel">예약 시 받을 정보 <span className="rg-optional">(선택)</span><span className="tk-klabel-count">총 {d.kExtra.questions.length}개</span></div>
                                 {d.kExtra.questions.map((q, idx) => (
@@ -1348,11 +1727,30 @@ function TiKakao() {
                               <div className="tk-kdivider" />
                               <div className="tk-kfield"><div className="tk-klabel">이용 방법 <span className="rg-optional">(선택)</span></div><textarea className="rg-textarea tk-ktextarea" placeholder="이용 방법을 입력해 주세요." maxLength={K_INFO_MAX} value={d.kExtra.howto} onChange={(e) => patchExtra({ howto: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.howto.length}</span>/{K_INFO_MAX.toLocaleString('ko-KR')}자</div></div>
                               <div className="tk-kfield"><div className="tk-klabel">유의사항 <span className="rg-optional">(선택)</span></div><input className="rg-input" placeholder="유의사항을 입력해 주세요." maxLength={K_NOTICE_MAX} value={d.kExtra.notice} onChange={(e) => patchExtra({ notice: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.notice.length}</span>/{K_NOTICE_MAX}자</div></div>
+                              <div className="tk-kfield"><div className="tk-klabel">방문 안내 <span className="rg-optional">(선택)</span></div><input className="rg-input" placeholder="예: 3층 접수 데스크에서 예약자 성함을 말씀해 주세요." maxLength={K_NOTICE_MAX} value={d.kExtra.visitGuide} onChange={(e) => patchExtra({ visitGuide: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.visitGuide.length}</span>/{K_NOTICE_MAX}자</div></div>
                               <div className="tk-kfield"><div className="tk-klabel">취소 유의사항 <span className="rg-optional">(선택)</span></div><input className="rg-input" placeholder="취소 유의사항을 입력해 주세요." maxLength={K_CANCEL_MAX} value={d.kExtra.cancelNotice} onChange={(e) => patchExtra({ cancelNotice: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.cancelNotice.length}</span>/{K_CANCEL_MAX}자</div></div>
+                              <div className="tk-kdivider" />
+                              <div className="tk-object-sync">
+                                <div className="tk-klabel">카카오 객체별 반영 상태 <span className="tk-klabel-count">최근 {d.sync.lastAt}</span></div>
+                                <div className="tk-object-grid">{(['product', 'item', 'price', 'schedule'] as SyncObject[]).map((object) => <div key={object}><span>{object === 'item' ? 'DEFAULT Item' : object[0].toUpperCase() + object.slice(1)}</span><SyncBadge state={operation.apptUsed ? d.sync[object] : object === 'product' || object === 'schedule' ? 'ON_HOLD' : d.sync[object]} compact /></div>)}</div>
+                                {d.sync.error && <div className="tk-sync-error"><WarnIc />{d.sync.error}<button onClick={() => {
+                                  retryItemSync(d.id);
+                                  const next = { ...d.sync, error: undefined, lastAt: '방금 전' };
+                                  (['product', 'item', 'price', 'schedule'] as SyncObject[]).forEach((object) => { if (next[object] === 'FAILED' || next[object] === 'UPDATE_REQUIRED') next[object] = 'PENDING'; });
+                                  patch({ sync: next });
+                                  window.setTimeout(() => setD((prev) => {
+                                    if (!prev || prev.id !== d.id) return prev;
+                                    const settled = { ...prev.sync, error: undefined, lastAt: '방금 전' };
+                                    (['product', 'item', 'price', 'schedule'] as SyncObject[]).forEach((object) => { if (settled[object] === 'PENDING') settled[object] = operation.apptUsed || (object !== 'product' && object !== 'schedule') ? 'SYNCED' : 'ON_HOLD'; });
+                                    return { ...prev, sync: settled };
+                                  }), 650);
+                                }}>실패 객체 재시도</button></div>}
+                                <div className="rg-help">저장하면 공통정보는 즉시 유지되고, 카카오 반영은 객체별로 별도 처리돼요.</div>
+                              </div>
                           </div>
                         </div>
                       )}
-                    </section>
+                    </section>}
                   </div>
 
                   <GoodocPreview d={d} />
@@ -1380,10 +1778,10 @@ function TiKakao() {
 
             {deleteId !== null && (
               <div className="ap-dim" onClick={() => setDeleteId(null)}><div className="ap-modal set-modal" onClick={(e) => e.stopPropagation()}>
-                <div className="ap-modal-title">해당 진료항목을 삭제하시겠어요?</div>
-                <div className="set-modal-body">삭제하면 굿닥 서비스에 더 이상 노출되지 않으며,<br/>해당 항목으로 예약할 수 없게 됩니다.</div>
-                <div className="tk-delete-warning">한 번 삭제한 정보는 되돌릴 수 없으니 유의해 주세요.</div>
-                <div className="ap-modal-btns"><button className="rg-btn-cancel" onClick={() => setDeleteId(null)}>취소</button><button className="set-modal-danger" onClick={confirmDelete}>확인</button></div>
+                <div className="ap-modal-title">{deleteTarget?.activeReservations ? '예약이 있는 진료항목은 삭제할 수 없어요' : '해당 진료항목을 삭제하시겠어요?'}</div>
+                <div className="set-modal-body">{deleteTarget?.activeReservations ? <>활성 또는 미래 예약 {deleteTarget.activeReservations}건이 있어요. 기존 예약과 외부 매핑은 보존하고 신규 예약만 중지할 수 있습니다.</> : <>삭제하면 굿닥 서비스에 더 이상 노출되지 않으며,<br/>해당 항목으로 예약할 수 없게 됩니다.</>}</div>
+                <div className="tk-delete-warning">{deleteTarget?.activeReservations ? '운영 중지 후에도 기존 예약은 예약 신청 내역에서 처리할 수 있어요.' : '한 번 삭제한 정보는 되돌릴 수 없으니 유의해 주세요.'}</div>
+                <div className="ap-modal-btns"><button className="rg-btn-cancel" onClick={() => setDeleteId(null)}>취소</button><button className="set-modal-danger" onClick={confirmDelete}>{deleteTarget?.activeReservations ? '운영 중지' : '삭제'}</button></div>
               </div></div>
             )}
 

@@ -8,7 +8,15 @@ import imgHero from '@/assets/kakao-reference/ab-ticket-hero.png';
  * 표준 클론(kakao-booking-clone.html)의 body+script를 dangerouslySetInnerHTML+useEffect로 주입(self-contained).
  */
 
-const BODY = `<div class="app">
+const BODY = `<style>
+  .price-copy{display:flex;flex-direction:column;gap:4px;min-width:0}
+  .price-copy .o-name{font-weight:700}
+  .price-copy .o-desc{font-size:14px;color:#555;line-height:1.45}
+  .price-guide{font-size:13px;color:#777;line-height:1.55;padding:4px 0 18px}
+  .slot.unavailable{color:#bbb;background:#f7f7f7;text-decoration:line-through;cursor:not-allowed}
+  .slot.hidden-slot{display:none}
+</style>
+<div class="app">
 
   <!-- top bar -->
   <header class="topbar">
@@ -47,8 +55,25 @@ const BODY = `<div class="app">
   <!-- ===== 예약 ===== -->
   <section class="section">
 
+    <!-- PRICE: 기술용 DEFAULT Item은 구매자 화면에 노출하지 않고 Price만 선택 -->
+    <div class="treat-head" id="priceHead">
+      <svg class="h-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+      <span class="h-title">가격 옵션을 선택하세요</span>
+    </div>
+    <div id="priceList" style="padding-bottom:8px;">
+      <div class="opt" data-price-id="price-consult" data-price-name="신규 상담" data-price-description="상담 후 결정" onclick="selectPrice(this)">
+        <span class="radio-c"></span>
+        <span class="price-copy"><span class="o-name">신규 상담</span><span class="o-desc">상담 후 결정</span></span>
+      </div>
+      <div class="opt" data-price-id="price-3d" data-price-name="정밀 진단 상담 (3D 분석)" data-price-description="30,000원 - 3D 분석 포함" onclick="selectPrice(this)">
+        <span class="radio-c"></span>
+        <span class="price-copy"><span class="o-name">정밀 진단 상담 (3D 분석)</span><span class="o-desc">30,000원 - 3D 분석 포함</span></span>
+      </div>
+      <div class="price-guide">표시된 금액은 예약 전 가격 안내이며, 병원 상담과 진료 내용에 따라 달라질 수 있어요.</div>
+    </div>
+
     <!-- DATE accordion -->
-    <div class="acc-h" id="dateHead" onclick="toggleAcc('date')">
+    <div class="acc-h disabled collapsed" id="dateHead" onclick="toggleAcc('date')">
       <div class="h-left">
         <svg class="h-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
           <rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9h18M8 2.5v4M16 2.5v4"/><path d="m8.5 14 2.2 2.2 4.3-4.3"/></svg>
@@ -56,7 +81,7 @@ const BODY = `<div class="app">
       </div>
       <svg class="h-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 15 6-6 6 6"/></svg>
     </div>
-    <div class="acc-body" id="dateBody">
+    <div class="acc-body hidden" id="dateBody">
       <div class="cal-head">
         <button class="cal-nav" disabled aria-label="이전달">‹</button>
         <span class="m">2026년 7월</span>
@@ -84,16 +109,6 @@ const BODY = `<div class="app">
       <div class="slots" id="amSlots"></div>
       <div class="tg-label">오후</div>
       <div class="slots" id="pmSlots"></div>
-    </div>
-
-    <!-- TREATMENT -->
-    <div class="treat-head disabled" id="treatHead">
-      <svg class="h-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
-      <span class="h-title">진료/시술을 선택하세요</span>
-    </div>
-    <div id="treatList" style="padding-bottom:8px;">
-      <div class="opt locked" data-name="신규상담"><span class="radio-c"></span><span class="o-name">신규상담</span></div>
-      <div class="opt locked" data-name="재진 (대표번호로 전화부탁드립니다)"><span class="radio-c"></span><span class="o-name">재진 (대표번호로 전화부탁드립니다)</span></div>
     </div>
 
   </section>
@@ -171,7 +186,12 @@ const BODY = `<div class="app">
 <div class="toast" id="toast"></div>`;
 
 const SCRIPT = `const WD = ['일','월','화','수','목','금','토'];
-  const state = { date:null, time:null, treat:null };
+  const state = { price:null, date:null, time:null };
+  try{
+    sessionStorage.removeItem('gd_appt');
+    sessionStorage.removeItem('gd_kakao_context');
+    sessionStorage.setItem('gd_booking_type','MEDICAL_ITEM');
+  }catch(e){}
 
   // ---- calendar: 2026-07, 1일=수(index3), 오늘=14=예약마감, 17=제헌절(빨강) ----
   const TODAY=14, CLOSED=[14], HOLIDAYS=[17], firstWeekday=3, daysInMonth=31;
@@ -194,18 +214,32 @@ const SCRIPT = `const WD = ['일','월','화','수','목','금','토'];
   // ---- time slots ----
   const AM=['11:00','11:30'];
   const PM=['12:00','12:30','1:00','1:30','2:00','2:30','3:00','3:30','4:00','4:30','5:00','5:30','6:00'];
+  const SOLD={'오전':['11:30'],'오후':['2:30','5:30']};
   buildSlots('amSlots',AM,'오전'); buildSlots('pmSlots',PM,'오후');
   function buildSlots(id,list,period){
     const box=document.getElementById(id); box.innerHTML='';
     list.forEach(t=>{
       const s=document.createElement('button'); s.className='slot'; s.textContent=t;
-      s.addEventListener('click',()=>selectTime(period,t,s));
+      if(SOLD[period].includes(t)){
+        s.classList.add('unavailable');s.disabled=true;s.setAttribute('aria-label',t+' 예약 마감');
+      }else{
+        s.addEventListener('click',()=>selectTime(period,t,s));
+      }
       box.appendChild(s);
     });
   }
 
+  function selectPrice(el){
+    state.price={id:el.dataset.priceId,name:el.dataset.priceName,description:el.dataset.priceDescription};
+    document.querySelectorAll('[data-price-id]').forEach(function(p){p.classList.remove('selected');});
+    el.classList.add('selected');
+    const dh=document.getElementById('dateHead');dh.classList.remove('disabled');
+    setAcc('date',true);
+    updateReserve();
+  }
+
   function selectDate(d, col, btn){
-    state.date={d,col}; state.time=null; state.treat=null;
+    state.date={d,col}; state.time=null;
     document.querySelectorAll('.day.selected').forEach(e=>e.classList.remove('selected'));
     btn.classList.add('selected');
     document.getElementById('dateTitle').textContent='26.07.'+String(d).padStart(2,'0')+'('+WD[col]+')';
@@ -216,42 +250,34 @@ const SCRIPT = `const WD = ['일','월','화','수','목','금','토'];
     setAcc('time',true);
     document.querySelectorAll('.slot.selected').forEach(e=>e.classList.remove('selected'));
 
-    // reset treatment
-    document.getElementById('treatHead').classList.add('disabled');
-    document.querySelectorAll('.opt').forEach(o=>{o.classList.remove('selected');o.classList.add('locked');});
     updateReserve();
   }
 
   function selectTime(period, t, el){
-    state.time={period,t}; state.treat=null;
+    state.time={period,t};
     document.querySelectorAll('.slot.selected').forEach(e=>e.classList.remove('selected'));
     el.classList.add('selected');
     document.getElementById('timeTitle').textContent=period+' '+t;
 
-    // enable treatment
-    document.getElementById('treatHead').classList.remove('disabled');
-    document.querySelectorAll('.opt').forEach(o=>{
-      o.classList.remove('locked','selected');
-      o.onclick=()=>selectTreat(o.dataset.name,o);
-    });
-    updateReserve();
-  }
-
-  function selectTreat(name, el){
-    state.treat=name;
-    document.querySelectorAll('.opt.selected').forEach(e=>e.classList.remove('selected'));
-    el.classList.add('selected');
     updateReserve();
   }
 
   function updateReserve(){
-    document.getElementById('reserveBtn').disabled = !(state.date&&state.time&&state.treat);
+    document.getElementById('reserveBtn').disabled = !(state.price&&state.date&&state.time);
   }
 
   function onReserve(){
-    // 진료항목 타입: EMR 조회 없이 굿닥 진료항목 예약 신청폼으로 이동(선택 일시·진료/시술 전달)
-    try{ sessionStorage.setItem('gd_appt', JSON.stringify({d:state.date.d, wd:WD[state.date.col], period:state.time.period, t:state.time.t, treat:state.treat})); }catch(e){}
-    location.href='goodoc-webview-item.html';
+    // 진료항목형은 기술용 Item 선택 단계 없이 Product·Price·Schedule 문맥만 전달한다.
+    try{
+      sessionStorage.setItem('gd_booking_type','MEDICAL_ITEM');
+      sessionStorage.setItem('gd_appt', JSON.stringify({
+        type:'MEDICAL_ITEM',productId:'product-ab-surgery',productName:'성형외과 신규예약',
+        priceId:state.price.id,priceName:state.price.name,priceDescription:state.price.description,
+        scheduleId:'schedule-202607'+String(state.date.d).padStart(2,'0')+'-'+state.time.period+'-'+state.time.t,
+        d:state.date.d,wd:WD[state.date.col],period:state.time.period,t:state.time.t
+      }));
+    }catch(e){}
+    location.href='kakao-booking-skin-confirm.html?type=medical-item';
   }
 
   // ---- accordions (date/time) ----
@@ -271,7 +297,9 @@ const SCRIPT = `const WD = ['일','월','화','수','목','금','토'];
   function toggleFilter(){
     const f=document.getElementById('timeFilter');
     f.classList.toggle('on');
-    toast(f.classList.contains('on')?'예약 가능한 시간만 표시':'전체 시간 표시');
+    const on=f.classList.contains('on');
+    document.querySelectorAll('.slot.unavailable').forEach(function(s){s.classList.toggle('hidden-slot',on);});
+    toast(on?'예약 가능한 시간만 표시':'전체 시간 표시');
   }
 
   // ---- toast ----

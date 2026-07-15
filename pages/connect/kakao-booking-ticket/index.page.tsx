@@ -2,11 +2,10 @@ import React, { useEffect } from 'react';
 import imgHero from '@/assets/kakao-reference/ab-ticket-hero.png';
 
 /**
- * kakao-booking-ticket — 카카오톡 예약하기 · 진료항목 상세 (성형외과 신규예약)
+ * kakao-booking-ticket — 카카오톡 예약하기 · 진료항목 상세
  * 원본/참고: booking.kakao.com/detail/ticket/509667
  * 배포: https://connect-sq-sandbox.github.io/out/kakao-booking-ticket.html
  * 표준 클론(kakao-booking-clone.html)의 body+script를 dangerouslySetInnerHTML+useEffect로 주입(self-contained).
- * 크로스링크는 out 배포명으로 매핑됨. 이미지는 assets 인라인.
  */
 
 const BODY = `<div class="app">
@@ -250,7 +249,9 @@ const SCRIPT = `const WD = ['일','월','화','수','목','금','토'];
   }
 
   function onReserve(){
-    toast('예약 신청: 26.07.'+String(state.date.d).padStart(2,'0')+' '+state.time.period+' '+state.time.t+' · '+state.treat);
+    // 진료항목 타입: EMR 조회 없이 굿닥 진료항목 예약 신청폼으로 이동(선택 일시·진료/시술 전달)
+    try{ sessionStorage.setItem('gd_appt', JSON.stringify({d:state.date.d, wd:WD[state.date.col], period:state.time.period, t:state.time.t, treat:state.treat})); }catch(e){}
+    location.href='goodoc-webview-item.html';
   }
 
   // ---- accordions (date/time) ----

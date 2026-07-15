@@ -5,11 +5,10 @@ import imgThumbSurgery from '@/assets/kakao-reference/ab-thumb-surgery.png';
 import imgThumbSkin from '@/assets/kakao-reference/ab-thumb-skin.png';
 
 /**
- * kakao-booking — 카카오톡 예약하기 · 병원 상세 (에이비성형외과의원)
+ * kakao-booking — 카카오톡 예약하기 · 병원 상세
  * 원본/참고: booking.kakao.com/detail/ticketStore/212597
  * 배포: https://connect-sq-sandbox.github.io/out/kakao-booking.html
  * 표준 클론(kakao-hospital-clone.html)의 body+script를 dangerouslySetInnerHTML+useEffect로 주입(self-contained).
- * 크로스링크는 out 배포명으로 매핑됨. 이미지는 assets 인라인.
  */
 
 const BODY = `<div class="app">

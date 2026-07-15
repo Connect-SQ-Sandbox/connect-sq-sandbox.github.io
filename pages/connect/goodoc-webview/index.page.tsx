@@ -4,11 +4,10 @@ import lottie from 'lottie-web';
 import Loading from '@/assets/lotties/loading.json';
 
 /**
- * goodoc-webview — 굿닥 병원 예약 (진료실 연동 예약 웹뷰)
- * 원본/참고: github.com/goodoc/goodoc-partnership · src/pages/kakao
+ * goodoc-webview — 굿닥 병원 예약 (진료실 연동 웹뷰)
+ * 원본/참고: github.com/goodoc/goodoc-partnership
  * 배포: https://connect-sq-sandbox.github.io/out/goodoc-webview.html
  * 표준 클론(goodoc-webview-clone.html)의 body+script를 dangerouslySetInnerHTML+useEffect로 주입(self-contained).
- * 크로스링크는 out 배포명으로 매핑됨. 이미지는 assets 인라인.
  */
 
 const BODY = `<div class="app">

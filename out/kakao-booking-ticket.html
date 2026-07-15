@@ -774,7 +774,9 @@ Error generating stack: `+i.message+`
   }
 
   function onReserve(){
-    toast('\uC608\uC57D \uC2E0\uCCAD: 26.07.'+String(state.date.d).padStart(2,'0')+' '+state.time.period+' '+state.time.t+' \xB7 '+state.treat);
+    // \uC9C4\uB8CC\uD56D\uBAA9 \uD0C0\uC785: EMR \uC870\uD68C \uC5C6\uC774 \uAD7F\uB2E5 \uC9C4\uB8CC\uD56D\uBAA9 \uC608\uC57D \uC2E0\uCCAD\uD3FC\uC73C\uB85C \uC774\uB3D9(\uC120\uD0DD \uC77C\uC2DC\xB7\uC9C4\uB8CC/\uC2DC\uC220 \uC804\uB2EC)
+    try{ sessionStorage.setItem('gd_appt', JSON.stringify({d:state.date.d, wd:WD[state.date.col], period:state.time.period, t:state.time.t, treat:state.treat})); }catch(e){}
+    location.href='goodoc-webview-item.html';
   }
 
   // ---- accordions (date/time) ----

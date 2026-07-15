@@ -15,6 +15,7 @@ export const SCREEN_CSS = {
   'kakao-booking-skin': ['styles/kakaoBookingSkin.css'],
   'kakao-booking-skin-confirm': ['styles/kakaoBookingSkinConfirm.css'],
   'goodoc-webview': ['styles/goodocWebview.css'],
+  'goodoc-webview-item': ['styles/goodocWebviewItem.css'],
   'kakao-link': ['styles/connectKakaoLink.css']
 };
 

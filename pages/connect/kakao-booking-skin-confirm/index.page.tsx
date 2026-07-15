@@ -2,11 +2,10 @@ import React, { useEffect } from 'react';
 import imgThumbSkin from '@/assets/kakao-reference/ab-thumb-skin.png';
 
 /**
- * kakao-booking-skin-confirm — 카카오톡 예약하기 · 예약 확인·약관 동의 (진료실 연동)
+ * kakao-booking-skin-confirm — 카카오톡 예약하기 · 예약 확인·약관 동의
  * 원본/참고: booking.kakao.com (예약 확인 퍼널)
  * 배포: https://connect-sq-sandbox.github.io/out/kakao-booking-skin-confirm.html
  * 표준 클론(kakao-booking-skin-confirm.html)의 body+script를 dangerouslySetInnerHTML+useEffect로 주입(self-contained).
- * 크로스링크는 out 배포명으로 매핑됨. 이미지는 assets 인라인.
  */
 
 const BODY = `<div class="app">

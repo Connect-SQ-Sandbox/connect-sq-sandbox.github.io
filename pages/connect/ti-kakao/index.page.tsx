@@ -1362,11 +1362,17 @@ function TiKakao() {
                   <div className="rg-footer-left">
                     <button className="rg-btn-cancel" onClick={requestCloseForm}>취소</button>
                     <button className="rg-btn-save" onClick={save}>저장</button>
-                    {selId !== null && <button className="tk-detail-delete" onClick={() => setDeleteId(selId)}>삭제</button>}
                   </div>
+                  {/* 우측 보조: 신규 생성=노출 토글 / 기존 수정=삭제 버튼 (실제 제품 TreatmentItemFormFooter 기준) */}
                   <div className="rg-footer-right">
-                    <span className="rg-footer-label">{d.gdVisible ? '환자들에게 진료항목을 노출합니다.' : '진료항목을 노출하지 않습니다.'}</span>
-                    <button className={`rg-toggle${d.gdVisible ? '' : ' off'}`} aria-label="굿닥 진료항목 노출" aria-pressed={d.gdVisible} onClick={() => { const gdVisible = !d.gdVisible; patch({ gdVisible, kakaoOn: gdVisible ? d.kakaoOn : false }); }}><span className="rg-toggle-knob" /></button>
+                    {selId === null ? (
+                      <>
+                        <span className="rg-footer-label">환자들에게 진료항목을 노출하고 예약을 받습니다.</span>
+                        <button className={`rg-toggle${d.gdVisible ? '' : ' off'}`} aria-label="굿닥 진료항목 노출" aria-pressed={d.gdVisible} onClick={() => { const gdVisible = !d.gdVisible; patch({ gdVisible, kakaoOn: gdVisible ? d.kakaoOn : false }); }}><span className="rg-toggle-knob" /></button>
+                      </>
+                    ) : (
+                      <button className="tk-detail-delete" onClick={() => setDeleteId(selId)}>삭제</button>
+                    )}
                   </div>
                 </div>
               </>

@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 export type PrototypeView = 'items-list' | 'items-form' | 'appt' | 'settings';
 export type PublicationStatus = 'baseline' | 'approved' | 'planned';
@@ -84,6 +85,159 @@ const PUBLISH_LABEL: Record<PublicationStatus, string> = {
 
 const releaseLabel = (value: string | null) => value || '미정';
 
+type DeveloperMarker = {
+  id: string;
+  number: number;
+  prdId: string;
+  view: PrototypeView;
+  targetId: string;
+  title: string;
+  notes: string[];
+};
+
+type PositionedDeveloperMarker = DeveloperMarker & {
+  top: number;
+  left: number;
+  horizontal: 'left' | 'right';
+  vertical: 'above' | 'below';
+};
+
+const markerPositionsEqual = (before: PositionedDeveloperMarker[], after: PositionedDeveloperMarker[]) => (
+  before.length === after.length && before.every((marker, index) => {
+    const next = after[index];
+    return marker.id === next.id
+      && marker.number === next.number
+      && marker.prdId === next.prdId
+      && marker.title === next.title
+      && marker.notes.join('\u0000') === next.notes.join('\u0000')
+      && marker.top === next.top
+      && marker.left === next.left
+      && marker.horizontal === next.horizontal
+      && marker.vertical === next.vertical;
+  })
+);
+
+function DeveloperPolicyOverlay({ markers }: { markers: DeveloperMarker[] }) {
+  const [positions, setPositions] = useState<PositionedDeveloperMarker[]>([]);
+
+  useEffect(() => {
+    setPositions([]);
+    let frame = 0;
+    const observed = new Set<Element>();
+    let resizeObserver: ResizeObserver | null = null;
+
+    const schedule = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(measure);
+    };
+
+    if ('ResizeObserver' in window) resizeObserver = new ResizeObserver(schedule);
+
+    function measure() {
+      const drawer = document.querySelector<HTMLElement>('.pc-drawer.open');
+      const drawerLeft = drawer?.getBoundingClientRect().left;
+      const visibleRightBoundary = drawerLeft && drawerLeft > 0 ? drawerLeft : window.innerWidth;
+      const modalLayers = Array.from(document.querySelectorAll<HTMLElement>('.ap-dim')).filter((element) => {
+        const rect = element.getBoundingClientRect();
+        const style = window.getComputedStyle(element);
+        return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+      });
+      const activeModal = modalLayers[modalLayers.length - 1] || null;
+
+      const next = markers.flatMap<PositionedDeveloperMarker>((marker) => {
+        const targets = Array.from(document.querySelectorAll<HTMLElement>('[data-policy-id]'));
+        const target = targets.find((element) => element.dataset.policyId === marker.targetId);
+        if (!target || (activeModal && !activeModal.contains(target))) return [];
+
+        if (resizeObserver && !observed.has(target)) {
+          resizeObserver.observe(target);
+          observed.add(target);
+        }
+
+        const rect = target.getBoundingClientRect();
+        const visibleLeft = Math.max(rect.left, 0);
+        const visibleTop = Math.max(rect.top, 0);
+        const visibleRight = Math.min(rect.right, visibleRightBoundary);
+        const visibleBottom = Math.min(rect.bottom, window.innerHeight);
+        if (visibleRight <= visibleLeft || visibleBottom <= visibleTop || rect.width <= 0 || rect.height <= 0) return [];
+
+        const left = Math.round(Math.min(Math.max(visibleRight - 18, 12), Math.max(12, visibleRightBoundary - 42)));
+        const top = Math.round(Math.min(Math.max(visibleTop + 12, 12), window.innerHeight - 42));
+        const spaceRight = visibleRightBoundary - left;
+        const spaceLeft = left + 30;
+        const spaceBelow = window.innerHeight - top - 30;
+        const spaceAbove = top;
+
+        return [{
+          ...marker,
+          top,
+          left,
+          horizontal: spaceRight >= 350 || spaceRight >= spaceLeft ? 'right' : 'left',
+          vertical: spaceBelow >= 260 || spaceBelow >= spaceAbove ? 'below' : 'above'
+        }];
+      });
+
+      setPositions((before) => markerPositionsEqual(before, next) ? before : next);
+    }
+
+    const mutationObserver = new MutationObserver((mutations) => {
+      const hasRelevantMutation = mutations.some((mutation) => {
+        const target = mutation.target instanceof Element ? mutation.target : mutation.target.parentElement;
+        return !target?.closest('.pc-dev-marker-layer');
+      });
+      if (hasRelevantMutation) schedule();
+    });
+
+    window.addEventListener('resize', schedule);
+    document.addEventListener('scroll', schedule, true);
+    mutationObserver.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+    schedule();
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener('resize', schedule);
+      document.removeEventListener('scroll', schedule, true);
+      mutationObserver.disconnect();
+      resizeObserver?.disconnect();
+    };
+  }, [markers]);
+
+  if (typeof document === 'undefined' || positions.length === 0) return null;
+
+  return createPortal(
+    <div className="pc-dev-marker-layer" aria-label="개발 구현 조건 오버레이">
+      {positions.map((marker) => {
+        const tooltipId = `pc-dev-tooltip-${marker.id}`;
+        return (
+          <div
+            className={`pc-dev-marker-shell place-${marker.horizontal} place-${marker.vertical}`}
+            style={{ top: marker.top, left: marker.left }}
+            key={marker.id}
+          >
+            <button
+              className="pc-dev-marker"
+              type="button"
+              aria-label={`개발 정책 ${marker.number}번: ${marker.title}`}
+              aria-describedby={tooltipId}
+              onKeyDown={(event) => { if (event.key === 'Escape') event.currentTarget.blur(); }}
+            >
+              {marker.number}
+            </button>
+            <div className="pc-dev-marker-tooltip" id={tooltipId} role="tooltip">
+              <div className="pc-dev-marker-tooltip-head">
+                <span>{marker.number}</span>
+                <div><small>DEV · PRD {marker.prdId}</small><strong>{marker.title}</strong></div>
+              </div>
+              <ul>{marker.notes.map((note, index) => <li key={index}><Inline text={note} /></li>)}</ul>
+            </div>
+          </div>
+        );
+      })}
+    </div>,
+    document.body
+  );
+}
+
 export function ChangeDrawer({ currentView, changes, sources, showPlanned, onShowPlannedChange, devMode, onDevModeChange, onLocate }: Props) {
   const [open, setOpen] = useState(false);
   const [scope, setScope] = useState<'current' | 'all'>('current');
@@ -97,6 +251,31 @@ export function ChangeDrawer({ currentView, changes, sources, showPlanned, onSho
     () => available.filter((change) => scope === 'all' || change.view === currentView),
     [available, currentView, scope]
   );
+  const developerMarkers = useMemo(() => {
+    const grouped = new Map<string, Omit<DeveloperMarker, 'number'>>();
+    available.forEach((change) => {
+      if (!change.developerNotes?.length) return;
+      const key = `${change.view}:${change.targetId}`;
+      const current = grouped.get(key);
+      if (current) {
+        current.notes.push(...change.developerNotes.filter((note) => !current.notes.includes(note)));
+        return;
+      }
+      grouped.set(key, {
+        id: change.id,
+        prdId: change.prdId,
+        view: change.view,
+        targetId: change.targetId,
+        title: change.title,
+        notes: [...change.developerNotes]
+      });
+    });
+    return Array.from(grouped.values()).map((marker, index) => ({ ...marker, number: index + 1 }));
+  }, [available]);
+  const currentDeveloperMarkers = useMemo(
+    () => developerMarkers.filter((marker) => marker.view === currentView),
+    [currentView, developerMarkers]
+  );
   const currentCount = available.filter((change) => change.view === currentView).length;
   const plannedCount = new Set(changes.filter((change) => change.publicationStatus === 'planned').map((change) => change.prdId)).size;
   const documentSource = documentPrdId ? sources[documentPrdId] : null;
@@ -109,6 +288,8 @@ export function ChangeDrawer({ currentView, changes, sources, showPlanned, onSho
 
   return (
     <>
+      {devMode && <DeveloperPolicyOverlay markers={currentDeveloperMarkers} />}
+
       <button className="pc-trigger" type="button" aria-label="정책 변경 내역 열기" aria-expanded={open} onClick={() => setOpen(true)}>
         <span className="pc-trigger-dot" />
         <span>변경사항</span>
@@ -159,7 +340,7 @@ export function ChangeDrawer({ currentView, changes, sources, showPlanned, onSho
                   <span />
                 </button>
               </div>
-              {devMode && <div className="pc-dev-notice">개발자 대상 구현 조건은 아래 정책 카드 안에서만 표시됩니다.</div>}
+              {devMode && <div className="pc-dev-notice">화면 위 번호 스티커에 마우스를 올리면 영역별 구현 조건을 확인할 수 있습니다. 스티커는 제품 레이아웃에 영향을 주지 않습니다.</div>}
               <div className="pc-current-view">현재 화면 · {VIEW_LABEL[currentView]}</div>
             </div>
 

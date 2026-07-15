@@ -5,7 +5,7 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-kakao — 진료항목 카카오 노출 + 예약 신청 내역 + 운영 설정
- * 상태     : 현행(active)   버전: v25  최종수정: 2026-07-15
+ * 상태     : 현행(active)   버전: v26  최종수정: 2026-07-15
  * PRD      : GCP-1 · 2.3-review · documents/prd/2026-07-13-진료항목-카카오톡-예약하기-연동-구축.md
  * 배포URL  : https://connect-sq-sandbox.github.io/out/ti-kakao.html
  * 관련 CSS : connectRegister.css + connectTiKakao.css
@@ -30,6 +30,8 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
  *   [폐기]      구버전 kakao-link(별도 연동관리 페이지형) → ti-kakao로 대체
  *
  * 변경 이력:
+ *   v26 2026-07-15 — 개발 검토용 ON 시 제품 레이아웃을 변경하지 않는 고정 오버레이 번호 스티커를 표시하고,
+ *                    스티커 호버·키보드 포커스로 영역별 개발 구현 조건을 확인하도록 개선. OFF 시 오버레이 DOM 전체 제거.
  *   v25 2026-07-15 — 제품 화면에서 DEV 시나리오 제어·개발 메모·예정 배너를 제거하고, 개발 구현 조건을 우측 정책 패널 내부로 한정.
  *                    병원 화면의 외부 연동 문구는 사용자 친화적으로 축소하고 내부 ID·버전·API 객체명은 정책 패널에서만 제공.
  *   v24 2026-07-15 — 공유 정책 가이드를 프로토타입 동작 기준으로 반영: 병원 연동 조건부 UI, 의도/실효/외부/동기화 상태,
@@ -724,11 +726,11 @@ function ApptScreen({ appts, setAppts, hospitalLinked, failNextSync, consumeFail
                   <div className="ap-card"><DetailRow label="이름">{detail.reserver.name}</DetailRow><DetailRow label="연락처">{detail.reserver.phone}</DetailRow></div>
                 )}
               </div>
-              <div className="ap-dsec" data-policy-id="gcp1-appointment-additional-answers">
+              <div className="ap-dsec">
                 <div className="ap-dsec-title">요청사항</div>
                 <div className={`ap-request${detail.memo ? '' : ' empty'}`}>{detail.memo || '등록된 요청사항이 없어요.'}</div>
                 {detail.channel === 'kakao' && detail.answers && detail.answers.length > 0 && (
-                  <div className="ap-additional-answers">
+                  <div className="ap-additional-answers" data-policy-id="gcp1-appointment-additional-answers">
                     <div className="ap-additional-title"><KakaoMark /> 카카오톡 예약하기 추가 질문·답변</div>
                     <div className="ap-qa-list">
                       {detail.answers.map((qa, i) => (

@@ -317,11 +317,13 @@
 .ap-detail-chan .ap-chan-ic svg { height: 18px; }
 
 /* 스크롤 본문 + 섹션 */
-.ap-detail-scroll { flex: 1; overflow-y: auto; margin: 12px -4px 0; padding: 0 4px; }
-.ap-dsec { padding: 14px 0; border-top: 1px solid var(--gray-20); }
-.ap-dsec:first-child { border-top: 0; padding-top: 4px; }
-.ap-dsec-title { display: flex; align-items: center; gap: 6px; font: 700 14px/20px var(--font-sans); color: var(--gray-100); margin-bottom: 6px; }
+/* 예약 상세 모달 — 실제 제품(connect/reservations DetailModal) 디자인 언어 이식 */
+.ap-detail-scroll { flex: 1; overflow-y: auto; margin: 16px -4px 0; padding: 0 4px; display: flex; flex-direction: column; gap: 24px; }
+.ap-dsec { display: flex; flex-direction: column; gap: 8px; }
+.ap-dsec-title { display: flex; align-items: center; gap: 8px; min-height: 22px; font: 600 14px/22px var(--font-sans); color: #5d6474; }
 .ap-dsec-badge { font: 500 11px/16px var(--font-sans); color: var(--gray-60); background: var(--gray-20); border-radius: 4px; padding: 1px 6px; }
+.ap-minitag { min-width: 48px; padding: 1px 6px; border-radius: 3px; text-align: center; font: 500 12px/18px var(--font-sans); background: rgba(128,135,153,.1); color: #434956; }
+.ap-card { border: 1px solid #e3e6ed; border-radius: 8px; padding: 16px 16px 16px 20px; display: flex; flex-direction: column; }
 .ap-cancel-reason { font: 500 13px/20px var(--font-sans); color: var(--red-70); background: var(--alpha-red-05); border-radius: 8px; padding: 10px 12px; }
 
 /* 상단 상태 헤더 (실제 AppointmentStatus의 title+content 언어) */
@@ -338,8 +340,8 @@
 
 /* 추가 질문·답변 (실제 상세의 추가 질문/답변 내용) */
 .ap-qa-list { display: flex; flex-direction: column; gap: 10px; margin-top: 2px; }
-.ap-request { min-height: 40px; padding: 10px 12px; border-radius: 8px; background: var(--gray-10); color: var(--gray-90); font: 500 14px/21px var(--font-sans); white-space: pre-wrap; word-break: break-word; }
-.ap-request.empty { color: var(--gray-50); }
+.ap-request { border: 1px solid #e3e6ed; border-radius: 8px; padding: 16px 16px 16px 20px; color: #31353f; font: 500 14px/22px var(--font-sans); white-space: pre-wrap; word-break: break-word; }
+.ap-request.empty { color: #808799; }
 .ap-additional-answers { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--gray-20); }
 .ap-additional-title { display: flex; align-items: center; gap: 6px; margin-bottom: 9px; color: var(--gray-80); font: 600 13px/20px var(--font-sans); }
 .ap-additional-title svg { width: 18px; height: 18px; flex: none; }
@@ -351,13 +353,13 @@
 
 /* 예약자=방문자 동일 / 병원 메모 */
 .ap-same-note { font: 500 14px/22px var(--font-sans); color: var(--gray-60); padding: 7px 0; }
-.ap-memo-box { font: 500 14px/21px var(--font-sans); color: var(--gray-90); background: var(--gray-10); border-radius: 8px; padding: 12px 14px; white-space: pre-wrap; word-break: break-word; }
-.ap-memo-box.empty { color: var(--gray-50); }
+.ap-memo-box { border: 1px solid #e3e6ed; border-radius: 8px; padding: 16px 16px 16px 20px; color: #31353f; font: 500 14px/22px var(--font-sans); white-space: pre-wrap; word-break: break-word; }
+.ap-memo-box.empty { color: #808799; }
 
 /* 상세 정보 행 */
-.ap-drow { display: flex; gap: 12px; padding: 7px 0; }
-.ap-drow-label { flex: none; width: 100px; font: 500 14px/22px var(--font-sans); color: var(--gray-60); }
-.ap-drow-val { flex: 1; display: inline-flex; align-items: center; font: 500 14px/22px var(--font-sans); color: var(--gray-90); word-break: break-word; }
+.ap-drow { display: flex; align-items: center; gap: 8px; height: 32px; }
+.ap-drow-label { flex: none; width: 64px; font: 400 14px/22px var(--font-sans); color: #808799; }
+.ap-drow-val { flex: 1; display: inline-flex; align-items: center; padding: 0 8px; font: 500 14px/22px var(--font-sans); color: #31353f; word-break: break-word; }
 
 /* 상태 변경 이력 타임라인 */
 .ap-timeline { display: flex; flex-direction: column; padding-left: 2px; }
@@ -369,8 +371,11 @@
 .ap-tl-label { font: 600 13px/20px var(--font-sans); color: var(--gray-90); }
 .ap-tl-at { font: 400 12px/16px var(--font-sans); color: var(--gray-60); margin-left: auto; }
 
-.ap-detail-actions { display: flex; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--gray-20); }
-.ap-detail-actions .ap-btn { flex: 1; height: 46px; padding: 0 16px; line-height: 46px; font-size: 15px; border-radius: 10px; }
+.ap-detail-actions { display: flex; gap: 8px; margin-top: 24px; }
+.ap-detail-actions .ap-btn { flex: 1; height: 40px; padding: 0 20px; line-height: 40px; font: 600 14px/40px var(--font-sans); border-radius: 6px; }
+.ap-detail-actions .ap-btn.primary { background: var(--blue-60); color: #fff; }
+.ap-detail-actions .ap-btn.primary:hover { background: #0067e1; }
+.ap-detail-actions .ap-btn.danger { background: rgba(250,70,85,.1); color: #fa4655; }
 
 /* 테이블 */
 .ap-table { border: 1px solid var(--gray-30); border-radius: 8px; overflow: hidden; }
@@ -417,7 +422,7 @@
 /* 취소 모달 */
 /* 모달은 브라우저 뷰포트 기준으로 띄운다(fixed) — 832px 고정 아트보드 기준(absolute)이면 짧은 창에서 세로 중앙이 화면 밖으로 밀려 잘림. padding으로 상하 최소 여백 확보. */
 .ap-dim { position: fixed; inset: 0; background: rgba(22,24,29,.45); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 30; }
-.ap-modal { width: 440px; max-height: calc(100vh - 48px); overflow-y: auto; background: #fff; border-radius: 14px; padding: 24px; box-shadow: 0 12px 40px rgba(22,24,29,.2); }
+.ap-modal { width: 440px; max-height: calc(100vh - 48px); overflow-y: auto; background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 12px 40px rgba(22,24,29,.18); }
 .ap-modal-title { font: 700 18px/26px var(--font-sans); color: var(--gray-100); }
 .ap-modal-sub { font: 400 13px/20px var(--font-sans); color: var(--gray-60); margin-top: 6px; }
 .ap-reasons { display: flex; flex-wrap: wrap; gap: 6px; margin: 16px 0 10px; }

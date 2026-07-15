@@ -30,6 +30,7 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
  *   [폐기]      구버전 kakao-link(별도 연동관리 페이지형) → ti-kakao로 대체
  *
  * 변경 이력:
+ *   v23 2026-07-15 — 예약 상세 모달 디자인을 실제 제품(receipt-web connect/reservations DetailModal)에 맞춰 이식: 섹션 라벨 gray-70 + 정보 카드(border #e3e6ed·라벨 64px #808799·값 #31353f·행높이 32), 섹션 간 gap24, 요청/메모 bordered 카드, 하단 버튼 40px·솔리드 블루/레드틴트, 예약자 '방문자와 동일' 미니태그. 데이터·필드(카카오 답변·병원 메모·상태 이력 등)는 전부 유지.
  *   v22 2026-07-15 — 우측 정책 카드와 개발 검토 노트에 병원 단위 카카오 연동 여부와 개별 상품 연동 여부를 분리해 명시.
  *                    목록 카카오 정보·상세 카카오 설정·예약 채널 열의 병원 연동 노출 조건 및 DEFAULT 기술 Item 정책을 보강.
  *   v21 2026-07-14 — [현행화 1] '카카오톡 예약하기에서도 보이기' 헤더 박스를 Figma(node 1:907/1:917)에 정밀 반영:
@@ -614,24 +615,28 @@ function ApptScreen({ showToast, devMode }: { showToast: (m: string) => void; de
               )}
               <div className="ap-dsec">
                 <div className="ap-dsec-title">예약 정보</div>
-                <DetailRow label="예약 희망일시">{detail.visit}</DetailRow>
-                <DetailRow label="진료항목">{detail.itemName}{detail.itemAlias && detail.itemAlias !== detail.itemName ? ` (${detail.itemAlias})` : ''}</DetailRow>
-                <DetailRow label="가격 옵션">{detail.option}</DetailRow>
-                <DetailRow label="예상 결제 금액">{detail.priceText}</DetailRow>
-                <DetailRow label="신청일시">{detail.when}</DetailRow>
+                <div className="ap-card">
+                  <DetailRow label="예약 희망일시">{detail.visit}</DetailRow>
+                  <DetailRow label="진료항목">{detail.itemName}{detail.itemAlias && detail.itemAlias !== detail.itemName ? ` (${detail.itemAlias})` : ''}</DetailRow>
+                  <DetailRow label="가격 옵션">{detail.option}</DetailRow>
+                  <DetailRow label="예상 결제 금액">{detail.priceText}</DetailRow>
+                  <DetailRow label="신청일시">{detail.when}</DetailRow>
+                </div>
               </div>
               <div className="ap-dsec">
                 <div className="ap-dsec-title">방문자 정보</div>
-                <DetailRow label="이름">{detail.visitor.name}</DetailRow>
-                <DetailRow label="성별">{detail.visitor.gender}</DetailRow>
-                <DetailRow label="생년월일">{detail.visitor.birth}</DetailRow>
-                <DetailRow label="연락처">{detail.visitor.phone}</DetailRow>
+                <div className="ap-card">
+                  <DetailRow label="이름">{detail.visitor.name}</DetailRow>
+                  <DetailRow label="성별">{detail.visitor.gender}</DetailRow>
+                  <DetailRow label="생년월일">{detail.visitor.birth}</DetailRow>
+                  <DetailRow label="연락처">{detail.visitor.phone}</DetailRow>
+                </div>
               </div>
               <div className="ap-dsec">
-                <div className="ap-dsec-title">예약자 정보</div>
-                {detail.reserver.name === detail.visitor.name && detail.reserver.phone === detail.visitor.phone
-                  ? <div className="ap-same-note">방문자와 동일해요.</div>
-                  : (<><DetailRow label="이름">{detail.reserver.name}</DetailRow><DetailRow label="연락처">{detail.reserver.phone}</DetailRow></>)}
+                <div className="ap-dsec-title">예약자 정보{detail.reserver.name === detail.visitor.name && detail.reserver.phone === detail.visitor.phone && <span className="ap-minitag">방문자와 동일</span>}</div>
+                {!(detail.reserver.name === detail.visitor.name && detail.reserver.phone === detail.visitor.phone) && (
+                  <div className="ap-card"><DetailRow label="이름">{detail.reserver.name}</DetailRow><DetailRow label="연락처">{detail.reserver.phone}</DetailRow></div>
+                )}
               </div>
               <div className="ap-dsec" data-policy-id="gcp1-appointment-additional-answers">
                 <div className="ap-dsec-title">요청사항</div>
@@ -658,13 +663,13 @@ function ApptScreen({ showToast, devMode }: { showToast: (m: string) => void; de
               </div>
               <div className="ap-dsec">
                 <div className="ap-dsec-title">상태 변경 이력</div>
-                <div className="ap-timeline">
+                <div className="ap-card"><div className="ap-timeline">
                   {buildHistory(detail).map((h, i, arr) => (
                     <div key={i} className={`ap-tl-item${i === arr.length - 1 ? ' last' : ''}`}>
                       <span className="ap-tl-dot" /><span className="ap-tl-label">{h.label}</span><span className="ap-tl-at">{h.at}</span>
                     </div>
                   ))}
-                </div>
+                </div></div>
               </div>
             </div>
             <div className="ap-detail-actions">{statusActions(detail)}</div>

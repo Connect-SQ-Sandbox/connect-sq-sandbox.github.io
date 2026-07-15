@@ -599,28 +599,31 @@ function ApptScreen({ showToast, devMode }: { showToast: (m: string) => void; de
               <div className="ap-detail-eyebrow">예약 상세</div>
               <button className="ap-detail-close" onClick={() => setDetailId(null)} aria-label="닫기"><CloseIcon /></button>
             </div>
-            <div className={`ap-detail-status ${AS_TAG[detail.status] || 'gray'}`}>
-              <div className="ap-detail-status-row">
-                <span className={`ap-tag ${AS_TAG[detail.status] || 'gray'}`}>{AS_LABEL[detail.status] || detail.status}</span>
-                <span className="ap-detail-chan"><span className="ap-chan-ic"><ChannelIcon channel={detail.channel} /></span>{CHANNEL_LABEL[detail.channel]} 신청</span>
-              </div>
-              {AS_DESC[detail.status] && <p className="ap-detail-status-desc">{AS_DESC[detail.status]}</p>}
-            </div>
             <div className="ap-detail-scroll">
-              {detail.cancelReason && (
-                <div className="ap-guide">
-                  <span className="ap-guide-ic"><CautionIc /></span>
-                  <div className="ap-guide-body"><div className="ap-guide-title">취소 사유</div><div className="ap-guide-text">{detail.cancelReason}</div></div>
-                </div>
-              )}
               <div className="ap-dsec">
-                <div className="ap-dsec-title">예약 정보</div>
-                <div className="ap-card">
-                  <DetailRow label="예약 희망일시">{detail.visit}</DetailRow>
+                <div className="ap-dsec-title">예약희망 · {detail.status === AS.REQUESTED ? '신청일시' : detail.status === AS.CONFIRMED ? '확정일시' : '종료일시'}</div>
+                <div className="ap-rsv-card">
+                  <div className="ap-rsv-head">
+                    <span className={`ap-tag ${AS_TAG[detail.status] || 'gray'}`}>{AS_LABEL[detail.status] || detail.status}</span>
+                    <span className="ap-detail-chan"><span className="ap-chan-ic"><ChannelIcon channel={detail.channel} /></span>{CHANNEL_LABEL[detail.channel]} 신청</span>
+                  </div>
+                  <div className="ap-rsv-daterow">
+                    <span className="ap-rsv-main">{detail.visit}</span>
+                    <span className="ap-rsv-dot" />
+                    <span className="ap-rsv-sub">{detail.status === AS.REQUESTED ? detail.when : (detail.statusAt || detail.when)}</span>
+                  </div>
+                  {AS_DESC[detail.status] && <p className="ap-rsv-desc">{AS_DESC[detail.status]}</p>}
+                  {detail.cancelReason && (
+                    <div className="ap-rsv-reason"><span className="ap-rsv-reason-key">취소사유</span><span className="ap-rsv-reason-val">{detail.cancelReason}</span></div>
+                  )}
+                </div>
+              </div>
+              <div className="ap-dsec">
+                <div className="ap-dsec-title">진료 정보</div>
+                <div className="ap-card wide">
                   <DetailRow label="진료항목">{detail.itemName}{detail.itemAlias && detail.itemAlias !== detail.itemName ? ` (${detail.itemAlias})` : ''}</DetailRow>
                   <DetailRow label="가격 옵션">{detail.option}</DetailRow>
                   <DetailRow label="예상 결제 금액">{detail.priceText}</DetailRow>
-                  <DetailRow label="신청일시">{detail.when}</DetailRow>
                 </div>
               </div>
               <div className="ap-dsec">

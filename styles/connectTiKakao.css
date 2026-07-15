@@ -324,6 +324,19 @@
 .ap-dsec-badge { font: 500 11px/16px var(--font-sans); color: var(--gray-60); background: var(--gray-20); border-radius: 4px; padding: 1px 6px; }
 .ap-minitag { min-width: 48px; padding: 1px 6px; border-radius: 3px; text-align: center; font: 500 12px/18px var(--font-sans); background: rgba(128,135,153,.1); color: #434956; }
 .ap-card { border: 1px solid #e3e6ed; border-radius: 8px; padding: 16px 16px 16px 20px; display: flex; flex-direction: column; }
+.ap-card.wide .ap-drow-label { width: 96px; } /* 진료 정보 등 긴 라벨용 */
+/* 최상단 예약 카드 — 실제 제품 cn-rsv-card 기준(상태 뱃지 + 인입 채널 + 큰 날짜·작은 날짜 + 취소사유) */
+.ap-rsv-card { border: 1px solid #e3e6ed; border-radius: 8px; padding: 20px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.ap-rsv-head { display: flex; align-items: center; gap: 8px; }
+.ap-rsv-head .ap-tag { height: 22px; padding: 0 6px; border-radius: 4px; font: 600 12px/22px var(--font-sans); }
+.ap-rsv-daterow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ap-rsv-main { font: 600 16px/24px var(--font-sans); color: #31353f; }
+.ap-rsv-dot { flex: none; width: 2px; height: 2px; border-radius: 50%; background: #808799; }
+.ap-rsv-sub { font: 400 12px/18px var(--font-sans); color: #808799; }
+.ap-rsv-desc { margin: 0; font: 400 13px/19px var(--font-sans); color: #808799; }
+.ap-rsv-reason { display: flex; align-items: flex-start; gap: 16px; margin-top: 8px; width: 100%; }
+.ap-rsv-reason-key { flex: none; font: 400 14px/22px var(--font-sans); color: #808799; }
+.ap-rsv-reason-val { font: 500 14px/22px var(--font-sans); color: #31353f; word-break: break-word; }
 .ap-cancel-reason { font: 500 13px/20px var(--font-sans); color: var(--red-70); background: var(--alpha-red-05); border-radius: 8px; padding: 10px 12px; }
 
 /* 상단 상태 헤더 (실제 AppointmentStatus의 title+content 언어) */

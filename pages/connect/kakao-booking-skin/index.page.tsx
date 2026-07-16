@@ -223,11 +223,7 @@ const SCRIPT = `const WD = ['일','월','화','수','목','금','토'];
 
   function onReserve(){
     // 진료실 연동 예약: 선택 일시 저장 후 카카오 예약 확인·약관 동의 퍼널로 이동
-    try{
-      sessionStorage.setItem('gd_booking_type','EXAM_ROOM');
-      sessionStorage.removeItem('gd_kakao_context');
-      sessionStorage.setItem('gd_appt', JSON.stringify({type:'EXAM_ROOM',d:state.date.d, wd:WD[state.date.col], period:state.time.period, t:state.time.t}));
-    }catch(e){}
+    try{ sessionStorage.setItem('gd_appt', JSON.stringify({d:state.date.d, wd:WD[state.date.col], period:state.time.period, t:state.time.t})); }catch(e){}
     location.href='kakao-booking-skin-confirm.html';
   }
 

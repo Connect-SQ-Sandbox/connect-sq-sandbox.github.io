@@ -15,7 +15,7 @@
   .hd{position:sticky;top:0;z-index:10;height:64px;background:var(--white);display:flex;align-items:center;
     padding:8px 10px 8px 20px;border-bottom:1px solid var(--g20);}
   .hd .logo{display:flex;align-items:center;gap:7px;}
-  .hd .logo svg{width:22px;height:22px;}
+  .hd .logo svg{width:auto;height:24px;display:block;}
   .hd .logo b{font-size:18px;font-weight:800;color:var(--blue60);letter-spacing:-.02em;}
 
   .inner{padding:0 20px;}

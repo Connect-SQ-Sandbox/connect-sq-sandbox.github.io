@@ -5,10 +5,10 @@ export const POLICY_SOURCES: Record<string, PolicySource> = {
   'GCP-1': {
     prdId: 'GCP-1',
     title: '진료항목 카카오톡 예약하기 연동 구축',
-    version: '2.3-review',
+    version: '2.5-final-review',
     sourceStatus: 'review',
     targetReleaseAt: null,
-    sourcePath: 'documents/prd/2026-07-13-진료항목-카카오톡-예약하기-연동-구축.md',
+    sourcePath: '3-미션·기획/1-PRD/2026-07-13-진료항목-카카오톡-예약하기-연동-구축.md',
     summaryMarkdown: gcp1Summary
   }
 };
@@ -129,6 +129,24 @@ export const TI_KAKAO_CHANGES: PolicyChange[] = [
     publicationStatus: 'baseline'
   },
   {
+    id: 'GCP-1-CHANGE-021',
+    prdId: 'GCP-1',
+    date: '2026-07-15',
+    prototypeVersion: 'v27',
+    view: 'items-form',
+    targetId: 'gcp1-channel-visibility',
+    title: '카카오 가격 선택 방식을 SELECT로 단일화',
+    before: '가격 옵션이 1개와 복수 사이에서 바뀌면 불변 필드인 priceDisplayType도 달라져 Product 교체가 필요했습니다.',
+    after: '신규 GCP-1 Product는 가격 옵션 수와 관계없이 항상 SELECT로 생성합니다. 활성 Price 1~50개를 허용하며 1↔N 변경은 Product를 유지하고 Price만 증감합니다. 활성 Price가 0개면 카카오 노출을 차단합니다.',
+    developerNotes: [
+      '신규 GCP-1 Product 생성 payload의 `priceDisplayType`은 항상 `SELECT`로 고정합니다. 가격 옵션 개수로 `NOT_DISPLAY`를 선택하지 않습니다.',
+      '1↔N 변경은 Product 재생성이 아니라 Price add/update/ON_HOLD diff로 처리하고 기존 Product ID와 `vendorProductId`를 유지합니다.',
+      '단일 Price 예약에서도 `vendorItemPriceId`가 굿닥 가격 옵션으로 매핑돼야 합니다. `SELECT+Price 1개` E2E는 출시 게이트입니다.',
+      '활성 Price가 0개면 카카오 ON 또는 `ON_SALE` 전환을 차단합니다. 기존 GCP-1 `NOT_DISPLAY` Product는 별도 이행 대상으로 식별합니다.'
+    ],
+    publicationStatus: 'baseline'
+  },
+  {
     id: 'GCP-1-CHANGE-018',
     prdId: 'GCP-1',
     date: '2026-07-15',
@@ -137,12 +155,50 @@ export const TI_KAKAO_CHANGES: PolicyChange[] = [
     targetId: 'gcp1-channel-visibility',
     title: '카카오 전용정보와 객체별 동기화 정책',
     before: '카카오 전용 필드와 Product·Item·Price·Schedule의 반영 결과를 한 화면에서 확인할 수 없었습니다.',
-    after: '노출명·설명·이미지·키워드·추가 질문·이용 방법·유의사항·방문 안내는 병원 화면에서 관리합니다. Product·Item·Price·Schedule 동기화와 실패 재처리는 내부적으로 분리하며, 활성 예약이 있는 상품은 삭제 대신 운영 중지합니다.',
+    after: '검색 키워드·정사각 이미지·상세 이미지·이용 방법·유의사항·방문 안내·취소 유의사항은 병원 화면에서 관리합니다. 카카오 상품명·설명·대표 이미지는 공통 진료항목 정보를 사용하며 별도 입력하지 않습니다. Product·Item·Price·Schedule 동기화와 실패 재처리는 내부적으로 분리하며, 활성 예약이 있는 상품은 삭제 대신 운영 중지합니다.',
     developerNotes: [
       '병원 단위 `hospitalLinked`가 카카오 설정 영역 전체의 노출 여부를 결정합니다. 연동 병원 안에서 `gdVisible`은 토글 활성 조건, `kakaoOn`은 전용 입력 필드 노출 조건입니다.',
       '사용자 화면에는 Item 입력·선택 단계를 두지 않습니다. 연동 어댑터가 카카오 `Product > Item > Price` 경로를 위해 Product별 DEFAULT 기술 Item 한 개를 생성합니다.',
       '굿닥 가격 옵션 각각을 카카오 `Price`로 전송하고, 금액은 `Price.description` 문자열에 포함합니다. 상담 후 결정은 금액을 생략하고 할인가에는 판매가만, 고정가에는 고정 금액만 사용합니다.',
-      '금액과 가격 설명이 모두 있으면 ` - `로 결합합니다. 카카오 노출 ON 즉시 전용 필드를 렌더링하며 별도 추가 입력 토글은 두지 않습니다.'
+      '금액과 가격 설명이 모두 있으면 ` - `로 결합합니다. 카카오 노출 ON 즉시 V1 전용 필드를 렌더링하며 별도 추가 입력 토글은 두지 않습니다.',
+      '카카오 상품명·설명·대표 이미지는 공통 진료항목 master와 이미지 fallback을 사용하고 병원 화면에 별도 input을 노출하지 않습니다. 가격 안내는 기존 굿닥 가격 옵션 입력 영역에서 관리합니다.',
+      '예약 부가정보 질문 정의는 V1 병원 상품 입력에서 제외합니다. 외부 예약에서 수신한 질문·답변은 예약 시점 snapshot으로만 저장·조회합니다.'
+    ],
+    publicationStatus: 'baseline'
+  },
+  {
+    id: 'GCP-1-CHANGE-022',
+    prdId: 'GCP-1',
+    date: '2026-07-16',
+    prototypeVersion: 'v29',
+    view: 'items-form',
+    targetId: 'gcp1-kakao-product-copy',
+    title: '카카오 상품명·설명은 공통 정보 사용',
+    before: '카카오 상품명·설명을 굿닥 진료항목과 별도로 입력하면 동일 정보의 중복 관리가 필요했습니다.',
+    after: '카카오 상품명·설명은 공통 진료항목 정보로 생성하므로 병원 화면에 별도 입력 필드를 제공하지 않습니다. 검색 키워드만 쉼표로 구분해 입력합니다. 판매기간·강제 품절·상품 노출순서·예약 부가정보 편집은 V1 병원 화면에 제공하지 않습니다.',
+    developerNotes: [
+      '`storeId`와 `vendorProductId`는 병원-장소·진료항목 매핑에서 서버가 채우는 식별자이며 병원 입력 필드로 노출하지 않습니다. `vendorProductId`는 등록 후 수정하지 않습니다.',
+      '최종 payload의 `name`은 공통 진료항목 노출명을 사용해 50자 이하로 검증하고, `description`은 공통 상세 정보를 사용해 1,000자 이하로 변환합니다. 별도 카카오 전용 수정값은 저장하지 않습니다.',
+      'V1 payload·DB·병원 화면에서 판매 시작/종료 일시, `forceSoldOut`, 상품 `sequence`를 편집 범위로 다루지 않습니다. 상품 상태는 카카오 노출 의도와 연동 결과를 조합해 `ON_SALE/ON_HOLD`로 계산합니다.',
+      '내부 도구의 예약 부가정보 정의는 이번 병원 상품 편집 범위에서 제외합니다. 다만 카카오 예약 payload로 수신한 추가 질문·답변 snapshot의 예약 상세 표시는 별도 요구사항으로 유지합니다.'
+    ],
+    publicationStatus: 'baseline'
+  },
+  {
+    id: 'GCP-1-CHANGE-023',
+    prdId: 'GCP-1',
+    date: '2026-07-16',
+    prototypeVersion: 'v29',
+    view: 'items-form',
+    targetId: 'gcp1-kakao-product-images',
+    title: '카카오 이미지 입력 범위',
+    before: '카카오 대표 이미지를 굿닥 진료항목과 별도로 입력하면 동일 이미지의 중복 관리가 필요했습니다.',
+    after: '카카오 대표 이미지는 공통 진료항목 이미지를 사용하므로 병원 화면에 별도 입력 필드를 제공하지 않습니다. 목록용 정사각 이미지와 상세 이미지만 카카오 전용 정보로 입력합니다.',
+    developerNotes: [
+      'Product `images[]`는 공통 진료항목 이미지에서 생성하고, `descriptionImages[]`는 병원 화면의 상세 이미지 입력값을 사용합니다. 상세 이미지는 최대 50개이며 배열 순서를 외부 이미지 `sequence`로 변환합니다. 이는 V1 제외인 상품 자체 노출순서와 다른 값입니다.',
+      '업로드 파일은 굿닥 CDN의 만료되지 않는 HTTPS URL로 변환한 뒤 외부 payload에 사용합니다. 저장 전 파일 형식·크기·이미지 접근 가능 여부를 서버에서도 재검증합니다.',
+      '`squareImage`는 목록 썸네일용 단일 이미지이며 800×800px을 권장합니다. 상세 이미지는 가로 800px, 세로 15,000px 이하 규격을 안내합니다.',
+      '공통 진료항목 이미지가 비어 있으면 카카오 장소 이미지 fallback을 사용합니다. 이미지 삭제·순서 변경 실패는 공통 상품 저장을 롤백하지 않고 Product 동기화 실패로 분리합니다.'
     ],
     publicationStatus: 'baseline'
   },
@@ -263,7 +319,9 @@ export const TI_KAKAO_CHANGES: PolicyChange[] = [
     developerNotes: [
       '`apptUsed=false`이면 채널과 무관하게 신규 비급여 예약을 차단하지만 상품별 노출 의도·외부 매핑·기존 예약은 유지합니다.',
       '자동 확정·당일 예약·새 예약 알림 설정은 각각 독립 mutation으로 저장합니다. 외부 반영 실패가 공통 설정 저장을 되돌리지 않도록 설정 저장 결과와 채널 적용 결과를 분리합니다.',
-      '운영시간과 임시 운영일 변경은 향후 Schedule 동기화 이벤트를 생성하며, 동일 날짜 재등록 시 기존 일정 삭제 위험을 고려해 변경 범위만 갱신합니다.'
+      '진료시간 저장 트랜잭션에서 카카오 API를 직접 호출하지 않습니다. 중앙 변경 이벤트와 버전을 기록하고 worker가 최초 30일·일일 하루 추가·영향 날짜 diff를 멱등 처리합니다.',
+      '운영시간 축소가 기존 예약과 충돌해도 자동 취소하지 않습니다. 신규 슬롯만 차단하고 충돌 예약은 병원·Ops 확인 대상으로 남깁니다.',
+      '카카오 신규 예약도 병원 `newApptNotified` 설정을 사용해 예약당 한 번만 Windows OS 푸시 알림을 발행합니다.'
     ],
     publicationStatus: 'baseline'
   }

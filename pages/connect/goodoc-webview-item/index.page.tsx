@@ -45,8 +45,9 @@ const BODY = `<div class="app">
         <div class="pphone">010-****-0289</div>
 
         <!-- 생년월일ㆍ성별 -->
-        <div class="field-group">
+        <div class="field-group" id="bdGroup">
           <div class="ftitle">생년월일ㆍ성별<span class="ess">필수</span></div>
+          <div class="err-msg hidden" id="bdErr">올바른 주민등록번호를 입력해 주세요.</div>
           <div class="bd-row">
             <input class="inp bd-birth" id="bdBirth" inputmode="numeric" maxlength="6" placeholder="000000" oninput="onBd()">
             <span class="bd-dash">-</span>
@@ -159,10 +160,25 @@ const SCRIPT = `var TERMS=[
     document.getElementById('doneTreat').textContent=A.treat||'신규상담';
   })();
 
+  // 유효성 정규식: 생년월일(YYMMDD) + 성별자리
+  var BIRTH_RE=/^\\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\\d|3[01])$/;
+  var GENDER_RE=/^[1-4]$/;
+  function bdValid(){
+    var b=document.getElementById('bdBirth').value,g=document.getElementById('bdGender').value;
+    return b.length===6 && g.length===1 && BIRTH_RE.test(b) && GENDER_RE.test(g);
+  }
+  function setBdError(on){
+    document.getElementById('bdGroup').classList.toggle('has-err',on);
+    document.getElementById('bdErr').classList.toggle('hidden',!on);
+    document.getElementById('bdBirth').classList.toggle('err',on);
+    document.getElementById('bdGender').classList.toggle('err',on);
+  }
+
   function onBd(){
     ['bdBirth','bdGender'].forEach(function(id){var e=document.getElementById(id);e.value=e.value.replace(/[^0-9]/g,'');});
     var birth=document.getElementById('bdBirth');
     if(birth.value.length===6 && document.activeElement===birth){ document.getElementById('bdGender').focus(); }
+    setBdError(false);
     refreshMinor();
   }
 
@@ -213,8 +229,7 @@ const SCRIPT = `var TERMS=[
   }
 
   function submitApply(){
-    if(document.getElementById('bdBirth').value.length!==6){ toast('생년월일 6자리를 입력해 주세요.'); return; }
-    if(!/^[1-4]$/.test(document.getElementById('bdGender').value)){ toast('성별 자리를 입력해 주세요.'); return; }
+    if(!bdValid()){ setBdError(true); document.getElementById('bdGroup').scrollIntoView({block:'center'}); return; }
     var reqOk=[].slice.call(document.querySelectorAll('[data-consent][data-req]')).every(function(c){return ckbOf(c).classList.contains('on');});
     if(!reqOk){ toast('필수 병원 약관에 동의해 주세요.'); return; }
     if(isMinor()){

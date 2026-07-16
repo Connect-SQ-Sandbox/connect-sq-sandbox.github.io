@@ -41,7 +41,7 @@ const BODY = `<div class="app">
         </div>
 
         <!-- 주민등록번호 -->
-        <div class="section">
+        <div class="section" id="rrnSection">
           <div class="stitle">
             <span class="t">주민등록번호</span><span class="ess">필수</span>
             <div class="right on" id="rrnMask" onclick="toggleMask()">
@@ -49,6 +49,7 @@ const BODY = `<div class="app">
               <span>뒷자리 가리기</span>
             </div>
           </div>
+          <div class="err-msg hidden" id="rrnErr">올바른 주민등록번호를 입력해 주세요.</div>
           <div class="row2">
             <input class="inp" id="rrn1" inputmode="numeric" maxlength="6" placeholder="000000" oninput="onRrn()">
             <span class="rrn-sep">-</span>
@@ -195,8 +196,23 @@ const SCRIPT = `var TERMS=[
     r2.type = masking ? 'password' : 'text';
   }
   document.getElementById('rrn2').type='password';
+  // 유효성 정규식: 생년월일(YYMMDD) + 성별자리
+  var BIRTH_RE=/^\\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\\d|3[01])$/;
+  var GENDER_RE=/^[1-4]$/;
+  function rrnValid(){
+    var b=document.getElementById('rrn1').value,g=document.getElementById('rrn2').value;
+    return b.length===6 && g.length===7 && BIRTH_RE.test(b) && GENDER_RE.test(g.slice(0,1));
+  }
+  function setRrnError(on){
+    document.getElementById('rrnSection').classList.toggle('has-err',on);
+    document.getElementById('rrnErr').classList.toggle('hidden',!on);
+    document.getElementById('rrn1').classList.toggle('err',on);
+    document.getElementById('rrn2').classList.toggle('err',on);
+  }
+
   function onRrn(){
     ['rrn1','rrn2'].forEach(function(id){var e=document.getElementById(id);e.value=e.value.replace(/[^0-9]/g,'');});
+    setRrnError(false);
     refreshMinor();
     validate();
   }
@@ -292,6 +308,7 @@ const SCRIPT = `var TERMS=[
 
   // submit
   function submitBooking(){
+    if(!rrnValid()){ setRrnError(true); document.getElementById('rrnSection').scrollIntoView({block:'center'}); return; }
     var b=document.getElementById('cta');
     b.textContent='요청 중';b.disabled=true;
     setTimeout(function(){

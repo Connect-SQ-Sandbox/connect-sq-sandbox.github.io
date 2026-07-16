@@ -60,6 +60,9 @@
   .inp::placeholder{color:var(--g50);font-family:inherit;}
   .inp:focus{border-color:var(--g90);}
   .helper{font-size:13px;font-weight:400;line-height:20px;color:var(--g60);margin-top:16px;}
+  .err-msg{color:#FA4655;font-size:13px;font-weight:400;line-height:20px;margin-bottom:12px;}
+  .field-group.has-err .ftitle{margin-bottom:0;}
+  .inp.err,.inp.err:focus{border-color:#EC3847;}
 
   /* 생년월일ㆍ성별 (BirthDateWithGender) */
   .bd-row{display:flex;align-items:center;gap:8px;}

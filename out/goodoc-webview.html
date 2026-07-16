@@ -476,6 +476,9 @@ a {
   .rrn-sep{color:var(--g40);font-weight:700;}
   .rrn-back{letter-spacing:2px;}
   .helper{font-size:13px;color:var(--g60);line-height:1.6;margin-top:12px;}
+  .err-msg{color:#FA4655;font-size:13px;font-weight:400;line-height:20px;margin-bottom:12px;}
+  .section.has-err .stitle{margin-bottom:0;}
+  .inp.err,.inp.err:focus{border-color:#EC3847;}
   .addr-wrap{display:flex;flex-direction:column;gap:8px;}
   .addr-field{position:relative;}
   .addr-field .clr{position:absolute;right:6px;top:6px;width:36px;height:36px;
@@ -599,7 +602,7 @@ Error generating stack: `+s.message+`
         </div>
 
         <!-- \uC8FC\uBBFC\uB4F1\uB85D\uBC88\uD638 -->
-        <div class="section">
+        <div class="section" id="rrnSection">
           <div class="stitle">
             <span class="t">\uC8FC\uBBFC\uB4F1\uB85D\uBC88\uD638</span><span class="ess">\uD544\uC218</span>
             <div class="right on" id="rrnMask" onclick="toggleMask()">
@@ -607,6 +610,7 @@ Error generating stack: `+s.message+`
               <span>\uB4B7\uC790\uB9AC \uAC00\uB9AC\uAE30</span>
             </div>
           </div>
+          <div class="err-msg hidden" id="rrnErr">\uC62C\uBC14\uB978 \uC8FC\uBBFC\uB4F1\uB85D\uBC88\uD638\uB97C \uC785\uB825\uD574 \uC8FC\uC138\uC694.</div>
           <div class="row2">
             <input class="inp" id="rrn1" inputmode="numeric" maxlength="6" placeholder="000000" oninput="onRrn()">
             <span class="rrn-sep">-</span>
@@ -751,8 +755,23 @@ Error generating stack: `+s.message+`
     r2.type = masking ? 'password' : 'text';
   }
   document.getElementById('rrn2').type='password';
+  // \uC720\uD6A8\uC131 \uC815\uADDC\uC2DD: \uC0DD\uB144\uC6D4\uC77C(YYMMDD) + \uC131\uBCC4\uC790\uB9AC
+  var BIRTH_RE=/^\\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\\d|3[01])$/;
+  var GENDER_RE=/^[1-4]$/;
+  function rrnValid(){
+    var b=document.getElementById('rrn1').value,g=document.getElementById('rrn2').value;
+    return b.length===6 && g.length===7 && BIRTH_RE.test(b) && GENDER_RE.test(g.slice(0,1));
+  }
+  function setRrnError(on){
+    document.getElementById('rrnSection').classList.toggle('has-err',on);
+    document.getElementById('rrnErr').classList.toggle('hidden',!on);
+    document.getElementById('rrn1').classList.toggle('err',on);
+    document.getElementById('rrn2').classList.toggle('err',on);
+  }
+
   function onRrn(){
     ['rrn1','rrn2'].forEach(function(id){var e=document.getElementById(id);e.value=e.value.replace(/[^0-9]/g,'');});
+    setRrnError(false);
     refreshMinor();
     validate();
   }
@@ -848,6 +867,7 @@ Error generating stack: `+s.message+`
 
   // submit
   function submitBooking(){
+    if(!rrnValid()){ setRrnError(true); document.getElementById('rrnSection').scrollIntoView({block:'center'}); return; }
     var b=document.getElementById('cta');
     b.textContent='\uC694\uCCAD \uC911';b.disabled=true;
     setTimeout(function(){

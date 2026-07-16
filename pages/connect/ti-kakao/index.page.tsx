@@ -5,8 +5,8 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-kakao — 진료항목 카카오 노출 + 예약 신청 내역 + 운영 설정
- * 상태     : 현행(active)   버전: v30  최종수정: 2026-07-16
- * PRD      : GCP-1 · 3.0-final · 3-미션·기획/1-PRD/2026-07-13-진료항목-카카오톡-예약하기-연동-구축.md
+ * 상태     : 현행(active)   버전: v31  최종수정: 2026-07-16
+ * PRD      : GCP-1 · 3.1-final · 3-미션·기획/1-PRD/2026-07-13-진료항목-카카오톡-예약하기-연동-구축.md
  * 배포URL  : https://connect-sq-sandbox.github.io/out/ti-kakao.html
  * 관련 CSS : connectRegister.css + connectTiKakao.css
  * 기술제약 : react-only · plain CSS · mock · 네트워크 0
@@ -32,6 +32,7 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
  *   [폐기]      구버전 kakao-link(별도 연동관리 페이지형) → ti-kakao로 대체
  *
  * 변경 이력:
+ *   v31 2026-07-16 — 카카오 전용 검색 키워드 입력을 제거하고 공통 진료항목 키워드를 자동 사용하도록 정리.
  *   v30 2026-07-16 — 최종 PRD 3.0 반영: 정사각/상세 이미지·유의사항의 카카오 전용 입력을 제거하고,
  *                    굿닥 OFF에서도 카카오 의도·전용값 편집/보존, 실제 노출만 차단하도록 변경. 카카오 예약 무알림 정책 반영.
  *   v29 2026-07-16 — 카카오 상품명·설명·대표 이미지·가격 안내 미리보기의 별도 UI를 제거하고
@@ -99,7 +100,6 @@ type KakaoExtra = {
   squareImageUrl: string;
   squareImageFileName: string;
   descriptionImages: KakaoImage[];
-  keywords: string[];
   howto: string;
   notice: string;
   visitGuide: string;
@@ -120,7 +120,7 @@ type Item = {
 };
 
 let UID = 1000;
-const emptyExtra = (): KakaoExtra => ({ initialized: false, displayName: '', description: '', productImages: [], squareImageUrl: '', squareImageFileName: '', descriptionImages: [], keywords: [], howto: '', notice: '', visitGuide: '', cancelNotice: '' });
+const emptyExtra = (): KakaoExtra => ({ initialized: false, displayName: '', description: '', productImages: [], squareImageUrl: '', squareImageFileName: '', descriptionImages: [], howto: '', notice: '', visitGuide: '', cancelNotice: '' });
 const makeSync = (state: SyncState, error?: string): SyncInfo => ({ product: state, item: state, price: state, schedule: state, lastAt: state === 'NOT_LINKED' ? '-' : '2026.07.15 10:42', error, attempts: 0 });
 const won = (s: string) => (s ? Number(s).toLocaleString('ko-KR') + '원' : '0원');
 const kakaoPriceDescription = (p: Price) => {
@@ -165,7 +165,7 @@ const INITIAL: Item[] = [
   mk({ id: 4, cat1: '피부·미용', cat2: '리프팅', name: '슈링크 유니버스', intro: '집중 리프팅', keywords: ['슈링크'], hasImage: true,
     prices: [{ id: UID++, title: '300샷', content: '', type: 'fixed', amount: '300000', original: '', sale: '' }], gdVisible: true, kakaoOn: false }),
   mk({ id: 5, cat1: '피부·미용', cat2: '색소·톤', name: '레이저 토닝', intro: '색소·톤 개선 레이저', detail: '레이저 토닝은 미세한 저출력 레이저를 반복 조사해 기미·잡티·색소 침착을 단계적으로 옅게 만드는 시술이에요.\n\n· 다운타임 거의 없음\n· 2주 간격 꾸준한 관리 권장', keywords: ['레이저토닝'], hasImage: true, detailImages: 2,
-    prices: [{ id: UID++, title: '1회', content: '', type: 'fixed', amount: '80000', original: '', sale: '' }, { id: UID++, title: '5회', content: '', type: 'fixed', amount: '350000', original: '', sale: '' }], kExtra: { initialized: true, displayName: '레이저 토닝', description: '색소·톤 개선 레이저', productImages: [{ id: 9001, url: '', description: '레이저 토닝 대표 이미지', fileName: 'laser-toning-main.jpg' }], squareImageUrl: '', squareImageFileName: 'laser-toning-square.jpg', descriptionImages: [{ id: 9002, url: '', description: '시술 전후 안내 이미지', fileName: 'laser-toning-detail.jpg' }], keywords: ['레이저토닝'], howto: '예약 시간 10분 전까지 방문해 주세요.', notice: '시술 전 복용 중인 약이 있다면 알려주세요.', visitGuide: '3층 접수 데스크에서 예약자 성함을 말씀해 주세요.', cancelNotice: '예약 변경·취소는 하루 전까지 병원으로 연락해 주세요.' }, gdVisible: true, kakaoOn: true, activeReservations: 1 }),
+    prices: [{ id: UID++, title: '1회', content: '', type: 'fixed', amount: '80000', original: '', sale: '' }, { id: UID++, title: '5회', content: '', type: 'fixed', amount: '350000', original: '', sale: '' }], kExtra: { initialized: true, displayName: '레이저 토닝', description: '색소·톤 개선 레이저', productImages: [{ id: 9001, url: '', description: '레이저 토닝 대표 이미지', fileName: 'laser-toning-main.jpg' }], squareImageUrl: '', squareImageFileName: 'laser-toning-square.jpg', descriptionImages: [{ id: 9002, url: '', description: '시술 전후 안내 이미지', fileName: 'laser-toning-detail.jpg' }], howto: '예약 시간 10분 전까지 방문해 주세요.', notice: '시술 전 복용 중인 약이 있다면 알려주세요.', visitGuide: '3층 접수 데스크에서 예약자 성함을 말씀해 주세요.', cancelNotice: '예약 변경·취소는 하루 전까지 병원으로 연락해 주세요.' }, gdVisible: true, kakaoOn: true, activeReservations: 1 }),
   mk({ id: 6, cat1: '성형·윤곽', cat2: '지방흡입', name: '얼굴지방흡입', alias: '얼굴 지방흡입', intro: '갸름한 얼굴라인을 위한 지방흡입', keywords: ['지방흡입', '얼굴윤곽'], hasImage: true,
     prices: [{ id: UID++, title: '기본', content: '', type: 'fixed', amount: '3500000', original: '', sale: '' }], gdVisible: true, kakaoOn: true }),
   mk({ id: 7, cat1: '주사·수액', cat2: '보톡스', name: '보톡스 (이마)', intro: '이마 주름 개선', keywords: ['보톡스'], hasImage: false,
@@ -1108,8 +1108,7 @@ function TiKakao() {
         description: prev.intro || prev.detail,
         productImages: prev.hasImage && prev.kExtra.productImages.length === 0
           ? [{ id: UID++, url: '', description: '굿닥 진료항목 대표 이미지', fileName: '진료항목_대표이미지.jpg' }]
-          : prev.kExtra.productImages,
-        keywords: [...prev.keywords]
+          : prev.kExtra.productImages
       }
     };
   });
@@ -1126,7 +1125,7 @@ function TiKakao() {
   const customItems = useMemo(() => items.filter((i) => i.cat1 === selCat1), [items, selCat1]);
 
   const nav = (p: Page) => { setPage(p); if (p === 'items') setScreen('list'); };
-  const cloneItem = (it: Item): Item => ({ ...it, prices: it.prices.map((p) => ({ ...p })), keywords: [...it.keywords], sync: { ...it.sync }, kExtra: { ...it.kExtra, keywords: [...it.kExtra.keywords], productImages: it.kExtra.productImages.map((image) => ({ ...image })), descriptionImages: it.kExtra.descriptionImages.map((image) => ({ ...image })) } });
+  const cloneItem = (it: Item): Item => ({ ...it, prices: it.prices.map((p) => ({ ...p })), keywords: [...it.keywords], sync: { ...it.sync }, kExtra: { ...it.kExtra, productImages: it.kExtra.productImages.map((image) => ({ ...image })), descriptionImages: it.kExtra.descriptionImages.map((image) => ({ ...image })) } });
   const open = (it: Item) => { const next = cloneItem(it); setErrors({}); setSelId(it.id); setD(next); setFormBaseline(JSON.stringify(next)); setFormError(''); setScreen('form'); };
   const create = () => { const next = mk({ id: UID++, name: '', cat1: selCat1 === CUSTOM_CAT ? CUSTOM_CAT : selCat1, cat2: groups[0]?.name || '' }); setErrors({}); setSelId(null); setD(next); setFormBaseline(JSON.stringify(next)); setFormError(''); setScreen('form'); };
   const closeForm = () => { setScreen('list'); setD(null); setLeaveOpen(false); setFormError(''); setErrors({}); };
@@ -1475,8 +1474,6 @@ function TiKakao() {
                         <div className="tk-kbody">
                           <div className="tk-kauto"><span className="tk-kauto-ic"><CautionIc /></span><span className="tk-kauto-txt">위에 입력한 진료항목 정보가 카카오톡 예약하기에도 함께 표시돼요.</span></div>
                           <div className="tk-kextra">
-                              <div className="tk-kfield"><div className="tk-klabel">검색 키워드 <span className="rg-optional">(선택)</span></div><input className="rg-input" value={d.kExtra.keywords.join(', ')} onChange={(e) => patchExtra({ keywords: e.target.value.split(',').map((value) => value.trim()).filter(Boolean).slice(0, KEYWORD_MAX) })} placeholder="쉼표로 구분해 입력해 주세요." /><div className="rg-help">카카오 검색에 사용할 키워드를 쉼표로 구분해 입력해 주세요.</div></div>
-                              <div className="tk-kdivider" />
                               <div className="tk-kfield"><div className="tk-klabel">이용 방법 <span className="rg-optional">(선택)</span></div><textarea className="rg-textarea tk-ktextarea" placeholder="이용 방법을 입력해 주세요." maxLength={K_INFO_MAX} value={d.kExtra.howto} onChange={(e) => patchExtra({ howto: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.howto.length}</span>/{K_INFO_MAX.toLocaleString('ko-KR')}자</div></div>
                               <div className="tk-kfield"><div className="tk-klabel">방문 안내 <span className="rg-optional">(선택)</span></div><textarea className="rg-textarea tk-ktextarea" placeholder="예: 3층 접수 데스크에서 예약자 성함을 말씀해 주세요." maxLength={K_VISIT_MAX} value={d.kExtra.visitGuide} onChange={(e) => patchExtra({ visitGuide: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.visitGuide.length}</span>/{K_VISIT_MAX.toLocaleString('ko-KR')}자</div></div>
                               <div className="tk-kfield"><div className="tk-klabel">취소 유의사항 <span className="rg-optional">(선택)</span></div><input className="rg-input" placeholder="취소 유의사항을 입력해 주세요." maxLength={K_CANCEL_MAX} value={d.kExtra.cancelNotice} onChange={(e) => patchExtra({ cancelNotice: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.cancelNotice.length}</span>/{K_CANCEL_MAX}자</div></div>

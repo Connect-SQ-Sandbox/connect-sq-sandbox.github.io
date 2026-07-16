@@ -5,7 +5,7 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-kakao — 진료항목 카카오 노출 + 예약 신청 내역 + 운영 설정
- * 상태     : 현행(active)   버전: v31  최종수정: 2026-07-16
+ * 상태     : 현행(active)   버전: v32  최종수정: 2026-07-16
  * PRD      : GCP-1 · 3.1-final · 3-미션·기획/1-PRD/2026-07-13-진료항목-카카오톡-예약하기-연동-구축.md
  * 배포URL  : https://connect-sq-sandbox.github.io/out/ti-kakao.html
  * 관련 CSS : connectRegister.css + connectTiKakao.css
@@ -32,6 +32,7 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
  *   [폐기]      구버전 kakao-link(별도 연동관리 페이지형) → ti-kakao로 대체
  *
  * 변경 이력:
+ *   v32 2026-07-16 — 진료항목 상세의 예약 부가정보 객관식·주관식 입력 영역을 기존 형태로 복구.
  *   v31 2026-07-16 — 카카오 전용 검색 키워드 입력을 제거하고 공통 진료항목 키워드를 자동 사용하도록 정리.
  *   v30 2026-07-16 — 최종 PRD 3.0 반영: 정사각/상세 이미지·유의사항의 카카오 전용 입력을 제거하고,
  *                    굿닥 OFF에서도 카카오 의도·전용값 편집/보존, 실제 노출만 차단하도록 변경. 카카오 예약 무알림 정책 반영.
@@ -90,6 +91,9 @@ type Price = { id: number; title: string; content: string; type: PriceType; amou
 type SyncState = 'NOT_LINKED' | 'PENDING' | 'SYNCED' | 'FAILED' | 'ON_HOLD' | 'UPDATE_REQUIRED';
 type SyncObject = 'product' | 'item' | 'price' | 'schedule';
 type SyncInfo = Record<SyncObject, SyncState> & { lastAt: string; error?: string; attempts: number };
+// 카카오 예약 부가정보 3종: 주관식(infos) / 단수 선택형(radioInfos) / 복수 선택형(selectInfos)
+type QType = 'text' | 'radio' | 'select';
+type Question = { id: number; type: QType; name: string; optional: boolean; description: string; options: string[] };
 type KakaoImage = { id: number; url: string; description: string; fileName?: string };
 type KakaoImageKey = 'productImages' | 'descriptionImages';
 type KakaoExtra = {
@@ -100,6 +104,7 @@ type KakaoExtra = {
   squareImageUrl: string;
   squareImageFileName: string;
   descriptionImages: KakaoImage[];
+  questions: Question[];
   howto: string;
   notice: string;
   visitGuide: string;
@@ -120,7 +125,7 @@ type Item = {
 };
 
 let UID = 1000;
-const emptyExtra = (): KakaoExtra => ({ initialized: false, displayName: '', description: '', productImages: [], squareImageUrl: '', squareImageFileName: '', descriptionImages: [], howto: '', notice: '', visitGuide: '', cancelNotice: '' });
+const emptyExtra = (): KakaoExtra => ({ initialized: false, displayName: '', description: '', productImages: [], squareImageUrl: '', squareImageFileName: '', descriptionImages: [], questions: [], howto: '', notice: '', visitGuide: '', cancelNotice: '' });
 const makeSync = (state: SyncState, error?: string): SyncInfo => ({ product: state, item: state, price: state, schedule: state, lastAt: state === 'NOT_LINKED' ? '-' : '2026.07.15 10:42', error, attempts: 0 });
 const won = (s: string) => (s ? Number(s).toLocaleString('ko-KR') + '원' : '0원');
 const kakaoPriceDescription = (p: Price) => {
@@ -165,7 +170,11 @@ const INITIAL: Item[] = [
   mk({ id: 4, cat1: '피부·미용', cat2: '리프팅', name: '슈링크 유니버스', intro: '집중 리프팅', keywords: ['슈링크'], hasImage: true,
     prices: [{ id: UID++, title: '300샷', content: '', type: 'fixed', amount: '300000', original: '', sale: '' }], gdVisible: true, kakaoOn: false }),
   mk({ id: 5, cat1: '피부·미용', cat2: '색소·톤', name: '레이저 토닝', intro: '색소·톤 개선 레이저', detail: '레이저 토닝은 미세한 저출력 레이저를 반복 조사해 기미·잡티·색소 침착을 단계적으로 옅게 만드는 시술이에요.\n\n· 다운타임 거의 없음\n· 2주 간격 꾸준한 관리 권장', keywords: ['레이저토닝'], hasImage: true, detailImages: 2,
-    prices: [{ id: UID++, title: '1회', content: '', type: 'fixed', amount: '80000', original: '', sale: '' }, { id: UID++, title: '5회', content: '', type: 'fixed', amount: '350000', original: '', sale: '' }], kExtra: { initialized: true, displayName: '레이저 토닝', description: '색소·톤 개선 레이저', productImages: [{ id: 9001, url: '', description: '레이저 토닝 대표 이미지', fileName: 'laser-toning-main.jpg' }], squareImageUrl: '', squareImageFileName: 'laser-toning-square.jpg', descriptionImages: [{ id: 9002, url: '', description: '시술 전후 안내 이미지', fileName: 'laser-toning-detail.jpg' }], howto: '예약 시간 10분 전까지 방문해 주세요.', notice: '시술 전 복용 중인 약이 있다면 알려주세요.', visitGuide: '3층 접수 데스크에서 예약자 성함을 말씀해 주세요.', cancelNotice: '예약 변경·취소는 하루 전까지 병원으로 연락해 주세요.' }, gdVisible: true, kakaoOn: true, activeReservations: 1 }),
+    prices: [{ id: UID++, title: '1회', content: '', type: 'fixed', amount: '80000', original: '', sale: '' }, { id: UID++, title: '5회', content: '', type: 'fixed', amount: '350000', original: '', sale: '' }], kExtra: { initialized: true, displayName: '레이저 토닝', description: '색소·톤 개선 레이저', productImages: [{ id: 9001, url: '', description: '레이저 토닝 대표 이미지', fileName: 'laser-toning-main.jpg' }], squareImageUrl: '', squareImageFileName: 'laser-toning-square.jpg', descriptionImages: [{ id: 9002, url: '', description: '시술 전후 안내 이미지', fileName: 'laser-toning-detail.jpg' }], questions: [
+      { id: 9101, type: 'text', name: '주로 신경 쓰이는 부위가 어디인가요?', optional: false, description: '', options: [] },
+      { id: 9102, type: 'radio', name: '레이저 시술 경험이 있으신가요?', optional: true, description: '', options: ['처음이에요', '1~2회', '3회 이상'] },
+      { id: 9103, type: 'select', name: '함께 상담받고 싶은 항목을 선택해 주세요.', optional: true, description: '복수 선택할 수 있어요.', options: ['색소·잡티', '모공', '홍조', '피부결'] }
+    ], howto: '예약 시간 10분 전까지 방문해 주세요.', notice: '시술 전 복용 중인 약이 있다면 알려주세요.', visitGuide: '3층 접수 데스크에서 예약자 성함을 말씀해 주세요.', cancelNotice: '예약 변경·취소는 하루 전까지 병원으로 연락해 주세요.' }, gdVisible: true, kakaoOn: true, activeReservations: 1 }),
   mk({ id: 6, cat1: '성형·윤곽', cat2: '지방흡입', name: '얼굴지방흡입', alias: '얼굴 지방흡입', intro: '갸름한 얼굴라인을 위한 지방흡입', keywords: ['지방흡입', '얼굴윤곽'], hasImage: true,
     prices: [{ id: UID++, title: '기본', content: '', type: 'fixed', amount: '3500000', original: '', sale: '' }], gdVisible: true, kakaoOn: true }),
   mk({ id: 7, cat1: '주사·수액', cat2: '보톡스', name: '보톡스 (이마)', intro: '이마 주름 개선', keywords: ['보톡스'], hasImage: false,
@@ -186,11 +195,20 @@ const INITIAL: Item[] = [
 // --- [API] 카카오 상품 API 명시값 (고정) ---
 const K_PRODUCT_NAME_MAX = 50; // [내부 규격] Product name
 const K_PRODUCT_DESC_MAX = 1000; // [내부 규격] Product description
+const K_Q_NAME_MAX = 120;     // [API] 질문(부가정보 name) — required, 최대 120자
+const K_Q_TEXT_MAX = 10;      // [API] 주관식 부가정보(infos[]) 개수 — 최대 10개
 const K_INFO_MAX = 2000;      // [API] 이용 방법(information) — 최대 2,000자
 const K_VISIT_MAX = 1000;     // [내부 규격] 방문 안내(entranceNotice)
 const K_CANCEL_MAX = 100;     // [API] 취소 유의사항(cancelNotice) — 최대 100자
 const K_IMAGE_MAX = 50;       // [내부 규격] 대표 이미지·상세 이미지 각각 최대 50개
 const PRICE_DESC_MAX = 100;   // [API] 가격 설명(Price description) — 최대 100자
+
+// --- [임의] API 미명시 → PO 협의 대상 ---
+const K_Q_CHOICE_MAX = 10;    // [임의] 객관식(단수 radioInfos + 복수 selectInfos 합산) 개수
+const K_Q_OPT_MIN = 2;        // [임의] 선택형 선택지 최소 개수
+const K_Q_OPT_MAX = 10;       // [임의] 선택형 선택지 최대 개수
+const K_Q_DESC_MAX = 200;     // [임의] 선택형 질문 설명(description) 글자
+const K_Q_OPT_LEN_MAX = 50;   // [임의] 선택지 항목(value[]) 글자
 
 // --- [서비스] 굿닥 실서비스 값 추정 → 실코드 대조 필요 ---
 const PRICE_NAME_MAX = 50;    // [서비스/불일치] 가격명 — 현재 50자. 단, 카카오 API '가격 이름'은 25자 → 협의 필요
@@ -1077,6 +1095,8 @@ function TiKakao() {
   const [selId, setSelId] = useState<number | null>(null);
   const [d, setD] = useState<Item | null>(null);
   const [kw, setKw] = useState('');
+  const [dragQ, setDragQ] = useState<number | null>(null);
+  const [qTypeOpen, setQTypeOpen] = useState<number | null>(null);
   const [catOrder, setCatOrder] = useState<string[]>(CAT_ORDER);
   const [dragCat, setDragCat] = useState<string | null>(null);
   const [dragGroup, setDragGroup] = useState<string | null>(null);
@@ -1125,7 +1145,7 @@ function TiKakao() {
   const customItems = useMemo(() => items.filter((i) => i.cat1 === selCat1), [items, selCat1]);
 
   const nav = (p: Page) => { setPage(p); if (p === 'items') setScreen('list'); };
-  const cloneItem = (it: Item): Item => ({ ...it, prices: it.prices.map((p) => ({ ...p })), keywords: [...it.keywords], sync: { ...it.sync }, kExtra: { ...it.kExtra, productImages: it.kExtra.productImages.map((image) => ({ ...image })), descriptionImages: it.kExtra.descriptionImages.map((image) => ({ ...image })) } });
+  const cloneItem = (it: Item): Item => ({ ...it, prices: it.prices.map((p) => ({ ...p })), keywords: [...it.keywords], sync: { ...it.sync }, kExtra: { ...it.kExtra, productImages: it.kExtra.productImages.map((image) => ({ ...image })), descriptionImages: it.kExtra.descriptionImages.map((image) => ({ ...image })), questions: it.kExtra.questions.map((q) => ({ ...q, options: [...q.options] })) } });
   const open = (it: Item) => { const next = cloneItem(it); setErrors({}); setSelId(it.id); setD(next); setFormBaseline(JSON.stringify(next)); setFormError(''); setScreen('form'); };
   const create = () => { const next = mk({ id: UID++, name: '', cat1: selCat1 === CUSTOM_CAT ? CUSTOM_CAT : selCat1, cat2: groups[0]?.name || '' }); setErrors({}); setSelId(null); setD(next); setFormBaseline(JSON.stringify(next)); setFormError(''); setScreen('form'); };
   const closeForm = () => { setScreen('list'); setD(null); setLeaveOpen(false); setFormError(''); setErrors({}); };
@@ -1147,6 +1167,13 @@ function TiKakao() {
       v.prices.forEach((p) => {
         if (p.title.length > 25) e[`price-${p.id}-kakao`] = '카카오 가격명은 최대 25자예요.';
         if (kakaoPriceDescription(p).length > PRICE_DESC_MAX) e[`price-${p.id}-kakao`] = `카카오 가격 안내 문구는 최종 ${PRICE_DESC_MAX}자 이하여야 해요.`;
+      });
+      v.kExtra.questions.forEach((q) => {
+        if (!q.name.trim()) e[`q-${q.id}-name`] = '질문 제목을 입력해 주세요.';
+        if (q.type !== 'text') {
+          if (q.options.length < K_Q_OPT_MIN) e[`q-${q.id}-options`] = `선택지를 ${K_Q_OPT_MIN}개 이상 입력해 주세요.`;
+          else if (q.options.some((option) => !option.trim())) e[`q-${q.id}-options`] = '선택지 항목을 모두 입력해 주세요.';
+        }
       });
     }
     return e;
@@ -1214,6 +1241,50 @@ function TiKakao() {
     if (!d || dragPriceId == null || dragPriceId === toId) return;
     const list = [...d.prices]; const from = list.findIndex((price) => price.id === dragPriceId); const to = list.findIndex((price) => price.id === toId);
     if (from < 0 || to < 0) return; const [moved] = list.splice(from, 1); list.splice(to, 0, moved); patch({ prices: list }); setDragPriceId(null);
+  };
+  const newQ = (type: QType): Question => ({ id: UID++, type, name: '', optional: true, description: '', options: type === 'text' ? [] : ['', ''] });
+  const textCount = () => (d ? d.kExtra.questions.filter((q) => q.type === 'text').length : 0);
+  const choiceCount = () => (d ? d.kExtra.questions.filter((q) => q.type !== 'text').length : 0);
+  const addQ = (type: QType) => d && patchExtra({ questions: [...d.kExtra.questions, newQ(type)] });
+  const addQuestion = () => { if (!d) return; if (choiceCount() < K_Q_CHOICE_MAX) addQ('radio'); else if (textCount() < K_Q_TEXT_MAX) addQ('text'); else showToast('질문은 더 추가할 수 없어요.'); };
+  const setQ = (id: number, update: Partial<Question>) => {
+    if (!d) return;
+    clearErr(`q-${id}-name`, `q-${id}-options`);
+    patchExtra({ questions: d.kExtra.questions.map((q) => q.id === id ? { ...q, ...update } : q) });
+  };
+  const setQKind = (id: number, kind: 'choice' | 'text') => {
+    const q = d?.kExtra.questions.find((question) => question.id === id);
+    if (!q) return;
+    if (kind === 'text') {
+      if (q.type === 'text') return;
+      if (textCount() >= K_Q_TEXT_MAX) { showToast(`주관식은 최대 ${K_Q_TEXT_MAX}개까지예요.`); return; }
+      setQ(id, { type: 'text' });
+      return;
+    }
+    if (q.type !== 'text') return;
+    if (choiceCount() >= K_Q_CHOICE_MAX) { showToast(`객관식은 최대 ${K_Q_CHOICE_MAX}개까지예요.`); return; }
+    setQ(id, { type: 'radio', options: q.options.length >= K_Q_OPT_MIN ? q.options : ['', ''] });
+  };
+  const setQMultiple = (id: number, multiple: boolean) => {
+    const q = d?.kExtra.questions.find((question) => question.id === id);
+    if (q && q.type !== 'text') setQ(id, { type: multiple ? 'select' : 'radio' });
+  };
+  const moveQ = (from: number, to: number) => {
+    if (!d || from === to) return;
+    const questions = [...d.kExtra.questions]; const [moved] = questions.splice(from, 1); questions.splice(to, 0, moved); patchExtra({ questions });
+  };
+  const delQ = (id: number) => d && patchExtra({ questions: d.kExtra.questions.filter((q) => q.id !== id) });
+  const addOpt = (id: number) => {
+    const q = d?.kExtra.questions.find((question) => question.id === id);
+    if (q && q.options.length < K_Q_OPT_MAX) setQ(id, { options: [...q.options, ''] });
+  };
+  const setOpt = (id: number, index: number, value: string) => {
+    const q = d?.kExtra.questions.find((question) => question.id === id);
+    if (q) setQ(id, { options: q.options.map((option, i) => i === index ? value : option) });
+  };
+  const delOpt = (id: number, index: number) => {
+    const q = d?.kExtra.questions.find((question) => question.id === id);
+    if (q && q.options.length > K_Q_OPT_MIN) setQ(id, { options: q.options.filter((_, i) => i !== index) });
   };
   const addKakaoImage = (key: KakaoImageKey, fileName?: string) => {
     if (!d || d.kExtra[key].length >= K_IMAGE_MAX) return;
@@ -1474,6 +1545,60 @@ function TiKakao() {
                         <div className="tk-kbody">
                           <div className="tk-kauto"><span className="tk-kauto-ic"><CautionIc /></span><span className="tk-kauto-txt">위에 입력한 진료항목 정보가 카카오톡 예약하기에도 함께 표시돼요.</span></div>
                           <div className="tk-kextra">
+                              <div className="tk-kfield">
+                                <div className="tk-klabel">예약 시 받을 정보 <span className="rg-optional">(선택)</span><span className="tk-klabel-count">총 {d.kExtra.questions.length}개</span></div>
+                                {d.kExtra.questions.map((q, idx) => (
+                                  <div key={q.id} className={`tk-q-item${dragQ === idx ? ' dragging' : ''}`}
+                                    onDragOver={(e) => { if (dragQ !== null) e.preventDefault(); }}
+                                    onDrop={() => { if (dragQ !== null) moveQ(dragQ, idx); setDragQ(null); }}>
+                                    <div className="tk-q-drag" draggable onDragStart={() => setDragQ(idx)} onDragEnd={() => setDragQ(null)} aria-label="순서 변경 핸들"><DragHandle /></div>
+                                    <div className="rg-select-wrap tk-q-typesel">
+                                      <button type="button" className={`rg-select tk-q-typebtn${qTypeOpen === q.id ? ' open' : ''}`} onClick={() => setQTypeOpen((openId) => openId === q.id ? null : q.id)}>{q.type === 'text' ? '주관식' : '객관식'}<span className="rg-select-ic"><SelectArrow /></span></button>
+                                      {qTypeOpen === q.id && (
+                                        <div className="rg-select-menu" onMouseLeave={() => setQTypeOpen(null)}>
+                                          <button type="button" className={`rg-select-opt${q.type !== 'text' ? ' active' : ''}`} onClick={() => { setQKind(q.id, 'choice'); setQTypeOpen(null); }}>객관식</button>
+                                          <button type="button" className={`rg-select-opt${q.type === 'text' ? ' active' : ''}`} onClick={() => { setQKind(q.id, 'text'); setQTypeOpen(null); }}>주관식</button>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="tk-q-namefield">
+                                      <div className="tk-q-qrow">
+                                        {!q.optional && <span className="tk-q-req">*</span>}
+                                        <input className={`rg-input${errors[`q-${q.id}-name`] ? ' error' : ''}`} placeholder="질문 입력" maxLength={K_Q_NAME_MAX} value={q.name} onChange={(e) => setQ(q.id, { name: e.target.value })} />
+                                      </div>
+                                      {errors[`q-${q.id}-name`] && <p className="tk-q-err">{errors[`q-${q.id}-name`]}</p>}
+                                    </div>
+                                    {q.type !== 'text' && (
+                                      <div className="tk-q-choice">
+                                        <input className="rg-input" placeholder="설명 입력 (선택)" maxLength={K_Q_DESC_MAX} value={q.description} onChange={(e) => setQ(q.id, { description: e.target.value })} />
+                                        <div className="tk-q-opts">
+                                          {q.options.map((option, optionIndex) => (
+                                            <div key={optionIndex} className="tk-q-optrow">
+                                              <span className={`tk-q-optmark ${q.type}`} />
+                                              <input className={`rg-input${errors[`q-${q.id}-options`] && !option.trim() ? ' error' : ''}`} placeholder={`항목 ${optionIndex + 1}`} maxLength={K_Q_OPT_LEN_MAX} value={option} onChange={(e) => setOpt(q.id, optionIndex, e.target.value)} />
+                                              <button className="rg-price-del" onClick={() => delOpt(q.id, optionIndex)} disabled={q.options.length <= K_Q_OPT_MIN} aria-label="항목 삭제"><CloseIcon /></button>
+                                            </div>
+                                          ))}
+                                          {q.options.length < K_Q_OPT_MAX
+                                            ? <button className="tk-add-xs" onClick={() => addOpt(q.id)}><PlusIcon /> 항목 추가</button>
+                                            : <div className="rg-help">항목은 최대 {K_Q_OPT_MAX}개까지 추가할 수 있어요.</div>}
+                                        </div>
+                                        {errors[`q-${q.id}-options`] && <p className="tk-q-err">{errors[`q-${q.id}-options`]}</p>}
+                                      </div>
+                                    )}
+                                    <div className="tk-q-bar">
+                                      <label className="tk-q-switch"><span>답변 필수</span><button type="button" className={`rg-toggle${q.optional ? ' off' : ''}`} onClick={() => setQ(q.id, { optional: !q.optional })}><span className="rg-toggle-knob" /></button></label>
+                                      {q.type !== 'text' && <label className="tk-q-switch"><span>복수 선택</span><button type="button" className={`rg-toggle${q.type === 'select' ? '' : ' off'}`} onClick={() => setQMultiple(q.id, q.type !== 'select')}><span className="rg-toggle-knob" /></button></label>}
+                                      <span className="tk-q-bar-spacer" />
+                                      <button className="rg-price-del" onClick={() => delQ(q.id)} aria-label="질문 삭제"><CloseIcon /></button>
+                                    </div>
+                                  </div>
+                                ))}
+                                {textCount() < K_Q_TEXT_MAX || choiceCount() < K_Q_CHOICE_MAX
+                                  ? <button className="tk-add-sm tk-q-addbtn" onClick={addQuestion}><PlusIcon /> 질문 추가</button>
+                                  : <div className="rg-help">질문은 더 추가할 수 없어요.</div>}
+                              </div>
+                              <div className="tk-kdivider" />
                               <div className="tk-kfield"><div className="tk-klabel">이용 방법 <span className="rg-optional">(선택)</span></div><textarea className="rg-textarea tk-ktextarea" placeholder="이용 방법을 입력해 주세요." maxLength={K_INFO_MAX} value={d.kExtra.howto} onChange={(e) => patchExtra({ howto: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.howto.length}</span>/{K_INFO_MAX.toLocaleString('ko-KR')}자</div></div>
                               <div className="tk-kfield"><div className="tk-klabel">방문 안내 <span className="rg-optional">(선택)</span></div><textarea className="rg-textarea tk-ktextarea" placeholder="예: 3층 접수 데스크에서 예약자 성함을 말씀해 주세요." maxLength={K_VISIT_MAX} value={d.kExtra.visitGuide} onChange={(e) => patchExtra({ visitGuide: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.visitGuide.length}</span>/{K_VISIT_MAX.toLocaleString('ko-KR')}자</div></div>
                               <div className="tk-kfield"><div className="tk-klabel">취소 유의사항 <span className="rg-optional">(선택)</span></div><input className="rg-input" placeholder="취소 유의사항을 입력해 주세요." maxLength={K_CANCEL_MAX} value={d.kExtra.cancelNotice} onChange={(e) => patchExtra({ cancelNotice: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.cancelNotice.length}</span>/{K_CANCEL_MAX}자</div></div>

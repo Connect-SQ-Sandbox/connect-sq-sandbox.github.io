@@ -77,7 +77,7 @@ const BODY = `<div class="app">
     <div class="prodcard" onclick="location.href='kakao-booking-ticket.html'">
       <div class="p-thumb" style="background-image:url('__IMG_IMG_THUMB_SURGERY__')"></div>
       <div class="p-body">
-        <div class="p-tit">성형외과 신규예약</div>
+        <div class="p-tit">성형외과 신규예약 (진료항목예약 Flow)</div>
         <div class="p-desc">ABsolute beauty, 자연스럽게 더 나답게.</div>
         <button class="p-btn" onclick="event.stopPropagation();location.href='kakao-booking-ticket.html'">예약하기</button>
       </div>
@@ -86,7 +86,7 @@ const BODY = `<div class="app">
     <div class="prodcard" onclick="location.href='kakao-booking-skin.html'">
       <div class="p-thumb" style="background-image:url('__IMG_IMG_THUMB_SKIN__')"></div>
       <div class="p-body">
-        <div class="p-tit">피부클리닉 시술예약</div>
+        <div class="p-tit">피부클리닉 시술예약 (연동진료실예약 Flow)</div>
         <div class="p-desc">AB SKIN CLINIC 오늘보다 내일 더, 빛나게</div>
         <button class="p-btn" onclick="event.stopPropagation();location.href='kakao-booking-skin.html'">예약하기</button>
       </div>

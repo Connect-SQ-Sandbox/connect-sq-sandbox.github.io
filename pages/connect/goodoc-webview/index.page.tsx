@@ -17,6 +17,11 @@ const BODY = `<div class="app">
       <svg viewBox="0 0 17 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8.4987 23.348C7.51374 23.3478 6.56135 23.001 5.81386 22.3702C5.06637 21.7395 4.57312 20.8665 4.42338 19.9092H0.180542C0.341099 21.974 1.28855 23.903 2.83335 25.3104C4.37814 26.7177 6.40633 27.4996 8.51219 27.4996C10.6181 27.4996 12.6463 26.7177 14.1911 25.3104C15.7359 23.903 16.6833 21.974 16.8439 19.9092H12.5848C12.4348 20.8683 11.94 21.7427 11.1902 22.3737C10.4405 23.0047 9.48552 23.3503 8.4987 23.348Z" fill="#0073FA"/><path d="M16.8441 0.5H12.5417V4.65629H16.8441V0.5Z" fill="#41D293"/><path d="M8.50004 3.62256C6.84738 3.62256 5.23184 4.1045 3.85771 5.00738C2.48358 5.91027 1.41255 7.19358 0.780107 8.69502C0.147663 10.1965 -0.0178125 11.8486 0.304605 13.4425C0.627022 15.0365 1.42286 16.5006 2.59146 17.6497C3.76007 18.7989 5.24896 19.5815 6.86986 19.8985C8.49076 20.2156 10.1709 20.0529 11.6977 19.4309C13.2246 18.809 14.5296 17.7558 15.4478 16.4046C16.3659 15.0533 16.856 13.4646 16.856 11.8395C16.8531 9.66108 15.9719 7.57272 14.4055 6.03235C12.839 4.49199 10.7153 3.62537 8.50004 3.62256ZM8.50004 15.8895C7.68547 15.8895 6.88919 15.652 6.2119 15.2069C5.53461 14.7619 5.00672 14.1294 4.695 13.3894C4.38328 12.6493 4.30173 11.835 4.46065 11.0494C4.61956 10.2638 5.01179 9.54212 5.58778 8.97572C6.16377 8.40932 6.89761 8.02359 7.69653 7.86732C8.49545 7.71105 9.32356 7.79123 10.0761 8.09777C10.8287 8.4043 11.4719 8.9234 11.9245 9.58942C12.377 10.2554 12.6186 11.0385 12.6186 11.8395C12.6171 12.9132 12.1828 13.9425 11.4107 14.7017C10.6386 15.4609 9.59191 15.8881 8.50004 15.8895Z" fill="#0073FA"/></svg>
       <b>굿닥 병원 예약</b>
     </div>
+    <label class="age-toggle">
+      <span class="at-label">만 14세 이하</span>
+      <input type="checkbox" id="minorToggle" onchange="toggleMinor()">
+      <span class="at-track"></span>
+    </label>
   </header>
 
   <form onsubmit="return false">
@@ -99,6 +104,14 @@ const BODY = `<div class="app">
           <div id="vpChips" class="vp-chips hidden">
             <span class="vp-chip add" onclick="openVp()">+ 선택</span>
           </div>
+        </div>
+
+        <!-- 법정대리인 정보 (만 14세 이하 토글 ON 시에만 노출) -->
+        <div class="section hidden" id="repSection">
+          <div class="stitle"><span class="t">법정대리인 정보</span><span class="ess">필수</span></div>
+          <input class="inp" id="repName" placeholder="법정대리인의 이름을 입력해 주세요." oninput="validate()">
+          <input class="inp" id="repPhone" inputmode="numeric" placeholder="법정대리인의 연락처를 입력해 주세요." oninput="validate()">
+          <div class="helper">관련 법(개인정보 보호법)에 따라 만 14세 미만 환자의 경우 개인정보 처리 동의는 법정대리인을 지정하여 받습니다. 병원 약관 동의 시 법정대리인의 성명·연락처 정보를 수집해 보호자 동의를 확인합니다.</div>
         </div>
       </div>
     </div>
@@ -253,13 +266,21 @@ const SCRIPT = `var TERMS=[
   document.getElementById('ov').addEventListener('click',function(e){if(e.target.id==='ov')closeOv();});
 
   // validate → enable CTA
+  function toggleMinor(){
+    var on=document.getElementById('minorToggle').checked;
+    document.getElementById('repSection').classList.toggle('hidden',!on);
+    validate();
+  }
+
   function validate(){
     var rrn1=document.getElementById('rrn1').value.length===6;
     var rrn2=document.getElementById('rrn2').value.length===7;
     var addr=!!document.getElementById('addr').value;
     var consents=[].slice.call(document.querySelectorAll('[data-consent]')).every(function(c){return ckbOf(c).classList.contains('on');});
     var vp=!!document.querySelector('#vpChips .vp-chip:not(.add)');
-    document.getElementById('cta').disabled=!(rrn1&&rrn2&&addr&&consents&&vp);
+    var minor=document.getElementById('minorToggle').checked;
+    var rep=!minor||(document.getElementById('repName').value.trim()&&document.getElementById('repPhone').value.trim());
+    document.getElementById('cta').disabled=!(rrn1&&rrn2&&addr&&consents&&vp&&rep);
   }
 
   // submit

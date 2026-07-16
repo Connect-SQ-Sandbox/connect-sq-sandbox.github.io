@@ -5,8 +5,8 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-kakao — 진료항목 카카오 노출 + 예약 신청 내역 + 운영 설정
- * 상태     : 현행(active)   버전: v29  최종수정: 2026-07-16
- * PRD      : GCP-1 · 2.5-final-review · 3-미션·기획/1-PRD/2026-07-13-진료항목-카카오톡-예약하기-연동-구축.md
+ * 상태     : 현행(active)   버전: v30  최종수정: 2026-07-16
+ * PRD      : GCP-1 · 3.0-final · 3-미션·기획/1-PRD/2026-07-13-진료항목-카카오톡-예약하기-연동-구축.md
  * 배포URL  : https://connect-sq-sandbox.github.io/out/ti-kakao.html
  * 관련 CSS : connectRegister.css + connectTiKakao.css
  * 기술제약 : react-only · plain CSS · mock · 네트워크 0
@@ -16,14 +16,15 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
  *
  * 핵심 결정 (why):
  *   [확정·PRD] 토글 워딩 = "카카오톡 예약하기에서도 보이기"
- *   [확정·PRD] 노출 캐스케이드 — 굿닥 노출 OFF → 카카오도 OFF
+ *   [확정·PRD] 노출 캐스케이드 — 굿닥 노출 OFF → 카카오 실제 노출 OFF, 카카오 의도·입력값은 보존
  *   [확정·PRD] 카카오 연동 활성화는 오직 진료항목 상세의 "…에서도 보이기" 토글로만. 리스트 일괄 연동 없음(리스트 채널 심볼은 읽기 전용 현황)
  *   [확정·PRD] V1은 굿닥에 노출되는 진료항목만 카카오 노출 가능(카카오 단독 상품 불가)
  *   [유지·자체] 채널 심볼 [굿닥][카카오] 아이콘만 표기(텍스트 없음)
  *   [유지·자체] 미리보기는 굿닥 기준만(카카오 미리보기 없음)
  *   [유지·자체] 카카오 전용 목록 없음 → 진료항목 목록에 인입 채널 심볼만 병합
  *   [확정·PRD] 카카오 노출 ON 시 V1 전용 정보 입력 필드를 즉시 표시(별도 추가 입력 토글 없음)
- *   [확정·PRD] 카카오 상품명·설명·대표 이미지·가격 미리보기는 별도 입력 UI 없이 공통 진료항목 정보·가격 설정을 사용
+ *   [확정·PRD] 카카오 상품명·설명·대표/상세 이미지·가격 미리보기는 별도 입력 UI 없이 공통 진료항목 정보·가격 설정을 사용
+ *   [확정·PRD] 카카오 예약은 굿닥 신규 예약 알림·Windows OS 푸시를 발송하지 않음
  *   [유지·자체] 예약 신청 내역 = 실제 TreatmentItemApptListView 재현
  *              (카카오·굿닥 예약이 같은 테이블에 혼재 + "채널" 컬럼만 추가)
  *   [유지·자체] 운영 설정 = 실제 non-payment-reservations/operation 재현
@@ -31,6 +32,8 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
  *   [폐기]      구버전 kakao-link(별도 연동관리 페이지형) → ti-kakao로 대체
  *
  * 변경 이력:
+ *   v30 2026-07-16 — 최종 PRD 3.0 반영: 정사각/상세 이미지·유의사항의 카카오 전용 입력을 제거하고,
+ *                    굿닥 OFF에서도 카카오 의도·전용값 편집/보존, 실제 노출만 차단하도록 변경. 카카오 예약 무알림 정책 반영.
  *   v29 2026-07-16 — 카카오 상품명·설명·대표 이미지·가격 안내 미리보기의 별도 UI를 제거하고
  *                    공통 진료항목 정보·가격 설정을 사용하는 V1 예상 화면으로 정리.
  *   v28 2026-07-16 — 카카오 내부 상품 편집 규격을 반영해 상품명 50자·설명 1,000자·방문안내 1,000자 제한과
@@ -121,8 +124,9 @@ const emptyExtra = (): KakaoExtra => ({ initialized: false, displayName: '', des
 const makeSync = (state: SyncState, error?: string): SyncInfo => ({ product: state, item: state, price: state, schedule: state, lastAt: state === 'NOT_LINKED' ? '-' : '2026.07.15 10:42', error, attempts: 0 });
 const won = (s: string) => (s ? Number(s).toLocaleString('ko-KR') + '원' : '0원');
 const kakaoPriceDescription = (p: Price) => {
-  const amount = p.type === 'consult' ? '' : p.type === 'discount' ? won(p.sale) : won(p.amount);
-  return [amount, p.content.trim()].filter(Boolean).join(' - ');
+  const amount = p.type === 'consult' ? '상담 후 결정' : p.type === 'discount' ? won(p.sale) : won(p.amount);
+  const amountLabel = `[${amount}]`;
+  return [amountLabel, p.content.trim()].filter(Boolean).join(' - ');
 };
 const syncSummary = (sync: SyncInfo): SyncState => {
   const states = [sync.product, sync.item, sync.price, sync.schedule];
@@ -256,13 +260,13 @@ type Appt = {
   externalId?: string;
 };
 const INITIAL_APPTS: Appt[] = [
-  { id: 201, channel: 'kakao', status: AS.REQUESTED, visit: '2026.07.11(토) 15:00', when: '2026.07.10(금) 09:12', itemName: '레이저 토닝', option: '1회', priceText: '80,000원', visitor: { name: '김민지', gender: '여', birth: '1996.05.20 (만 30세)', phone: '010-2345-6789' }, reserver: { name: '김민지', gender: '여', birth: '1996.05.20 (만 30세)', phone: '010-2345-6789' }, memo: '기미 위주로 봐주세요', answers: [{ q: '주로 신경 쓰이는 부위가 어디인가요?', a: '양 볼 기미와 잔잔한 잡티요.' }, { q: '레이저 시술 경험이 있으신가요?', a: '아니요, 처음이에요.' }], externalSync: 'SYNCED', autoConfirmSnapshot: false, notificationSent: true, externalId: 'KB-240710-201' },
+  { id: 201, channel: 'kakao', status: AS.REQUESTED, visit: '2026.07.11(토) 15:00', when: '2026.07.10(금) 09:12', itemName: '레이저 토닝', option: '1회', priceText: '80,000원', visitor: { name: '김민지', gender: '여', birth: '1996.05.20 (만 30세)', phone: '010-2345-6789' }, reserver: { name: '김민지', gender: '여', birth: '1996.05.20 (만 30세)', phone: '010-2345-6789' }, memo: '기미 위주로 봐주세요', answers: [{ q: '주로 신경 쓰이는 부위가 어디인가요?', a: '양 볼 기미와 잔잔한 잡티요.' }, { q: '레이저 시술 경험이 있으신가요?', a: '아니요, 처음이에요.' }], externalSync: 'SYNCED', autoConfirmSnapshot: false, notificationSent: false, externalId: 'KB-240710-201' },
   { id: 202, channel: 'goodoc', status: AS.REQUESTED, visit: '2026.07.11(토) 11:30', when: '2026.07.10(금) 08:40', itemName: '물광주사', option: '1회', priceText: '120,000원', visitor: { name: '이서연', gender: '여', birth: '1990.11.02 (만 35세)', phone: '010-3456-7890' }, reserver: { name: '이서연', gender: '여', birth: '1990.11.02 (만 35세)', phone: '010-3456-7890' } },
-  { id: 203, channel: 'kakao', status: AS.CONFIRMED, visit: '2026.07.12(일) 14:00', when: '2026.07.10(금) 10:02', statusAt: '2026.07.10(금) 10:31', itemName: '보톡스 (이마)', option: '이마', priceText: '99,000원', visitor: { name: '박도윤', gender: '남', birth: '1988.07.15 (만 37세)', phone: '010-4567-8901' }, reserver: { name: '박도윤', gender: '남', birth: '1988.07.15 (만 37세)', phone: '010-4567-8901' }, memo: '주차 가능한가요?', answers: [{ q: '시술 희망 부위를 알려주세요.', a: '이마 가로 주름이요.' }], hospitalMemo: '지난 상담 시 보톡스 부작용 이력 없음 확인. 이마만 진행 예정.', externalSync: 'FAILED', externalError: '카카오 예약 상태 반영이 지연되고 있어요.', autoConfirmSnapshot: true, notificationSent: true, externalId: 'KB-240710-203' },
+  { id: 203, channel: 'kakao', status: AS.CONFIRMED, visit: '2026.07.12(일) 14:00', when: '2026.07.10(금) 10:02', statusAt: '2026.07.10(금) 10:31', itemName: '보톡스 (이마)', option: '이마', priceText: '99,000원', visitor: { name: '박도윤', gender: '남', birth: '1988.07.15 (만 37세)', phone: '010-4567-8901' }, reserver: { name: '박도윤', gender: '남', birth: '1988.07.15 (만 37세)', phone: '010-4567-8901' }, memo: '주차 가능한가요?', answers: [{ q: '시술 희망 부위를 알려주세요.', a: '이마 가로 주름이요.' }], hospitalMemo: '지난 상담 시 보톡스 부작용 이력 없음 확인. 이마만 진행 예정.', externalSync: 'FAILED', externalError: '카카오 예약 상태 반영이 지연되고 있어요.', autoConfirmSnapshot: true, notificationSent: false, externalId: 'KB-240710-203' },
   { id: 204, channel: 'goodoc', status: AS.CONFIRMED, visit: '2026.07.12(일) 16:30', when: '2026.07.09(목) 17:20', statusAt: '2026.07.09(목) 18:02', itemName: '얼굴 지방흡입', option: '기본', priceText: '3,500,000원', visitor: { name: '최지우', gender: '여', birth: '2001.02.28 (만 25세)', phone: '010-5678-9012' }, reserver: { name: '최지우 모', gender: '여', birth: '1975.09.10 (만 50세)', phone: '010-9999-0000' }, hospitalMemo: '미성년 보호자(모) 동반 예약. 수술 전 대면 상담 일정 별도 안내 필요.' },
-  { id: 205, channel: 'kakao', status: AS.COMPLETED, visit: '2026.07.05(일) 13:00', when: '2026.07.05(일) 09:40', statusAt: '2026.07.05(일) 13:55', itemName: '실 리프팅', option: '상담', priceText: '상담 후 결정', visitor: { name: '정하윤', gender: '여', birth: '1993.01.05 (만 33세)', phone: '010-6789-0123' }, reserver: { name: '정하윤', gender: '여', birth: '1993.01.05 (만 33세)', phone: '010-6789-0123' }, answers: [{ q: '상담 희망 내용을 적어주세요.', a: '처진 볼 라인 리프팅 상담 원해요.' }], externalSync: 'SYNCED', autoConfirmSnapshot: true, notificationSent: true, externalId: 'KB-240705-205' },
+  { id: 205, channel: 'kakao', status: AS.COMPLETED, visit: '2026.07.05(일) 13:00', when: '2026.07.05(일) 09:40', statusAt: '2026.07.05(일) 13:55', itemName: '실 리프팅', option: '상담', priceText: '상담 후 결정', visitor: { name: '정하윤', gender: '여', birth: '1993.01.05 (만 33세)', phone: '010-6789-0123' }, reserver: { name: '정하윤', gender: '여', birth: '1993.01.05 (만 33세)', phone: '010-6789-0123' }, answers: [{ q: '상담 희망 내용을 적어주세요.', a: '처진 볼 라인 리프팅 상담 원해요.' }], externalSync: 'SYNCED', autoConfirmSnapshot: true, notificationSent: false, externalId: 'KB-240705-205' },
   { id: 206, channel: 'goodoc', status: AS.CANCELED_PATIENT, visit: '2026.07.06(월) 10:00', when: '2026.07.05(일) 20:10', statusAt: '2026.07.06(월) 08:12', itemName: '리쥬란 힐러', option: '3회 패키지 (사후관리 포함)', priceText: '600,000원', visitor: { name: '강서진', gender: '남', birth: '1997.12.24 (만 28세)', phone: '010-7890-1234' }, reserver: { name: '강서진', gender: '남', birth: '1997.12.24 (만 28세)', phone: '010-7890-1234' }, cancelReason: '개인 사정으로 방문이 어려워 취소했습니다.' },
-  { id: 207, channel: 'kakao', status: AS.CANCELED_HOSPITAL, visit: '2026.07.06(월) 18:00', when: '2026.07.06(월) 09:30', statusAt: '2026.07.06(월) 12:30', itemName: '슈링크 유니버스', option: '300샷', priceText: '300,000원', visitor: { name: '윤예은', gender: '여', birth: '1992.08.19 (만 33세)', phone: '010-8901-2345' }, reserver: { name: '윤예은', gender: '여', birth: '1992.08.19 (만 33세)', phone: '010-8901-2345' }, answers: [{ q: '시술 희망 부위와 샷 수를 알려주세요.', a: '얼굴 전체 300샷 원해요.' }], cancelReason: '선택하신 시간에는 병원 사정으로 방문이 어렵습니다. 다른 시간으로 다시 예약해 주세요.', externalSync: 'SYNCED', autoConfirmSnapshot: false, notificationSent: true, externalId: 'KB-240706-207' }
+  { id: 207, channel: 'kakao', status: AS.CANCELED_HOSPITAL, visit: '2026.07.06(월) 18:00', when: '2026.07.06(월) 09:30', statusAt: '2026.07.06(월) 12:30', itemName: '슈링크 유니버스', option: '300샷', priceText: '300,000원', visitor: { name: '윤예은', gender: '여', birth: '1992.08.19 (만 33세)', phone: '010-8901-2345' }, reserver: { name: '윤예은', gender: '여', birth: '1992.08.19 (만 33세)', phone: '010-8901-2345' }, answers: [{ q: '시술 희망 부위와 샷 수를 알려주세요.', a: '얼굴 전체 300샷 원해요.' }], cancelReason: '선택하신 시간에는 병원 사정으로 방문이 어렵습니다. 다른 시간으로 다시 예약해 주세요.', externalSync: 'SYNCED', autoConfirmSnapshot: false, notificationSent: false, externalId: 'KB-240706-207' }
 ];
 
 type OperationSettings = {
@@ -1091,7 +1095,7 @@ function TiKakao() {
   const patch = (u: Partial<Item>) => setD((prev) => (prev ? { ...prev, ...u } : prev));
   const patchExtra = (u: Partial<Item['kExtra']>) => setD((prev) => (prev ? { ...prev, kExtra: { ...prev.kExtra, ...u } } : prev));
   const toggleKakaoDraft = () => setD((prev) => {
-    if (!prev || !hospitalLinked || !prev.gdVisible) return prev;
+    if (!prev || !hospitalLinked) return prev;
     const kakaoOn = !prev.kakaoOn;
     if (!kakaoOn || prev.kExtra.initialized) return { ...prev, kakaoOn };
     return {
@@ -1161,12 +1165,15 @@ function TiKakao() {
     const shouldFail = d.kakaoOn && failNextSync;
     if (shouldFail) setFailNextSync(false);
     const wasLinked = d.sync.item !== 'NOT_LINKED';
+    const effectiveKakao = d.kakaoOn && d.gdVisible && operation.apptUsed;
     const pendingSync: SyncInfo = d.kakaoOn
-      ? {
-          product: operation.apptUsed ? 'PENDING' : 'ON_HOLD',
-          item: 'PENDING',
-          price: 'PENDING',
-          schedule: operation.apptUsed ? 'PENDING' : 'ON_HOLD',
+      ? !d.gdVisible && !wasLinked
+        ? makeSync('NOT_LINKED')
+        : {
+          product: effectiveKakao ? 'PENDING' : 'ON_HOLD',
+          item: wasLinked || d.gdVisible ? 'PENDING' : 'NOT_LINKED',
+          price: wasLinked || d.gdVisible ? 'PENDING' : 'NOT_LINKED',
+          schedule: effectiveKakao ? 'PENDING' : 'ON_HOLD',
           lastAt: '방금 전', attempts: d.sync.attempts, error: undefined
         }
       : wasLinked
@@ -1179,6 +1186,7 @@ function TiKakao() {
     if (d.kakaoOn) {
       window.setTimeout(() => setItems((prev) => prev.map((item) => {
         if (item.id !== saved.id) return item;
+        if (!d.gdVisible) return item;
         if (shouldFail) return { ...item, sync: { ...item.sync, item: 'SYNCED', product: operation.apptUsed ? 'SYNCED' : 'ON_HOLD', price: 'FAILED', schedule: operation.apptUsed ? 'SYNCED' : 'ON_HOLD', error: '가격 안내 정보를 카카오에 반영하지 못했어요. 굿닥 저장 내용은 유지됩니다.', attempts: item.sync.attempts + 1, lastAt: '방금 전' } };
         return { ...item, sync: { ...item.sync, item: 'SYNCED', price: 'SYNCED', product: operation.apptUsed ? 'SYNCED' : 'ON_HOLD', schedule: operation.apptUsed ? 'SYNCED' : 'ON_HOLD', error: undefined, lastAt: '방금 전' } };
       })), 700);
@@ -1239,8 +1247,8 @@ function TiKakao() {
     const gdVisible = !it.gdVisible;
     showToast(gdVisible ? '해당 진료항목을 서비스에 노출합니다.' : '해당 진료항목을 서비스에 미노출합니다.');
     return gdVisible
-      ? { ...it, gdVisible }
-      : { ...it, gdVisible, kakaoOn: false, sync: it.sync.item === 'NOT_LINKED' ? it.sync : { ...it.sync, product: 'ON_HOLD', schedule: 'ON_HOLD', lastAt: '방금 전' } };
+      ? { ...it, gdVisible, sync: it.kakaoOn ? { ...it.sync, product: operation.apptUsed ? 'PENDING' : 'ON_HOLD', item: 'PENDING', price: 'PENDING', schedule: operation.apptUsed ? 'PENDING' : 'ON_HOLD', lastAt: '방금 전' } : it.sync }
+      : { ...it, gdVisible, sync: it.sync.item === 'NOT_LINKED' ? it.sync : { ...it.sync, product: 'ON_HOLD', schedule: 'ON_HOLD', lastAt: '방금 전' } };
   }));
   const changeGlobalOperation = (enabled: boolean) => {
     const nextVersion = operation.version + 1;
@@ -1413,9 +1421,9 @@ function TiKakao() {
                       <div className="rg-add-wrap"><button className="rg-add-btn" onClick={addPrice}><PlusIcon /> 가격 옵션 추가</button></div>
                     </section>
 
-                    <section className="rg-card extra">
+                    <section className="rg-card extra" data-policy-id="gcp1-kakao-product-copy">
                       <div className="rg-group-title">추가 정보</div>
-                      <div className="rg-field">
+                      <div className="rg-field" data-policy-id="gcp1-kakao-product-images">
                         <FieldHead label="대표 사진" optional helpers={['진료항목을 대표하는 사진을 업로드해 주세요.']} />
                         {d.hasImage ? <div className="tk-thumb"><span>대표 이미지</span><button onClick={() => patch({ hasImage: false })} aria-label="삭제"><CloseIcon /></button></div> : <button className="rg-upload" onClick={() => patch({ hasImage: true })}><PhotoIcon /><span className="rg-upload-label">사진 추가</span></button>}
                       </div>
@@ -1459,35 +1467,17 @@ function TiKakao() {
                       <div className="tk-khead">
                         <div className="tk-khead-left"><span className="tk-khead-badge"><KakaoBubble /></span><div className="tk-khead-text"><div className="tk-khead-title">카카오톡 예약하기에서도 보이기</div><div className="tk-khead-desc">카카오톡 예약하기에도 상품을 노출하고 예약을 받아요.</div></div></div>
                         <div className="tk-khead-right">
-                          <button className={`rg-toggle${d.kakaoOn ? '' : ' off'}${d.gdVisible ? '' : ' disabled'}`} aria-label="카카오톡 예약하기에서도 보이기" aria-disabled={!d.gdVisible} onClick={toggleKakaoDraft}><span className="rg-toggle-knob" /></button>
+                          <button className={`rg-toggle${d.kakaoOn ? '' : ' off'}`} aria-label="카카오톡 예약하기에서도 보이기" aria-pressed={d.kakaoOn} onClick={toggleKakaoDraft}><span className="rg-toggle-knob" /></button>
                         </div>
                       </div>
-                      {!d.gdVisible && <div className="tk-kdependency"><WarnIc /> 굿닥에 노출 중인 진료항목만 카카오톡 예약하기에도 노출할 수 있어요. 먼저 하단의 굿닥 노출을 켜 주세요.</div>}
+                      {!d.gdVisible && <div className="tk-kdependency"><WarnIc /> 카카오톡 예약하기 정보는 저장할 수 있지만, 굿닥에 노출 중인 진료항목만 카카오톡 예약하기에서도 실제로 보여요.</div>}
                       {d.kakaoOn && (
                         <div className="tk-kbody">
                           <div className="tk-kauto"><span className="tk-kauto-ic"><CautionIc /></span><span className="tk-kauto-txt">위에 입력한 진료항목 정보가 카카오톡 예약하기에도 함께 표시돼요.</span></div>
                           <div className="tk-kextra">
-                              <div className="tk-kfield" data-policy-id="gcp1-kakao-product-copy"><div className="tk-klabel">검색 키워드 <span className="rg-optional">(선택)</span></div><input className="rg-input" value={d.kExtra.keywords.join(', ')} onChange={(e) => patchExtra({ keywords: e.target.value.split(',').map((value) => value.trim()).filter(Boolean).slice(0, KEYWORD_MAX) })} placeholder="쉼표로 구분해 입력해 주세요." /><div className="rg-help">카카오 검색에 사용할 키워드를 쉼표로 구분해 입력해 주세요.</div></div>
-                              <div className="tk-kdivider" />
-                              <div className="tk-kfield" data-policy-id="gcp1-kakao-product-images">
-                                <div className="tk-klabel">정사각 이미지 <span className="rg-optional">(목록 썸네일)</span></div>
-                                <div className="rg-help">800×800px 이미지를 권장해요.</div>
-                                <div className="tk-square-row"><input className="rg-input" value={d.kExtra.squareImageUrl} onChange={(e) => patchExtra({ squareImageUrl: e.target.value, squareImageFileName: '' })} placeholder={d.kExtra.squareImageFileName || '정사각 이미지 URL'} /><label className="tk-file-btn"><PhotoIcon /> 파일 업로드<input type="file" accept="image/*" onChange={(e) => { const file = e.target.files?.[0]; if (file) patchExtra({ squareImageUrl: '', squareImageFileName: file.name }); e.currentTarget.value = ''; }} /></label>{(d.kExtra.squareImageUrl || d.kExtra.squareImageFileName) && <button className="rg-price-del" onClick={() => patchExtra({ squareImageUrl: '', squareImageFileName: '' })} aria-label="정사각 이미지 삭제"><CloseIcon /></button>}</div>
-                                {d.kExtra.squareImageFileName && <span className="tk-kimage-file">업로드 파일 · {d.kExtra.squareImageFileName}</span>}
-                              </div>
-                              <div className="tk-kfield" data-policy-id="gcp1-kakao-product-images">
-                                <div className="tk-klabel">상세 이미지 <span className="rg-optional">(선택)</span><span className="tk-klabel-count">{d.kExtra.descriptionImages.length}/{K_IMAGE_MAX}개</span></div>
-                                <div className="rg-help">가로 800px, 세로 15,000px 이하 이미지를 권장해요.</div>
-                                {d.kExtra.descriptionImages.map((image, index) => <div className="tk-kimage-row" key={image.id}>
-                                  <span className="tk-kimage-order">{index + 1}</span>
-                                  <div className="tk-kimage-fields"><input className="rg-input" value={image.url} onChange={(e) => updateKakaoImage('descriptionImages', image.id, { url: e.target.value, fileName: undefined })} placeholder={image.fileName || '이미지 URL'} />{image.fileName && <span className="tk-kimage-file">업로드 파일 · {image.fileName}</span>}<input className="rg-input" value={image.description} onChange={(e) => updateKakaoImage('descriptionImages', image.id, { description: e.target.value })} placeholder="이미지 설명 (선택)" /></div>
-                                  <div className="tk-kimage-actions"><button onClick={() => moveKakaoImage('descriptionImages', index, -1)} disabled={index === 0} aria-label="위로 이동">↑</button><button onClick={() => moveKakaoImage('descriptionImages', index, 1)} disabled={index === d.kExtra.descriptionImages.length - 1} aria-label="아래로 이동">↓</button><button onClick={() => deleteKakaoImage('descriptionImages', image.id)} aria-label="이미지 삭제"><CloseIcon /></button></div>
-                                </div>)}
-                                <div className="tk-kimage-add"><button className="tk-add-sm" onClick={() => addKakaoImage('descriptionImages')} disabled={d.kExtra.descriptionImages.length >= K_IMAGE_MAX}><PlusIcon /> 이미지 URL 추가</button><label className={`tk-file-btn${d.kExtra.descriptionImages.length >= K_IMAGE_MAX ? ' disabled' : ''}`}><PhotoIcon /> 파일 업로드<input type="file" accept="image/*" multiple disabled={d.kExtra.descriptionImages.length >= K_IMAGE_MAX} onChange={(e) => { addKakaoFiles('descriptionImages', e.target.files); e.currentTarget.value = ''; }} /></label></div>
-                              </div>
+                              <div className="tk-kfield"><div className="tk-klabel">검색 키워드 <span className="rg-optional">(선택)</span></div><input className="rg-input" value={d.kExtra.keywords.join(', ')} onChange={(e) => patchExtra({ keywords: e.target.value.split(',').map((value) => value.trim()).filter(Boolean).slice(0, KEYWORD_MAX) })} placeholder="쉼표로 구분해 입력해 주세요." /><div className="rg-help">카카오 검색에 사용할 키워드를 쉼표로 구분해 입력해 주세요.</div></div>
                               <div className="tk-kdivider" />
                               <div className="tk-kfield"><div className="tk-klabel">이용 방법 <span className="rg-optional">(선택)</span></div><textarea className="rg-textarea tk-ktextarea" placeholder="이용 방법을 입력해 주세요." maxLength={K_INFO_MAX} value={d.kExtra.howto} onChange={(e) => patchExtra({ howto: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.howto.length}</span>/{K_INFO_MAX.toLocaleString('ko-KR')}자</div></div>
-                              <div className="tk-kfield"><div className="tk-klabel">유의사항 <span className="rg-optional">(선택)</span></div><textarea className="rg-textarea tk-ktextarea" placeholder="유의사항을 입력해 주세요." value={d.kExtra.notice} onChange={(e) => patchExtra({ notice: e.target.value })} /></div>
                               <div className="tk-kfield"><div className="tk-klabel">방문 안내 <span className="rg-optional">(선택)</span></div><textarea className="rg-textarea tk-ktextarea" placeholder="예: 3층 접수 데스크에서 예약자 성함을 말씀해 주세요." maxLength={K_VISIT_MAX} value={d.kExtra.visitGuide} onChange={(e) => patchExtra({ visitGuide: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.visitGuide.length}</span>/{K_VISIT_MAX.toLocaleString('ko-KR')}자</div></div>
                               <div className="tk-kfield"><div className="tk-klabel">취소 유의사항 <span className="rg-optional">(선택)</span></div><input className="rg-input" placeholder="취소 유의사항을 입력해 주세요." maxLength={K_CANCEL_MAX} value={d.kExtra.cancelNotice} onChange={(e) => patchExtra({ cancelNotice: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.cancelNotice.length}</span>/{K_CANCEL_MAX}자</div></div>
                           </div>
@@ -1509,7 +1499,7 @@ function TiKakao() {
                     {selId === null ? (
                       <>
                         <span className="rg-footer-label">환자들에게 진료항목을 노출하고 예약을 받습니다.</span>
-                        <button className={`rg-toggle${d.gdVisible ? '' : ' off'}`} aria-label="굿닥 진료항목 노출" aria-pressed={d.gdVisible} onClick={() => { const gdVisible = !d.gdVisible; patch({ gdVisible, kakaoOn: gdVisible ? d.kakaoOn : false }); }}><span className="rg-toggle-knob" /></button>
+                        <button className={`rg-toggle${d.gdVisible ? '' : ' off'}`} aria-label="굿닥 진료항목 노출" aria-pressed={d.gdVisible} onClick={() => patch({ gdVisible: !d.gdVisible })}><span className="rg-toggle-knob" /></button>
                       </>
                     ) : (
                       <button className="tk-detail-delete" onClick={() => setDeleteId(selId)}>삭제</button>

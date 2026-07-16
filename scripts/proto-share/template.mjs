@@ -12,7 +12,9 @@ export function renderHtml({ title, css, js }) {
   // </script> 가 번들 문자열 안에 등장하면 스크립트가 조기 종료되므로 방어 치환.
   const safeJs = js.replace(/<\/script/gi, '<\\/script');
 
-  return `<title>${escapeHtml(title)}</title>
+  return `<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>${escapeHtml(title)}</title>
 <style>
 ${css}
 </style>

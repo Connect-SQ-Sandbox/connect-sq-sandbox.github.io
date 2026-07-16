@@ -14,11 +14,6 @@ const BODY = `<div class="app">
       <svg viewBox="0 0 17 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8.4987 23.348C7.51374 23.3478 6.56135 23.001 5.81386 22.3702C5.06637 21.7395 4.57312 20.8665 4.42338 19.9092H0.180542C0.341099 21.974 1.28855 23.903 2.83335 25.3104C4.37814 26.7177 6.40633 27.4996 8.51219 27.4996C10.6181 27.4996 12.6463 26.7177 14.1911 25.3104C15.7359 23.903 16.6833 21.974 16.8439 19.9092H12.5848C12.4348 20.8683 11.94 21.7427 11.1902 22.3737C10.4405 23.0047 9.48552 23.3503 8.4987 23.348Z" fill="#0073FA"/><path d="M16.8441 0.5H12.5417V4.65629H16.8441V0.5Z" fill="#41D293"/><path d="M8.50004 3.62256C6.84738 3.62256 5.23184 4.1045 3.85771 5.00738C2.48358 5.91027 1.41255 7.19358 0.780107 8.69502C0.147663 10.1965 -0.0178125 11.8486 0.304605 13.4425C0.627022 15.0365 1.42286 16.5006 2.59146 17.6497C3.76007 18.7989 5.24896 19.5815 6.86986 19.8985C8.49076 20.2156 10.1709 20.0529 11.6977 19.4309C13.2246 18.809 14.5296 17.7558 15.4478 16.4046C16.3659 15.0533 16.856 13.4646 16.856 11.8395C16.8531 9.66108 15.9719 7.57272 14.4055 6.03235C12.839 4.49199 10.7153 3.62537 8.50004 3.62256ZM8.50004 15.8895C7.68547 15.8895 6.88919 15.652 6.2119 15.2069C5.53461 14.7619 5.00672 14.1294 4.695 13.3894C4.38328 12.6493 4.30173 11.835 4.46065 11.0494C4.61956 10.2638 5.01179 9.54212 5.58778 8.97572C6.16377 8.40932 6.89761 8.02359 7.69653 7.86732C8.49545 7.71105 9.32356 7.79123 10.0761 8.09777C10.8287 8.4043 11.4719 8.9234 11.9245 9.58942C12.377 10.2554 12.6186 11.0385 12.6186 11.8395C12.6171 12.9132 12.1828 13.9425 11.4107 14.7017C10.6386 15.4609 9.59191 15.8881 8.50004 15.8895Z" fill="#0073FA"/></svg>
       <b>굿닥 병원 진료 예약하기</b>
     </div>
-    <label class="age-toggle">
-      <span class="at-label">만 14세 이하</span>
-      <input type="checkbox" id="minorToggle" onchange="toggleMinor()">
-      <span class="at-track"></span>
-    </label>
   </header>
 
   <form onsubmit="return false">
@@ -168,6 +163,7 @@ const SCRIPT = `var TERMS=[
     ['bdBirth','bdGender'].forEach(function(id){var e=document.getElementById(id);e.value=e.value.replace(/[^0-9]/g,'');});
     var birth=document.getElementById('bdBirth');
     if(birth.value.length===6 && document.activeElement===birth){ document.getElementById('bdGender').focus(); }
+    refreshMinor();
   }
 
   function ckbOf(row){return row.querySelector('.ckb');}
@@ -194,9 +190,26 @@ const SCRIPT = `var TERMS=[
 
   function validate(){}
 
-  function toggleMinor(){
-    var on=document.getElementById('minorToggle').checked;
-    document.getElementById('repSection').classList.toggle('hidden',!on);
+  // 생년월일(YYMMDD)+성별자리로 만 나이 계산 → 만 14세 미만이면 법정대리인 정보 노출
+  function ageFromBirth(yymmdd,code){
+    if(yymmdd.length!==6||!/^[0-9]$/.test(code))return null;
+    var yy=+yymmdd.slice(0,2),mm=+yymmdd.slice(2,4),dd=+yymmdd.slice(4,6);
+    if(mm<1||mm>12||dd<1||dd>31)return null;
+    var c=+code,year;
+    if(c===1||c===2||c===5||c===6)year=1900+yy;
+    else if(c===3||c===4||c===7||c===8)year=2000+yy;
+    else if(c===9||c===0)year=1800+yy;
+    else return null;
+    var t=new Date(),age=t.getFullYear()-year,md=(t.getMonth()+1)-mm;
+    if(md<0||(md===0&&t.getDate()<dd))age--;
+    return age;
+  }
+  function isMinor(){
+    var age=ageFromBirth(document.getElementById('bdBirth').value,document.getElementById('bdGender').value);
+    return age!==null&&age<14;
+  }
+  function refreshMinor(){
+    document.getElementById('repSection').classList.toggle('hidden',!isMinor());
   }
 
   function submitApply(){
@@ -204,7 +217,7 @@ const SCRIPT = `var TERMS=[
     if(!/^[1-4]$/.test(document.getElementById('bdGender').value)){ toast('성별 자리를 입력해 주세요.'); return; }
     var reqOk=[].slice.call(document.querySelectorAll('[data-consent][data-req]')).every(function(c){return ckbOf(c).classList.contains('on');});
     if(!reqOk){ toast('필수 병원 약관에 동의해 주세요.'); return; }
-    if(document.getElementById('minorToggle').checked){
+    if(isMinor()){
       if(!document.getElementById('repName').value.trim()){ toast('법정대리인 이름을 입력해 주세요.'); return; }
       if(!document.getElementById('repPhone').value.trim()){ toast('법정대리인 연락처를 입력해 주세요.'); return; }
     }

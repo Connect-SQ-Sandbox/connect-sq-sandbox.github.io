@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const REQUIRED = ['summary_id', 'source_prd_id', 'source_version', 'source_status', 'target_release_at', 'visibility', 'publication_status'];
-const ALLOWED_SOURCE_STATUS = new Set(['draft', 'review', 'approved', 'superseded', 'archived']);
+const ALLOWED_SOURCE_STATUS = new Set(['draft', 'review', 'approved', 'final', 'superseded', 'archived']);
 const ALLOWED_PUBLICATION_STATUS = new Set(['baseline', 'approved', 'planned']);
 
 function parseFrontmatter(source, file) {

@@ -5,7 +5,7 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-kakao — 진료항목 카카오 노출 + 예약 신청 내역 + 운영 설정
- * 상태     : 현행(active)   버전: v36  최종수정: 2026-07-20
+ * 상태     : 현행(active)   버전: v37  최종수정: 2026-07-20
  * PRD      : GCP-1 · 3.2-final · 3-미션·기획/1-PRD/2026-07-13-진료항목-카카오톡-예약하기-연동-구축.md
  * 배포URL  : https://connect-sq-sandbox.github.io/out/ti-kakao.html
  * 관련 CSS : connectRegister.css + connectTiKakao.css
@@ -22,9 +22,9 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
  *   [유지·자체] 채널 심볼 [굿닥][카카오] 아이콘만 표기(텍스트 없음)
  *   [유지·자체] 미리보기는 굿닥 기준만(카카오 미리보기 없음)
  *   [유지·자체] 카카오 전용 목록 없음 → 진료항목 목록에 인입 채널 심볼만 병합
- *   [확정·시안] 카카오 노출·입력 이력과 무관하게 V1 전용 정보 입력 영역을 항상 표시
+ *   [확정·PRD] 카카오 노출·입력 이력과 무관하게 V1 전용 정보 입력 영역을 항상 표시
  *   [확정·PRD] 카카오 상품명·설명·대표/상세 이미지·가격 미리보기는 별도 입력 UI 없이 공통 진료항목 정보·가격 설정을 사용
- *   [확정·PRD] 카카오 예약은 굿닥 신규 예약 알림·Windows OS 푸시를 발송하지 않음
+ *   [확정·PRD] 카카오 예약은 병원 Windows OS 푸시를 발송하고, 환자향 굿닥 신규 예약 알림은 발송하지 않음
  *   [유지·자체] 예약 신청 내역 = 실제 TreatmentItemApptListView 재현
  *              (카카오·굿닥 예약이 같은 테이블에 혼재 + "채널" 컬럼만 추가)
  *   [유지·자체] 운영 설정 = 실제 non-payment-reservations/operation 재현
@@ -32,6 +32,8 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
  *   [폐기]      구버전 kakao-link(별도 연동관리 페이지형) → ti-kakao로 대체
  *
  * 변경 이력:
+ *   v37 2026-07-20 — GCP-1 3.2-final 정합화: 질문 10개·패널 상시 펼침·상태 안내를 정식 정책으로 반영하고,
+ *                    가격 옵션 50개 제한과 카카오 예약 병원 Windows OS 푸시 정책을 추가.
  *   v36 2026-07-20 — 상태별 시안 기준으로 카카오 추가 정보 영역을 상시 펼침 처리하고,
  *                    굿닥/카카오 노출 상태별 안내 배너와 예약 질문 총 10개 제한 안내를 반영.
  *   v35 2026-07-20 — 카카오 추가 정보 영역의 펼침 정책을 수정:
@@ -42,7 +44,7 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
  *   v32 2026-07-16 — 진료항목 상세의 예약 부가정보 객관식·주관식 입력 영역을 기존 형태로 복구.
  *   v31 2026-07-16 — 카카오 전용 검색 키워드 입력을 제거하고 공통 진료항목 키워드를 자동 사용하도록 정리.
  *   v30 2026-07-16 — 최종 PRD 3.0 반영: 정사각/상세 이미지·유의사항의 카카오 전용 입력을 제거하고,
- *                    굿닥 OFF에서도 카카오 의도·전용값 편집/보존, 실제 노출만 차단하도록 변경. 카카오 예약 무알림 정책 반영.
+ *                    굿닥 OFF에서도 카카오 의도·전용값 편집/보존, 실제 노출만 차단하도록 변경. 카카오 예약 환자향 무알림 정책 반영.
  *   v29 2026-07-16 — 카카오 상품명·설명·대표 이미지·가격 안내 미리보기의 별도 UI를 제거하고
  *                    공통 진료항목 정보·가격 설정을 사용하는 V1 예상 화면으로 정리.
  *   v28 2026-07-16 — 카카오 내부 상품 편집 규격을 반영해 상품명 50자·설명 1,000자·방문안내 1,000자 제한과
@@ -202,20 +204,19 @@ const INITIAL: Item[] = [
 const K_PRODUCT_NAME_MAX = 50; // [내부 규격] Product name
 const K_PRODUCT_DESC_MAX = 1000; // [내부 규격] Product description
 const K_Q_NAME_MAX = 120;     // [API] 질문(부가정보 name) — required, 최대 120자
-const K_Q_TEXT_MAX = 10;      // [API] 주관식 부가정보(infos[]) 개수 — 최대 10개
-const K_Q_MAX = 10;           // [확정·시안] 예약 시 받을 정보 질문 총 개수 — 최대 10개
+const K_Q_MAX = 10;           // [확정·정책] 예약 시 받을 정보 질문 총 개수 — 최대 10개
 const K_INFO_MAX = 2000;      // [API] 이용 방법(information) — 최대 2,000자
 const K_NOTICE_MAX = 100;     // 기존 카카오 전용 유의사항(notice) 입력 제한
 const K_CANCEL_MAX = 100;     // [API] 취소 유의사항(cancelNotice) — 최대 100자
 const K_IMAGE_MAX = 50;       // [내부 규격] 대표 이미지·상세 이미지 각각 최대 50개
 const PRICE_DESC_MAX = 100;   // [API] 가격 설명(Price description) — 최대 100자
+const PRICE_OPTION_MAX = 50;  // [확정·PRD] 활성 가격 옵션 — 최대 50개
 
 // --- [임의] API 미명시 → PO 협의 대상 ---
-const K_Q_CHOICE_MAX = 10;    // [임의] 객관식(단수 radioInfos + 복수 selectInfos 합산) 개수
-const K_Q_OPT_MIN = 2;        // [임의] 선택형 선택지 최소 개수
-const K_Q_OPT_MAX = 10;       // [임의] 선택형 선택지 최대 개수
-const K_Q_DESC_MAX = 200;     // [임의] 선택형 질문 설명(description) 글자
-const K_Q_OPT_LEN_MAX = 50;   // [임의] 선택지 항목(value[]) 글자
+const K_Q_OPT_MIN = 2;        // [확정·정책] 선택형 선택지 최소 개수
+const K_Q_OPT_MAX = 10;       // [확정·정책] 선택형 선택지 최대 개수
+const K_Q_DESC_MAX = 200;     // [확정·정책] 선택형 질문 설명(description) 글자
+const K_Q_OPT_LEN_MAX = 50;   // [확정·정책] 선택지 항목(value[]) 글자
 
 // --- [서비스] 굿닥 실서비스 값 추정 → 실코드 대조 필요 ---
 const PRICE_NAME_MAX = 50;    // [서비스/불일치] 가격명 — 현재 50자. 단, 카카오 API '가격 이름'은 25자 → 협의 필요
@@ -285,13 +286,13 @@ type Appt = {
   externalId?: string;
 };
 const INITIAL_APPTS: Appt[] = [
-  { id: 201, channel: 'kakao', status: AS.REQUESTED, visit: '2026.07.11(토) 15:00', when: '2026.07.10(금) 09:12', itemName: '레이저 토닝', option: '1회', priceText: '80,000원', visitor: { name: '김민지', gender: '여', birth: '1996.05.20 (만 30세)', phone: '010-2345-6789' }, reserver: { name: '김민지', gender: '여', birth: '1996.05.20 (만 30세)', phone: '010-2345-6789' }, memo: '기미 위주로 봐주세요', answers: [{ q: '주로 신경 쓰이는 부위가 어디인가요?', a: '양 볼 기미와 잔잔한 잡티요.' }, { q: '레이저 시술 경험이 있으신가요?', a: '아니요, 처음이에요.' }], externalSync: 'SYNCED', autoConfirmSnapshot: false, notificationSent: false, externalId: 'KB-240710-201' },
+  { id: 201, channel: 'kakao', status: AS.REQUESTED, visit: '2026.07.11(토) 15:00', when: '2026.07.10(금) 09:12', itemName: '레이저 토닝', option: '1회', priceText: '80,000원', visitor: { name: '김민지', gender: '여', birth: '1996.05.20 (만 30세)', phone: '010-2345-6789' }, reserver: { name: '김민지', gender: '여', birth: '1996.05.20 (만 30세)', phone: '010-2345-6789' }, memo: '기미 위주로 봐주세요', answers: [{ q: '주로 신경 쓰이는 부위가 어디인가요?', a: '양 볼 기미와 잔잔한 잡티요.' }, { q: '레이저 시술 경험이 있으신가요?', a: '아니요, 처음이에요.' }], externalSync: 'SYNCED', autoConfirmSnapshot: false, notificationSent: true, externalId: 'KB-240710-201' },
   { id: 202, channel: 'goodoc', status: AS.REQUESTED, visit: '2026.07.11(토) 11:30', when: '2026.07.10(금) 08:40', itemName: '물광주사', option: '1회', priceText: '120,000원', visitor: { name: '이서연', gender: '여', birth: '1990.11.02 (만 35세)', phone: '010-3456-7890' }, reserver: { name: '이서연', gender: '여', birth: '1990.11.02 (만 35세)', phone: '010-3456-7890' } },
-  { id: 203, channel: 'kakao', status: AS.CONFIRMED, visit: '2026.07.12(일) 14:00', when: '2026.07.10(금) 10:02', statusAt: '2026.07.10(금) 10:31', itemName: '보톡스 (이마)', option: '이마', priceText: '99,000원', visitor: { name: '박도윤', gender: '남', birth: '1988.07.15 (만 37세)', phone: '010-4567-8901' }, reserver: { name: '박도윤', gender: '남', birth: '1988.07.15 (만 37세)', phone: '010-4567-8901' }, memo: '주차 가능한가요?', answers: [{ q: '시술 희망 부위를 알려주세요.', a: '이마 가로 주름이요.' }], hospitalMemo: '지난 상담 시 보톡스 부작용 이력 없음 확인. 이마만 진행 예정.', externalSync: 'FAILED', externalError: '카카오 예약 상태 반영이 지연되고 있어요.', autoConfirmSnapshot: true, notificationSent: false, externalId: 'KB-240710-203' },
+  { id: 203, channel: 'kakao', status: AS.CONFIRMED, visit: '2026.07.12(일) 14:00', when: '2026.07.10(금) 10:02', statusAt: '2026.07.10(금) 10:31', itemName: '보톡스 (이마)', option: '이마', priceText: '99,000원', visitor: { name: '박도윤', gender: '남', birth: '1988.07.15 (만 37세)', phone: '010-4567-8901' }, reserver: { name: '박도윤', gender: '남', birth: '1988.07.15 (만 37세)', phone: '010-4567-8901' }, memo: '주차 가능한가요?', answers: [{ q: '시술 희망 부위를 알려주세요.', a: '이마 가로 주름이요.' }], hospitalMemo: '지난 상담 시 보톡스 부작용 이력 없음 확인. 이마만 진행 예정.', externalSync: 'FAILED', externalError: '카카오 예약 상태 반영이 지연되고 있어요.', autoConfirmSnapshot: true, notificationSent: true, externalId: 'KB-240710-203' },
   { id: 204, channel: 'goodoc', status: AS.CONFIRMED, visit: '2026.07.12(일) 16:30', when: '2026.07.09(목) 17:20', statusAt: '2026.07.09(목) 18:02', itemName: '얼굴 지방흡입', option: '기본', priceText: '3,500,000원', visitor: { name: '최지우', gender: '여', birth: '2001.02.28 (만 25세)', phone: '010-5678-9012' }, reserver: { name: '최지우 모', gender: '여', birth: '1975.09.10 (만 50세)', phone: '010-9999-0000' }, hospitalMemo: '미성년 보호자(모) 동반 예약. 수술 전 대면 상담 일정 별도 안내 필요.' },
-  { id: 205, channel: 'kakao', status: AS.COMPLETED, visit: '2026.07.05(일) 13:00', when: '2026.07.05(일) 09:40', statusAt: '2026.07.05(일) 13:55', itemName: '실 리프팅', option: '상담', priceText: '상담 후 결정', visitor: { name: '정하윤', gender: '여', birth: '1993.01.05 (만 33세)', phone: '010-6789-0123' }, reserver: { name: '정하윤', gender: '여', birth: '1993.01.05 (만 33세)', phone: '010-6789-0123' }, answers: [{ q: '상담 희망 내용을 적어주세요.', a: '처진 볼 라인 리프팅 상담 원해요.' }], externalSync: 'SYNCED', autoConfirmSnapshot: true, notificationSent: false, externalId: 'KB-240705-205' },
+  { id: 205, channel: 'kakao', status: AS.COMPLETED, visit: '2026.07.05(일) 13:00', when: '2026.07.05(일) 09:40', statusAt: '2026.07.05(일) 13:55', itemName: '실 리프팅', option: '상담', priceText: '상담 후 결정', visitor: { name: '정하윤', gender: '여', birth: '1993.01.05 (만 33세)', phone: '010-6789-0123' }, reserver: { name: '정하윤', gender: '여', birth: '1993.01.05 (만 33세)', phone: '010-6789-0123' }, answers: [{ q: '상담 희망 내용을 적어주세요.', a: '처진 볼 라인 리프팅 상담 원해요.' }], externalSync: 'SYNCED', autoConfirmSnapshot: true, notificationSent: true, externalId: 'KB-240705-205' },
   { id: 206, channel: 'goodoc', status: AS.CANCELED_PATIENT, visit: '2026.07.06(월) 10:00', when: '2026.07.05(일) 20:10', statusAt: '2026.07.06(월) 08:12', itemName: '리쥬란 힐러', option: '3회 패키지 (사후관리 포함)', priceText: '600,000원', visitor: { name: '강서진', gender: '남', birth: '1997.12.24 (만 28세)', phone: '010-7890-1234' }, reserver: { name: '강서진', gender: '남', birth: '1997.12.24 (만 28세)', phone: '010-7890-1234' }, cancelReason: '개인 사정으로 방문이 어려워 취소했습니다.' },
-  { id: 207, channel: 'kakao', status: AS.CANCELED_HOSPITAL, visit: '2026.07.06(월) 18:00', when: '2026.07.06(월) 09:30', statusAt: '2026.07.06(월) 12:30', itemName: '슈링크 유니버스', option: '300샷', priceText: '300,000원', visitor: { name: '윤예은', gender: '여', birth: '1992.08.19 (만 33세)', phone: '010-8901-2345' }, reserver: { name: '윤예은', gender: '여', birth: '1992.08.19 (만 33세)', phone: '010-8901-2345' }, answers: [{ q: '시술 희망 부위와 샷 수를 알려주세요.', a: '얼굴 전체 300샷 원해요.' }], cancelReason: '선택하신 시간에는 병원 사정으로 방문이 어렵습니다. 다른 시간으로 다시 예약해 주세요.', externalSync: 'SYNCED', autoConfirmSnapshot: false, notificationSent: false, externalId: 'KB-240706-207' }
+  { id: 207, channel: 'kakao', status: AS.CANCELED_HOSPITAL, visit: '2026.07.06(월) 18:00', when: '2026.07.06(월) 09:30', statusAt: '2026.07.06(월) 12:30', itemName: '슈링크 유니버스', option: '300샷', priceText: '300,000원', visitor: { name: '윤예은', gender: '여', birth: '1992.08.19 (만 33세)', phone: '010-8901-2345' }, reserver: { name: '윤예은', gender: '여', birth: '1992.08.19 (만 33세)', phone: '010-8901-2345' }, answers: [{ q: '시술 희망 부위와 샷 수를 알려주세요.', a: '얼굴 전체 300샷 원해요.' }], cancelReason: '선택하신 시간에는 병원 사정으로 방문이 어렵습니다. 다른 시간으로 다시 예약해 주세요.', externalSync: 'SYNCED', autoConfirmSnapshot: false, notificationSent: true, externalId: 'KB-240706-207' }
 ];
 
 type OperationSettings = {
@@ -910,7 +911,7 @@ function SettingsScreen({ itemCount, operation, onGlobalChange, onSettingChange,
           />
           <SettingBox
             title="새 예약 알림 받기"
-            subNode="새 예약 신청이 발생하면, 이 PC에서 윈도우 알림을 받습니다."
+            subNode="굿닥과 카카오톡 예약하기의 새 예약이 발생하면, 이 PC에서 윈도우 알림을 받습니다. 환자에게는 굿닥 알림을 추가로 보내지 않습니다."
             right={<SettingToggle checked={operation.newApptNotified} onChange={() => onSettingChange('newApptNotified')} />}
           />
         </section>
@@ -1242,7 +1243,12 @@ function TiKakao() {
 
   const addKw = () => { if (!d) return; const t = kw.trim(); if (t && d.keywords.length < KEYWORD_MAX && !d.keywords.includes(t)) patch({ keywords: [...d.keywords, t] }); setKw(''); };
   const setPrice = (id: number, u: Partial<Price>) => { if (!d) return; clearErr(`price-${id}-title`, `price-${id}-amount`, `price-${id}-kakao`); patch({ prices: d.prices.map((p) => (p.id === id ? { ...p, ...u } : p)) }); };
-  const addPrice = () => { setFormError(''); if (d) patch({ prices: [...d.prices, { id: UID++, title: '', content: '', type: 'fixed', amount: '', original: '', sale: '' }] }); };
+  const addPrice = () => {
+    setFormError('');
+    if (!d) return;
+    if (d.prices.length >= PRICE_OPTION_MAX) { showToast(`가격 옵션은 최대 ${PRICE_OPTION_MAX}개까지 추가할 수 있어요.`); return; }
+    patch({ prices: [...d.prices, { id: UID++, title: '', content: '', type: 'fixed', amount: '', original: '', sale: '' }] });
+  };
   const delPrice = (id: number) => { setFormError(''); if (d) patch({ prices: d.prices.length > 1 ? d.prices.filter((p) => p.id !== id) : d.prices }); };
   const movePrice = (toId: number) => {
     if (!d || dragPriceId == null || dragPriceId === toId) return;
@@ -1250,8 +1256,6 @@ function TiKakao() {
     if (from < 0 || to < 0) return; const [moved] = list.splice(from, 1); list.splice(to, 0, moved); patch({ prices: list }); setDragPriceId(null);
   };
   const newQ = (type: QType): Question => ({ id: UID++, type, name: '', optional: true, description: '', options: type === 'text' ? [] : ['', ''] });
-  const textCount = () => (d ? d.kExtra.questions.filter((q) => q.type === 'text').length : 0);
-  const choiceCount = () => (d ? d.kExtra.questions.filter((q) => q.type !== 'text').length : 0);
   const addQ = (type: QType) => d && patchExtra({ questions: [...d.kExtra.questions, newQ(type)] });
   const addQuestion = () => {
     if (!d) return;
@@ -1268,12 +1272,10 @@ function TiKakao() {
     if (!q) return;
     if (kind === 'text') {
       if (q.type === 'text') return;
-      if (textCount() >= K_Q_TEXT_MAX) { showToast(`주관식은 최대 ${K_Q_TEXT_MAX}개까지예요.`); return; }
       setQ(id, { type: 'text' });
       return;
     }
     if (q.type !== 'text') return;
-    if (choiceCount() >= K_Q_CHOICE_MAX) { showToast(`객관식은 최대 ${K_Q_CHOICE_MAX}개까지예요.`); return; }
     setQ(id, { type: 'radio', options: q.options.length >= K_Q_OPT_MIN ? q.options : ['', ''] });
   };
   const setQMultiple = (id: number, multiple: boolean) => {
@@ -1499,7 +1501,10 @@ function TiKakao() {
                         <FieldHead label="가격 정보" helpers={['환자에게 보여줄 가격 정보를 설정해 주세요. (예: 횟수별, 시술명별 등)']} />
                         <div className="rg-price-list">{d.prices.map((p) => (<PriceRow key={p.id} p={p} onChange={(u) => setPrice(p.id, u)} onDelete={() => delPrice(p.id)} onDragStart={() => setDragPriceId(p.id)} onDrop={() => movePrice(p.id)} titleErr={errors[`price-${p.id}-title`]} amountErr={errors[`price-${p.id}-amount`]} />))}</div>
                       </div>
-                      <div className="rg-add-wrap"><button className="rg-add-btn" onClick={addPrice}><PlusIcon /> 가격 옵션 추가</button></div>
+                      <div className="rg-add-wrap">{d.prices.length < PRICE_OPTION_MAX
+                        ? <button className="rg-add-btn" onClick={addPrice}><PlusIcon /> 가격 옵션 추가</button>
+                        : <div className="rg-help">가격 옵션은 최대 {PRICE_OPTION_MAX}개까지 추가할 수 있어요.</div>}
+                      </div>
                     </section>
 
                     <section className="rg-card extra" data-policy-id="gcp1-kakao-product-copy">

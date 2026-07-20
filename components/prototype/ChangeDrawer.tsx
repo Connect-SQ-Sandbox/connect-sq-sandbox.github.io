@@ -8,7 +8,7 @@ export type PolicySource = {
   prdId: string;
   title: string;
   version: string;
-  sourceStatus: 'draft' | 'review' | 'approved' | 'superseded' | 'archived';
+  sourceStatus: 'draft' | 'review' | 'approved' | 'final' | 'superseded' | 'archived';
   targetReleaseAt: string | null;
   sourcePath: string;
   summaryMarkdown: string;

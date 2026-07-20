@@ -335,9 +335,13 @@ a {
 .pc-scope button span { margin-left: 3px; color: var(--gray-50); }
 .pc-scope button.active { background: var(--white); color: var(--gray-100); box-shadow: 0 1px 4px rgba(22,24,29,.08); }
 
-.pc-change-list { padding: 16px 20px 28px; overflow: auto; display: flex; flex-direction: column; gap: 12px; }
+.pc-change-list {
+  flex: 1 1 auto; min-height: 0; padding: 16px 20px 28px;
+  overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable;
+  display: flex; flex-direction: column; gap: 12px;
+}
 .pc-empty { padding: 40px 12px; text-align: center; color: var(--gray-60); font: 400 13px/20px var(--font-sans); }
-.pc-change-card { border: 1px solid var(--gray-30); border-radius: 10px; overflow: hidden; background: var(--white); transition: border-color .12s, box-shadow .12s; }
+.pc-change-card { flex: 0 0 auto; border: 1px solid var(--gray-30); border-radius: 10px; overflow: hidden; background: var(--white); transition: border-color .12s, box-shadow .12s; }
 .pc-change-card:hover { border-color: var(--gray-50); box-shadow: 0 4px 16px rgba(22,24,29,.06); }
 .pc-change-card.planned { border-color: rgba(247,144,9,.36); background: linear-gradient(180deg, rgba(247,144,9,.035), var(--white) 40%); }
 .pc-change-main { width: 100%; padding: 15px 15px 13px; text-align: left; cursor: pointer; }

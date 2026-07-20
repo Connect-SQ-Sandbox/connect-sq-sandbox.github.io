@@ -5,7 +5,7 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-kakao — 진료항목 카카오 노출 + 예약 신청 내역 + 운영 설정
- * 상태     : 현행(active)   버전: v35  최종수정: 2026-07-20
+ * 상태     : 현행(active)   버전: v36  최종수정: 2026-07-20
  * PRD      : GCP-1 · 3.2-final · 3-미션·기획/1-PRD/2026-07-13-진료항목-카카오톡-예약하기-연동-구축.md
  * 배포URL  : https://connect-sq-sandbox.github.io/out/ti-kakao.html
  * 관련 CSS : connectRegister.css + connectTiKakao.css
@@ -22,7 +22,7 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
  *   [유지·자체] 채널 심볼 [굿닥][카카오] 아이콘만 표기(텍스트 없음)
  *   [유지·자체] 미리보기는 굿닥 기준만(카카오 미리보기 없음)
  *   [유지·자체] 카카오 전용 목록 없음 → 진료항목 목록에 인입 채널 심볼만 병합
- *   [확정·PRD] 카카오 노출 ON 시 V1 전용 정보 입력 필드를 즉시 표시(별도 추가 입력 토글 없음)
+ *   [확정·시안] 카카오 노출·입력 이력과 무관하게 V1 전용 정보 입력 영역을 항상 표시
  *   [확정·PRD] 카카오 상품명·설명·대표/상세 이미지·가격 미리보기는 별도 입력 UI 없이 공통 진료항목 정보·가격 설정을 사용
  *   [확정·PRD] 카카오 예약은 굿닥 신규 예약 알림·Windows OS 푸시를 발송하지 않음
  *   [유지·자체] 예약 신청 내역 = 실제 TreatmentItemApptListView 재현
@@ -32,6 +32,8 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
  *   [폐기]      구버전 kakao-link(별도 연동관리 페이지형) → ti-kakao로 대체
  *
  * 변경 이력:
+ *   v36 2026-07-20 — 상태별 시안 기준으로 카카오 추가 정보 영역을 상시 펼침 처리하고,
+ *                    굿닥/카카오 노출 상태별 안내 배너와 예약 질문 총 10개 제한 안내를 반영.
  *   v35 2026-07-20 — 카카오 추가 정보 영역의 펼침 정책을 수정:
  *                    카카오 ON 또는 기존 연동 데이터 이력이 있을 때만 펼치고, 미연동 OFF 상태에서는 숨김.
  *   v34 2026-07-20 — Figma(node 12591:14445)의 외부 플랫폼 정보 영역을 반영:
@@ -201,6 +203,7 @@ const K_PRODUCT_NAME_MAX = 50; // [내부 규격] Product name
 const K_PRODUCT_DESC_MAX = 1000; // [내부 규격] Product description
 const K_Q_NAME_MAX = 120;     // [API] 질문(부가정보 name) — required, 최대 120자
 const K_Q_TEXT_MAX = 10;      // [API] 주관식 부가정보(infos[]) 개수 — 최대 10개
+const K_Q_MAX = 10;           // [확정·시안] 예약 시 받을 정보 질문 총 개수 — 최대 10개
 const K_INFO_MAX = 2000;      // [API] 이용 방법(information) — 최대 2,000자
 const K_NOTICE_MAX = 100;     // 기존 카카오 전용 유의사항(notice) 입력 제한
 const K_CANCEL_MAX = 100;     // [API] 취소 유의사항(cancelNotice) — 최대 100자
@@ -1250,7 +1253,11 @@ function TiKakao() {
   const textCount = () => (d ? d.kExtra.questions.filter((q) => q.type === 'text').length : 0);
   const choiceCount = () => (d ? d.kExtra.questions.filter((q) => q.type !== 'text').length : 0);
   const addQ = (type: QType) => d && patchExtra({ questions: [...d.kExtra.questions, newQ(type)] });
-  const addQuestion = () => { if (!d) return; if (choiceCount() < K_Q_CHOICE_MAX) addQ('radio'); else if (textCount() < K_Q_TEXT_MAX) addQ('text'); else showToast('질문은 더 추가할 수 없어요.'); };
+  const addQuestion = () => {
+    if (!d) return;
+    if (d.kExtra.questions.length >= K_Q_MAX) { showToast(`질문은 최대 ${K_Q_MAX}개까지 추가할 수 있어요.`); return; }
+    addQ('radio');
+  };
   const setQ = (id: number, update: Partial<Question>) => {
     if (!d) return;
     clearErr(`q-${id}-name`, `q-${id}-options`);
@@ -1546,8 +1553,14 @@ function TiKakao() {
                             <button className={`rg-toggle${d.kakaoOn ? '' : ' off'}`} aria-label="카카오톡 예약하기에서도 보이기" aria-pressed={d.kakaoOn} onClick={toggleKakaoDraft}><span className="rg-toggle-knob" /></button>
                           </div>
                         </div>
-                        {(d.kakaoOn || d.kExtra.initialized) && <div className="tk-kbody">
-                          <div className="tk-kpolicy-alert" role="note"><span className="tk-kpolicy-alert-ic"><CautionIc /></span><span>굿닥에 노출 중인 진료항목만 카카오톡 예약하기에도 노출할 수 있어요.</span></div>
+                        <div className="tk-kbody">
+                          {!d.gdVisible ? (
+                            <div className="tk-kpolicy-alert" role="note"><span className="tk-kpolicy-alert-ic"><CautionIc /></span><span>굿닥에 노출 중인 진료항목만 카카오톡 예약하기에도 노출할 수 있어요.</span></div>
+                          ) : !d.kakaoOn ? (
+                            <div className="tk-kpolicy-alert" role="note"><span className="tk-kpolicy-alert-ic"><CautionIc /></span><span>카카오톡 예약하기에 노출하려면 ‘우측 상단 스위치’를 켜주세요.</span></div>
+                          ) : (
+                            <div className="tk-kauto" role="note"><span className="tk-kauto-ic"><CautionIc /></span><span className="tk-kauto-txt">위에 입력한 진료항목 정보가 카카오톡 예약하기에도 함께 표시돼요.</span></div>
+                          )}
                           <div className="tk-kextra">
                               <div className="tk-kfield">
                                 <div className="tk-klabel">예약 시 받을 정보 <span className="rg-optional">(선택)</span></div>
@@ -1598,16 +1611,16 @@ function TiKakao() {
                                     </div>
                                   </div>
                                 ))}
-                                {textCount() < K_Q_TEXT_MAX || choiceCount() < K_Q_CHOICE_MAX
+                                {d.kExtra.questions.length < K_Q_MAX
                                   ? <button className="tk-add-sm tk-q-addbtn" onClick={addQuestion}><PlusIcon /> 질문 추가</button>
-                                  : <div className="rg-help">질문은 더 추가할 수 없어요.</div>}
+                                  : <div className="tk-q-limit">질문은 최대 {K_Q_MAX}개까지 추가할 수 있어요.</div>}
                               </div>
                               <div className="tk-kdivider" />
                               <div className="tk-kfield"><div className="tk-klabel">이용 방법 <span className="rg-optional">(선택)</span></div><textarea className="rg-textarea tk-ktextarea" placeholder="이용 방법을 입력해 주세요." maxLength={K_INFO_MAX} value={d.kExtra.howto} onChange={(e) => patchExtra({ howto: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.howto.length}</span>/{K_INFO_MAX.toLocaleString('ko-KR')}자</div></div>
                               <div className="tk-kfield"><div className="tk-klabel">유의사항 <span className="rg-optional">(선택)</span></div><input className="rg-input" placeholder="유의사항을 입력해 주세요." maxLength={K_NOTICE_MAX} value={d.kExtra.notice} onChange={(e) => patchExtra({ notice: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.notice.length}</span>/{K_NOTICE_MAX}자</div></div>
                               <div className="tk-kfield"><div className="tk-klabel">취소 유의사항 <span className="rg-optional">(선택)</span></div><input className="rg-input" placeholder="취소 유의사항을 입력해 주세요." maxLength={K_CANCEL_MAX} value={d.kExtra.cancelNotice} onChange={(e) => patchExtra({ cancelNotice: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.cancelNotice.length}</span>/{K_CANCEL_MAX}자</div></div>
                           </div>
-                        </div>}
+                        </div>
                       </div>
                     </section>}
                   </div>

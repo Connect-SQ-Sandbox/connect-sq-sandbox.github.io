@@ -5,8 +5,8 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-kakao — 진료항목 카카오 노출 + 예약 신청 내역 + 운영 설정
- * 상태     : 현행(active)   버전: v32  최종수정: 2026-07-16
- * PRD      : GCP-1 · 3.1-final · 3-미션·기획/1-PRD/2026-07-13-진료항목-카카오톡-예약하기-연동-구축.md
+ * 상태     : 현행(active)   버전: v35  최종수정: 2026-07-20
+ * PRD      : GCP-1 · 3.2-final · 3-미션·기획/1-PRD/2026-07-13-진료항목-카카오톡-예약하기-연동-구축.md
  * 배포URL  : https://connect-sq-sandbox.github.io/out/ti-kakao.html
  * 관련 CSS : connectRegister.css + connectTiKakao.css
  * 기술제약 : react-only · plain CSS · mock · 네트워크 0
@@ -32,6 +32,11 @@ import { POLICY_SOURCES, TI_KAKAO_CHANGES } from '../../../content/change-manife
  *   [폐기]      구버전 kakao-link(별도 연동관리 페이지형) → ti-kakao로 대체
  *
  * 변경 이력:
+ *   v35 2026-07-20 — 카카오 추가 정보 영역의 펼침 정책을 수정:
+ *                    카카오 ON 또는 기존 연동 데이터 이력이 있을 때만 펼치고, 미연동 OFF 상태에서는 숨김.
+ *   v34 2026-07-20 — Figma(node 12591:14445)의 외부 플랫폼 정보 영역을 반영:
+ *                    섹션 제목·안내/입력 영역·유의사항 문구·간격·입력 높이를 정밀 조정.
+ *   v33 2026-07-16 — 사용자 요청 이력에 맞춰 카카오 전용 '방문 안내'를 기존 '유의사항' 필드로 원복.
  *   v32 2026-07-16 — 진료항목 상세의 예약 부가정보 객관식·주관식 입력 영역을 기존 형태로 복구.
  *   v31 2026-07-16 — 카카오 전용 검색 키워드 입력을 제거하고 공통 진료항목 키워드를 자동 사용하도록 정리.
  *   v30 2026-07-16 — 최종 PRD 3.0 반영: 정사각/상세 이미지·유의사항의 카카오 전용 입력을 제거하고,
@@ -107,7 +112,6 @@ type KakaoExtra = {
   questions: Question[];
   howto: string;
   notice: string;
-  visitGuide: string;
   cancelNotice: string;
 };
 type Item = {
@@ -125,7 +129,7 @@ type Item = {
 };
 
 let UID = 1000;
-const emptyExtra = (): KakaoExtra => ({ initialized: false, displayName: '', description: '', productImages: [], squareImageUrl: '', squareImageFileName: '', descriptionImages: [], questions: [], howto: '', notice: '', visitGuide: '', cancelNotice: '' });
+const emptyExtra = (): KakaoExtra => ({ initialized: false, displayName: '', description: '', productImages: [], squareImageUrl: '', squareImageFileName: '', descriptionImages: [], questions: [], howto: '', notice: '', cancelNotice: '' });
 const makeSync = (state: SyncState, error?: string): SyncInfo => ({ product: state, item: state, price: state, schedule: state, lastAt: state === 'NOT_LINKED' ? '-' : '2026.07.15 10:42', error, attempts: 0 });
 const won = (s: string) => (s ? Number(s).toLocaleString('ko-KR') + '원' : '0원');
 const kakaoPriceDescription = (p: Price) => {
@@ -174,7 +178,7 @@ const INITIAL: Item[] = [
       { id: 9101, type: 'text', name: '주로 신경 쓰이는 부위가 어디인가요?', optional: false, description: '', options: [] },
       { id: 9102, type: 'radio', name: '레이저 시술 경험이 있으신가요?', optional: true, description: '', options: ['처음이에요', '1~2회', '3회 이상'] },
       { id: 9103, type: 'select', name: '함께 상담받고 싶은 항목을 선택해 주세요.', optional: true, description: '복수 선택할 수 있어요.', options: ['색소·잡티', '모공', '홍조', '피부결'] }
-    ], howto: '예약 시간 10분 전까지 방문해 주세요.', notice: '시술 전 복용 중인 약이 있다면 알려주세요.', visitGuide: '3층 접수 데스크에서 예약자 성함을 말씀해 주세요.', cancelNotice: '예약 변경·취소는 하루 전까지 병원으로 연락해 주세요.' }, gdVisible: true, kakaoOn: true, activeReservations: 1 }),
+    ], howto: '예약 시간 10분 전까지 방문해 주세요.', notice: '시술 전 복용 중인 약이 있다면 알려주세요.', cancelNotice: '예약 변경·취소는 하루 전까지 병원으로 연락해 주세요.' }, gdVisible: true, kakaoOn: true, activeReservations: 1 }),
   mk({ id: 6, cat1: '성형·윤곽', cat2: '지방흡입', name: '얼굴지방흡입', alias: '얼굴 지방흡입', intro: '갸름한 얼굴라인을 위한 지방흡입', keywords: ['지방흡입', '얼굴윤곽'], hasImage: true,
     prices: [{ id: UID++, title: '기본', content: '', type: 'fixed', amount: '3500000', original: '', sale: '' }], gdVisible: true, kakaoOn: true }),
   mk({ id: 7, cat1: '주사·수액', cat2: '보톡스', name: '보톡스 (이마)', intro: '이마 주름 개선', keywords: ['보톡스'], hasImage: false,
@@ -198,7 +202,7 @@ const K_PRODUCT_DESC_MAX = 1000; // [내부 규격] Product description
 const K_Q_NAME_MAX = 120;     // [API] 질문(부가정보 name) — required, 최대 120자
 const K_Q_TEXT_MAX = 10;      // [API] 주관식 부가정보(infos[]) 개수 — 최대 10개
 const K_INFO_MAX = 2000;      // [API] 이용 방법(information) — 최대 2,000자
-const K_VISIT_MAX = 1000;     // [내부 규격] 방문 안내(entranceNotice)
+const K_NOTICE_MAX = 100;     // 기존 카카오 전용 유의사항(notice) 입력 제한
 const K_CANCEL_MAX = 100;     // [API] 취소 유의사항(cancelNotice) — 최대 100자
 const K_IMAGE_MAX = 50;       // [내부 규격] 대표 이미지·상세 이미지 각각 최대 50개
 const PRICE_DESC_MAX = 100;   // [API] 가격 설명(Price description) — 최대 100자
@@ -1533,20 +1537,20 @@ function TiKakao() {
                     </section>
 
                     {/* 카카오톡 예약하기에서도 보이기 */}
-                    {hospitalLinked && <section className="rg-card tk-kcard" data-policy-id="gcp1-channel-visibility">
-                      <div className="tk-khead">
-                        <div className="tk-khead-left"><span className="tk-khead-badge"><KakaoBubble /></span><div className="tk-khead-text"><div className="tk-khead-title">카카오톡 예약하기에서도 보이기</div><div className="tk-khead-desc">카카오톡 예약하기에도 상품을 노출하고 예약을 받아요.</div></div></div>
-                        <div className="tk-khead-right">
-                          <button className={`rg-toggle${d.kakaoOn ? '' : ' off'}`} aria-label="카카오톡 예약하기에서도 보이기" aria-pressed={d.kakaoOn} onClick={toggleKakaoDraft}><span className="rg-toggle-knob" /></button>
+                    {hospitalLinked && <section className="tk-platform-section" data-policy-id="gcp1-channel-visibility">
+                      <h2 className="tk-platform-title">외부 플랫폼 정보</h2>
+                      <div className="rg-card tk-kcard">
+                        <div className="tk-khead">
+                          <div className="tk-khead-left"><span className="tk-khead-badge"><KakaoBubble /></span><div className="tk-khead-text"><div className="tk-khead-title">카카오톡 예약하기에서도 보이기</div><div className="tk-khead-desc">카카오톡 예약하기에도 상품을 노출하고 예약을 받아요.</div></div></div>
+                          <div className="tk-khead-right">
+                            <button className={`rg-toggle${d.kakaoOn ? '' : ' off'}`} aria-label="카카오톡 예약하기에서도 보이기" aria-pressed={d.kakaoOn} onClick={toggleKakaoDraft}><span className="rg-toggle-knob" /></button>
+                          </div>
                         </div>
-                      </div>
-                      {!d.gdVisible && <div className="tk-kdependency"><WarnIc /> 카카오톡 예약하기 정보는 저장할 수 있지만, 굿닥에 노출 중인 진료항목만 카카오톡 예약하기에서도 실제로 보여요.</div>}
-                      {d.kakaoOn && (
-                        <div className="tk-kbody">
-                          <div className="tk-kauto"><span className="tk-kauto-ic"><CautionIc /></span><span className="tk-kauto-txt">위에 입력한 진료항목 정보가 카카오톡 예약하기에도 함께 표시돼요.</span></div>
+                        {(d.kakaoOn || d.kExtra.initialized) && <div className="tk-kbody">
+                          <div className="tk-kpolicy-alert" role="note"><span className="tk-kpolicy-alert-ic"><CautionIc /></span><span>굿닥에 노출 중인 진료항목만 카카오톡 예약하기에도 노출할 수 있어요.</span></div>
                           <div className="tk-kextra">
                               <div className="tk-kfield">
-                                <div className="tk-klabel">예약 시 받을 정보 <span className="rg-optional">(선택)</span><span className="tk-klabel-count">총 {d.kExtra.questions.length}개</span></div>
+                                <div className="tk-klabel">예약 시 받을 정보 <span className="rg-optional">(선택)</span></div>
                                 {d.kExtra.questions.map((q, idx) => (
                                   <div key={q.id} className={`tk-q-item${dragQ === idx ? ' dragging' : ''}`}
                                     onDragOver={(e) => { if (dragQ !== null) e.preventDefault(); }}
@@ -1600,11 +1604,11 @@ function TiKakao() {
                               </div>
                               <div className="tk-kdivider" />
                               <div className="tk-kfield"><div className="tk-klabel">이용 방법 <span className="rg-optional">(선택)</span></div><textarea className="rg-textarea tk-ktextarea" placeholder="이용 방법을 입력해 주세요." maxLength={K_INFO_MAX} value={d.kExtra.howto} onChange={(e) => patchExtra({ howto: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.howto.length}</span>/{K_INFO_MAX.toLocaleString('ko-KR')}자</div></div>
-                              <div className="tk-kfield"><div className="tk-klabel">방문 안내 <span className="rg-optional">(선택)</span></div><textarea className="rg-textarea tk-ktextarea" placeholder="예: 3층 접수 데스크에서 예약자 성함을 말씀해 주세요." maxLength={K_VISIT_MAX} value={d.kExtra.visitGuide} onChange={(e) => patchExtra({ visitGuide: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.visitGuide.length}</span>/{K_VISIT_MAX.toLocaleString('ko-KR')}자</div></div>
+                              <div className="tk-kfield"><div className="tk-klabel">유의사항 <span className="rg-optional">(선택)</span></div><input className="rg-input" placeholder="유의사항을 입력해 주세요." maxLength={K_NOTICE_MAX} value={d.kExtra.notice} onChange={(e) => patchExtra({ notice: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.notice.length}</span>/{K_NOTICE_MAX}자</div></div>
                               <div className="tk-kfield"><div className="tk-klabel">취소 유의사항 <span className="rg-optional">(선택)</span></div><input className="rg-input" placeholder="취소 유의사항을 입력해 주세요." maxLength={K_CANCEL_MAX} value={d.kExtra.cancelNotice} onChange={(e) => patchExtra({ cancelNotice: e.target.value })} /><div className="rg-counter"><span className="rg-counter-num">{d.kExtra.cancelNotice.length}</span>/{K_CANCEL_MAX}자</div></div>
                           </div>
-                        </div>
-                      )}
+                        </div>}
+                      </div>
                     </section>}
                   </div>
 

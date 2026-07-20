@@ -121,7 +121,9 @@
 .tk-chan.dim { filter: grayscale(1); opacity: 0.3; } /* 미노출: 흐린 회색 */
 
 /* ============================ 폼: 카카오 노출 섹션 ============================ */
-/* 카카오 노출 헤더 박스 — Figma(Setting_Detail, node 1:907/1:917) 기준 */
+/* 외부 플랫폼 정보 — Figma(node 12591:14445, 558px wide) 기준 */
+.tk-platform-section { display: flex; flex-direction: column; align-items: stretch; gap: 20px; padding-top: 12px; }
+.tk-platform-title { margin: 0; font: 700 18px/26px var(--font-sans); color: #16181d; }
 .tk-kcard { padding: 0; overflow: hidden; border-color: #e3e6ed; gap: 0; }
 .tk-khead { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 24px; }
 .tk-khead-left { display: flex; align-items: center; gap: 16px; flex: 1; min-width: 0; }
@@ -133,15 +135,23 @@
 .tk-khead-right { display: inline-flex; align-items: center; gap: 10px; flex: none; }
 .tk-khead-status { width: 85px; flex: none; text-align: right; font: 600 14px/22px var(--font-sans); color: #808799; }
 .tk-khead-status.on { color: #066ae5; }
-/* 카카오 전용 정보 — 여러 줄 입력(이용 방법·유의사항·취소 유의사항) */
-.tk-ktextarea { height: 88px; }
+/* 카카오 전용 정보 — Figma: 이용 방법 144px, 유의사항·취소 유의사항 40px */
+.tk-ktextarea { height: 144px; }
 .tk-kdependency { margin: 0 24px 20px; display: flex; gap: 8px; align-items: flex-start; background: rgba(247,144,9,.08); border: 1px solid rgba(247,144,9,.28); border-radius: 8px; padding: 11px 13px; font: 500 13px/20px var(--font-sans); color: var(--orange-60); }
 .tk-kdependency svg { width: 16px; height: 16px; flex: none; margin-top: 2px; }
 .rg-toggle.disabled { opacity: .4; cursor: not-allowed; }
 
-/* 본문 — Figma(진료항목_추가정보, node 1:926): 헤더 밑 라인 없음, 항목 간 gap 24, 하단 24 (헤더 padding-24로 간격 확보) */
+/* 본문 — 헤더 밑 라인 없음, 항목 간 gap 24, 하단 24 */
 .tk-kbody { padding: 0 24px 24px; display: flex; flex-direction: column; gap: 24px; }
-/* 카카오 안내 배너 — Figma(GuideBanner, node 1:928): 회색 톤 배경·테두리, ic_caution, SemiBold 14/22 gray-70 */
+/* 굿닥 노출 선행조건 안내 — Figma red guide banner */
+.tk-kpolicy-alert {
+  display: flex; align-items: center; gap: 8px; min-height: 54px; padding: 0 16px;
+  border: 1px solid rgba(245, 83, 95, .2); border-radius: 8px; background: rgba(245, 83, 95, .05);
+  color: #f04452; font: 600 14px/22px var(--font-sans);
+}
+.tk-kpolicy-alert-ic { display: inline-flex; width: 20px; height: 20px; flex: none; }
+.tk-kpolicy-alert-ic svg { width: 20px; height: 20px; }
+/* 구형 회색 안내 배너 — 다른 시나리오 호환 */
 .tk-kauto {
   display: flex; gap: 8px; align-items: center; min-height: 54px;
   background: rgba(128,135,153,.05); border: 1px solid rgba(128,135,153,.1); border-radius: 8px;
@@ -164,6 +174,7 @@
 .tk-kextra { display: flex; flex-direction: column; gap: 24px; }
 .tk-kdivider { width: 100%; height: 1px; background: #f2f4f7; } /* Figma node 1:947 — 예약 시 받을 정보 ↔ 이용 방법 사이 구분선 */
 .tk-kfield { display: flex; flex-direction: column; gap: 8px; }
+.tk-kextra > .tk-kfield:first-child { gap: 16px; }
 .tk-kfield .rg-counter { margin-top: 0; }
 .tk-klabel { font: 600 16px/24px var(--font-sans); color: #434956; } /* Figma body/1_600 · Gray/80 (하위 필드 타이틀) */
 .tk-klabel-count { font: 500 13px/22px var(--font-sans); color: var(--gray-50); margin-left: 4px; }

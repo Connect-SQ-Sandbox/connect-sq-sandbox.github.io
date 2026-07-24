@@ -59,28 +59,6 @@ const BODY = `<div class="app">
           <div class="helper">입력하신 정보는 예약을 위해 병원에만 전달되며, 굿닥에서는 별도 수집 하지 않습니다.<br>또한 입력하신 정보와 환자 정보가 일치하지 않으면 진료 시 불이익이 발생할 수 있습니다.</div>
         </div>
 
-        <!-- 병원 약관 동의 -->
-        <div class="field-group">
-          <div class="ftitle">병원 약관 동의<span class="ess">필수</span></div>
-          <div class="consent-list">
-            <div class="consent-row all" id="consentAll" onclick="toggleAllConsent()">
-              <div class="cwrap"><span class="ckb"></span><span class="lab">전체 동의</span></div>
-            </div>
-            <div class="consent-row" data-consent data-req onclick="toggleConsent(this)">
-              <div class="cwrap"><span class="ckb"></span><span class="lab">[필수] 병원 동의서</span></div>
-              <button type="button" class="arrow" onclick="event.stopPropagation();openSheet('[필수] 병원 동의서','환자의 원활한 진료 접수를 위해 성명·연락처·생년월일 등 예약 정보를 해당 병원에 제공하는 것에 동의합니다. 제공된 정보는 진료 목적 외로 사용되지 않습니다.')">
-                <svg viewBox="0 0 18 18" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.21967 3.96967C6.51256 3.67678 6.98744 3.67678 7.28033 3.96967L11.7803 8.46967C12.0732 8.76256 12.0732 9.23744 11.7803 9.53033L7.28033 14.0303C6.98744 14.3232 6.51256 14.3232 6.21967 14.0303C5.92678 13.7374 5.92678 13.2626 6.21967 12.9697L10.1893 9L6.21967 5.03033C5.92678 4.73744 5.92678 4.26256 6.21967 3.96967Z" fill="currentColor"/></svg>
-              </button>
-            </div>
-            <div class="consent-row" data-consent onclick="toggleConsent(this)">
-              <div class="cwrap"><span class="ckb"></span><span class="lab">[선택] 병원 동의서</span></div>
-              <button type="button" class="arrow" onclick="event.stopPropagation();openSheet('[선택] 병원 동의서','마케팅·재방문 안내 등 부가 목적의 정보 활용에 동의합니다. 선택 항목으로 동의하지 않아도 예약 신청이 가능합니다.')">
-                <svg viewBox="0 0 18 18" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.21967 3.96967C6.51256 3.67678 6.98744 3.67678 7.28033 3.96967L11.7803 8.46967C12.0732 8.76256 12.0732 9.23744 11.7803 9.53033L7.28033 14.0303C6.98744 14.3232 6.51256 14.3232 6.21967 14.0303C5.92678 13.7374 5.92678 13.2626 6.21967 12.9697L10.1893 9L6.21967 5.03033C5.92678 4.73744 5.92678 4.26256 6.21967 3.96967Z" fill="currentColor"/></svg>
-              </button>
-            </div>
-          </div>
-        </div>
-
         <!-- 법정대리인 정보 (만 14세 이하 토글 ON 시에만 노출) -->
         <div class="field-group rep hidden" id="repSection">
           <div class="ftitle">법정대리인 정보<span class="ess">필수</span></div>
@@ -182,20 +160,6 @@ const SCRIPT = `var TERMS=[
     refreshMinor();
   }
 
-  function ckbOf(row){return row.querySelector('.ckb');}
-  function toggleConsent(el){ckbOf(el).classList.toggle('on');syncAll();}
-  function toggleAllConsent(){
-    var all=document.getElementById('consentAll');
-    var on=!ckbOf(all).classList.contains('on');
-    ckbOf(all).classList.toggle('on',on);
-    document.querySelectorAll('[data-consent]').forEach(function(c){ckbOf(c).classList.toggle('on',on);});
-  }
-  function syncAll(){
-    var items=[].slice.call(document.querySelectorAll('[data-consent]'));
-    var allOn=items.length>0&&items.every(function(c){return ckbOf(c).classList.contains('on');});
-    ckbOf(document.getElementById('consentAll')).classList.toggle('on',allOn);
-  }
-
   function openTerm(i){openSheet(TERMS[i].title,TERMS[i].body);}
   function openSheet(title,body){
     document.getElementById('sheet').innerHTML='<h4>'+title+'</h4><div class="body">'+body+'</div><button class="close" onclick="closeOv()">확인</button>';
@@ -230,8 +194,6 @@ const SCRIPT = `var TERMS=[
 
   function submitApply(){
     if(!bdValid()){ setBdError(true); document.getElementById('bdGroup').scrollIntoView({block:'center'}); return; }
-    var reqOk=[].slice.call(document.querySelectorAll('[data-consent][data-req]')).every(function(c){return ckbOf(c).classList.contains('on');});
-    if(!reqOk){ toast('필수 병원 약관에 동의해 주세요.'); return; }
     if(isMinor()){
       if(!document.getElementById('repName').value.trim()){ toast('법정대리인 이름을 입력해 주세요.'); return; }
       if(!document.getElementById('repPhone').value.trim()){ toast('법정대리인 연락처를 입력해 주세요.'); return; }

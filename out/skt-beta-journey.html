@@ -223,7 +223,7 @@ function journeyA2(){
     blocks:[ scr('claim') ],
     notes:[ note('legal','토큰만으로 예약 내용을 노출하지 않음','링크에는 개인정보를 넣지 않고, 로그인 + 연락처 일치 확인을 거친 뒤 공개해 링크 유출 시 타인 예약 노출 위험을 차단.') ]
   });
-  s.push({ seg:'앱', app:'굿닥', title:'카카오 로그인', blocks:[ scr('login') ], notes:[ note('data','인증 연락처 조회에 별도 동의가 필요한지 확인','로그인 계정의 인증 연락처를 조회해 예약과 대조하는 처리에 추가 동의 항목이 필요한지 확인 필요.') ] });
+  s.push({ seg:'앱', app:'굿닥', title:'카카오 로그인', blocks:[ scr('login') ], notes:[ note('data','인증 연락처 조회에 별도 동의가 필요한지 확인','로그인 계정의 인증 연락처를 조회해 예약과 대조하는 처리에 추가 동의 항목이 필요한지 확인 필요.'), note('dev','굿닥은 카카오 로그인만 지원','카카오 계정이 없는 사용자는 귀속을 완료할 수 없어, A-2의 전환율 상한이 카카오 계정 보유율에 묶임.') ] });
   s.push({
     seg:'앱', app:'굿닥', title:'귀속 완료',
     blocks:[ scr('claimed') ],
@@ -243,7 +243,7 @@ function journeyA2(){
 
 function journeyB(){
   var s = [];
-  s.push({ seg:'탐색', app:'A.', title:'증상 확인', blocks:[ tTime('10월 11일 (토) 밤 9:40'), u('비대면으로 진료받고 싶어'), a('어떤 증상인가요?') ], notes:[ note('scope','증상 텍스트는 진료과 추천에만 사용','에이전트가 진단성 발화를 하지 않도록 응답 범위를 제한해야 함.') ] });
+  s.push({ seg:'탐색', app:'A.', title:'증상 확인', blocks:[ tTime('10월 11일 (토) 밤 9:40'), u('비대면으로 진료받고 싶어'), a('어떤 증상인가요?') ], notes:[ note('scope','증상 텍스트는 진료과 추천에만 사용','에이닷이 진단성 발화를 하지 않도록 응답 범위를 제한해야 함.') ] });
   s.push({
     seg:'탐색', app:'A.', title:'병원 후보 제시',
     blocks:[ u('목이 아프고 열이 나'), a('지금 비대면진료가 가능한 병원이에요.'), {
@@ -262,12 +262,44 @@ function journeyB(){
       note('dev','이관 링크가 병원 정보를 갖고 진입해야 함','선택한 병원 컨텍스트를 유지한 채 신청 화면으로 진입해야 하고, 진입 후 해당 병원이 접수 불가로 바뀌는 경우의 처리도 필요.')
     ]
   });
-  s.push({ seg:'앱', app:'굿닥', title:'로그인', blocks:[ scr('tmLogin') ], notes:[] });
-  s.push({ seg:'앱', app:'굿닥', title:'본인인증', blocks:[ scr('tmVerify') ], notes:[] });
-  s.push({ seg:'앱', app:'굿닥', title:'결제수단 등록', blocks:[ scr('tmPay') ], notes:[ note('scope','이 3단계가 이관형을 택한 이유','본인인증과 결제수단 등록은 에이전트 대화 안에서 처리할 수 없는 관문. 굿닥 퍼널이 흡수하는 것이 개발량과 리스크 모두 유리함.') ] });
-  s.push({ seg:'앱', app:'굿닥', title:'신청 완료', blocks:[ scr('tmDone') ], notes:[] });
-  s.push({ seg:'확정', app:'A.', title:'에이전트 복귀', blocks:[ tTime('잠시 후'), a('진료 신청이 접수됐어요. 병원에서 전화를 드릴 거예요.') ], notes:[ note('dev','이관 후 상태를 회신할지 결정 필요','접수 상태를 에이전트로 되돌리려면 상태 전달 연동이 필요. 검진 예약의 상태 회신 방식과 함께 결정.') ] });
-  s.push({ seg:'통화', app:'통화', title:'병원 전화 수신', blocks:[ tTime('약 10분 후'), scr('call') ], notes:[ note('scope','진료는 병원이 전화를 걸어 진행','화상 진료·가족 대리 진료·처방전 수령은 굿닥 앱이 필요해 베타 제외.') ] });
+  s.push({
+    seg:'웹', app:'굿닥 웹', title:'카카오 로그인',
+    blocks:[ scr('tmKakaoLogin') ],
+    notes:[
+      note('scope','이관 목적지는 앱이 아니라 웹','앱 설치를 강제하지 않아 이탈이 적고, 링크로 바로 진입하므로 이관 흐름에 맞음. 신청까지는 웹에서 완결.'),
+      note('dev','굿닥은 카카오 로그인만 지원 — 단일 실패점','카카오 계정이 없거나 카카오 장애 시 여정이 여기서 완전히 멈춤. SKT 사용자 전체에 카카오 로그인을 강제하는 구조가 수용 가능한지 협의 필요.','핵심')
+    ]
+  });
+  s.push({ seg:'웹', app:'굿닥 웹', title:'본인인증', blocks:[ scr('tmVerify') ], notes:[ note('scope','로그인과 본인인증은 별개','카카오 로그인은 계정 확인, 본인인증은 진료 대상자 확인. 비대면진료는 본인인증이 법적으로 필요해 두 단계가 모두 남음.') ] });
+  s.push({ seg:'웹', app:'굿닥 웹', title:'결제수단 등록', blocks:[ scr('tmPay') ], notes:[ note('scope','이 3단계가 이관형을 택한 이유','본인인증과 결제수단 등록은 에이닷 대화 안에서 처리할 수 없는 관문. 굿닥 퍼널이 흡수하는 것이 개발량과 리스크 모두 유리함.') ] });
+  s.push({ seg:'웹', app:'굿닥 웹', title:'신청 완료', blocks:[ scr('tmDone') ], notes:[] });
+  s.push({ seg:'확정', app:'A.', title:'에이닷 복귀', blocks:[ tTime('잠시 후'), a('진료 신청이 접수됐어요. 병원에서 전화를 드릴 거예요.') ], notes:[ note('dev','이관 후 상태를 회신할지 결정 필요','접수 상태를 에이닷으로 되돌리려면 상태 전달 연동이 필요. 검진 예약의 상태 회신 방식과 함께 결정.') ] });
+  s.push({ seg:'통화', app:'통화', title:'병원 전화 수신', blocks:[ tTime('약 10분 후'), scr('call') ], notes:[ note('scope','진료는 병원이 전화를 걸어 진행','화상 진료와 가족 대리 진료는 베타 제외.') ] });
+  s.push({
+    seg:'알림', app:'카카오톡', title:'진료 완료 알림톡',
+    blocks:[ tTime('통화 종료 후'), scr('kakaoTmDone') ],
+    notes:[ note('scope','약 수령은 알림톡을 기점으로 시작','진료 완료와 처방전 발급을 알림톡으로 알리고, 버튼으로 약 수령 신청 화면에 진입시킴. 검진 예약의 알림톡 구조를 그대로 재사용.') ]
+  });
+  s.push({
+    seg:'앱', app:'굿닥', title:'약국 목록',
+    blocks:[ scr('pharmacyPick') ],
+    notes:[ note('scope','약 수령부터는 앱이 필요','처방전 전달과 조제 상태 수신은 앱 기능. 신청은 웹, 수령은 앱으로 나뉘는 구조를 협의에서 명확히 해야 함.','핵심') ]
+  });
+  s.push({
+    seg:'앱', app:'굿닥', title:'약국 선택',
+    blocks:[ scr('pharmacyPicked') ],
+    notes:[ note('scope','약국 선택은 사용자 본인이 함','진료 병원과 달리 약국은 에이닷이 추천하지 않고, 위치·수령 방법을 보고 사용자가 직접 선택.') ]
+  });
+  s.push({
+    seg:'앱', app:'굿닥', title:'처방 신청',
+    blocks:[ scr('rxRequest') ],
+    notes:[ note('dev','수령 방법에 따라 이후 흐름이 갈림','방문 수령과 퀵 배송의 결제 시점·안내 문구가 달라, 베타에서 어디까지 지원할지 범위 확정이 필요.') ]
+  });
+  s.push({
+    seg:'앱', app:'굿닥', title:'처방 신청 완료',
+    blocks:[ scr('rxDone') ],
+    notes:[ note('scope','여정은 약 수령 신청까지','조제 완료 알림과 실제 수령·결제는 굿닥 앱 기존 흐름을 따르며, 이 프로토타입 범위에서는 다루지 않음.') ]
+  });
   return s;
 }
 
@@ -285,8 +317,8 @@ function wrap(){
   };
   if (state.journey === 2) return {
     title:'B. 비대면진료',
-    body:'에이전트는 신청까지, 진료는 병원 전화. 회원가입·카드 등록 관문은 굿닥 퍼널이 흡수.',
-    limit:'베타 제외: 화상 진료·가족 대리·처방전 수령'
+    body:'에이닷은 병원 선택까지, 신청은 굿닥 웹, 진료는 병원 전화. 약 수령은 알림톡을 거쳐 굿닥 앱에서 마무리.',
+    limit:'베타 제외: 화상 진료·가족 대리 진료'
   };
   return {
     title:'A-1. 알림톡 완결형 · 베타',
@@ -331,6 +363,7 @@ function tabBarHtml(){
 
 function screenHtml(kind, time, short){
   var remind = kind === 'kakaoRemind' || kind === 'kakaoRemindClaim';
+  var tmDone = kind === 'kakaoTmDone';
   var confirmRows = [
     { k:'병원', v:'안양센트럴내과' }, { k:'검진', v:'종합검진 프리미엄' }, { k:'일시', v:time },
     { k:'주소', v:'경기 안양시 동안구 시민대로 123, 4층' }, { k:'문의', v:'031-000-0000' }
@@ -338,20 +371,24 @@ function screenHtml(kind, time, short){
   var remindRows = [
     { k:'병원', v:'안양센트럴내과' }, { k:'일시', v:time }, { k:'주소', v:'경기 안양시 동안구 시민대로 123, 4층' }
   ];
+  var tmDoneRows = [
+    { k:'병원', v:'평촌이비인후과' }, { k:'진료', v:'10월 11일 (토) 21:52 · 전화 진료' }, { k:'처방', v:'처방전 발급 완료' }
+  ];
+  var funnelStepMap = { tmKakaoLogin:'1 / 4 · 로그인' };
   var funnels = {
-    tmLogin: { i:0, step:'1 / 4 · 로그인', title:'굿닥 로그인이 필요해요', body:'비대면진료 신청은 본인 확인이 필요합니다.', fields:[{ ph:'휴대폰 번호' }], cta:'인증번호 받기' },
-    tmVerify:{ i:1, step:'2 / 4 · 본인인증', title:'본인인증', body:'문자로 받은 인증번호를 입력해주세요.', fields:[{ ph:'인증번호 6자리' }], cta:'인증 확인' },
-    tmPay:   { i:2, step:'3 / 4 · 결제수단', title:'결제수단 등록', body:'진료 후 결제를 위해 카드를 등록해요. 지금 결제되지는 않습니다.', fields:[{ ph:'카드번호' },{ ph:'유효기간 / 생년월일' }], cta:'등록하고 신청하기' }
+    tmVerify: { i:1, step:'2 / 4 · 본인인증', title:'본인인증', body:'진료받는 분 정보를 확인해요.', fields:[{ ph:'휴대폰 번호' },{ ph:'인증번호 6자리' }], cta:'인증 확인' },
+    tmPay:    { i:2, step:'3 / 4 · 결제수단', title:'결제수단 등록', body:'진료 후 결제를 위해 카드를 등록해요. 지금 결제되지는 않습니다.', fields:[{ ph:'카드번호' },{ ph:'유효기간 / 생년월일' }], cta:'등록하고 신청하기' },
+    rxRequest:{ i:3, step:'4 / 4 · 처방 신청', title:'수령 방법을 선택해주세요', body:'선택한 약국으로 처방전이 전달돼요.', fields:[{ ph:'방문 수령 · 오늘 22:40 이후' },{ ph:'요청사항 (선택)' }], cta:'처방 신청하기' }
   };
   var f = funnels[kind];
   var out = '<div style="height:100%;min-height:100%;display:flex;flex-direction:column">';
 
   // Kakao alimtalk message
-  if (kind === 'kakaoConfirm' || kind === 'kakaoConfirmClaim' || remind) {
-    var msgTitle = remind ? '[굿닥] 오늘 '+short+' 검진 예약이 있어요' : '[굿닥] 건강검진 예약이 확정됐어요';
-    var msgRows = remind ? remindRows : confirmRows;
-    var msgFoot = remind ? '접수 창구에서 예약자 이름을 알려주세요.' : '예약 시간 10분 전까지 도착해주세요. 변경·취소는 병원으로 문의해주세요.';
-    var msgCta = (kind === 'kakaoConfirmClaim' || kind === 'kakaoRemindClaim') ? '내 예약 보기' : '병원 정보·길찾기';
+  if (kind === 'kakaoConfirm' || kind === 'kakaoConfirmClaim' || remind || tmDone) {
+    var msgTitle = tmDone ? '[굿닥] 비대면진료가 완료됐어요' : (remind ? '[굿닥] 오늘 '+short+' 검진 예약이 있어요' : '[굿닥] 건강검진 예약이 확정됐어요');
+    var msgRows = tmDone ? tmDoneRows : (remind ? remindRows : confirmRows);
+    var msgFoot = tmDone ? '약국을 선택하면 조제 후 수령 방법을 안내해드려요.' : (remind ? '접수 창구에서 예약자 이름을 알려주세요.' : '예약 시간 10분 전까지 도착해주세요. 변경·취소는 병원으로 문의해주세요.');
+    var msgCta = tmDone ? '약 수령 신청하기' : ((kind === 'kakaoConfirmClaim' || kind === 'kakaoRemindClaim') ? '내 예약 보기' : '병원 정보·길찾기');
     out += '<div style="padding:14px 12px;display:flex;flex-direction:column;gap:7px">'+
       '<div style="display:flex;align-items:center;gap:6px">'+
         '<span style="width:22px;height:22px;border-radius:7px;background:#FEE500;display:flex;align-items:center;justify-content:center;font:700 8px/1 Pretendard,system-ui,sans-serif;color:#3C1E1E">talk</span>'+
@@ -440,14 +477,16 @@ function screenHtml(kind, time, short){
     '</div>';
   }
 
-  // Login
-  if (kind === 'login') {
-    out += '<div style="padding:26px 14px 30px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center">'+
+  // Login (예약 귀속 로그인 · 비대면 이관 로그인)
+  if (kind === 'login' || kind === 'tmKakaoLogin') {
+    var loginNote = kind === 'tmKakaoLogin' ? '비대면진료 신청을 위해 로그인이 필요해요.' : '인증된 연락처로 예약 정보를 확인해요.';
+    var loginStep = funnelStepMap[kind] || '';
+    out += '<div style="flex:1;min-height:0;padding:26px 14px 30px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;box-sizing:border-box">'+
+      (loginStep ? '<span style="align-self:flex-start;font:600 10.5px/1 Pretendard,system-ui,sans-serif;letter-spacing:.04em;color:#8B95A1">'+loginStep+'</span>' : '')+
       '<div style="width:46px;height:46px;border-radius:13px;background:#FEE500;display:flex;align-items:center;justify-content:center;font:700 9.5px/1 Pretendard,system-ui,sans-serif;color:#3C1E1E">talk</div>'+
       '<span style="font:600 14px/1.4 Pretendard,system-ui,sans-serif;color:#191F28">카카오 계정으로 로그인</span>'+
-      '<span style="max-width:210px;font:400 11.5px/1.6 Pretendard,system-ui,sans-serif;color:#8B95A1;word-break:keep-all">인증된 연락처로 예약 정보를 확인해요.</span>'+
+      '<span style="max-width:210px;font:400 11.5px/1.6 Pretendard,system-ui,sans-serif;color:#8B95A1;word-break:keep-all">'+loginNote+'</span>'+
       '<div style="width:100%;text-align:center;background:#FEE500;border-radius:8px;padding:13px;font:600 12.5px/1 Pretendard,system-ui,sans-serif;color:#3C1E1E">카카오로 계속하기</div>'+
-      '<div style="width:100%;text-align:center;border:1px solid #D1D6DB;border-radius:8px;padding:13px;font:600 12.5px/1 Pretendard,system-ui,sans-serif;color:#4E5968">다른 방법으로 로그인</div>'+
     '</div>';
   }
 
@@ -495,7 +534,7 @@ function screenHtml(kind, time, short){
     '</div>';
   }
 
-  // Funnel (tmLogin / tmVerify / tmPay)
+  // Funnel (tmVerify / tmPay / rxRequest)
   if (f) {
     var dots = [0,1,2,3].map(function(n){
       return n <= f.i
@@ -505,7 +544,14 @@ function screenHtml(kind, time, short){
     var fields = f.fields.map(function(fl){
       return '<div style="border:1px solid #D1D6DB;border-radius:6px;padding:11px;font:400 11.5px/1 Pretendard,system-ui,sans-serif;color:#B0B8C1">'+fl.ph+'</div>';
     }).join('');
-    out += '<div style="padding:20px 14px 24px;display:flex;flex-direction:column;gap:14px">'+
+    var pharmacyCard = (kind === 'rxRequest')
+      ? '<div style="border:1px solid #E5E8EB;background:#F6F6F6;border-radius:8px;padding:11px 12px;display:flex;flex-direction:column;gap:4px">'+
+          '<span style="font:600 10.5px/1 Pretendard,system-ui,sans-serif;color:#8B95A1">선택한 약국</span>'+
+          '<span style="font:600 12.5px/1.4 Pretendard,system-ui,sans-serif;color:#191F28">평촌온누리약국 · 도보 4분</span>'+
+        '</div>'
+      : '';
+    out += '<div style="flex:1;min-height:0;padding:20px 14px 24px;display:flex;flex-direction:column;gap:14px;box-sizing:border-box">'+
+      pharmacyCard +
       '<div style="display:flex;gap:4px">'+dots+'</div>'+
       '<span style="font:600 10.5px/1 Pretendard,system-ui,sans-serif;letter-spacing:.04em;color:#8B95A1">'+f.step+'</span>'+
       '<span style="font:700 15px/1.4 Pretendard,system-ui,sans-serif;color:#191F28;word-break:keep-all">'+f.title+'</span>'+
@@ -527,6 +573,62 @@ function screenHtml(kind, time, short){
       '<div style="width:100%;border:1px solid #E5E8EB;border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:6px;text-align:left">'+
         rowsHtml(tmRows,'flex:none;width:44px;font:400 11px/1.5 Pretendard,system-ui,sans-serif;color:#8B95A1','flex:1;font:500 11.5px/1.5 Pretendard,system-ui,sans-serif;color:#191F28')+
       '</div>'+
+    '</div>';
+  }
+
+  // Pharmacy list (약국 선택)
+  if (kind === 'pharmacyPick' || kind === 'pharmacyPicked') {
+    var pharmacies = [
+      { name:'평촌온누리약국', sub:'방문 수령 · 오늘 22:40까지 조제', dist:'도보 4분 · 320m' },
+      { name:'안양중앙약국', sub:'방문 수령 · 오늘 23:00까지 조제', dist:'도보 9분 · 700m' },
+      { name:'시민대로약국', sub:'퀵 배송 · 1시간 내 도착', dist:'1.4km' }
+    ];
+    var phItems = pharmacies.map(function(p, i){
+      var picked = (kind === 'pharmacyPicked' && i === 0);
+      if (picked) {
+        return '<div style="border:1.5px solid #0073FA;background:#fff;border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:5px">'+
+          '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">'+
+            '<span style="font:600 13.5px/1.3 Pretendard,system-ui,sans-serif;color:#191F28">'+p.name+'</span>'+
+            '<span style="flex:none;font:600 10px/1 Pretendard,system-ui,sans-serif;color:#0073FA;background:rgba(0,115,250,.1);padding:4px 6px;border-radius:4px">선택됨</span>'+
+          '</div>'+
+          '<span style="font:400 11.5px/1.4 Pretendard,system-ui,sans-serif;color:#4E5968">'+p.sub+'</span>'+
+          '<span style="font:400 11px/1.3 Pretendard,system-ui,sans-serif;color:#8B95A1">'+p.dist+'</span>'+
+        '</div>';
+      }
+      return '<div style="border:1px solid #E5E8EB;background:#fff;border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:5px">'+
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">'+
+          '<span style="font:600 13.5px/1.3 Pretendard,system-ui,sans-serif;color:#191F28">'+p.name+'</span>'+
+          '<span style="flex:none;font:600 10px/1 Pretendard,system-ui,sans-serif;color:#1FA972;background:rgba(65,210,147,.15);padding:4px 6px;border-radius:4px">조제 가능</span>'+
+        '</div>'+
+        '<span style="font:400 11.5px/1.4 Pretendard,system-ui,sans-serif;color:#4E5968">'+p.sub+'</span>'+
+        '<span style="font:400 11px/1.3 Pretendard,system-ui,sans-serif;color:#8B95A1">'+p.dist+'</span>'+
+      '</div>';
+    }).join('');
+    out += '<div style="flex:1;display:flex;flex-direction:column;min-height:0">'+
+      '<span style="font:700 17px/1.3 Pretendard,system-ui,sans-serif;color:#191F28;padding:14px 16px 10px">약국 선택</span>'+
+      '<div style="flex:1;min-height:0;background:#F2F4F6;padding:14px;display:flex;flex-direction:column;gap:10px">'+
+        '<span style="font:400 11.5px/1.5 Pretendard,system-ui,sans-serif;color:#6B7684;word-break:keep-all">처방전을 전달할 약국을 선택해주세요</span>'+
+        phItems +
+      '</div>'+
+      tabBarHtml()+
+    '</div>';
+  }
+
+  // Rx request done (처방 신청 완료)
+  if (kind === 'rxDone') {
+    var rxRows = [
+      { k:'약국', v:'평촌온누리약국' }, { k:'수령', v:'방문 수령 · 오늘 22:40 이후' }, { k:'결제', v:'수령 시 약국에서 결제' }
+    ];
+    out += '<div style="flex:1;display:flex;flex-direction:column;min-height:0">'+
+      '<div style="flex:1;min-height:0;padding:26px 16px;display:flex;flex-direction:column;align-items:center;gap:11px;text-align:center">'+
+        '<div style="width:44px;height:44px;border-radius:9999px;background:rgba(65,210,147,.16);display:flex;align-items:center;justify-content:center;font:700 15px/1 Pretendard,system-ui,sans-serif;color:#1FA972">✓</div>'+
+        '<span style="font:700 15px/1.4 Pretendard,system-ui,sans-serif;color:#191F28;word-break:keep-all">처방 신청이 접수됐어요</span>'+
+        '<span style="max-width:220px;font:400 11.5px/1.6 Pretendard,system-ui,sans-serif;color:#8B95A1;word-break:keep-all">약국에서 조제를 마치면 알려드릴게요.</span>'+
+        '<div style="width:100%;border:1px solid #E5E8EB;border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:6px;text-align:left">'+
+          rowsHtml(rxRows,'flex:none;width:52px;font:400 11px/1.5 Pretendard,system-ui,sans-serif;color:#8B95A1','flex:1;font:500 11.5px/1.5 Pretendard,system-ui,sans-serif;color:#191F28;word-break:keep-all')+
+        '</div>'+
+      '</div>'+
+      tabBarHtml()+
     '</div>';
   }
 
@@ -830,7 +932,7 @@ function progressHtml(v){
       '<span>'+t.label+'</span></button>';
   }).join('');
 
-  var placeholder = v.noToggles ? '<span style="font:400 12px/1 Pretendard,system-ui,sans-serif;color:#ffffff;padding:12px 0">이 여정에는 적용할 조건이 없습니다</span>' : '';
+  var placeholder = v.noToggles ? '<span style="font:400 12px/1 Pretendard,system-ui,sans-serif;color:#B0B8C1;padding:12px 0">이 여정에는 적용할 조건이 없습니다</span>' : '';
   return '<div style="background:#fff;border:1px solid #E5E8EB;border-radius:8px;padding:14px 18px;box-sizing:border-box;height:74px;display:flex;align-items:center;justify-content:space-between;gap:20px">'+
     '<div style="flex:1;min-width:0;display:flex;gap:16px">'+segs+'</div>'+
     '<div style="display:flex;flex-direction:column;gap:9px">'+

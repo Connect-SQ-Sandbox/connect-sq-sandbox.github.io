@@ -762,9 +762,10 @@ function renderVals(){
       { label:'A-2. 검진 예약 · 앱 귀속형', tag:'패스트팔로우', active: state.journey === 1, idx:1 },
       { label:'B. 비대면진료', tag:'', active: state.journey === 2, idx:2 }
     ],
-    toggles: [
+    toggles: state.journey === 2 ? [] : [
       { label:'예약 시간 마감 케이스', on: state.closed, act:'tclosed' }
     ],
+    noToggles: state.journey === 2,
     segments: segments,
     appName: cur.app,
     appBg: cur.app === '카카오톡' ? '#B2C7D9' : (cur.app === '통화' ? '#191F28' : '#fff'),
@@ -823,10 +824,11 @@ function progressHtml(v){
       '<span>'+t.label+'</span></button>';
   }).join('');
 
-  return '<div style="background:#fff;border:1px solid #E5E8EB;border-radius:8px;padding:16px 18px;display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap">'+
-    '<div style="flex:1;min-width:400px;display:flex;gap:16px;flex-wrap:wrap">'+segs+'</div>'+
+  var placeholder = v.noToggles ? '<span style="font:400 12px/1 Pretendard,system-ui,sans-serif;color:#ffffff;padding:12px 0">이 여정에는 적용할 조건이 없습니다</span>' : '';
+  return '<div style="background:#fff;border:1px solid #E5E8EB;border-radius:8px;padding:16px 18px;box-sizing:border-box;height:92px;display:flex;align-items:flex-end;justify-content:space-between;gap:20px">'+
+    '<div style="flex:1;min-width:0;display:flex;gap:16px">'+segs+'</div>'+
     '<div style="display:flex;flex-direction:column;gap:9px">'+
-      '<div style="display:flex;gap:8px;flex-wrap:wrap">'+toggles+'</div>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">'+placeholder+toggles+'</div>'+
     '</div>'+
   '</div>';
 }

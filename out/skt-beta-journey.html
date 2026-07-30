@@ -171,7 +171,7 @@ function sharedCheckup(){
   s.push({
     seg:'예약', app:'A.', title:'예약자 정보 + 동의',
     blocks:[ a('예약자 정보를 입력해주세요.'), form(false) ],
-    notes:[ note('legal','개인정보 동의 수집 위치 = 이 지점','문안은 굿닥이 제공하고 화면 구현은 SKT가 담당. 제3자 제공과 처리위탁 중 어느 구조인지 확정한 뒤 문안을 작성해야 함.') ]
+    notes:[ note('legal','개인정보 동의 수집 위치 = 이 지점','문안은 굿닥이 제공하고 화면 구현은 SKT가 담당. 제3자 제공과 처리위탁 중 어느 구조인지 확정한 뒤 문안을 작성해야 하므로, 화면에는 법적 구조를 특정하는 표현을 아직 쓰지 않음.') ]
   });
   s.push({
     seg:'예약', app:'A.', title:'요청 접수',
@@ -180,9 +180,12 @@ function sharedCheckup(){
   });
   s.push({ seg:'대기', app:'A.', title:'병원 확인 대기', blocks:[ pending('병원 확인 중…') ], notes:[] });
   s.push({
-    seg:'확정', app:'A.', title:'예약 확정',
-    blocks:[ tTime('약 1시간 30분 후'), st({ title:'병원에서 예약을 확정했어요', badge:'예약 확정', tOk:true, rows:summary, note:'예약 10분 전에 다시 알려드릴게요.' }) ],
-    notes:[ note('dev','상태 회신 방식 2안 중 선택 필요','1안 — 굿닥 알림톡 발송 후 사용자가 에이전트에서 조회. 2안 — 에이전트 카드로 직접 회신(연동 개발 필요). 베타는 개발량이 적은 1안 권고.') ]
+    seg:'확정', app:'A.', title:'사용자가 물어서 확인',
+    blocks:[ tTime('약 1시간 30분 후'), u('예약 확정됐어?'), a('네, 병원에서 확정했어요.'), st({ title:'예약이 확정됐어요', badge:'예약 확정', tOk:true, rows:summary, note:'예약 10분 전에 병원 방문을 준비해주세요.' }) ],
+    notes:[
+      note('dev','상태 회신 방식 2안 중 선택 필요','1안 — 굿닥 알림톡 발송 후 사용자가 물으면 에이닷이 조회해 답함. 2안 — 에이닷 카드로 자동 회신(상태 전달 연동 개발 필요). 베타는 1안, 2안은 본서비스 목표.'),
+      note('scope','1안에서는 대화 경험이 한 번 끊김','확정 소식이 에이닷 밖(알림톡)에서 먼저 도착하고, 에이닷은 사용자가 물어야 답할 수 있음. 이 끊김이 2안을 검토하는 이유.')
+    ]
   });
   return s;
 }
@@ -204,7 +207,7 @@ function journeyA1(){
     blocks:[ scr('emptyList') ],
     notes:[ note('dev','로그인이 아니라 귀속이 문제','SKT 경유 예약은 파트너 채널 계정에 붙어 있어, 카카오 로그인을 해도 사용자 계정의 예약이 아님. 이 지점이 A-2를 검토하는 이유.') ]
   });
-  s.push({ seg:'알림', app:'카카오톡', title:'리마인드', blocks:[ tTime('10월 14일 (화) 아침'), scr('kakaoRemind') ], notes:[] });
+  s.push({ seg:'알림', app:'카카오톡', title:'리마인드', blocks:[ tTime('10월 14일 (화) 아침'), scr('kakaoRemind') ], notes:[ note('scope','A-1의 리마인드 버튼은 병원 정보까지','예약 상세로 보낼 수 없어 목적지가 병원 정보·길찾기로 제한됨. A-2로 전환하면 같은 자리에서 버튼이 ‘내 예약 보기’로 바뀜.') ] });
   return s;
 }
 
@@ -234,7 +237,7 @@ function journeyA2(){
       note('scope','A-1의 목적지 제약이 해소됨','귀속이 되면 딥링크 목적지를 병원 상세에서 예약 상세로 승격할 수 있음.')
     ]
   });
-  s.push({ seg:'알림', app:'카카오톡', title:'리마인드', blocks:[ tTime('10월 14일 (화) 아침'), scr('kakaoRemind') ], notes:[] });
+  s.push({ seg:'알림', app:'카카오톡', title:'리마인드', blocks:[ tTime('10월 14일 (화) 아침'), scr('kakaoRemindClaim') ], notes:[ note('scope','귀속 후에는 리마인드도 예약 상세로 연결','같은 자리에서 버튼만 ‘내 예약 보기’로 달라져, 두 안의 차이가 마지막 단계까지 이어짐.') ] });
   return s;
 }
 
@@ -327,7 +330,7 @@ function tabBarHtml(){
 }
 
 function screenHtml(kind, time, short){
-  var remind = kind === 'kakaoRemind';
+  var remind = kind === 'kakaoRemind' || kind === 'kakaoRemindClaim';
   var confirmRows = [
     { k:'병원', v:'안양센트럴내과' }, { k:'검진', v:'종합검진 프리미엄' }, { k:'일시', v:time },
     { k:'주소', v:'경기 안양시 동안구 시민대로 123, 4층' }, { k:'문의', v:'031-000-0000' }
@@ -348,7 +351,7 @@ function screenHtml(kind, time, short){
     var msgTitle = remind ? '[굿닥] 오늘 '+short+' 검진 예약이 있어요' : '[굿닥] 건강검진 예약이 확정됐어요';
     var msgRows = remind ? remindRows : confirmRows;
     var msgFoot = remind ? '접수 창구에서 예약자 이름을 알려주세요.' : '예약 시간 10분 전까지 도착해주세요. 변경·취소는 병원으로 문의해주세요.';
-    var msgCta = kind === 'kakaoConfirmClaim' ? '내 예약 보기' : '병원 정보·길찾기';
+    var msgCta = (kind === 'kakaoConfirmClaim' || kind === 'kakaoRemindClaim') ? '내 예약 보기' : '병원 정보·길찾기';
     out += '<div style="padding:14px 12px;display:flex;flex-direction:column;gap:7px">'+
       '<div style="display:flex;align-items:center;gap:6px">'+
         '<span style="width:22px;height:22px;border-radius:7px;background:#FEE500;display:flex;align-items:center;justify-content:center;font:700 8px/1 Pretendard,system-ui,sans-serif;color:#3C1E1E">talk</span>'+
@@ -637,7 +640,10 @@ function formHtml(b){
     '<span style="font:600 12.5px/1.3 Pretendard,system-ui,sans-serif;color:#191F28">예약자 정보</span>'+
     fields+
     '<div style="display:flex;align-items:flex-start;gap:7px;padding-top:2px">'+check+
-      '<span style="font:400 11px/1.45 Pretendard,system-ui,sans-serif;color:#4E5968;word-break:keep-all">개인정보 제3자 제공 동의 <span style="color:#FA4655;font-weight:600">(필수)</span> · <span style="color:#0073FA;text-decoration:underline">자세히 보기</span></span>'+
+      '<div style="display:flex;flex-direction:column;gap:4px">'+
+        '<span style="font:400 11px/1.45 Pretendard,system-ui,sans-serif;color:#4E5968;word-break:keep-all">개인정보 제공 동의 <span style="color:#FA4655;font-weight:600">(필수)</span> · <span style="color:#0073FA;text-decoration:underline">자세히 보기</span></span>'+
+        '<span style="font:400 10px/1.4 Pretendard,system-ui,sans-serif;color:#B0B8C1">문안 확정 전</span>'+
+      '</div>'+
     '</div>'+ disabledCta +
   '</div>';
 }
@@ -760,7 +766,7 @@ function renderVals(){
     journeys: [
       { label:'A-1. 검진 예약 · 알림톡 완결형', tag:'베타', active: state.journey === 0, idx:0 },
       { label:'A-2. 검진 예약 · 앱 귀속형', tag:'패스트팔로우', active: state.journey === 1, idx:1 },
-      { label:'B. 비대면진료', tag:'', active: state.journey === 2, idx:2 }
+      { label:'B. 비대면진료', tag:'조건부 · 이관형', active: state.journey === 2, idx:2 }
     ],
     toggles: state.journey === 2 ? [] : [
       { label:'예약 시간 마감 케이스', on: state.closed, act:'tclosed' }
@@ -940,6 +946,7 @@ function render(){
         '</div>'+
         '<h1 style="margin:2px 0 0;font:700 24px/1.3 Pretendard,system-ui,sans-serif;color:#191F28;word-break:keep-all">베타 여정 프로토타입</h1>'+
         '<p style="margin:0;max-width:660px;font:400 14px/1.6 Pretendard,system-ui,sans-serif;color:#6B7684;word-break:keep-all">한 사람의 연속된 경험으로 따라가는 프로토타입입니다. <br>A-1과 A-2는 예약 확정까지 완전히 동일하므로, <strong style="font-weight:600;color:#4E5968">같은 단계에서 여정을 전환</strong>하면 두 안의 차이가 그 자리에서 드러납니다.</p>'+
+        '<span style="font:400 11.5px/1.5 Pretendard,system-ui,sans-serif;color:#8B95A1;word-break:keep-all">문서 매핑 — A-1 = Track A + C-1(알림톡 완결형) · A-2 = Track A + C-2(앱 귀속형) · B = Track B-1(이관형)</span>'+
       '</div>'+
       '<span style="flex:none;font:600 10px/1 Pretendard,system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#8B95A1;border:1px dashed #C3C8D0;padding:6px 10px;border-radius:4px">illustrative</span>'+
     '</div>'+

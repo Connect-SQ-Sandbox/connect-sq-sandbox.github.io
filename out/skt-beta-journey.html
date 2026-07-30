@@ -767,7 +767,7 @@ function renderVals(){
     ],
     noToggles: state.journey === 2,
     segments: segments,
-    appName: cur.app,
+    appName: cur.app === 'A.' ? '에이닷' : cur.app,
     appBg: cur.app === '카카오톡' ? '#B2C7D9' : (cur.app === '통화' ? '#191F28' : '#fff'),
     bodyPad: stack ? '14px 12px 20px' : '0',
     blocks: blocks,
@@ -825,7 +825,7 @@ function progressHtml(v){
   }).join('');
 
   var placeholder = v.noToggles ? '<span style="font:400 12px/1 Pretendard,system-ui,sans-serif;color:#ffffff;padding:12px 0">이 여정에는 적용할 조건이 없습니다</span>' : '';
-  return '<div style="background:#fff;border:1px solid #E5E8EB;border-radius:8px;padding:16px 18px;box-sizing:border-box;height:74px;display:flex;align-items:flex-end;justify-content:space-between;gap:20px">'+
+  return '<div style="background:#fff;border:1px solid #E5E8EB;border-radius:8px;padding:14px 18px;box-sizing:border-box;height:74px;display:flex;align-items:center;justify-content:space-between;gap:20px">'+
     '<div style="flex:1;min-width:0;display:flex;gap:16px">'+segs+'</div>'+
     '<div style="display:flex;flex-direction:column;gap:9px">'+
       '<div style="display:flex;gap:8px;flex-wrap:wrap">'+placeholder+toggles+'</div>'+

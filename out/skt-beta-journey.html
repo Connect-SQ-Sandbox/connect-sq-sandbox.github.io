@@ -57,7 +57,7 @@
 
 var AUTOPLAY_SPEED = 2; // seconds (source prop default)
 
-var state = { journey: 0, step: 0, closed: false, notesAll: false, notesOpen: false, playing: false };
+var state = { journey: 0, step: 0, closed: false, playing: false };
 var timer = null;
 var prevStep = null, prevApp = null;
 
@@ -753,7 +753,6 @@ function renderVals(){
   });
 
   var notes = cur.notes || [];
-  var notesOpen = notes.length > 0 && (state.notesAll || state.notesOpen);
   var w = wrap();
 
   return {
@@ -764,8 +763,7 @@ function renderVals(){
       { label:'B. 비대면진료', tag:'', active: state.journey === 2, idx:2 }
     ],
     toggles: [
-      { label:'예약 시간 마감 케이스', on: state.closed, act:'tclosed' },
-      { label:'검토 주석 보기', on: state.notesAll, act:'tnotes' }
+      { label:'예약 시간 마감 케이스', on: state.closed, act:'tclosed' }
     ],
     segments: segments,
     appName: cur.app,
@@ -779,13 +777,11 @@ function renderVals(){
     playing: state.playing,
     atEnd: step >= all.length - 1,
     wrapTitle: w.title, wrapBody: w.body, wrapLimit: w.limit,
+    hasNotes: notes.length > 0,
     noNotes: notes.length === 0,
     noteCount: notes.length,
     notes: notes,
-    notesOpen: notesOpen,
-    showPin: notes.length > 0 && !state.notesAll && !state.notesOpen,
-    showCollapse: notes.length > 0 && !state.notesAll && state.notesOpen,
-    notesHint: notes.length > 0 && !notesOpen
+    notesOpen: notes.length > 0
   };
 }
 
@@ -807,8 +803,8 @@ function journeysHtml(v){
 function progressHtml(v){
   var segs = v.segments.map(function(s){
     var label = s.on
-      ? '<span style="font:600 11px/1 Pretendard,system-ui,sans-serif;color:#191F28">'+s.label+'</span>'
-      : '<span style="font:500 11px/1 Pretendard,system-ui,sans-serif;color:#B0B8C1">'+s.label+'</span>';
+      ? '<span style="font:600 12px/1 Pretendard,system-ui,sans-serif;color:#191F28">'+s.label+'</span>'
+      : '<span style="font:600 12px/1 Pretendard,system-ui,sans-serif;color:#B0B8C1">'+s.label+'</span>';
     var dots = s.dots.map(function(d){
       var bg = d.cur ? '#0073FA' : (d.done ? '#B0D5FE' : '#E5E8EB');
       return '<button data-act="dot" data-i="'+d.idx+'" style="appearance:none;border:none;padding:0;width:22px;height:6px;border-radius:3px;background:'+bg+';cursor:pointer"></button>';
@@ -818,11 +814,11 @@ function progressHtml(v){
 
   var toggles = v.toggles.map(function(t){
     if (t.on) {
-      return '<button data-act="'+t.act+'" style="appearance:none;display:flex;align-items:center;gap:8px;border:1px solid #0073FA;background:rgba(0,115,250,.06);color:#0050B5;font:600 12px/1 Pretendard,system-ui,sans-serif;padding:9px 12px;border-radius:6px;cursor:pointer">'+
+      return '<button data-act="'+t.act+'" style="appearance:none;display:flex;align-items:center;gap:8px;border:1px solid #ffffff;background:#ffffff;color:#0050B5;font:600 14px/1 Pretendard,system-ui,sans-serif;padding:9px 12px;border-radius:6px;cursor:pointer">'+
         '<span style="width:26px;height:15px;border-radius:24px;background:#0073FA;display:flex;align-items:center;justify-content:flex-end;padding:2px;box-sizing:border-box"><span style="width:11px;height:11px;border-radius:9999px;background:#fff;display:block"></span></span>'+
         '<span>'+t.label+'</span></button>';
     }
-    return '<button data-act="'+t.act+'" class="hv-toff" style="appearance:none;display:flex;align-items:center;gap:8px;border:1px solid #D1D6DB;background:#fff;color:#6B7684;font:500 12px/1 Pretendard,system-ui,sans-serif;padding:9px 12px;border-radius:6px;cursor:pointer">'+
+    return '<button data-act="'+t.act+'" class="hv-toff" style="appearance:none;display:flex;align-items:center;gap:8px;border:1px solid #ffffff;background:#fff;color:#6B7684;font:500 14px/1 Pretendard,system-ui,sans-serif;padding:9px 12px;border-radius:6px;cursor:pointer">'+
       '<span style="width:26px;height:15px;border-radius:24px;background:#D1D6DB;display:flex;align-items:center;justify-content:flex-start;padding:2px;box-sizing:border-box"><span style="width:11px;height:11px;border-radius:9999px;background:#fff;display:block"></span></span>'+
       '<span>'+t.label+'</span></button>';
   }).join('');
@@ -900,28 +896,25 @@ function noteCardHtml(n){
 }
 
 function notesPanelHtml(v){
-  var head = '<div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">'+
-    '<span style="font:600 12px/1 Pretendard,system-ui,sans-serif;color:#191F28">'+v.stepTitle+'</span>';
-  if (v.showPin) {
-    head += '<button data-act="notes" class="hv-pin" style="appearance:none;display:flex;align-items:center;gap:7px;border:1px solid #FF9900;background:rgba(255,153,0,.1);color:#C2731B;font:600 11.5px/1 Pretendard,system-ui,sans-serif;padding:7px 10px;border-radius:6px;cursor:pointer">'+
-      '<span style="width:15px;height:15px;border-radius:9999px;background:#FF9900;color:#fff;display:flex;align-items:center;justify-content:center;font:700 10px/1 Pretendard,system-ui,sans-serif">!</span>'+
-      '<span>검토 포인트 '+v.noteCount+'</span></button>';
-  }
-  if (v.showCollapse) {
-    head += '<button data-act="notes" class="hv-collapse" style="appearance:none;border:1px solid #D1D6DB;background:#fff;color:#6B7684;font:500 11.5px/1 Pretendard,system-ui,sans-serif;padding:7px 10px;border-radius:6px;cursor:pointer">주석 접기</button>';
+  var inner =
+    '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">'+
+      '<span style="font:700 14px/1.3 Pretendard,system-ui,sans-serif;color:#191F28">검토 포인트</span>'+
+      '<span style="font:500 11.5px/1 Pretendard,system-ui,sans-serif;color:#8B95A1">'+v.stepTitle+'</span>'+
+    '</div>';
+
+  if (v.notesOpen) {
+    inner += '<div style="display:flex;flex-direction:column;gap:10px">'+ v.notes.map(noteCardHtml).join('') +'</div>';
   }
   if (v.noNotes) {
-    head += '<span style="font:400 11.5px/1 Pretendard,system-ui,sans-serif;color:#B0B8C1">검토 포인트 없음</span>';
-  }
-  head += '</div>';
-
-  var body = '';
-  if (v.notesOpen) body += v.notes.map(noteCardHtml).join('');
-  if (v.notesHint) {
-    body += '<p style="margin:0;font:400 12px/1.6 Pretendard,system-ui,sans-serif;color:#8B95A1;word-break:keep-all">주석은 접혀 있습니다. 흐름을 먼저 따라가 보고 결정이 필요한 지점에서 위 버튼을 눌러 펼치세요. 리뷰 미팅에서는 <strong style="font-weight:600;color:#4E5968">검토 주석 보기</strong>를 켜서 항상 펼친 상태로 두세요.</p>';
+    inner += '<div style="border:1px dashed #D1D6DB;border-radius:8px;padding:20px 16px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center">'+
+      '<span style="font:600 12.5px/1.4 Pretendard,system-ui,sans-serif;color:#8B95A1">이 단계엔 검토 포인트가 없습니다</span>'+
+      '<span style="max-width:250px;font:400 11.5px/1.6 Pretendard,system-ui,sans-serif;color:#B0B8C1;word-break:keep-all">결정이 필요하지 않은 플로우 구간입니다.</span>'+
+    '</div>';
   }
 
-  return '<div style="flex:1;min-width:300px;display:flex;flex-direction:column;gap:12px">'+ head + body +'</div>';
+  return '<div style="flex:1;min-width:300px;display:flex;flex-direction:column;gap:12px">'+
+    '<div style="background:#fff;border:1px solid #E5E8EB;border-radius:8px;padding:18px;display:flex;flex-direction:column;gap:14px">'+ inner +'</div>'+
+  '</div>';
 }
 
 /* ---------- top-level render ---------------------------------------------- */
@@ -932,7 +925,7 @@ function render(){
 
   var html =
     '<div style="min-height:100vh;padding:30px 34px 56px;box-sizing:border-box">'+
-    '<div style="max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:20px">'+
+    '<div style="max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:20px">'+
 
     // header
     '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:24px">'+
@@ -993,10 +986,8 @@ document.getElementById('root').addEventListener('click', function(e){
     case 'journey': stop(); state.journey = parseInt(t.getAttribute('data-i'), 10); render(); break;
     case 'dot':     stop(); state.step = parseInt(t.getAttribute('data-i'), 10); render(); break;
     case 'tclosed': stop(); state.closed = !state.closed; state.step = Math.min(state.step, 4); render(); break;
-    case 'tnotes':  state.notesAll = !state.notesAll; state.notesOpen = false; render(); break;
     case 'prev':    stop(); state.step = Math.max(0, state.step - 1); render(); break;
     case 'next':    stop(); state.step = Math.min(total - 1, state.step + 1); render(); break;
-    case 'notes':   state.notesOpen = !state.notesOpen; render(); break;
     case 'play':
       if (state.playing) { stop(); render(); }
       else { if (state.step >= total - 1) state.step = 0; play(); render(); }

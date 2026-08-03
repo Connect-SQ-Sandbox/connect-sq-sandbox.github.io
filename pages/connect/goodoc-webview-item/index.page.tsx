@@ -3,9 +3,10 @@ import imgThumb from '@/assets/kakao-reference/ab-thumb-surgery.png';
 
 /**
  * goodoc-webview-item — 굿닥 병원 진료 예약하기 (진료항목 타입)
- * 원본/참고: Figma 예약하기/Case2 (node 8327-17127)
+ * 원본/참고: Figma 예약하기/Variant2 (node 8333-18223), 상품정보 카드 node 8430-23833
  * 배포: https://connect-sq-sandbox.github.io/out/goodoc-webview-item.html
  * 표준 클론(goodoc-webview-item.html)의 body+script를 dangerouslySetInnerHTML+useEffect로 주입(self-contained).
+ * 이 파일은 표준 클론에서 생성됨 — 수정은 클론에서 하고 다시 동기화할 것.
  */
 
 const BODY = `<div class="app">
@@ -20,18 +21,21 @@ const BODY = `<div class="app">
     <!-- 확인 안내 + 진료 정보(일정·상품·금액 통합 카드) -->
     <div class="summary">
       <h2 class="h">아래 내용을 확인해 주세요.</h2>
-      <div class="txcard">
+      <!-- 카카오 선택 상품·일정 기준으로 굿닥 진료항목/가격옵션을 읽기 전용 표시 (JS renderTx) -->
+      <div class="txcard" aria-readonly="true">
         <div class="csched"><span id="schedTop">일정 · 2026.07.21(화) 오후 12:30</span></div>
         <div class="top">
           <div class="tinfo">
-            <div class="tname">성형외과 신규예약</div>
-            <div class="tdesc">ABsolute beauty, 자연스럽게 더 나답게. 눈·코·윤곽 등 맞춤 상담을 제공합니다.</div>
+            <div class="tname" id="txName">성형외과 신규예약</div>
+            <div class="tdesc" id="txDesc">ABsolute beauty, 자연스럽게 더 나답게. 눈·코·윤곽 등 맞춤 상담을 제공합니다.</div>
           </div>
-          <div class="tthumb" style="background-image:url('__IMG_IMG_THUMB__')"></div>
+          <div class="tthumb" id="txThumb"></div>
         </div>
-        <div class="prices">
-          <div class="price">신규 상담 / 상담 후 결정</div>
-          <div class="price">정밀 진단 상담 / 30,000원 ~</div>
+        <div class="prices" id="txPrices"></div>
+        <div class="pdiv"></div>
+        <div class="psum">
+          <div class="slab">예상 결제 금액</div>
+          <div class="sval" id="txSum">-</div>
         </div>
       </div>
       <div class="cardnote">방문 후 상담을 통해 금액이 변경될 수 있어요</div>
@@ -59,16 +63,40 @@ const BODY = `<div class="app">
           <div class="helper">입력하신 정보는 예약을 위해 병원에만 전달되며, 굿닥에서는 별도 수집 하지 않습니다.<br>또한 입력하신 정보와 환자 정보가 일치하지 않으면 진료 시 불이익이 발생할 수 있습니다.</div>
         </div>
 
+        <!-- 병원 약관 동의 -->
+        <div class="field-group">
+          <div class="ftitle">병원 약관 동의<span class="ess">필수</span></div>
+          <div class="consent-list">
+            <div class="consent-row all" id="consentAll" onclick="toggleAllConsent()">
+              <div class="cwrap"><span class="ckb"></span><span class="lab">전체 동의</span></div>
+            </div>
+            <div class="consent-row" data-consent data-req onclick="toggleConsent(this)">
+              <div class="cwrap"><span class="ckb"></span><span class="lab">[필수] 병원 동의서</span></div>
+              <button type="button" class="arrow" onclick="event.stopPropagation();openSheet('[필수] 병원 동의서','환자의 원활한 진료 접수를 위해 성명·연락처·생년월일 등 예약 정보를 해당 병원에 제공하는 것에 동의합니다. 제공된 정보는 진료 목적 외로 사용되지 않습니다.')">
+                <svg viewBox="0 0 18 18" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.21967 3.96967C6.51256 3.67678 6.98744 3.67678 7.28033 3.96967L11.7803 8.46967C12.0732 8.76256 12.0732 9.23744 11.7803 9.53033L7.28033 14.0303C6.98744 14.3232 6.51256 14.3232 6.21967 14.0303C5.92678 13.7374 5.92678 13.2626 6.21967 12.9697L10.1893 9L6.21967 5.03033C5.92678 4.73744 5.92678 4.26256 6.21967 3.96967Z" fill="currentColor"/></svg>
+              </button>
+            </div>
+            <div class="consent-row" data-consent onclick="toggleConsent(this)">
+              <div class="cwrap"><span class="ckb"></span><span class="lab">[선택] 병원 동의서</span></div>
+              <button type="button" class="arrow" onclick="event.stopPropagation();openSheet('[선택] 병원 동의서','마케팅·재방문 안내 등 부가 목적의 정보 활용에 동의합니다. 선택 항목으로 동의하지 않아도 예약 신청이 가능합니다.')">
+                <svg viewBox="0 0 18 18" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.21967 3.96967C6.51256 3.67678 6.98744 3.67678 7.28033 3.96967L11.7803 8.46967C12.0732 8.76256 12.0732 9.23744 11.7803 9.53033L7.28033 14.0303C6.98744 14.3232 6.51256 14.3232 6.21967 14.0303C5.92678 13.7374 5.92678 13.2626 6.21967 12.9697L10.1893 9L6.21967 5.03033C5.92678 4.73744 5.92678 4.26256 6.21967 3.96967Z" fill="currentColor"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- 법정대리인 정보 (만 14세 이하 토글 ON 시에만 노출) -->
         <div class="field-group rep hidden" id="repSection">
           <div class="ftitle">법정대리인 정보<span class="ess">필수</span></div>
           <div class="field">
             <label class="flabel">이름</label>
-            <input class="inp" id="repName" placeholder="법정대리인의 이름을 입력해 주세요." oninput="validate()">
+            <input class="inp" id="repName" placeholder="법정대리인의 이름을 입력해 주세요." oninput="onRepInput(this)">
+            <div class="err-msg hidden" id="repNameErr">법정대리인의 이름을 입력해 주세요.</div>
           </div>
           <div class="field">
             <label class="flabel">연락처</label>
-            <input class="inp" id="repPhone" inputmode="numeric" placeholder="법정대리인의 연락처를 입력해 주세요." oninput="validate()">
+            <input class="inp" id="repPhone" inputmode="numeric" placeholder="법정대리인의 연락처를 입력해 주세요." oninput="onRepInput(this)">
+            <div class="err-msg hidden" id="repPhoneErr">법정대리인의 연락처를 입력해 주세요.</div>
           </div>
           <div class="helper">관련 법(개인정보 보호법)에 따라 만 14세 미만 환자의 경우 개인정보 처리 동의는 법정대리인을 지정하여 받습니다. 병원 약관 동의 시 법정대리인의 성명·연락처 정보를 수집해 보호자 동의를 확인하고 환자의 개인정보를 안전하게 처리할 수 있도록 합니다.</div>
         </div>
@@ -130,12 +158,65 @@ const SCRIPT = `var TERMS=[
 
   var A={d:21,wd:'화',period:'오후',t:'12:30',treat:'신규상담'};
   try{var s=JSON.parse(sessionStorage.getItem('gd_appt'));if(s&&s.d)A=Object.assign(A,s);}catch(e){}
+
+  /* ── 카카오 선택 상품 → 굿닥 진료항목 매핑 ────────────────────────────────
+     카카오에서 고른 상품명(gd_appt.treat)을 키로 굿닥의 실제 treatment와
+     가격옵션(가격명·판매가)을 찾아 읽기 전용으로 렌더한다.
+     price: 숫자=확정 판매가 / null=상담 후 결정. from:true → "…원~"(최소가). */
+  var THUMB='__IMG_IMG_THUMB__';
+  var GD_TREATMENTS={
+    '신규상담':{
+      name:'성형외과 신규 상담',
+      desc:'ABsolute beauty, 자연스럽게 더 나답게. 눈·코·윤곽 등 첫 방문 고객 맞춤 상담.',
+      thumb:THUMB,
+      options:[
+        {label:'신규 상담',price:null},
+        {label:'정밀 진단 상담',price:30000,from:true}
+      ]
+    },
+    '재진 (대표번호로 전화부탁드립니다)':{
+      name:'성형외과 재진 상담',
+      desc:'수술·시술 이력이 있는 고객 대상 경과 확인 및 후속 케어 상담.',
+      thumb:THUMB,
+      options:[
+        {label:'재진 상담',price:20000},
+        {label:'경과 관찰 검사',price:10000}
+      ]
+    }
+  };
+  var GD_FALLBACK={name:'성형외과 진료 상담',desc:'선택하신 항목으로 예약 신청이 접수됩니다.',thumb:THUMB,
+    options:[{label:'상담료',price:null}]};
+
+  function won(n){return String(n).replace(/\\B(?=(\\d{3})+(?!\\d))/g,',');}
+  function optText(o){return o.price==null?'상담 후 결정':won(o.price)+'원'+(o.from?'~':'');}
+
+  function renderTx(){
+    var t=GD_TREATMENTS[A.treat]||GD_FALLBACK;
+    document.getElementById('txName').textContent=t.name;
+    document.getElementById('txDesc').textContent=t.desc;
+    document.getElementById('txThumb').style.backgroundImage="url('"+t.thumb+"')";
+
+    var wrap=document.getElementById('txPrices');
+    wrap.innerHTML='';
+    var sum=0, approx=false, fixed=0;
+    t.options.forEach(function(o){
+      var row=document.createElement('div'); row.className='prow';
+      var nm=document.createElement('div'); nm.className='oname'; nm.textContent=o.label;
+      var vl=document.createElement('div'); vl.className='oval'+(o.price==null?' muted':''); vl.textContent=optText(o);
+      row.appendChild(nm); row.appendChild(vl); wrap.appendChild(row);
+      if(o.price==null){approx=true;} else {sum+=o.price; fixed++; if(o.from) approx=true;}
+    });
+    // 예상 결제 금액: 확정 판매가 합계. 최소가(~)·상담 후 결정이 섞이면 "~"로 표기
+    document.getElementById('txSum').textContent = fixed===0 ? '상담 후 결정' : won(sum)+'원'+(approx?'~':'');
+  }
+
   (function(){
     var pad=function(n){return String(n).padStart(2,'0');};
     var whenFull='7월 '+A.d+'일 ('+A.wd+') '+A.period+' '+A.t;
     document.getElementById('schedTop').textContent='일정 · 2026.07.'+pad(A.d)+'('+A.wd+') '+A.period+' '+A.t;
     document.getElementById('doneWhen').textContent=whenFull;
     document.getElementById('doneTreat').textContent=A.treat||'신규상담';
+    renderTx();
   })();
 
   // 유효성 정규식: 생년월일(YYMMDD) + 성별자리
@@ -160,6 +241,20 @@ const SCRIPT = `var TERMS=[
     refreshMinor();
   }
 
+  function ckbOf(row){return row.querySelector('.ckb');}
+  function toggleConsent(el){ckbOf(el).classList.toggle('on');syncAll();}
+  function toggleAllConsent(){
+    var all=document.getElementById('consentAll');
+    var on=!ckbOf(all).classList.contains('on');
+    ckbOf(all).classList.toggle('on',on);
+    document.querySelectorAll('[data-consent]').forEach(function(c){ckbOf(c).classList.toggle('on',on);});
+  }
+  function syncAll(){
+    var items=[].slice.call(document.querySelectorAll('[data-consent]'));
+    var allOn=items.length>0&&items.every(function(c){return ckbOf(c).classList.contains('on');});
+    ckbOf(document.getElementById('consentAll')).classList.toggle('on',allOn);
+  }
+
   function openTerm(i){openSheet(TERMS[i].title,TERMS[i].body);}
   function openSheet(title,body){
     document.getElementById('sheet').innerHTML='<h4>'+title+'</h4><div class="body">'+body+'</div><button class="close" onclick="closeOv()">확인</button>';
@@ -168,7 +263,25 @@ const SCRIPT = `var TERMS=[
   function closeOv(){document.getElementById('ov').classList.add('hidden');}
   document.getElementById('ov').addEventListener('click',function(e){if(e.target.id==='ov')closeOv();});
 
-  function validate(){}
+  // 법정대리인 정보 유효성: 이름·연락처 미입력 시 각 필드 하단에 인라인 에러 노출
+  function setRepError(){
+    var name=document.getElementById('repName'),phone=document.getElementById('repPhone');
+    var nameEmpty=!name.value.trim(),phoneEmpty=!phone.value.trim();
+    name.classList.toggle('err',nameEmpty);
+    document.getElementById('repNameErr').classList.toggle('hidden',!nameEmpty);
+    phone.classList.toggle('err',phoneEmpty);
+    document.getElementById('repPhoneErr').classList.toggle('hidden',!phoneEmpty);
+    return !nameEmpty && !phoneEmpty;
+  }
+  function clearRepError(){
+    ['repName','repPhone'].forEach(function(id){document.getElementById(id).classList.remove('err');});
+    document.getElementById('repNameErr').classList.add('hidden');
+    document.getElementById('repPhoneErr').classList.add('hidden');
+  }
+  function onRepInput(el){
+    el.classList.remove('err');
+    document.getElementById(el.id==='repName'?'repNameErr':'repPhoneErr').classList.add('hidden');
+  }
 
   // 생년월일(YYMMDD)+성별자리로 만 나이 계산 → 만 14세 미만이면 법정대리인 정보 노출
   function ageFromBirth(yymmdd,code){
@@ -189,15 +302,16 @@ const SCRIPT = `var TERMS=[
     return age!==null&&age<14;
   }
   function refreshMinor(){
-    document.getElementById('repSection').classList.toggle('hidden',!isMinor());
+    var minor=isMinor();
+    document.getElementById('repSection').classList.toggle('hidden',!minor);
+    if(!minor) clearRepError();
   }
 
   function submitApply(){
     if(!bdValid()){ setBdError(true); document.getElementById('bdGroup').scrollIntoView({block:'center'}); return; }
-    if(isMinor()){
-      if(!document.getElementById('repName').value.trim()){ toast('법정대리인 이름을 입력해 주세요.'); return; }
-      if(!document.getElementById('repPhone').value.trim()){ toast('법정대리인 연락처를 입력해 주세요.'); return; }
-    }
+    var reqOk=[].slice.call(document.querySelectorAll('[data-consent][data-req]')).every(function(c){return ckbOf(c).classList.contains('on');});
+    if(!reqOk){ toast('필수 병원 약관에 동의해 주세요.'); return; }
+    if(isMinor() && !setRepError()){ document.getElementById('repSection').scrollIntoView({block:'center'}); return; }
     var b=document.getElementById('cta'); b.textContent='요청 중'; b.disabled=true;
     setTimeout(function(){ document.getElementById('done').classList.remove('hidden'); },900);
   }

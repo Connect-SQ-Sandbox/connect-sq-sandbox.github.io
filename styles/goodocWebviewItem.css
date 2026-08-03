@@ -1,5 +1,5 @@
 :root{
-    --white:#fff; --g10:#F9F9FB; --g15:#F6F7F9; --g20:#F2F4F7; --g40:#CACED8;
+    --white:#fff; --g10:#F9F9FB; --g15:#F6F7F9; --g20:#F2F4F7; --g30:#E3E6ED; --g40:#CACED8;
     --g50:#A8AEBD; --g60:#808799; --g70:#5D6474; --g80:#434956; --g90:#31353F;
     --blue50:#479DFF; --blue60:#0073FA; --green:#41D293;
   }
@@ -70,6 +70,17 @@
   .inp::placeholder{color:var(--g50);font-family:inherit;}
   .inp:focus{border-color:var(--g90);}
   .helper{font-size:13px;font-weight:400;line-height:20px;color:var(--g60);margin-top:16px;}
+
+  /* 병원에 전달할 내용 (textArea) — box h148 · border Gray/30 · radius8 · p12 · 우하단 카운터 */
+  .ta-box{height:148px;border:1px solid var(--g30);border-radius:8px;background:var(--white);
+    padding:12px;display:flex;flex-direction:column;gap:4px;}
+  .ta-box:focus-within{border-color:var(--g90);}
+  .ta-box textarea{flex:1;min-height:0;width:100%;border:0;outline:none;resize:none;background:transparent;
+    padding:0 0 0 4px;font-family:inherit;font-size:16px;font-weight:400;line-height:24px;color:var(--g90);}
+  .ta-box textarea::placeholder{color:var(--g50);font-family:inherit;}
+  .ta-count{display:flex;justify-content:flex-end;gap:2px;font-size:12px;font-weight:400;line-height:18px;
+    color:var(--g60);white-space:nowrap;}
+  .ta-count .sep{color:var(--g50);}
   .err-msg{color:#FA4655;font-size:13px;font-weight:400;line-height:20px;margin-bottom:12px;}
   .field-group.has-err .ftitle{margin-bottom:0;}
   .inp.err,.inp.err:focus{border-color:#EC3847;}
@@ -82,17 +93,6 @@
   .bd-gender-wrap{flex:1;display:flex;align-items:center;gap:8px;min-width:0;}
   .bd-row .bd-gender{width:48px;flex:none;padding:0;text-align:center;}
   .bd-dots{color:var(--g40);letter-spacing:2px;font-size:13px;line-height:20px;}
-
-  /* 병원 약관 동의 — checkbox 18 · 행 h40 */
-  .ckb{width:18px;height:18px;border-radius:4px;border:1px solid var(--g40);background:#fff;position:relative;flex:none;}
-  .ckb.on{background:var(--blue60);border-color:var(--blue60);}
-  .ckb.on::after{content:"";position:absolute;left:6px;top:3px;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);}
-  .consent-row{display:flex;align-items:center;justify-content:space-between;height:40px;cursor:pointer;gap:12px;}
-  .consent-row .cwrap{display:flex;align-items:center;gap:12px;min-width:0;}
-  .consent-row .lab{font-size:14px;font-weight:400;line-height:22px;color:var(--g70);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .consent-row.all .lab{font-weight:600;color:var(--g80);}
-  .consent-row .arrow{width:18px;height:18px;flex:none;display:flex;align-items:center;justify-content:center;background:none;border:0;cursor:pointer;color:var(--g40);}
-  .consent-row .arrow svg{width:18px;height:18px;display:block;}
 
   /* 이용자 약관 동의 (pt32 pb40 px20) */
   .terms{padding:32px 0 40px;border-top:8px solid var(--g20);}

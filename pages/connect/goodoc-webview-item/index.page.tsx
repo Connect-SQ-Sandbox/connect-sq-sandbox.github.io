@@ -60,7 +60,6 @@ const BODY = `<div class="app">
               <span class="bd-dots">●●●●●●</span>
             </div>
           </div>
-          <div class="helper">입력하신 정보는 예약을 위해 병원에만 전달되며, 굿닥에서는 별도 수집 하지 않습니다.<br>또한 입력하신 정보와 환자 정보가 일치하지 않으면 진료 시 불이익이 발생할 수 있습니다.</div>
         </div>
 
         <!-- 병원 약관 동의 -->
@@ -113,11 +112,6 @@ const BODY = `<div class="app">
           <div class="term-note">'요청' 버튼을 클릭하면 굿닥 서비스 이용약관과 개인정보 수집·이용 동의에 대한 동의를 받습니다.</div>
           <div class="term-note">(주)굿닥은 병원으로부터 진료 접수·예약 업무를 위탁받아 개인정보를 처리하는 업무만을 수행하며, 접수·예약은 병원 시스템 또는 네트워크 사정으로 실패할 수 있으며, 이 경우 (주)굿닥은 책임을 지지 않습니다.</div>
           <div class="term-note">병원의 설정에 따라 추가 정보(예: 주소, 내원 목적, 병원 약관 동의 등)가 요구될 수 있습니다.</div>
-        </div>
-        <div class="legal-block">
-          <div class="lt">주민등록번호 수집 및 이용 근거 법률 안내</div>
-          <div class="lb">본 병원은 아래 근거 법령에 따라 주민등록번호를 수집 및 이용하고 있습니다.</div>
-          <div class="lb bullet">의료법 제17조, 제22조 등에서 정한 의무 이행을 위하여 동법 시행령 제42조의2에 의거하여 환자의 주민등록번호를 수집 및 이용하고 있습니다.</div>
         </div>
         <div class="legal-block">
           <div class="lt">개인정보 처리 위탁(재위탁) 사실 안내</div>

@@ -2,6 +2,8 @@
     --white:#fff; --g10:#F9F9FB; --g15:#F6F7F9; --g20:#F2F4F7; --g30:#E3E6ED; --g40:#CACED8;
     --g50:#A8AEBD; --g60:#808799; --g70:#5D6474; --g80:#434956; --g90:#31353F;
     --blue50:#479DFF; --blue60:#0073FA; --green:#41D293;
+    /* 카카오 토큰 (완료 화면 = 카카오톡 예약하기 페이지) */
+    --kk-yellow:#FEE500; --kk-ink:#191919; --kk-sub:#777; --kk-line2:#E5E5E5;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;}
@@ -43,7 +45,6 @@
   .txcard .prow{display:flex;gap:8px;align-items:flex-start;padding:0 20px;}
   .txcard .oname{flex:1;min-width:0;font-size:14px;font-weight:400;line-height:22px;color:var(--g70);word-break:break-word;}
   .txcard .oval{font-size:14px;font-weight:600;line-height:22px;color:var(--g90);white-space:nowrap;}
-  .txcard .oval.muted{font-weight:400;color:var(--g60);}
   /* Div (px20 · 1px Gray/20) */
   .txcard .pdiv{margin:0 20px;height:1px;background:var(--g20);}
   /* Sum(총금액) — px20 py16 */
@@ -114,17 +115,33 @@
   .cta button{width:100%;height:52px;border:0;border-radius:8px;background:var(--blue60);color:#fff;
     font-size:16px;font-weight:600;line-height:24px;cursor:pointer;}
 
-  /* completion */
+  /* completion — 카카오톡 예약하기 페이지(카카오 소유 화면). 폰트·GNB·버튼 모두 카카오 스타일 */
   .done{position:fixed;inset:0;background:var(--white);z-index:40;max-width:480px;margin:0 auto;
-    display:flex;flex-direction:column;align-items:center;padding:0 24px;}
-  .done .check{width:72px;height:72px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;margin:120px 0 24px;}
+    display:flex;flex-direction:column;align-items:center;
+    font-family:"Apple SD Gothic Neo","Malgun Gothic","맑은 고딕",system-ui,-apple-system,"Helvetica Neue","Segoe UI",Roboto,Arial,sans-serif;
+    color:var(--kk-ink);}
+  /* GNB (카카오 topbar h50 · 좌 닫기 · 중앙 타이틀) */
+  .done .kgnb{width:100%;flex:none;height:50px;background:#fff;display:flex;align-items:center;
+    padding:0 8px;border-bottom:1px solid #F0F0F0;}
+  .done .kgnb .tb-btn{width:40px;height:40px;flex:none;display:flex;align-items:center;justify-content:center;
+    background:none;border:0;cursor:pointer;color:var(--kk-ink);}
+  .done .kgnb .tb-btn svg{width:24px;height:24px;display:block;}
+  .done .kgnb .tb-title{flex:1;text-align:center;font-size:16px;font-weight:700;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .done .kbody{flex:1;width:100%;display:flex;flex-direction:column;align-items:center;padding:0 24px;overflow-y:auto;}
+  .done .check{width:72px;height:72px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;margin:80px 0 24px;}
   .done .check svg{width:38px;height:38px;color:#fff;}
-  .done .dt{font-size:22px;font-weight:800;color:var(--g90);margin-bottom:10px;letter-spacing:-.02em;}
-  .done .ds{font-size:14px;color:var(--g60);text-align:center;line-height:1.6;margin-bottom:28px;}
-  .done .dbox{width:100%;border:1px solid var(--g40);border-radius:8px;padding:18px 20px;}
+  .done .dt{font-size:22px;font-weight:700;color:var(--kk-ink);margin-bottom:10px;letter-spacing:-.02em;}
+  .done .ds{font-size:14px;color:var(--kk-sub);text-align:center;line-height:1.6;margin-bottom:28px;}
+  .done .dbox{width:100%;border:1px solid var(--kk-line2);border-radius:6px;padding:18px 20px;}
   .done .dbox .dr{display:flex;justify-content:space-between;padding:7px 0;font-size:14px;gap:12px;}
-  .done .dbox .dk{color:var(--g60);flex:none;}
-  .done .dbox .dv{color:var(--g90);font-weight:600;text-align:right;}
+  .done .dbox .dk{color:var(--kk-sub);flex:none;}
+  .done .dbox .dv{color:var(--kk-ink);font-weight:700;text-align:right;}
+  /* 하단 CTA (카카오 노란 버튼 h48 · radius6 · 16/700) */
+  .done .kbtmbar{width:100%;flex:none;background:#fff;border-top:1px solid #F0F0F0;padding:8px 12px 12px;}
+  .done .kbtn{width:100%;height:48px;border:0;border-radius:6px;background:var(--kk-yellow);
+    color:var(--kk-ink);font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;transition:opacity .15s;}
+  .done .kbtn:active{opacity:.7;}
   .hidden{display:none!important;}
 
   /* modal */

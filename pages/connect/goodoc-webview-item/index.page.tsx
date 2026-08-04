@@ -51,7 +51,7 @@ const BODY = `<div class="app">
         <!-- 생년월일ㆍ성별 -->
         <div class="field-group" id="bdGroup">
           <div class="ftitle">생년월일ㆍ성별<span class="ess">필수</span></div>
-          <div class="err-msg hidden" id="bdErr">올바른 주민등록번호를 입력해 주세요.</div>
+          <div class="err-msg hidden" id="bdErr">올바른 생년월일ㆍ성별을 입력해 주세요.</div>
           <div class="bd-row">
             <input class="inp bd-birth" id="bdBirth" inputmode="numeric" maxlength="6" placeholder="000000" oninput="onBd()">
             <span class="bd-dash">-</span>
@@ -111,20 +111,29 @@ const BODY = `<div class="app">
   <div class="cta"><button id="cta" onclick="submitApply()">예약 요청</button></div>
 </div>
 
-<!-- completion -->
+<!-- completion — 굿닥 웹뷰가 아니라 카카오톡 예약하기 페이지 -->
 <div class="done hidden" id="done">
-  <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 12 5 5 9-10"/></svg></div>
-  <div class="dt">예약 요청이 완료되었어요</div>
-  <div class="ds">병원 확인 후 예약이 최종 확정됩니다.<br>확정 결과는 카카오톡으로 안내드려요.</div>
-  <div class="dbox">
-    <div class="dr"><span class="dk">병원</span><span class="dv">에이비성형외과의원</span></div>
-    <div class="dr"><span class="dk">진료항목</span><span class="dv" id="doneItem">성형외과 신규 상담</span></div>
-    <div class="dr"><span class="dk">진료/시술</span><span class="dv" id="doneTreat">신규상담</span></div>
-    <div class="dr"><span class="dk">일시</span><span class="dv" id="doneWhen">7월 21일 (화) 오후 12:30</span></div>
-    <div class="dr"><span class="dk">예약자</span><span class="dv">김세화</span></div>
+  <header class="kgnb">
+    <button type="button" class="tb-btn" aria-label="닫기" onclick="toast('카카오톡 예약하기를 닫습니다')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+    <div class="tb-title">카카오톡 예약하기</div>
+    <span class="tb-btn" aria-hidden="true"></span>
+  </header>
+  <div class="kbody">
+    <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 12 5 5 9-10"/></svg></div>
+    <div class="dt">예약 요청이 완료되었어요</div>
+    <div class="ds">병원 확인 후 예약이 최종 확정됩니다.<br>확정 결과는 카카오톡으로 안내드려요.</div>
+    <div class="dbox">
+      <div class="dr"><span class="dk">병원</span><span class="dv">에이비성형외과의원</span></div>
+      <div class="dr"><span class="dk">진료항목</span><span class="dv" id="doneItem">성형외과 신규 상담</span></div>
+      <div class="dr"><span class="dk">진료/시술</span><span class="dv" id="doneTreat">신규상담</span></div>
+      <div class="dr"><span class="dk">일시</span><span class="dv" id="doneWhen">7월 21일 (화) 오후 12:30</span></div>
+      <div class="dr"><span class="dk">예약자</span><span class="dv">김세화</span></div>
+    </div>
   </div>
-  <div style="width:100%;margin-top:auto;padding:20px 0 24px;">
-    <button style="width:100%;height:52px;border:0;border-radius:8px;background:#31353F;color:#fff;font-size:16px;font-weight:600;cursor:pointer;" onclick="toast('웹뷰를 닫습니다 (앱으로 복귀)')">확인</button>
+  <div class="kbtmbar">
+    <button type="button" class="kbtn" onclick="toast('카카오톡 예약하기를 닫습니다')">확인</button>
   </div>
 </div>
 
@@ -184,7 +193,7 @@ const SCRIPT = `var TERMS=[
     t.options.forEach(function(o){
       var row=document.createElement('div'); row.className='prow';
       var nm=document.createElement('div'); nm.className='oname'; nm.textContent=o.label;
-      var vl=document.createElement('div'); vl.className='oval'+(o.price==null?' muted':''); vl.textContent=optText(o);
+      var vl=document.createElement('div'); vl.className='oval'; vl.textContent=optText(o);
       row.appendChild(nm); row.appendChild(vl); wrap.appendChild(row);
       if(o.price==null){approx=true;} else {sum+=o.price; fixed++; if(o.from) approx=true;}
     });

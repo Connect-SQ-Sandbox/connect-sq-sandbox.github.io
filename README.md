@@ -8,7 +8,8 @@
 ## 공유 링크 (GitHub Pages)
 
 - 랜딩: **https://connect-sq-sandbox.github.io/**
-- 진료항목·카카오 노출 + 예약 신청 내역: **https://connect-sq-sandbox.github.io/out/ti-kakao.html**
+- 병원 어드민 · 비급여 예약 8월 프로토타입(현행): **https://connect-sq-sandbox.github.io/out/admin-nonpay-aug.html**
+- 진료항목·카카오 노출 + 예약 신청 내역(7월 기준선): **https://connect-sq-sandbox.github.io/out/ti-kakao.html**
 
 > Pages 활성화: 레포 Settings → Pages → Source `main` / `/ (root)`. `*.github.io` 레포라 main 푸시 시 자동 배포된다. (루트 `.nojekyll`로 정적 파일 그대로 서빙)
 
@@ -16,7 +17,8 @@
 
 | 화면 | 소스 | 산출물 | 설명 |
 |---|---|---|---|
-| **진료항목 → 카카오 노출 + 예약 신청 내역** (현행) | `pages/connect/ti-kakao/index.page.tsx` | `out/ti-kakao.html` | 진료항목 목록(인입 채널 심볼 병합) · 진료항목 상세 폼("카카오톡 예약하기에서도 보이기" 토글 + 자동 매핑·규격 검증 + 굿닥 미리보기) · 예약 신청 내역(채널 컬럼·상세 모달). LNB로 화면 이동. |
+| **병원 어드민 · 비급여 예약 8월 프로토타입** (현행) | `pages/connect/admin-nonpay-aug/index.page.tsx` | `out/admin-nonpay-aug.html` | `ti-kakao`(7월 기준선)에서 분기해 **receipt-web@staging 기준으로 현행화**한 버전. 예약 신청 내역(자동종료·채널 첫 열·hover 퀵액션·상세 7섹션·페이지네이션) · 진료항목 목록(채널 심볼 2축 판정) · 진료항목 상세(카카오 노출 설정 카드) · 비급여 예약 설정. **KAK-001(확정 전)** 카카오 유입 예약 자동 확정 예외 안내 2지점 포함. |
+| **진료항목 → 카카오 노출 + 예약 신청 내역** (7월 기준선) | `pages/connect/ti-kakao/index.page.tsx` | `out/ti-kakao.html` | 진료항목 목록(인입 채널 심볼 병합) · 진료항목 상세 폼("카카오톡 예약하기에서도 보이기" 토글 + 자동 매핑·규격 검증 + 굿닥 미리보기) · 예약 신청 내역(채널 컬럼·상세 모달). LNB로 화면 이동. |
 | **SKT 협업 · 베타 여정 프로토타입** (신규 · 🔒 내부 검토) | — (자체완결 정적 HTML, 빌드 불필요) | `out/skt-beta-journey.html` | 에이전트(A.)→굿닥 베타 여정. A-1 알림톡 완결형 / A-2 앱 귀속형 / B 비대면진료 3개 여정을 단계별 재생하며 검토 포인트(범위·문구·개발·데이터·법무)를 우측 주석으로 확인. 예약 시간 마감 케이스 토글. **진입 비밀번호 게이트**(클라이언트 측 · 캐주얼 접근 차단용). Claude Design 프로젝트 "SKT 베타 여정 프로토타입 v4.dc.html"를 외부요청 0 단일 HTML로 이식. |
 
 > 방향: 굿닥 진료항목 정보를 기반으로 원하면 카카오에 노출(자동 매핑 + 규격 검증), 별도 카카오 상품 관리 메뉴 없이 진료항목 화면에 병합. 상세 기획은 `docs/` 참고.

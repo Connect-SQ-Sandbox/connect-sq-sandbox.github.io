@@ -315,8 +315,8 @@ export const ADMIN_NONPAY_AUG_CHANGES: PolicyChange[] = [
     prototypeVersion: 'v3',
     view: 'settings',
     targetId: 'gcp1-operation-settings',
-    title: '비급여 예약 운영 설정을 Connect에서 관리',
-    before: '비급여 예약 운영 여부와 세부 조건을 한 흐름에서 확인하기 어려웠습니다.',
+    title: '진료 예약 운영 설정을 Connect에서 관리',
+    before: '진료 예약 운영 여부와 세부 조건을 한 흐름에서 확인하기 어려웠습니다.',
     after: '예약 운영 여부, 자동 확정, 당일 예약과 알림 설정을 Connect에서 함께 확인합니다.',
     publicationStatus: 'baseline'
   },
@@ -327,9 +327,9 @@ export const ADMIN_NONPAY_AUG_CHANGES: PolicyChange[] = [
     prototypeVersion: 'v5',
     view: 'settings',
     targetId: 'gcp1-operation-settings',
-    title: '비급여 예약 중지 시 기존 데이터 유지',
+    title: '진료 예약 중지 시 기존 데이터 유지',
     before: '예약을 중지하면 등록된 진료항목과 기존 예약에 미치는 영향을 확인하기 어려웠습니다.',
-    after: '비급여 예약 받기를 OFF하면 굿닥 신규 예약을 즉시 차단하고 카카오 Product·향후 Schedule을 노출 보류로 전환합니다. 상품별 노출 의도·외부 ID·전용정보·기존 예약은 보존하고, 다시 ON하면 유효한 상품만 외부 반영 성공 후 복원합니다.',
+    after: '진료 예약 받기를 OFF하면 굿닥 신규 예약을 즉시 차단하고 카카오 Product·향후 Schedule을 노출 보류로 전환합니다. 상품별 노출 의도·외부 ID·전용정보·기존 예약은 보존하고, 다시 ON하면 유효한 상품만 외부 반영 성공 후 복원합니다.',
     publicationStatus: 'baseline'
   },
   {
@@ -355,7 +355,7 @@ export const ADMIN_NONPAY_AUG_CHANGES: PolicyChange[] = [
     before: '자동 확정·당일 예약 설정이 외부 채널 예약에도 적용되는지 확인하기 어려웠습니다.',
     after: '자동 확정은 이후 생성 예약에 snapshot으로 적용하고, 당일 예약 설정은 미래 일정에 반영합니다. 카카오 신규 예약에도 병원 `새 예약 알림 받기` 설정에 따라 Windows OS 푸시를 발송하고, 환자에게는 굿닥 신규 예약 알림을 추가로 보내지 않습니다. 설정 버전과 외부 적용 버전은 내부적으로 분리해 실패 시 해당 설정만 원복·재시도합니다.',
     developerNotes: [
-      '`apptUsed=false`이면 채널과 무관하게 신규 비급여 예약을 차단하지만 상품별 노출 의도·외부 매핑·기존 예약은 유지합니다.',
+      '`apptUsed=false`이면 채널과 무관하게 신규 진료 예약을 차단하지만 상품별 노출 의도·외부 매핑·기존 예약은 유지합니다.',
       '자동 확정·당일 예약·새 예약 알림 설정은 각각 독립 mutation으로 저장합니다. 외부 반영 실패가 공통 설정 저장을 되돌리지 않도록 설정 저장 결과와 채널 적용 결과를 분리합니다.',
       '진료시간 저장 트랜잭션에서 카카오 API를 직접 호출하지 않습니다. 중앙 변경 이벤트와 버전을 기록하고 worker가 최초 30일·일일 하루 추가·영향 날짜 diff를 멱등 처리합니다.',
       '운영시간 축소가 기존 예약과 충돌해도 자동 취소하지 않습니다. 신규 슬롯만 차단하고 충돌 예약은 병원·Ops 확인 대상으로 남깁니다.',

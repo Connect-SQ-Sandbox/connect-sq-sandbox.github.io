@@ -4,8 +4,8 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
 
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
- * 이름     : admin-nonpay-aug — 병원 어드민 · 비급여 예약 8월 프로토타입
- *            (예약 신청 내역 · 진료항목 관리/상세 · 비급여 예약 설정. ti-kakao에서 분기해 staging 현행화 + KAK-001 안내)
+ * 이름     : admin-nonpay-aug — 병원 어드민 · 진료 예약 8월 프로토타입
+ *            (예약 신청 내역 · 진료항목 목록/상세 · 진료 예약 설정. ti-kakao에서 분기해 staging 현행화 + KAK-001 안내)
  * 상태     : 현행(active)   버전: v40  최종수정: 2026-08-13
  * PRD      : GCP-1 · 3.2-final · 3-미션·기획/1-PRD/2026-07-13-진료항목-카카오톡-예약하기-연동-구축.md
  *            KAK-001 · 0.1-review(확정 전) · 카카오 유입 예약 자동 확정 예외 안내
@@ -33,7 +33,7 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
  *   [유지·자체] 예약 신청 내역 = 실제 TreatmentItemApptListView 재현
  *              (카카오·굿닥 예약이 같은 테이블에 혼재 + "채널" 컬럼만 추가)
  *   [유지·자체] 운영 설정 = 실제 non-payment-reservations/operation 재현
- *              (비급여 예약 받기 토글[OFF 시 중지 모달] + 자동확정/당일예약/새 예약 알림)
+ *              (진료 예약 받기 토글[OFF 시 중지 모달] + 자동확정/당일예약/새 예약 알림)
  *   [폐기]      구버전 kakao-link(별도 연동관리 페이지형) → ti-kakao로 대체
  *   [분기]      2026-08-13 ti-kakao(v37, 7월 기준선)에서 분기. 기존 항목은 그대로 두고 8월 작업을 여기로 모은다.
  *   [확정 전·KAK-001] 카카오 유입 예약은 병원의 예약 자동 확정 설정과 무관하게 항상 자동 확정(임시 예외).
@@ -690,10 +690,10 @@ function SideNav({ page, onNav }: { page: Page; onNav: (p: Page) => void }) {
         <div className="cn-nav-group">
           <div className="cn-nav-header">서비스 운영</div>
           <N label="차트 접수·예약" ex="r" />
-          <N label="비급여 예약" beta ex="d" />
+          <N label="진료 예약" beta ex="d" />
           <N label="예약 신청 내역" sub active={page === 'appt'} onClick={() => onNav('appt')} />
-          <N label="진료항목 관리" sub active={page === 'items'} onClick={() => onNav('items')} />
-          <N label="운영 설정" sub active={page === 'settings'} onClick={() => onNav('settings')} />
+          <N label="진료항목" sub active={page === 'items'} onClick={() => onNav('items')} />
+          <N label="진료 예약 설정" sub active={page === 'settings'} onClick={() => onNav('settings')} />
           <N label="병원 약관" ex="r" />
         </div>
         <div className="cn-nav-divider"><span /></div>
@@ -1311,7 +1311,7 @@ function ApptScreen({ appts, setAppts, hospitalLinked, failNextSync, consumeFail
 }
 /* ============================ 운영 설정 화면 ============================ */
 /** 실제 개발 화면(non-payment-reservations/operation) 재현.
- *  구성 = 비급여 예약 받기(BoxContainer + 운영중/미운영 라벨 토글, OFF 시 중지 확인 모달)
+ *  구성 = 진료 예약 받기(BoxContainer + 운영중/미운영 라벨 토글, OFF 시 중지 확인 모달)
  *        + 설정 섹션(운영시간 GuideBanner + 예약 자동확정/당일예약/새 예약 알림 토글).
  *  API(usePatchApptUsed 등) → 로컬 state로 mock. 진료항목 개수는 목록 mock과 연동. */
 function SettingToggle({ checked, onChange, disabled }: { checked: boolean; onChange: () => void; disabled?: boolean }) {
@@ -1363,7 +1363,7 @@ function SettingsScreen({ itemCount, operation, hospitalLinked, onGlobalChange, 
   const handleApptUsed = () => {
     if (!operation.apptUsed) {
       onGlobalChange(true);
-      showToast('진료항목 비급여 예약을 시작했어요.');
+      showToast('진료 예약 받기를 시작했어요.');
       return;
     }
     setStopOpen(true);
@@ -1371,20 +1371,20 @@ function SettingsScreen({ itemCount, operation, hospitalLinked, onGlobalChange, 
   const confirmStop = () => {
     onGlobalChange(false);
     setStopOpen(false);
-    showToast('진료항목 비급여 예약을 중지했어요.');
+    showToast('진료 예약 받기를 중지했어요.');
   };
 
   return (
     <>
       <div className="cn-header set-header">
-        <div className="cn-header-title">비급여 예약 설정</div>
-        <div className="ap-sub">굿닥에 등록한 비급여 진료항목으로 예약을 받을 수 있습니다.</div>
+        <div className="cn-header-title">진료 예약 설정</div>
+        <div className="ap-sub">굿닥에 등록한 진료항목으로 예약을 받을 수 있습니다.</div>
       </div>
 
       <div className="set-body" data-policy-id="gcp1-operation-settings">
-        {/* 비급여 예약 받기 */}
+        {/* 진료 예약 받기 */}
         <SettingBox
-          title="비급여 예약 받기"
+          title="진료 예약 받기"
           subNode={<><span className="set-count">{itemCount}개의 진료항목이</span><span className="set-count-rest"> 등록되어 있어요.</span></>}
           right={
             <div className="set-status-toggle">
@@ -1449,7 +1449,7 @@ function SettingsScreen({ itemCount, operation, hospitalLinked, onGlobalChange, 
       {stopOpen && (
         <div className="ap-dim" onClick={() => setStopOpen(false)}>
           <div className="ap-modal set-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="ap-modal-title">비급여 예약을 그만 받으시겠어요?</div>
+            <div className="ap-modal-title">진료 예약을 그만 받으시겠어요?</div>
             <div className="set-modal-body">
               그만 받기를 누르면 굿닥에서 진료항목 노출과 예약 신청이 모두 중단돼요. 등록된 진료항목은 그대로 유지되며, 다시 시작하면 바로 예약을 받을 수 있어요.
             </div>
@@ -1573,7 +1573,7 @@ function HoursScreen({ hours, setHours, notice, setNotice, tempDays, setTempDays
   return (
     <>
       <div className="cn-header ht-header">
-        <button className="tk-back" onClick={onBack}><Back /> 비급여 예약 설정</button>
+        <button className="tk-back" onClick={onBack}><Back /> 진료 예약 설정</button>
         <div className="cn-header-title">운영 시간</div>
         <div className="ap-sub">굿닥에 노출되는 우리 병원 운영 시간을 관리할 수 있어요.</div>
       </div>
@@ -2035,7 +2035,7 @@ function TiKakao() {
                     <section className="rg-card required">
                       <div className="rg-group-title">필수 정보</div>
                       <div className="rg-field">
-                        <FieldHead label="진료항목" helpers={['등록할 비급여 진료항목명을 검색하거나 직접 입력해 주세요.']} />
+                        <FieldHead label="진료항목" helpers={['등록할 진료항목명을 검색하거나 직접 입력해 주세요.']} />
                         <div className="rg-search"><input className={`rg-input${errors.name ? ' error' : ''}`} placeholder="진료항목을 검색해 주세요." value={d.name} onChange={(e) => { patch({ name: e.target.value }); clearErr('name'); }} /><span className="rg-search-ic"><SearchIcon /></span></div>
                         {errors.name && <p className="rg-error">{errors.name}</p>}
                       </div>

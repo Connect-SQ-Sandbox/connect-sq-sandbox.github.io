@@ -445,7 +445,7 @@
 .set-box-sub { margin-top: 1px; font: 400 14px/1.5 var(--font-sans); color: var(--gray-70); }
 .set-box-right { display: flex; flex-shrink: 0; gap: 16px; align-items: center; }
 
-/* 비급여 예약 받기 — 개수 강조 + 운영중/미운영 라벨 */
+/* 진료 예약 받기 — 개수 강조 + 운영중/미운영 라벨 */
 .set-count { font: 500 14px/1.5 var(--font-sans); color: var(--gray-80); }
 .set-count-rest { font: 400 14px/1.5 var(--font-sans); color: var(--gray-70); }
 .set-status-toggle { display: flex; align-items: center; gap: 8px; }

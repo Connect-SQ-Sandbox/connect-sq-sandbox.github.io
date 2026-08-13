@@ -1543,6 +1543,61 @@ a {
 .apx-btn.danger-smooth { background: var(--alpha-red-10); color: var(--red-70); }
 .apx-btn.danger-smooth:hover { background: var(--alpha-red-15); }
 
+/* =============================================================
+   모달 버튼 규격 — 피그마 18510:890356 + 실제 Button(size="small")
+     min-width 64 · height 40 · padding 9/22 · radius 6 · 700 14/21 · gap 8 · 우측 정렬
+   styleType 매핑
+     secondarySmooth  취소·닫기      GRAY_70          / ALPHA_GRAY_10  (hover 15)
+     primarySolid     확정·저장      WHITE            / BLUE_60        (hover BLUE_70)
+     dangerSolid      취소·중지 확정  WHITE            / RED_60         (hover RED_70)
+     dangerSmooth     예약 취소      RED_60           / ALPHA_RED_10   (hover 15)
+   ※ connectRegister.css는 ti-kakao(7월 기준선)와 공유하므로 수정하지 않고 여기서 덮는다.
+   ※ 샌드박스 --gray-70(#6B7684)·--blue-70(#0061DB)이 실제 값과 달라 이 블록만 실제 값을 직접 쓴다.
+      (실제 GRAY_70 #5D6474 · BLUE_70 #056BE1 — 피그마 Gray/70도 #5D6474)
+   ============================================================= */
+.rg-btn-cancel,
+.rg-btn-save,
+.set-modal-confirm,
+.set-modal-danger,
+.ap-btn-cancel-confirm,
+.apx-btn {
+  box-sizing: border-box;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: auto; min-width: 64px; height: 40px; padding: 9px 22px;
+  border: 0; border-radius: 6px; cursor: pointer;
+  font: 700 14px/21px var(--font-sans); white-space: nowrap;
+}
+
+/* secondarySmooth — 취소 · 닫기 */
+.rg-btn-cancel,
+.apx-btn.secondary { background: var(--alpha-gray-10); color: #5d6474; }
+.rg-btn-cancel:hover,
+.apx-btn.secondary:hover { background: var(--alpha-gray-15); }
+
+/* primarySolid — 확정 · 저장 */
+.rg-btn-save,
+.set-modal-confirm,
+.apx-btn.primary { background: var(--blue-60); color: var(--white); }
+.rg-btn-save:hover,
+.set-modal-confirm:hover,
+.apx-btn.primary:hover { background: #056be1; }
+
+/* dangerSolid — 예약 취소 확정 · 예약 그만 받기 */
+.set-modal-danger,
+.ap-btn-cancel-confirm { background: var(--red-60); color: var(--white); }
+.set-modal-danger:hover,
+.ap-btn-cancel-confirm:hover { background: var(--red-70); }
+
+/* dangerSmooth — 상세 모달의 예약 취소 */
+.apx-btn.danger-smooth { background: var(--alpha-red-10); color: var(--red-60); }
+.apx-btn.danger-smooth:hover { background: var(--alpha-red-15); }
+
+/* disabled(solid) */
+.ap-btn-cancel-confirm:disabled,
+.rg-btn-save:disabled {
+  background: var(--alpha-gray-05); color: var(--alpha-gray-40); cursor: not-allowed;
+}
+
 </style>
 <div id="root"></div>
 <script>

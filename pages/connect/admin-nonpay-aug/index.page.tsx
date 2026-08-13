@@ -763,7 +763,6 @@ function GoodocPreview({ d }: { d: Item }) {
         <div className="tk-pv-body">
           <div className={`tk-pv-title${title ? '' : ' ph'}`}>{title || '진료항목을 입력해 주세요.'}</div>
           {d.intro && <div className="tk-pv-intro">{d.intro}</div>}
-          {d.keywords.length > 0 && <div className="tk-pv-kw">{d.keywords.map((k) => <span key={k} className="tk-pv-kwchip">#{k}</span>)}</div>}
           <div className="tk-pv-divider" />
           <div className="tk-pv-price-head">가격 정보</div>
           {d.prices.map((p) => (

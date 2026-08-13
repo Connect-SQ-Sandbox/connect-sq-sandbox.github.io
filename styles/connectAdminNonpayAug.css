@@ -477,6 +477,7 @@
 /* 중지 확인 모달 (StopConfirmModal, width 560) */
 .set-modal { width: 560px; }
 .set-modal-body { margin-top: 12px; font: 500 16px/1.5 var(--font-sans); color: var(--gray-60); }
+.set-modal-body p { margin: 0; } /* 본문 2줄(B·C)을 줄바꿈으로 분리 */
 .set-modal-danger {
   height: 44px; padding: 0 20px; border: 0; border-radius: 10px;
   background: var(--red-60); color: #fff; cursor: pointer; font: 700 14px/44px var(--font-sans);

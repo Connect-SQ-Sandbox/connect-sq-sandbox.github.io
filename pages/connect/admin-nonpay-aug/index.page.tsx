@@ -590,21 +590,28 @@ const toKakaoAnswers = (infos?: ApptAdditionalInfo[]) =>
  *   ③ 예약 신청 내역 — 예외가 실제로 적용된 결과
  * ※ 카카오가 수동 확정을 지원하면 이 블록과 관련 UI를 함께 제거한다.
  * ------------------------------------------------------------------------------------------ */
-/** ① 설정 항목 자체의 적용 범위. 자동 확정 ON/OFF와 무관하게 연동 병원이면 상시 노출. */
-const KAK_SETTING_SCOPE = '카카오톡 예약하기로 들어온 예약은 이 설정과 관계없이 항상 자동 확정됩니다.';
-/** ① 수동 확정 상태에서만 노출하는 배너. 닫기 없음(임시 정책 + 병원 통제권 관련). */
-const KAK_BANNER_TITLE = '카카오톡 예약하기 예약은 자동으로 확정됩니다';
-const KAK_BANNER_BULLETS = [
-  '수동 확정은 굿닥으로 들어온 예약에만 적용됩니다.',
-  '카카오톡 예약하기가 수동 확정을 지원하지 않아 임시로 적용된 정책입니다.',
-  '받기 어려운 예약이 확정된 경우, 예약 신청 내역에서 취소해 주세요.',
-  '카카오톡 예약하기에서 수동 확정이 지원되면 공지로 안내드립니다.'
-];
-/** ① 자동 확정을 ON → OFF로 끄는 순간의 확인 모달 */
-const KAK_MODAL_TITLE = '카카오톡 예약하기 예약은 계속 자동 확정됩니다';
-const KAK_MODAL_BODY = '수동 확정은 굿닥으로 들어온 예약에만 적용됩니다. 카카오톡 예약하기는 아직 수동 확정을 지원하지 않아, 해당 예약은 신청과 동시에 확정 처리됩니다.';
-/** ② 진료항목 상세 — 카카오 노출 토글의 설명 문구 */
-const KAK_TOGGLE_HELP = '카카오톡 예약하기로 들어온 예약은 병원의 수동 확정 설정과 관계없이 자동 확정됩니다.';
+/* 세 지점이 아래 4개 문장을 조합만 달리해 쓴다. 문장 자체는 화면마다 바꾸지 않는다(용어 일관성).
+ *   A 사실  카카오톡 예약하기로 받는 예약은 자동으로 확정됩니다.
+ *   B 대비  굿닥으로 받는 예약은 수동 확정 설정을 그대로 따릅니다.
+ *   C 임시  카카오톡 예약하기가 수동 확정을 지원하지 않아 적용된 임시 정책입니다.
+ *   D 대응  진료하기 어려운 예약은 예약 신청 내역에서 취소할 수 있습니다.
+ * 고정 어휘 — 대상=`카카오톡 예약하기로 받는 예약` / 대비=`굿닥으로 받는 예약`
+ *            설정=`수동 확정 설정` / 결과=`자동으로 확정됩니다`(실제 Settings 문구와 동일) */
+const KAK_B = '굿닥으로 받는 예약은 수동 확정 설정을 그대로 따릅니다.';
+const KAK_C = '카카오톡 예약하기가 수동 확정을 지원하지 않아 적용된 임시 정책입니다.';
+const KAK_D = '진료하기 어려운 예약은 예약 신청 내역에서 취소할 수 있습니다.';
+
+/** ① 설정 항목의 적용 범위(자동 확정 ON일 때 한 줄). */
+const KAK_SETTING_SCOPE = '카카오톡 예약하기로 받는 예약은 이 설정과 관계없이 자동으로 확정됩니다.';
+/** ① 수동 확정일 때만 노출하는 안내 블록 = 제목 A + 불릿 B·C·D. 닫기 없음. */
+const KAK_BANNER_TITLE = '카카오톡 예약하기로 받는 예약은 자동으로 확정됩니다';
+const KAK_BANNER_BULLETS = [KAK_B, KAK_C, KAK_D];
+/** ① 자동 확정을 ON → OFF로 끄는 순간의 확인 모달 = 제목 A(계속) + 본문 B·C 2줄. */
+const KAK_MODAL_TITLE = '카카오톡 예약하기로 받는 예약은 계속 자동으로 확정됩니다';
+const KAK_MODAL_BODY = [KAK_B, KAK_C];
+const KAK_MODAL_CONFIRM = '자동 확정 끄기';
+/** ② 진료항목 상세 — 카카오 노출 토글 설명. 한 줄에 들어가도록 A만 쓴다(B는 설정 화면 몫). */
+const KAK_TOGGLE_HELP = '카카오톡 예약하기로 받는 예약은 자동으로 확정됩니다.';
 
 type OperationSettings = {
   apptUsed: boolean;
@@ -1466,10 +1473,10 @@ function SettingsScreen({ itemCount, operation, hospitalLinked, onGlobalChange, 
         <div className="ap-dim" onClick={() => setAutoConfirmOffOpen(false)}>
           <div className="ap-modal set-modal" onClick={(e) => e.stopPropagation()}>
             <div className="ap-modal-title">{KAK_MODAL_TITLE}</div>
-            <div className="set-modal-body">{KAK_MODAL_BODY}</div>
+            <div className="set-modal-body">{KAK_MODAL_BODY.map((line) => <p key={line}>{line}</p>)}</div>
             <div className="ap-modal-btns">
               <button className="rg-btn-cancel" onClick={() => setAutoConfirmOffOpen(false)}>취소</button>
-              <button className="set-modal-confirm" onClick={confirmAutoConfirmOff}>확인하고 끄기</button>
+              <button className="set-modal-confirm" onClick={confirmAutoConfirmOff}>{KAK_MODAL_CONFIRM}</button>
             </div>
           </div>
         </div>

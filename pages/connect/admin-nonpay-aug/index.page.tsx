@@ -40,7 +40,7 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
  *              같은 문구가 두 개면 환자 화면에서 구분되지 않고(중복 선택처럼 보임) 예약 답변도 해석 불가.
  *              판정 = 같은 질문 안 / 앞뒤·연속 공백 정규화 + 영문 대소문자 무시, 뒤에 입력한 항목에 오류.
  *              노출 = 입력 중 조용 → 포커스 아웃 시 인라인 오류 → 저장 시 재검증·차단(토스트).
- *              카카오 노출 토글 OFF에서도 차단(입력값이 토글과 무관하게 보존·왕복되므로).
+ *              카카오 노출 토글 OFF에서도 차단(입력값이 토글과 무관하게 보존·왕복되므로). 필수 입력 검증도 같은 기준.
  *              ※ PRD·FE 기능명세 미반영(중복 신고 기반, PO 확정 대기). 확정 시 실코드
  *              KakaoBookingQuestionSchema.superRefine + KakaoQuestionError(항목 index별 오류)까지 반영 필요.
  *              미결: 질문 제목 중복 차단 여부 / 이미 중복이 저장된 병원의 저장 차단 UX.
@@ -53,6 +53,8 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
  *                    검증 문구 용어를 실코드 zod 기준 '답변 항목'으로 통일(기존 '선택지 항목/선택지').
  *                    항목 행에 오류 문구 자리를 만들면서 입력 높이가 찌그러진 것 복구(세로 래퍼에서 flex:1 해제)
  *                    + 오류 시 행이 커져도 마커·삭제가 입력칸(40px) 기준선에 정렬되도록 조정.
+ *                    발문 필수 입력(질문 제목·빈 답변 항목) 검증이 카카오 노출 토글 ON일 때만 걸리던 문제 수정 →
+ *                    중복 검증과 함께 '병원 연동완료' 기준으로 항상 적용(토글 OFF에서도 차단, 미연동 병원은 카드가 없어 제외).
  *   v44 2026-08-20 — FE 기능명세(2026-08 최종) 정합화: 진료 예약 받기 토글 OFF→ON 시 노출 중(굿닥 노출 ON)
  *                    진료항목이 0개면 차단 + 토스트('노출 중인 진료항목이 없어, 진료 예약을 받을 수 없습니다.').
  *                    SettingsScreen에 visibleCount prop 추가(items.filter(gdVisible).length).
@@ -1771,21 +1773,20 @@ function TiKakao() {
         if (p.title.length > 25) e[`price-${p.id}-kakao`] = '카카오 가격명은 최대 25자예요.';
         if (kakaoPriceDescription(p).length > PRICE_DESC_MAX) e[`price-${p.id}-kakao`] = `카카오 가격 안내 문구는 최종 ${PRICE_DESC_MAX}자 이하여야 해요.`;
       });
+    }
+    /* 발문(예약 시 받을 정보) 검증은 카카오 노출 토글과 무관하게, 카드가 보이는 병원(연동완료)에서 항상 적용한다.
+     * - 카카오 전용 입력값은 토글 OFF에서도 보존·왕복되고, 실코드 zod(KakaoSettingSchema)도 linked와 무관하게 검증한다.
+     * - 반대로 미연동 병원은 카드 자체가 없어 고칠 수단이 없으므로 검증 대상에서 제외한다.
+     * 중복 검증은 입력 중 조용 → 포커스 아웃에서 안내하지만, 붙여넣기·항목 삭제로 빠져나간 경우의 최종 방어선. */
+    if (hospitalLinked) {
       v.kExtra.questions.forEach((q) => {
         if (!q.name.trim()) e[`q-${q.id}-name`] = '질문 제목을 입력해 주세요.';
-        if (q.type !== 'text') {
-          if (q.options.length < K_Q_OPT_MIN) e[`q-${q.id}-options`] = `답변 항목을 ${K_Q_OPT_MIN}개 이상 입력해 주세요.`;
-          else if (q.options.some((option) => !option.trim())) e[`q-${q.id}-options`] = '답변 항목을 모두 입력해 주세요.';
-        }
+        if (q.type === 'text') return;
+        if (q.options.length < K_Q_OPT_MIN) e[`q-${q.id}-options`] = `답변 항목을 ${K_Q_OPT_MIN}개 이상 입력해 주세요.`;
+        else if (q.options.some((option) => !option.trim())) e[`q-${q.id}-options`] = '답변 항목을 모두 입력해 주세요.';
+        duplicateOptionIndexes(q.options).forEach((index) => { e[dupOptKey(q.id, index)] = DUP_OPTION_MSG; });
       });
     }
-    /* 답변 항목 중복은 카카오 노출 토글과 무관하게 저장 차단.
-     * 입력값이 토글 OFF에서도 보존·왕복되므로(실코드 zod도 노출 여부와 무관하게 검증) 저장 시점에 걸러야 한다.
-     * 입력 중에는 조용하고 포커스 아웃 시 안내하지만, 붙여넣기·항목 삭제로 빠져나간 경우의 최종 방어선. */
-    v.kExtra.questions.forEach((q) => {
-      if (q.type === 'text') return;
-      duplicateOptionIndexes(q.options).forEach((index) => { e[dupOptKey(q.id, index)] = DUP_OPTION_MSG; });
-    });
     return e;
   };
   const save = () => {

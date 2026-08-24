@@ -220,8 +220,14 @@
 .tk-q-limit { color: var(--gray-70); font: 600 13px/20px var(--font-sans); }
 .tk-q-choice { display: flex; flex-direction: column; gap: 8px; padding-left: 0; }
 .tk-q-opts { display: flex; flex-direction: column; gap: 6px; }
-.tk-q-optrow { display: flex; align-items: center; gap: 8px; }
+/* 오류 문구가 붙어 행 높이가 늘어나도 마커·삭제 버튼은 입력칸(40px) 기준선에 맞춘다 */
+.tk-q-optrow { display: flex; align-items: flex-start; gap: 8px; }
+.tk-q-optrow > .tk-q-optmark { margin-top: 11px; } /* (입력 40 - 마커 18) / 2 */
 .tk-q-optrow .rg-input { flex: 1; }
+.tk-q-optfield { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+/* 세로 flex 래퍼 안에서는 .tk-q-optrow .rg-input의 flex:1이 '높이축'에 걸려 입력 높이가 찌그러진다 → 해제 */
+.tk-q-optfield > .rg-input { flex: 0 0 auto; }
+.tk-q-optfield .tk-q-err { padding-left: 2px; }
 .tk-q-optmark { flex: none; width: 18px; height: 18px; border: 1.5px solid var(--gray-40); background: #fff; }
 .tk-q-optmark.radio { border-radius: 50%; }
 .tk-q-optmark.select { border-radius: 4px; }

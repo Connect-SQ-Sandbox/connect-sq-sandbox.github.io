@@ -6,7 +6,7 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : admin-nonpay-aug — 병원 어드민 · 진료 예약 8월 프로토타입
  *            (예약 신청 내역 · 진료항목 목록/상세 · 진료 예약 설정. ti-kakao에서 분기해 staging 현행화 + KAK-001 안내)
- * 상태     : 현행(active)   버전: v40  최종수정: 2026-08-13
+ * 상태     : 현행(active)   버전: v45  최종수정: 2026-08-24
  * PRD      : GCP-1 · 3.2-final · 3-미션·기획/1-PRD/2026-07-13-진료항목-카카오톡-예약하기-연동-구축.md
  *            KAK-001 · 0.1-review(확정 전) · 카카오 유입 예약 자동 확정 예외 안내
  * 배포URL  : https://connect-sq-sandbox.github.io/out/admin-nonpay-aug.html
@@ -36,11 +36,26 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
  *              (진료 예약 받기 토글[OFF 시 중지 모달] + 자동확정/당일예약/새 예약 알림)
  *   [폐기]      구버전 kakao-link(별도 연동관리 페이지형) → ti-kakao로 대체
  *   [분기]      2026-08-13 ti-kakao(v37, 7월 기준선)에서 분기. 기존 항목은 그대로 두고 8월 작업을 여기로 모은다.
+ *   [보류] 객관식 답변 항목 중복 입력 차단(v45) — 카카오는 환자 답변을 문구(value) 그대로 저장해
+ *              같은 문구가 두 개면 환자 화면에서 구분되지 않고(중복 선택처럼 보임) 예약 답변도 해석 불가.
+ *              판정 = 같은 질문 안 / 앞뒤·연속 공백 정규화 + 영문 대소문자 무시, 뒤에 입력한 항목에 오류.
+ *              노출 = 입력 중 조용 → 포커스 아웃 시 인라인 오류 → 저장 시 재검증·차단(토스트).
+ *              카카오 노출 토글 OFF에서도 차단(입력값이 토글과 무관하게 보존·왕복되므로).
+ *              ※ PRD·FE 기능명세 미반영(중복 신고 기반, PO 확정 대기). 확정 시 실코드
+ *              KakaoBookingQuestionSchema.superRefine + KakaoQuestionError(항목 index별 오류)까지 반영 필요.
+ *              미결: 질문 제목 중복 차단 여부 / 이미 중복이 저장된 병원의 저장 차단 UX.
  *   [확정 전·KAK-001] 카카오 유입 예약은 병원의 예약 자동 확정 설정과 무관하게 항상 자동 확정(임시 예외).
  *              관리자 UI 변경만 있고 신청 웹뷰는 변경 없음. 안내는 2지점 = 설정(적용범위·설정 박스 내 안내·전환모달)
  *              → 진료항목 상세(토글 설명). 예약 신청 내역은 범위에서 제외(세화님 지시, v39).
  *
  * 변경 이력:
+ *   v45 2026-08-24 — 객관식 답변 항목 중복 입력 검증·에러 문구 추가(포커스 아웃 인라인 + 저장 차단 토스트).
+ *                    검증 문구 용어를 실코드 zod 기준 '답변 항목'으로 통일(기존 '선택지 항목/선택지').
+ *                    항목 행에 오류 문구 자리를 만들면서 입력 높이가 찌그러진 것 복구(세로 래퍼에서 flex:1 해제)
+ *                    + 오류 시 행이 커져도 마커·삭제가 입력칸(40px) 기준선에 정렬되도록 조정.
+ *   v44 2026-08-20 — FE 기능명세(2026-08 최종) 정합화: 진료 예약 받기 토글 OFF→ON 시 노출 중(굿닥 노출 ON)
+ *                    진료항목이 0개면 차단 + 토스트('노출 중인 진료항목이 없어, 진료 예약을 받을 수 없습니다.').
+ *                    SettingsScreen에 visibleCount prop 추가(items.filter(gdVisible).length).
  *   v43 2026-08-13 — 진료항목 목록을 staging(ChannelCell·channelStatus·TreatmentCategoryLevel3Item) 기준으로 교정:
  *                    카카오 심볼 활성 판정을 5축→2축(kakaoLinked && visible)으로, 채널 셀 우측 여백 12→16,
  *                    옵션 개수 태그를 Tag(gray·small) 규격(12/18·radius 3·alpha-gray-10)으로,
@@ -174,6 +189,28 @@ let UID = 1000;
 const emptyExtra = (): KakaoExtra => ({ initialized: false, displayName: '', description: '', productImages: [], squareImageUrl: '', squareImageFileName: '', descriptionImages: [], questions: [], howto: '', notice: '', cancelNotice: '' });
 const makeSync = (state: SyncState, error?: string): SyncInfo => ({ product: state, item: state, price: state, schedule: state, lastAt: state === 'NOT_LINKED' ? '-' : '2026.07.15 10:42', error, attempts: 0 });
 const won = (s: string) => (s ? Number(s).toLocaleString('ko-KR') + '원' : '0원');
+
+/* 답변 항목(선택지) 중복 검증
+ * 카카오는 환자가 고른 답변을 문구(value) 그대로 저장·전달한다. 같은 문구가 두 개면
+ * 환자 화면에서 두 항목을 구분할 수 없고(중복 선택처럼 보임), 예약 상세의 답변으로도
+ * 어느 항목을 고른 것인지 알 수 없다 → 입력 단계에서 막는다.
+ * 판정: 같은 질문 안에서 / 앞뒤 공백 제거 + 연속 공백 1칸 + 영문 대소문자 무시(= 눈에 같아 보이면 중복). */
+const DUP_OPTION_MSG = '이미 입력한 답변이에요. 다른 답변을 입력해 주세요.';
+const DUP_OPTION_TOAST = '중복된 답변 항목이 있어요. 문구를 다르게 입력해 주세요.';
+const dupOptKey = (questionId: number, index: number) => `q-${questionId}-opt-dup-${index}`;
+const optionKey = (value: string) => value.trim().replace(/\s+/g, ' ').toLowerCase();
+/** 중복 항목의 index — 먼저 입력한 항목은 통과, 뒤에 입력한 같은 문구만 오류. 빈 항목은 별도 검증. */
+const duplicateOptionIndexes = (options: string[]): number[] => {
+  const firstSeen = new Set<string>();
+  const dups: number[] = [];
+  options.forEach((option, index) => {
+    const key = optionKey(option);
+    if (!key) return;
+    if (firstSeen.has(key)) dups.push(index);
+    else firstSeen.add(key);
+  });
+  return dups;
+};
 const kakaoPriceDescription = (p: Price) => {
   const amount = p.type === 'consult' ? '상담 후 결정' : p.type === 'discount' ? won(p.sale) : won(p.amount);
   const amountLabel = `[${amount}]`;
@@ -1355,8 +1392,9 @@ function SettingBox({ title, subNode, right, notice, policyId }: { title: string
     </div>
   );
 }
-function SettingsScreen({ itemCount, operation, hospitalLinked, onGlobalChange, onSettingChange, showToast, onHours }: {
+function SettingsScreen({ itemCount, visibleCount, operation, hospitalLinked, onGlobalChange, onSettingChange, showToast, onHours }: {
   itemCount: number;
+  visibleCount: number;
   operation: OperationSettings;
   hospitalLinked: boolean;
   onGlobalChange: (enabled: boolean) => void;
@@ -1375,6 +1413,8 @@ function SettingsScreen({ itemCount, operation, hospitalLinked, onGlobalChange, 
 
   const handleApptUsed = () => {
     if (!operation.apptUsed) {
+      // [명세] OFF→ON: 노출 중(굿닥 노출 ON) 진료항목이 0개면 예약을 받을 수 없어 차단
+      if (visibleCount === 0) { showToast('노출 중인 진료항목이 없어, 진료 예약을 받을 수 없습니다.'); return; }
       onGlobalChange(true);
       showToast('진료 예약 받기를 시작했어요.');
       return;
@@ -1734,11 +1774,18 @@ function TiKakao() {
       v.kExtra.questions.forEach((q) => {
         if (!q.name.trim()) e[`q-${q.id}-name`] = '질문 제목을 입력해 주세요.';
         if (q.type !== 'text') {
-          if (q.options.length < K_Q_OPT_MIN) e[`q-${q.id}-options`] = `선택지를 ${K_Q_OPT_MIN}개 이상 입력해 주세요.`;
-          else if (q.options.some((option) => !option.trim())) e[`q-${q.id}-options`] = '선택지 항목을 모두 입력해 주세요.';
+          if (q.options.length < K_Q_OPT_MIN) e[`q-${q.id}-options`] = `답변 항목을 ${K_Q_OPT_MIN}개 이상 입력해 주세요.`;
+          else if (q.options.some((option) => !option.trim())) e[`q-${q.id}-options`] = '답변 항목을 모두 입력해 주세요.';
         }
       });
     }
+    /* 답변 항목 중복은 카카오 노출 토글과 무관하게 저장 차단.
+     * 입력값이 토글 OFF에서도 보존·왕복되므로(실코드 zod도 노출 여부와 무관하게 검증) 저장 시점에 걸러야 한다.
+     * 입력 중에는 조용하고 포커스 아웃 시 안내하지만, 붙여넣기·항목 삭제로 빠져나간 경우의 최종 방어선. */
+    v.kExtra.questions.forEach((q) => {
+      if (q.type === 'text') return;
+      duplicateOptionIndexes(q.options).forEach((index) => { e[dupOptKey(q.id, index)] = DUP_OPTION_MSG; });
+    });
     return e;
   };
   const save = () => {
@@ -1746,6 +1793,7 @@ function TiKakao() {
     const e = collectErrors(d);
     if (Object.keys(e).length) {
       setErrors(e);
+      if (Object.keys(e).some((key) => key.includes('-opt-dup-'))) showToast(DUP_OPTION_TOAST);
       // 첫 오류 필드로 스크롤 (렌더 후)
       requestAnimationFrame(() => document.querySelector('.rg-input.error, .rg-num.error')?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
       return;
@@ -1817,9 +1865,21 @@ function TiKakao() {
     if (d.kExtra.questions.length >= K_Q_MAX) { showToast(`질문은 최대 ${K_Q_MAX}개까지 추가할 수 있어요.`); return; }
     addQ('radio');
   };
+  /* 답변 항목 중복 오류 — 입력 중에는 지우고(타이핑 방해 금지), 포커스 아웃·항목 삭제·저장 시에 드러낸다. */
+  const stripDupOptErrors = (base: Record<string, string>, questionId: number) => {
+    const next = { ...base };
+    Object.keys(next).forEach((key) => { if (key.startsWith(`q-${questionId}-opt-dup-`)) delete next[key]; });
+    return next;
+  };
+  const revealDupOptErrors = (questionId: number, options: string[]) => setErrors((prev) => {
+    const next = stripDupOptErrors(prev, questionId);
+    duplicateOptionIndexes(options).forEach((index) => { next[dupOptKey(questionId, index)] = DUP_OPTION_MSG; });
+    return next;
+  });
   const setQ = (id: number, update: Partial<Question>) => {
     if (!d) return;
     clearErr(`q-${id}-name`, `q-${id}-options`);
+    setErrors((prev) => stripDupOptErrors(prev, id));
     patchExtra({ questions: d.kExtra.questions.map((q) => q.id === id ? { ...q, ...update } : q) });
   };
   const setQKind = (id: number, kind: 'choice' | 'text') => {
@@ -1852,7 +1912,10 @@ function TiKakao() {
   };
   const delOpt = (id: number, index: number) => {
     const q = d?.kExtra.questions.find((question) => question.id === id);
-    if (q && q.options.length > K_Q_OPT_MIN) setQ(id, { options: q.options.filter((_, i) => i !== index) });
+    if (!q || q.options.length <= K_Q_OPT_MIN) return;
+    const nextOptions = q.options.filter((_, i) => i !== index);
+    setQ(id, { options: nextOptions });
+    revealDupOptErrors(id, nextOptions);
   };
   const addKakaoImage = (key: KakaoImageKey, fileName?: string) => {
     if (!d || d.kExtra[key].length >= K_IMAGE_MAX) return;
@@ -1986,7 +2049,7 @@ function TiKakao() {
             {page === 'appt' && <ApptScreen appts={appts} setAppts={setAppts} hospitalLinked={hospitalLinked} failNextSync={failNextSync} consumeFailure={() => setFailNextSync(false)} focusAdditionalToken={focusAdditionalToken} showToast={showToast} />}
 
             {/* ========================= 운영 설정 ========================= */}
-            {page === 'settings' && <SettingsScreen itemCount={items.length} operation={operation} hospitalLinked={hospitalLinked} onGlobalChange={changeGlobalOperation} onSettingChange={changeOperationSetting} showToast={showToast} onHours={() => setPage('hours')} />}
+            {page === 'settings' && <SettingsScreen itemCount={items.length} visibleCount={items.filter((it) => it.gdVisible).length} operation={operation} hospitalLinked={hospitalLinked} onGlobalChange={changeGlobalOperation} onSettingChange={changeOperationSetting} showToast={showToast} onHours={() => setPage('hours')} />}
 
             {/* ========================= 병원 운영시간 관리 ========================= */}
             {page === 'hours' && <HoursScreen hours={hours} setHours={setHours} notice={hoursNotice} setNotice={setHoursNotice} tempDays={tempDays} setTempDays={setTempDays} onScheduleChanged={syncSchedulesAfterHoursChange} showToast={showToast} onBack={() => setPage('settings')} />}
@@ -2156,7 +2219,10 @@ function TiKakao() {
                                           {q.options.map((option, optionIndex) => (
                                             <div key={optionIndex} className="tk-q-optrow">
                                               <span className={`tk-q-optmark ${q.type}`} />
-                                              <input className={`rg-input${errors[`q-${q.id}-options`] && !option.trim() ? ' error' : ''}`} placeholder={`항목 ${optionIndex + 1} (최대 ${K_Q_OPT_LEN_MAX}자)`} maxLength={K_Q_OPT_LEN_MAX} value={option} onChange={(e) => setOpt(q.id, optionIndex, e.target.value)} />
+                                              <div className="tk-q-optfield">
+                                                <input className={`rg-input${(errors[`q-${q.id}-options`] && !option.trim()) || errors[dupOptKey(q.id, optionIndex)] ? ' error' : ''}`} placeholder={`항목 ${optionIndex + 1} (최대 ${K_Q_OPT_LEN_MAX}자)`} maxLength={K_Q_OPT_LEN_MAX} value={option} onChange={(e) => setOpt(q.id, optionIndex, e.target.value)} onBlur={() => revealDupOptErrors(q.id, q.options)} />
+                                                {errors[dupOptKey(q.id, optionIndex)] && <p className="tk-q-err">{errors[dupOptKey(q.id, optionIndex)]}</p>}
+                                              </div>
                                               <button className="rg-price-del" onClick={() => delOpt(q.id, optionIndex)} disabled={q.options.length <= K_Q_OPT_MIN} aria-label="항목 삭제"><CloseIcon /></button>
                                             </div>
                                           ))}

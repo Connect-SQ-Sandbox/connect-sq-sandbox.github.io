@@ -4,7 +4,7 @@ import { FiSearch, FiX, FiChevronRight, FiChevronLeft, FiAlertCircle, FiCheck } 
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-category-map — 진료항목 분류(대/중/소) 인지·매핑 UI 탐색
- * 상태     : 현행(active)   버전: v1   최종수정: 2026-09-01
+ * 상태     : 현행(active)   버전: v2   최종수정: 2026-09-01
  * PRD      : 없음(선행 탐색). 관련 실코드 = receipt-web
  *            pages/non-payment-reservations/treatment-items/.../TreatmentItemNameSearch
  * 배포URL  : (미배포) 예정 https://connect-sq-sandbox.github.io/out/ti-category-map.html
@@ -43,6 +43,10 @@ import { FiSearch, FiX, FiChevronRight, FiChevronLeft, FiAlertCircle, FiCheck } 
  *   [보류] 기존 직접입력 재고를 병원이 직접 정리하게 하는 파트너 웹 알림 화면(별도 프로토타입).
  *
  * 변경 이력:
+ *   v2 2026-09-01 — 우측 "환자 검색에 실리는 값"의 검증 검색어를 고정값('보톡스','피부')에서
+ *                   선택한 항목 기준으로 도출하도록 변경(probeQueries). 분류가 붙었으면 그 분류명,
+ *                   없으면 추천 경로의 분류명을 쓰고 마지막은 항상 항목 이름.
+ *                   분류 미매핑 + 추천 가능한 경우 "넣었다면 잡혔을 항목" 안내 한 줄 추가.
  *   v1 2026-09-01 — 최초 구성. 4개 안(현행/A/B/C) + 저장데이터·검색노출 패널 + 시나리오 프리셋.
  * └──────────────────────────────────────────────────────
  */
@@ -201,6 +205,27 @@ function suggestPaths(input: string): PathCandidate[] {
 function searchTags(sel: Selection | null): string[] {
   if (!sel) return [];
   return [sel.m1Name, sel.m2Name, sel.m3Name].filter(Boolean) as string[];
+}
+
+/**
+ * 이 항목 기준으로 확인해볼 검색어를 도출한다.
+ * - 분류가 붙었으면 그 분류명(중분류·대분류) — 노출되는 게 정상
+ * - 분류가 없으면 "붙였다면 됐을" 추천 경로의 분류명 — 놓치고 있는 검색어
+ * - 마지막은 항상 항목 이름. 인덱스에 이름이 안 들어간다는 걸 드러내는 자리.
+ */
+function probeQueries(sel: Selection): string[] {
+  const qs: string[] = [];
+
+  if (sel.m2Name) qs.push(sel.m2Name);
+  if (sel.m1Name) qs.push(sel.m1Name);
+
+  if (qs.length === 0) {
+    suggestPaths(sel.name).forEach((p) => qs.push(p.m2Name ?? p.m1Name));
+  }
+
+  qs.push(sel.name);
+
+  return [...new Set(qs)].slice(0, 4);
 }
 
 /* =========================================================================
@@ -738,7 +763,7 @@ export default function TiCategoryMapPage() {
 
             {selection && (
               <div className="tcm-probe">
-                {['보톡스', '피부', selection.name].map((q, i) => {
+                {probeQueries(selection).map((q, i) => {
                   // 인덱스는 마스터 명칭 텍스트다. 태그가 검색어를 포함할 때만 잡힌다.
                   // '이마보톡스'로 검색하면 태그('피부','보톡스')에 그 문자열이 없어 잡히지 않는다.
                   const hit = tags.some((t) => t.includes(q));
@@ -752,6 +777,15 @@ export default function TiCategoryMapPage() {
                     </div>
                   );
                 })}
+              </div>
+            )}
+
+            {selection && tags.length === 0 && suggestPaths(selection.name).length > 0 && (
+              <div className="tcm-note">
+                분류가 없어 위 검색어 모두 놓치고 있습니다. 이름에 ‘{suggestPaths(selection.name)[0].matched}’ 이(가) 있어
+                <b> {suggestPaths(selection.name)[0].m1Name}
+                {suggestPaths(selection.name)[0].m2Name ? ` › ${suggestPaths(selection.name)[0].m2Name}` : ''}</b> 에
+                넣었다면 잡혔을 항목입니다.
               </div>
             )}
           </div>

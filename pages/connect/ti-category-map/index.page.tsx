@@ -4,7 +4,7 @@ import { FiSearch, FiX, FiChevronRight, FiChevronLeft, FiAlertCircle, FiCheck, F
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-category-map — 진료항목 분류(대/중/소) 인지·매핑 UI 탐색
- * 상태     : 현행(active)   버전: v4   최종수정: 2026-09-01
+ * 상태     : 현행(active)   버전: v5   최종수정: 2026-09-01
  * PRD      : 없음(선행 탐색). 관련 실코드 = receipt-web
  *            pages/non-payment-reservations/treatment-items/.../TreatmentItemNameSearch
  * 배포URL  : (미배포) 예정 https://connect-sq-sandbox.github.io/out/ti-category-map.html
@@ -43,6 +43,9 @@ import { FiSearch, FiX, FiChevronRight, FiChevronLeft, FiAlertCircle, FiCheck, F
  *   [보류] 기존 직접입력 재고를 병원이 직접 정리하게 하는 파트너 웹 알림 화면(별도 프로토타입).
  *
  * 변경 이력:
+ *   v5 2026-09-01 — 직접입력 추가 버튼의 텍스트가 버튼 폭만큼 양끝으로 벌어지던 문제 수정.
+ *                   따옴표/이름/꼬리말을 한 덩어리(span)로 묶어 입력 길이만큼만 차지하게 하고,
+ *                   긴 입력(최대 50자)은 줄바꿈되도록 처리.
  *   v4 2026-09-01 — "이름으로 찾을 때" 축의 설명 문단 제거(세화님). 축 캡션('이번 개편 범위 밖')과
  *                   행 상태('검색 개편 전까지 불가')로 이미 전달돼 매번 반복할 필요 없음.
  *   v3 2026-09-01 — 검색 노출 검증을 두 축으로 분리. "분류로 찾을 때"(이번 개편으로 달라지는 축)와
@@ -476,7 +479,11 @@ export default function TiCategoryMapPage() {
         <div className="tcm-layer-foot">
           {!canMap && (
             <button className="tcm-foot-btn" onClick={addCustom} type="button">
-              ‘<b>{trimmed.slice(0, MAX_NAME_LENGTH)}</b>’ 진료항목 추가하기
+              {/* 따옴표·이름·꼬리말이 각각 flex item이 되면 space-between이 버튼 폭만큼 벌려놓는다.
+                  한 덩어리로 감싸 입력 길이만큼만 차지하게 한다. */}
+              <span className="tcm-foot-label">
+                ‘<b>{trimmed.slice(0, MAX_NAME_LENGTH)}</b>’ 진료항목 추가하기
+              </span>
             </button>
           )}
 

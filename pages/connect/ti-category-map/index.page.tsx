@@ -4,7 +4,7 @@ import { FiSearch, FiX, FiChevronRight, FiChevronLeft, FiAlertCircle, FiCheck, F
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-category-map — 진료항목 분류(대/중/소) 인지·매핑 UI 탐색
- * 상태     : 현행(active)   버전: v3   최종수정: 2026-09-01
+ * 상태     : 현행(active)   버전: v4   최종수정: 2026-09-01
  * PRD      : 없음(선행 탐색). 관련 실코드 = receipt-web
  *            pages/non-payment-reservations/treatment-items/.../TreatmentItemNameSearch
  * 배포URL  : (미배포) 예정 https://connect-sq-sandbox.github.io/out/ti-category-map.html
@@ -43,6 +43,8 @@ import { FiSearch, FiX, FiChevronRight, FiChevronLeft, FiAlertCircle, FiCheck, F
  *   [보류] 기존 직접입력 재고를 병원이 직접 정리하게 하는 파트너 웹 알림 화면(별도 프로토타입).
  *
  * 변경 이력:
+ *   v4 2026-09-01 — "이름으로 찾을 때" 축의 설명 문단 제거(세화님). 축 캡션('이번 개편 범위 밖')과
+ *                   행 상태('검색 개편 전까지 불가')로 이미 전달돼 매번 반복할 필요 없음.
  *   v3 2026-09-01 — 검색 노출 검증을 두 축으로 분리. "분류로 찾을 때"(이번 개편으로 달라지는 축)와
  *                   "이름으로 찾을 때"(개편 범위 밖). 소분류 자리의 자유 입력값은 어떤 안을 골라도
  *                   이름 검색이 안 되므로 실패(X)가 아니라 '검색 개편 전까지 불가' 보류 상태로 표기하고,
@@ -807,16 +809,6 @@ export default function TiCategoryMapPage() {
                     {isFreeTypedName(selection) ? <FiClock size={14} /> : <FiCheck size={14} />}
                     {isFreeTypedName(selection) ? '검색 개편 전까지 불가' : '노출됨'}
                   </span>
-                </div>
-                <div className="tcm-probe-foot">
-                  {isFreeTypedName(selection) ? (
-                    <>
-                      병원이 지은 이름은 인덱스에 안 들어갑니다. <b>어떤 안을 골라도 결과가 같고</b>, 분류 매핑으로는
-                      풀리지 않습니다 — 자연어·텍스트 검색 개편을 기다려야 하는 축입니다.
-                    </>
-                  ) : (
-                    <>표준 소분류라 이름 자체가 태그입니다. 이름으로도 잡히는 건 표준 항목만 누리는 이점입니다.</>
-                  )}
                 </div>
               </div>
             )}

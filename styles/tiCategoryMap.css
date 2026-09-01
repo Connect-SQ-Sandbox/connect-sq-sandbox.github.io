@@ -1,0 +1,938 @@
+/* =========================================================================
+ * ti-category-map — 진료항목 분류(대/중/소) 인지·매핑 UI 탐색
+ * receipt-web 실코드 토큰(colors.ts) + kakaoRealcodeTest 폼 룩 재사용.
+ * plain CSS only · className 기반 · 외부요청 0
+ * ======================================================================= */
+
+:root {
+  --white: #ffffff;
+  --gray-10: #f9f9fb;
+  --gray-15: #f6f7f9;
+  --gray-20: #f2f4f7;
+  --gray-30: #e3e6ed;
+  --gray-40: #caced8;
+  --gray-50: #a8aebd;
+  --gray-60: #808799;
+  --gray-70: #5d6474;
+  --gray-80: #434956;
+  --gray-90: #31353f;
+  --gray-100: #16181d;
+
+  --blue-10: #f5faff;
+  --blue-20: #e5f2ff;
+  --blue-50: #479dff;
+  --blue-60: #0073fa;
+  --blue-70: #056be1;
+
+  --green-100: #008a55;
+  --green-10: #eefaf4;
+  --red-70: #ec3847;
+  --red-10: #fdf0f1;
+  --orange-fg: #f26600;
+  --orange-10: #fff5ec;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.tcm-root {
+  min-height: 100vh;
+  background: var(--gray-15);
+  color: var(--gray-100);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.tcm-dim {
+  color: var(--gray-60);
+}
+
+/* =========================================================================
+ * 프로토타입 툴바
+ * ======================================================================= */
+
+.tcm-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--gray-100);
+  color: var(--white);
+  padding: 14px 0 12px;
+}
+
+.tcm-toolbar-inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.tcm-tb-second {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.tcm-tb-left {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-right: auto;
+}
+
+.tcm-tb-kicker {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--gray-50);
+  text-transform: uppercase;
+}
+
+.tcm-tb-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.tcm-tb-hint {
+  font-size: 12px;
+  color: var(--gray-50);
+}
+
+.tcm-seg {
+  display: flex;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 4px;
+}
+
+.tcm-seg-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 7px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  color: var(--gray-40);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  transition: background 0.12s, color 0.12s;
+}
+
+.tcm-seg-btn:hover {
+  color: var(--white);
+}
+
+.tcm-seg-btn.on {
+  background: var(--white);
+  color: var(--gray-100);
+}
+
+.tcm-seg-tag {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--gray-50);
+}
+
+.tcm-seg-btn.on .tcm-seg-tag {
+  color: var(--gray-60);
+}
+
+.tcm-scn {
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: var(--gray-30);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.tcm-scn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--white);
+}
+
+/* =========================================================================
+ * 레이아웃
+ * ======================================================================= */
+
+.tcm-body {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 32px 32px 120px;
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+}
+
+.tcm-form-col {
+  flex: 1 1 558px;
+  max-width: 600px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.tcm-side-col {
+  width: 340px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 132px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tcm-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tcm-subtitle {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gray-60);
+}
+
+.tcm-title {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 36px;
+  margin: 0;
+}
+
+/* =========================================================================
+ * 폼
+ * ======================================================================= */
+
+.tcm-fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tcm-fieldset-title {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 26px;
+}
+
+.tcm-fieldset-body {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  background: var(--white);
+  border: 1px solid var(--gray-30);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.tcm-fld {
+  display: flex;
+  flex-direction: column;
+}
+
+.tcm-fld-label {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.tcm-req {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--blue-60);
+  margin-left: 4px;
+  vertical-align: 2px;
+}
+
+.tcm-fld-desc {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 22px;
+  color: var(--gray-60);
+  margin-top: 4px;
+  margin-bottom: 12px;
+}
+
+.tcm-count {
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: var(--gray-60);
+}
+
+/* 검색 필드 + 레이어 앵커 */
+.tcm-field-anchor {
+  position: relative;
+}
+
+.tcm-search-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--gray-30);
+  border-radius: 8px;
+  padding: 8px 12px;
+  min-height: 44px;
+  background: var(--white);
+}
+
+.tcm-search-field.focus {
+  border-color: var(--blue-60);
+}
+
+.tcm-search-input {
+  flex: 1;
+  border: 0;
+  outline: none;
+  font-size: 14px;
+  color: var(--gray-100);
+  background: none;
+  font-family: inherit;
+  padding: 0;
+}
+
+.tcm-search-input::placeholder {
+  color: var(--gray-50);
+}
+
+.tcm-search-icon {
+  display: inline-flex;
+  color: var(--gray-60);
+  flex-shrink: 0;
+}
+
+/* 칩 */
+.tcm-chip-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 2px 0;
+}
+
+.tcm-chip-path {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--gray-60);
+}
+
+.tcm-chip-path.tcm-nopath {
+  color: var(--orange-fg);
+}
+
+.tcm-chip-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--gray-20);
+  color: var(--gray-70);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.tcm-chip-badge.tcm-badge-warn {
+  background: var(--orange-10);
+  color: var(--orange-fg);
+}
+
+.tcm-chip {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  max-width: 100%;
+  background: var(--gray-100);
+  color: var(--white);
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 6px;
+  padding: 4px 8px 4px 12px;
+}
+
+.tcm-chip-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tcm-chip-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  margin-left: 4px;
+}
+
+.tcm-chip-x:hover {
+  color: var(--white);
+}
+
+/* =========================================================================
+ * 검색 레이어
+ * ======================================================================= */
+
+.tcm-layer {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  background: var(--white);
+  border: 1px solid var(--gray-30);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(22, 24, 29, 0.12);
+  overflow: hidden;
+}
+
+.tcm-layer-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--gray-20);
+}
+
+.tcm-layer-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--gray-90);
+}
+
+.tcm-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--gray-60);
+  cursor: pointer;
+}
+
+.tcm-back:hover {
+  color: var(--gray-90);
+}
+
+.tcm-layer-body {
+  max-height: 268px;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+/* 검색 가이드 */
+.tcm-guide {
+  padding: 16px 18px;
+  background: var(--gray-10);
+}
+
+.tcm-guide-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.tcm-guide-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.tcm-guide-list li {
+  list-style-type: decimal;
+  font-size: 13.5px;
+  color: var(--gray-80);
+}
+
+.tcm-guide-ex {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--gray-60);
+}
+
+/* 자동완성 행 */
+.tcm-sug-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.tcm-sug {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 9px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.tcm-sug:hover {
+  background: var(--gray-15);
+}
+
+.tcm-sug-path {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.tcm-sug-sep {
+  color: var(--gray-40);
+}
+
+.tcm-sug-seg.tcm-strong {
+  color: var(--gray-100);
+  font-weight: 500;
+}
+
+.tcm-hl {
+  color: var(--blue-60);
+  font-weight: 700;
+}
+
+/* 레이어 하단 액션 */
+.tcm-layer-foot {
+  border-top: 1px solid var(--gray-20);
+  background: var(--gray-10);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tcm-foot-title {
+  font-size: 13px;
+  color: var(--gray-70);
+  padding: 2px 4px 4px;
+}
+
+.tcm-foot-title b {
+  color: var(--gray-100);
+}
+
+.tcm-foot-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--gray-30);
+  background: var(--white);
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--gray-90);
+}
+
+.tcm-foot-btn:hover {
+  border-color: var(--gray-40);
+  background: var(--white);
+}
+
+.tcm-foot-btn b {
+  font-weight: 700;
+}
+
+.tcm-foot-btn.tcm-primary {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  border-color: var(--blue-50);
+  background: var(--blue-10);
+}
+
+.tcm-foot-btn.tcm-primary:hover {
+  border-color: var(--blue-60);
+  background: var(--blue-20);
+}
+
+.tcm-foot-path {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--blue-70);
+}
+
+.tcm-foot-sub {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gray-60);
+}
+
+.tcm-foot-btn.tcm-muted {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  color: var(--gray-70);
+  background: transparent;
+  border-style: dashed;
+}
+
+.tcm-foot-warn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--orange-fg);
+}
+
+/* 분류 picker 행 */
+.tcm-pick-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 11px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--gray-90);
+}
+
+.tcm-pick-row:hover {
+  background: var(--gray-15);
+}
+
+.tcm-pick-cta {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--blue-60);
+  flex-shrink: 0;
+}
+
+/* =========================================================================
+ * C안 분류 필드 + 시트
+ * ======================================================================= */
+
+.tcm-cat-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid var(--gray-30);
+  border-radius: 8px;
+  padding: 8px 10px 8px 14px;
+  min-height: 44px;
+  background: var(--white);
+}
+
+.tcm-cat-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gray-100);
+}
+
+.tcm-cat-empty {
+  font-size: 14px;
+  color: var(--gray-50);
+}
+
+.tcm-cat-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--gray-30);
+  background: var(--white);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-80);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.tcm-cat-btn:hover:not(:disabled) {
+  border-color: var(--gray-40);
+}
+
+.tcm-cat-btn:disabled {
+  color: var(--gray-50);
+  cursor: not-allowed;
+}
+
+.tcm-cat-hint {
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: var(--gray-60);
+}
+
+.tcm-sheet-dim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(22, 24, 29, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tcm-sheet {
+  width: 420px;
+  max-height: 70vh;
+  background: var(--white);
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.tcm-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--gray-20);
+}
+
+.tcm-sheet-x {
+  display: inline-flex;
+  color: var(--gray-60);
+  cursor: pointer;
+}
+
+.tcm-sheet-body {
+  overflow-y: auto;
+  padding: 8px;
+}
+
+/* =========================================================================
+ * 더미 · 액션
+ * ======================================================================= */
+
+.tcm-dummy-box {
+  border: 1px dashed var(--gray-30);
+  border-radius: 8px;
+  padding: 18px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--gray-50);
+  background: var(--gray-10);
+}
+
+.tcm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.tcm-btn-ghost,
+.tcm-btn-primary {
+  padding: 11px 22px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tcm-btn-ghost {
+  border: 1px solid var(--gray-30);
+  background: var(--white);
+  color: var(--gray-70);
+}
+
+.tcm-btn-primary {
+  background: var(--blue-60);
+  color: var(--white);
+}
+
+.tcm-btn-primary:hover {
+  background: var(--blue-70);
+}
+
+/* =========================================================================
+ * 우측 패널
+ * ======================================================================= */
+
+.tcm-panel {
+  background: var(--white);
+  border: 1px solid var(--gray-30);
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+
+.tcm-panel-quiet {
+  background: var(--gray-10);
+}
+
+.tcm-panel-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gray-90);
+  margin-bottom: 12px;
+}
+
+.tcm-kv {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.tcm-kv-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12.5px;
+}
+
+.tcm-kv-row > span {
+  color: var(--gray-60);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.tcm-kv-row code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: var(--gray-100);
+  text-align: right;
+  word-break: break-all;
+}
+
+.tcm-kv-row code.tcm-null {
+  color: var(--red-70);
+}
+
+.tcm-note {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--gray-15);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--gray-70);
+}
+
+.tcm-note b {
+  color: var(--gray-90);
+}
+
+.tcm-note-ok {
+  background: var(--blue-10);
+  color: var(--gray-80);
+}
+
+.tcm-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tcm-tag {
+  display: inline-flex;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--gray-100);
+  color: var(--white);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.tcm-tag-empty {
+  background: var(--gray-20);
+  color: var(--gray-50);
+}
+
+.tcm-probe {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tcm-probe-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  background: var(--gray-15);
+}
+
+.tcm-probe-q {
+  color: var(--gray-70);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tcm-probe-r {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.tcm-probe-row.hit {
+  background: var(--green-10);
+}
+
+.tcm-probe-row.hit .tcm-probe-r {
+  color: var(--green-100);
+}
+
+.tcm-probe-row.miss {
+  background: var(--red-10);
+}
+
+.tcm-probe-row.miss .tcm-probe-r {
+  color: var(--red-70);
+}
+
+.tcm-desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--gray-70);
+}
+
+.tcm-desc b {
+  color: var(--gray-90);
+  font-weight: 700;
+}
+
+/* =========================================================================
+ * 토스트
+ * ======================================================================= */
+
+.tcm-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 40px;
+  transform: translateX(-50%);
+  z-index: 80;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-radius: 8px;
+  background: var(--red-70);
+  color: var(--white);
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 6px 20px rgba(22, 24, 29, 0.2);
+}

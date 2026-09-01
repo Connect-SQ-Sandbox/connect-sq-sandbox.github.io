@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { FiSearch, FiX, FiChevronRight, FiChevronLeft, FiAlertCircle, FiCheck } from 'react-icons/fi';
+import { FiSearch, FiX, FiChevronRight, FiChevronLeft, FiAlertCircle, FiCheck, FiClock } from 'react-icons/fi';
 
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-category-map — 진료항목 분류(대/중/소) 인지·매핑 UI 탐색
- * 상태     : 현행(active)   버전: v2   최종수정: 2026-09-01
+ * 상태     : 현행(active)   버전: v3   최종수정: 2026-09-01
  * PRD      : 없음(선행 탐색). 관련 실코드 = receipt-web
  *            pages/non-payment-reservations/treatment-items/.../TreatmentItemNameSearch
  * 배포URL  : (미배포) 예정 https://connect-sq-sandbox.github.io/out/ti-category-map.html
@@ -43,6 +43,10 @@ import { FiSearch, FiX, FiChevronRight, FiChevronLeft, FiAlertCircle, FiCheck } 
  *   [보류] 기존 직접입력 재고를 병원이 직접 정리하게 하는 파트너 웹 알림 화면(별도 프로토타입).
  *
  * 변경 이력:
+ *   v3 2026-09-01 — 검색 노출 검증을 두 축으로 분리. "분류로 찾을 때"(이번 개편으로 달라지는 축)와
+ *                   "이름으로 찾을 때"(개편 범위 밖). 소분류 자리의 자유 입력값은 어떤 안을 골라도
+ *                   이름 검색이 안 되므로 실패(X)가 아니라 '검색 개편 전까지 불가' 보류 상태로 표기하고,
+ *                   태그 영역에도 '색인 제외' 고스트 칩으로 구별.
  *   v2 2026-09-01 — 우측 "환자 검색에 실리는 값"의 검증 검색어를 고정값('보톡스','피부')에서
  *                   선택한 항목 기준으로 도출하도록 변경(probeQueries). 분류가 붙었으면 그 분류명,
  *                   없으면 추천 경로의 분류명을 쓰고 마지막은 항상 항목 이름.
@@ -208,12 +212,12 @@ function searchTags(sel: Selection | null): string[] {
 }
 
 /**
- * 이 항목 기준으로 확인해볼 검색어를 도출한다.
+ * "분류로 찾을 때" 확인할 검색어.
  * - 분류가 붙었으면 그 분류명(중분류·대분류) — 노출되는 게 정상
  * - 분류가 없으면 "붙였다면 됐을" 추천 경로의 분류명 — 놓치고 있는 검색어
- * - 마지막은 항상 항목 이름. 인덱스에 이름이 안 들어간다는 걸 드러내는 자리.
+ * 이 축은 어떤 안을 고르느냐에 따라 결과가 달라지는, 이번 개편으로 통제 가능한 변수다.
  */
-function probeQueries(sel: Selection): string[] {
+function categoryQueries(sel: Selection): string[] {
   const qs: string[] = [];
 
   if (sel.m2Name) qs.push(sel.m2Name);
@@ -223,9 +227,17 @@ function probeQueries(sel: Selection): string[] {
     suggestPaths(sel.name).forEach((p) => qs.push(p.m2Name ?? p.m1Name));
   }
 
-  qs.push(sel.name);
+  return [...new Set(qs)].slice(0, 3);
+}
 
-  return [...new Set(qs)].slice(0, 4);
+/**
+ * 항목 이름이 병원이 지은 자유 입력값인지(= 표준 소분류가 아닌지).
+ * 자유 입력값은 인덱스가 마스터 명칭만 담기 때문에 **어떤 안을 골라도** 이름으로는 검색되지 않는다.
+ * 분류 매핑으로 해결되는 문제가 아니라 검색 개편(자연어/텍스트 색인)을 기다려야 하는 축이라,
+ * 실패(X)가 아니라 '보류' 상태로 따로 표기한다.
+ */
+function isFreeTypedName(sel: Selection): boolean {
+  return sel.m3Name == null;
 }
 
 /* =========================================================================
@@ -756,16 +768,22 @@ export default function TiCategoryMapPage() {
               ) : (
                 <span className="tcm-tag tcm-tag-empty">{selection ? '없음' : '—'}</span>
               )}
+              {selection && isFreeTypedName(selection) && (
+                <span className="tcm-tag tcm-tag-ghost">
+                  {selection.name}
+                  <em>색인 제외</em>
+                </span>
+              )}
             </div>
             <div className="tcm-note">
               병원검색 인덱스는 <b>마스터 명칭만</b> 태그로 만듭니다. 진료항목 이름은 들어가지 않습니다.
             </div>
 
-            {selection && (
+            {selection && categoryQueries(selection).length > 0 && (
               <div className="tcm-probe">
-                {probeQueries(selection).map((q, i) => {
+                <div className="tcm-probe-cap">분류로 찾을 때 — 이번 개편으로 달라지는 축</div>
+                {categoryQueries(selection).map((q, i) => {
                   // 인덱스는 마스터 명칭 텍스트다. 태그가 검색어를 포함할 때만 잡힌다.
-                  // '이마보톡스'로 검색하면 태그('피부','보톡스')에 그 문자열이 없어 잡히지 않는다.
                   const hit = tags.some((t) => t.includes(q));
                   return (
                     <div key={`${q}-${i}`} className={`tcm-probe-row ${hit ? 'hit' : 'miss'}`}>
@@ -780,9 +798,32 @@ export default function TiCategoryMapPage() {
               </div>
             )}
 
+            {selection && (
+              <div className="tcm-probe">
+                <div className="tcm-probe-cap">이름으로 찾을 때 — 이번 개편 범위 밖</div>
+                <div className={`tcm-probe-row ${isFreeTypedName(selection) ? 'pend' : 'hit'}`}>
+                  <span className="tcm-probe-q">‘{selection.name}’ 검색</span>
+                  <span className="tcm-probe-r">
+                    {isFreeTypedName(selection) ? <FiClock size={14} /> : <FiCheck size={14} />}
+                    {isFreeTypedName(selection) ? '검색 개편 전까지 불가' : '노출됨'}
+                  </span>
+                </div>
+                <div className="tcm-probe-foot">
+                  {isFreeTypedName(selection) ? (
+                    <>
+                      병원이 지은 이름은 인덱스에 안 들어갑니다. <b>어떤 안을 골라도 결과가 같고</b>, 분류 매핑으로는
+                      풀리지 않습니다 — 자연어·텍스트 검색 개편을 기다려야 하는 축입니다.
+                    </>
+                  ) : (
+                    <>표준 소분류라 이름 자체가 태그입니다. 이름으로도 잡히는 건 표준 항목만 누리는 이점입니다.</>
+                  )}
+                </div>
+              </div>
+            )}
+
             {selection && tags.length === 0 && suggestPaths(selection.name).length > 0 && (
               <div className="tcm-note">
-                분류가 없어 위 검색어 모두 놓치고 있습니다. 이름에 ‘{suggestPaths(selection.name)[0].matched}’ 이(가) 있어
+                분류가 없어 분류 검색어를 모두 놓치고 있습니다. 이름에 ‘{suggestPaths(selection.name)[0].matched}’ 이(가) 있어
                 <b> {suggestPaths(selection.name)[0].m1Name}
                 {suggestPaths(selection.name)[0].m2Name ? ` › ${suggestPaths(selection.name)[0].m2Name}` : ''}</b> 에
                 넣었다면 잡혔을 항목입니다.

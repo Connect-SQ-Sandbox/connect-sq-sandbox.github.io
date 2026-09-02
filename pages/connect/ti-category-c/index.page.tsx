@@ -5,7 +5,7 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-category-c — 진료항목 분류 필드 분리(C안) + 카카오 연동
- * 상태     : 현행(active)   버전: v1   최종수정: 2026-09-01
+ * 상태     : 현행(active)   버전: v2   최종수정: 2026-09-01
  * PRD      : 없음(선행 탐색). 근거 = Notion "진료항목 분류 체계 현황과 개선 방향"
  * 배포URL  : (미배포) 예정 https://connect-sq-sandbox.github.io/out/ti-category-c.html
  * 관련 CSS : connectRegister.css + connectAdminNonpayAug.css + tiCategoryC.css(tc-*)
@@ -24,8 +24,11 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
  * 1. 진료항목명(자유 입력) / 분류(대분류 › 중분류)를 **별도 필드로 분리**.
  * 2. 자동완성에서 굿닥 표준 진료항목을 고르면 이름과 분류가 **함께** 채워진다.
  *    이름을 직접 입력하면 분류는 비어 있고, 분류 필드에서 따로 고른다.
- * 3. 분류 선택 = 대분류 → 중분류 **2단 시트**. 소분류는 고르지 않는다(부분 매핑).
+ * 3. 분류 선택 = **2뎁스 트리**(기본) 또는 대분류→중분류 **단계형**. 모달 헤더 세그먼트로 전환 비교.
+ *    소분류는 어느 쪽에서도 고르지 않는다(부분 매핑).
  *    → 저장 형태: 대분류 + 중분류는 값, 소분류는 없음, 이름은 병원 입력값.
+ *    트리에는 분류명 검색(대·중분류 동시 매칭 + 자동 펼침)과 소분류 예시 힌트를 붙였다 —
+ *    "이 중분류에 뭐가 들어가는지"를 모르면 병원이 고를 수 없기 때문.
  * 4. 이름에 분류 명칭이 들어 있으면 **역매칭 추천**을 원클릭으로 제안('이마보톡스' ⊃ '보톡스').
  * 5. 분류가 없으면 검색 노출 손실을 구체적으로 경고. 좌측 '직접 입력 항목' 그룹에도 배너.
  * 6. 필수 정책은 폼 상단 [분류 필수 검증] 스위치로 비교(프로토타입 전용 컨트롤).
@@ -47,6 +50,9 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
  *   [보류] 기존 미분류 재고를 병원이 정리하도록 유도하는 알림·일괄 정리 화면.
  *
  * 변경 이력:
+ *   v2 2026-09-01 — 분류 선택 모달에 **2뎁스 트리** 모드 추가(기본). 헤더 세그먼트로 단계형과 전환.
+ *                   트리 = 대분류 아코디언 + 중분류 들여쓰기 + 소분류 예시 힌트 + 분류명 검색
+ *                   (검색 시 걸린 대분류 자동 펼침). 모달 진입 시 현재 분류의 대분류는 펼쳐 둔다.
  *   v1 2026-09-01 — admin-nonpay-aug 복제 + C안(분류 필드 분리) 신설.
  * └──────────────────────────────────────────────────────
  */
@@ -1783,6 +1789,12 @@ function TiKakao() {
   /* 분류 필드 (C안) */
   const [catSheet, setCatSheet] = useState(false);
   const [sheetC1, setSheetC1] = useState<string | null>(null);
+  /** 분류 선택 모달 형태 비교 — 'tree' 2뎁스 트리(기본) / 'step' 대분류→중분류 단계형 */
+  const [sheetMode, setSheetMode] = useState<'tree' | 'step'>('tree');
+  /** 트리에서 펼쳐진 대분류 이름들 */
+  const [treeOpen, setTreeOpen] = useState<string[]>([]);
+  /** 분류 검색어 — 대·중분류 명칭을 모두 훑고, 걸린 대분류는 자동으로 펼친다 */
+  const [catQuery, setCatQuery] = useState('');
   const [nameOpen, setNameOpen] = useState(false);
   const [nameQuery, setNameQuery] = useState('');
   /** 프로토타입 전용 — 분류 필수 정책을 켜고 끄며 비교. 기본 OFF(기존 항목 유예). */
@@ -2311,6 +2323,8 @@ function TiKakao() {
                                   className="tc-cat-btn"
                                   onClick={() => {
                                     setSheetC1(null);
+                                    setCatQuery('');
+                                    setTreeOpen(d.cat1 && d.cat1 !== CUSTOM_CAT ? [d.cat1] : []);
                                     setCatSheet(true);
                                   }}
                                 >
@@ -2532,55 +2546,146 @@ function TiKakao() {
               </div></div>
             )}
 
-            {/* 분류 선택 시트 — 대분류 → 중분류 2단. 소분류는 고르지 않는다(부분 매핑). (C안) */}
-            {catSheet && (
-              <div className="ap-dim" onClick={() => { setCatSheet(false); setSheetC1(null); }}>
-                <div className="ap-modal tc-modal" onClick={(e) => e.stopPropagation()}>
-                  <div className="tc-modal-head">
-                    {sheetC1 ? (
-                      <button className="tc-back" onClick={() => setSheetC1(null)}>‹ 대분류</button>
-                    ) : (
-                      <span className="tc-modal-title">분류 선택</span>
-                    )}
-                    <button className="tc-modal-x" aria-label="닫기" onClick={() => { setCatSheet(false); setSheetC1(null); }}>
-                      <CloseIcon />
-                    </button>
-                  </div>
-                  <div className="tc-modal-body">
-                    {!sheetC1 ? (
-                      <>
-                        <div className="tc-sheet-note">대분류 {TAXONOMY.length}개 · 중분류 69개 — 굿닥 표준 진료항목</div>
-                        {TAXONOMY.map((a) => (
-                          <button key={a.id} className="tc-pick" onClick={() => setSheetC1(a.name)}>
-                            <span>{a.name}</span>
-                            <span className="tc-pick-meta">{a.groups.length}개 ›</span>
-                          </button>
-                        ))}
-                      </>
-                    ) : (
-                      TAXONOMY.find((a) => a.name === sheetC1)!.groups.map((b) => {
-                        const on = d.cat1 === sheetC1 && d.cat2 === b.name;
-                        return (
+            {/* 분류 선택 모달 — 2뎁스 트리(기본) / 단계형 전환 비교. 소분류는 고르지 않는다(부분 매핑). (C안) */}
+            {catSheet && (() => {
+              const closeSheet = () => { setCatSheet(false); setSheetC1(null); setCatQuery(''); };
+              const pick = (c1: string, c2: string) => {
+                patch({ cat1: c1, cat2: c2 });
+                clearErr('category');
+                closeSheet();
+              };
+              const q = NORM(catQuery);
+              /** 검색어가 있으면 대분류명 또는 중분류명이 걸리는 것만 남긴다 */
+              const filtered = TAXONOMY.map((a) => {
+                if (!q) return { a, groups: a.groups };
+                if (NORM(a.name).includes(q)) return { a, groups: a.groups };
+                return { a, groups: a.groups.filter((b) => NORM(b.name).includes(q)) };
+              }).filter((x) => x.groups.length > 0);
+              const total = filtered.reduce((n, x) => n + x.groups.length, 0);
+
+              return (
+                <div className="ap-dim" onClick={closeSheet}>
+                  <div className="ap-modal tc-modal" onClick={(e) => e.stopPropagation()}>
+                    <div className="tc-modal-head">
+                      {sheetMode === 'step' && sheetC1 ? (
+                        <button className="tc-back" onClick={() => setSheetC1(null)}>‹ 대분류</button>
+                      ) : (
+                        <span className="tc-modal-title">분류 선택</span>
+                      )}
+                      <div className="tc-modal-head-right">
+                        {/* 프로토타입 전용 — 모달 형태 비교 */}
+                        <div className="tc-seg">
                           <button
-                            key={b.id}
-                            className={`tc-pick${on ? ' on' : ''}`}
-                            onClick={() => {
-                              patch({ cat1: sheetC1, cat2: b.name });
-                              clearErr('category');
-                              setCatSheet(false);
-                              setSheetC1(null);
-                            }}
+                            className={`tc-seg-btn${sheetMode === 'tree' ? ' on' : ''}`}
+                            onClick={() => { setSheetMode('tree'); setSheetC1(null); }}
                           >
-                            <span><span className="tc-dim">{sheetC1} › </span>{b.name}</span>
-                            <span className="tc-pick-cta">{on ? '선택됨' : '선택'}</span>
+                            트리
                           </button>
-                        );
-                      })
+                          <button
+                            className={`tc-seg-btn${sheetMode === 'step' ? ' on' : ''}`}
+                            onClick={() => { setSheetMode('step'); setSheetC1(null); setCatQuery(''); }}
+                          >
+                            단계
+                          </button>
+                        </div>
+                        <button className="tc-modal-x" aria-label="닫기" onClick={closeSheet}>
+                          <CloseIcon />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 트리 모드에서만 검색 — 84개 행을 훑지 않고 바로 도달하게 한다 */}
+                    {sheetMode === 'tree' && (
+                      <div className="tc-modal-search">
+                        <input
+                          className="rg-input"
+                          placeholder="분류명으로 찾기 (예: 보톡스, 예방접종)"
+                          value={catQuery}
+                          onChange={(e) => setCatQuery(e.target.value)}
+                        />
+                      </div>
                     )}
+
+                    <div className="tc-modal-body">
+                      {sheetMode === 'tree' ? (
+                        <>
+                          <div className="tc-sheet-note">
+                            {q ? `‘${catQuery.trim()}’ — 중분류 ${total}개` : `대분류 ${TAXONOMY.length}개 · 중분류 ${total}개`}
+                          </div>
+                          {filtered.length === 0 && <div className="tc-sheet-empty">일치하는 분류가 없어요.</div>}
+                          {filtered.map(({ a, groups }) => {
+                            const open = !!q || treeOpen.includes(a.name);
+                            return (
+                              <div key={a.id} className="tc-tree-node">
+                                <button
+                                  className={`tc-tree-c1${open ? ' open' : ''}`}
+                                  aria-expanded={open}
+                                  onClick={() =>
+                                    setTreeOpen((prev) =>
+                                      prev.includes(a.name) ? prev.filter((n) => n !== a.name) : [...prev, a.name]
+                                    )
+                                  }
+                                >
+                                  <span className="tc-tree-caret" aria-hidden>{open ? '▾' : '▸'}</span>
+                                  <span className="tc-tree-c1-name">{a.name}</span>
+                                  <span className="tc-tree-count">{groups.length}</span>
+                                </button>
+                                {open && (
+                                  <div className="tc-tree-c2list">
+                                    {groups.map((b) => {
+                                      const on = d.cat1 === a.name && d.cat2 === b.name;
+                                      return (
+                                        <button
+                                          key={b.id}
+                                          className={`tc-tree-c2${on ? ' on' : ''}`}
+                                          onClick={() => pick(a.name, b.name)}
+                                        >
+                                          <span className="tc-tree-c2-name">{b.name}</span>
+                                          {/* 이 중분류에 뭐가 들어가는지 — 소분류 예시를 힌트로만 노출(선택 대상 아님) */}
+                                          <span className="tc-tree-hint">
+                                            {b.items.slice(0, 3).map((c) => c.name).join(', ')}
+                                            {b.items.length > 3 ? ` 외 ${b.items.length - 3}개` : ''}
+                                          </span>
+                                          {on && <span className="tc-tree-on">선택됨</span>}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </>
+                      ) : !sheetC1 ? (
+                        <>
+                          <div className="tc-sheet-note">대분류 {TAXONOMY.length}개 · 중분류 {total}개 — 굿닥 표준 진료항목</div>
+                          {TAXONOMY.map((a) => (
+                            <button key={a.id} className="tc-pick" onClick={() => setSheetC1(a.name)}>
+                              <span>{a.name}</span>
+                              <span className="tc-pick-meta">{a.groups.length}개 ›</span>
+                            </button>
+                          ))}
+                        </>
+                      ) : (
+                        TAXONOMY.find((a) => a.name === sheetC1)!.groups.map((b) => {
+                          const on = d.cat1 === sheetC1 && d.cat2 === b.name;
+                          return (
+                            <button
+                              key={b.id}
+                              className={`tc-pick${on ? ' on' : ''}`}
+                              onClick={() => pick(sheetC1, b.name)}
+                            >
+                              <span><span className="tc-dim">{sheetC1} › </span>{b.name}</span>
+                              <span className="tc-pick-cta">{on ? '선택됨' : '선택'}</span>
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {toast && <div className="rg-toast">{toast}</div>}
           </main>

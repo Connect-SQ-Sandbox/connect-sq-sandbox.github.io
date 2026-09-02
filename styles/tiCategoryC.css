@@ -392,3 +392,162 @@
   font-weight: 600;
   color: #0073fa;
 }
+
+/* ---------- 모달 헤더: 형태 전환 세그먼트 ---------- */
+.tc-modal-head-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tc-seg {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: #f2f4f7;
+}
+
+.tc-seg-btn {
+  padding: 5px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #808799;
+}
+
+.tc-seg-btn.on {
+  background: #fff;
+  color: #16181d;
+  box-shadow: 0 1px 2px rgba(22, 24, 29, 0.08);
+}
+
+/* ---------- 모달 검색 ---------- */
+.tc-modal-search {
+  padding: 12px 18px 0;
+}
+
+.tc-sheet-empty {
+  padding: 28px 14px;
+  text-align: center;
+  font-size: 13px;
+  color: #a8aebd;
+}
+
+/* ---------- 2뎁스 트리 ---------- */
+.tc-tree-node + .tc-tree-node {
+  margin-top: 2px;
+}
+
+.tc-tree-c1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: #16181d;
+}
+
+.tc-tree-c1:hover {
+  background: #f6f7f9;
+}
+
+.tc-tree-c1.open {
+  background: #f6f7f9;
+}
+
+.tc-tree-caret {
+  flex-shrink: 0;
+  width: 12px;
+  font-size: 10px;
+  color: #808799;
+}
+
+.tc-tree-c1-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.tc-tree-count {
+  flex-shrink: 0;
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #f2f4f7;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #808799;
+  text-align: center;
+}
+
+.tc-tree-c1.open .tc-tree-count {
+  background: #e3e6ed;
+}
+
+.tc-tree-c2list {
+  padding: 2px 0 6px 20px;
+  margin-left: 12px;
+  border-left: 1px solid #e3e6ed;
+}
+
+.tc-tree-c2 {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.tc-tree-c2:hover {
+  background: #f5faff;
+}
+
+.tc-tree-c2.on {
+  background: #f5faff;
+}
+
+.tc-tree-c2-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #31353f;
+}
+
+.tc-tree-c2.on .tc-tree-c2-name {
+  color: #056be1;
+  font-weight: 700;
+}
+
+.tc-tree-hint {
+  display: block;
+  margin-top: 1px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: #a8aebd;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tc-tree-on {
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #0073fa;
+}

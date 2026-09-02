@@ -551,3 +551,130 @@
   font-weight: 700;
   color: #0073fa;
 }
+
+/* ---------- 좌우 2단 컬럼 (목록 화면의 좌 카테고리 / 우 항목 구조와 동일한 결) ---------- */
+.tc-modal.wide {
+  width: 680px;
+  max-height: 76vh;
+}
+
+.tc-cols {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  border-top: 1px solid #f2f4f7;
+}
+
+.tc-col-left {
+  width: 208px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  padding: 8px;
+  border-right: 1px solid #f2f4f7;
+  background: #f9f9fb;
+}
+
+.tc-col-c1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #434956;
+}
+
+.tc-col-c1:hover {
+  background: #f2f4f7;
+}
+
+.tc-col-c1.sel {
+  background: #fff;
+  color: #16181d;
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(22, 24, 29, 0.06);
+}
+
+.tc-col-c1-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tc-col-c1-count {
+  flex-shrink: 0;
+  min-width: 18px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #f2f4f7;
+  font-size: 11px;
+  font-weight: 600;
+  color: #808799;
+  text-align: center;
+}
+
+.tc-col-c1.sel .tc-col-c1-count {
+  background: #e5f2ff;
+  color: #0073fa;
+}
+
+.tc-col-right {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.tc-col-right-head {
+  padding: 6px 12px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #a8aebd;
+}
+
+.tc-col-c2 {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.tc-col-c2:hover {
+  background: #f5faff;
+}
+
+.tc-col-c2.on {
+  background: #f5faff;
+}
+
+.tc-col-c2-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #31353f;
+}
+
+.tc-col-c2.on .tc-col-c2-name {
+  color: #056be1;
+  font-weight: 700;
+}
+
+.tc-col-c2 .tc-tree-on {
+  margin-top: 0;
+}

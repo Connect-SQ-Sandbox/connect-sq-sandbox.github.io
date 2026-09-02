@@ -9,6 +9,7 @@ export const SHARED_CSS = ['styles/globals.css', 'styles/connectShell.css', 'sty
 
 /** 페이지 디렉터리명 -> 화면 전용 CSS */
 export const SCREEN_CSS = {
+  'ti-category-c': ['styles/tiCategoryC.css'],
   'ti-category-map': ['styles/tiCategoryMap.css'],
   'ti-kakao': ['styles/connectRegister.css', 'styles/connectTiKakao.css'],
   'admin-nonpay-aug': ['styles/connectRegister.css', 'styles/connectAdminNonpayAug.css'],
@@ -30,6 +31,8 @@ export function resolveCssFiles(pagePath) {
   const match = pagePath.match(/pages\/connect\/([^/]+)\//);
   const dir = match ? match[1] : null;
   const screen = dir && SCREEN_CSS[dir] ? SCREEN_CSS[dir] : [];
+
+  if (dir === 'ti-category-c') return ['styles/globals.css', ...screen];
 
   // 폼 단독 탐색 페이지: 공용 shell/드로어 CSS를 상속하지 않고 리셋(globals)만 사용
   if (dir === 'ti-category-map') return ['styles/globals.css', ...screen];

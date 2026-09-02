@@ -8,6 +8,7 @@
 ## 공유 링크 (GitHub Pages)
 
 - 랜딩: **https://connect-sq-sandbox.github.io/**
+- 진료항목 분류 필드 분리(C안) + 카카오 연동(신규): **https://connect-sq-sandbox.github.io/out/ti-category-c.html**
 - 진료항목 분류 인지·매핑 탐색(신규): **https://connect-sq-sandbox.github.io/out/ti-category-map.html**
 - 병원 어드민 · 진료 예약 8월 프로토타입(현행): **https://connect-sq-sandbox.github.io/out/admin-nonpay-aug.html**
 - 진료항목·카카오 노출 + 예약 신청 내역(7월 기준선): **https://connect-sq-sandbox.github.io/out/ti-kakao.html**
@@ -18,6 +19,7 @@
 
 | 화면 | 소스 | 산출물 | 설명 |
 |---|---|---|---|
+| **진료항목 분류 필드 분리(C안) + 카카오 연동** (신규) | `pages/connect/ti-category-c/index.page.tsx` | `out/ti-category-c.html` | **`admin-nonpay-aug` 복제 + 분류 축만 추가**(카카오 노출 설정 카드·발문 빌더·예약 신청 내역·진료 예약 설정·진료시간 무수정). 진료항목명(자유 입력)과 분류(대분류 › 중분류)를 별도 필드로 분리 — 표준 항목 자동완성 선택 시 동시 채움, 직접 입력 시 분류만 따로 선택. 역매칭 추천 원클릭, 미분류 시 검색 노출 손실 경고, 2단 분류 선택 시트(실제 표준 진료항목 대 15·중 69·소 187 전량), `직접 입력 항목` 그룹 배너, 폼 상단 스위치로 분류 필수 정책 비교. |
 | **진료항목 분류 인지·매핑 탐색** (신규) | `pages/connect/ti-category-map/index.page.tsx` | `out/ti-category-map.html` | 진료항목 등록 시 대/중/소 분류 인지와, 표준 분류에 없는 이름의 분류 매핑을 탐색. **현행 / A. 경로 노출 / B. 경로 + 매핑 / C. 필드 분리** 4개 안을 상단 세그먼트로 전환 비교. 검색 자동완성의 정렬(소>중>대)·단일 하이라이트·2자/50자 제한은 receipt-web 실코드 기준 재현. 우측 패널에 저장되는 분류 값과 환자 검색 태그·검색어별 노출 여부를 실시간 표시(mock). |
 | **병원 어드민 · 진료 예약 8월 프로토타입** (현행) | `pages/connect/admin-nonpay-aug/index.page.tsx` | `out/admin-nonpay-aug.html` | `ti-kakao`(7월 기준선)에서 분기해 **receipt-web@staging 기준으로 현행화**한 버전. 예약 신청 내역(자동종료·채널 첫 열·hover 퀵액션·상세 7섹션·페이지네이션) · 진료항목 목록(채널 심볼 2축 판정) · 진료항목 상세(카카오 노출 설정 카드) · 진료 예약 설정. **KAK-001(확정 전)** 카카오 유입 예약 자동 확정 예외 안내 2지점 포함. |
 | **진료항목 → 카카오 노출 + 예약 신청 내역** (7월 기준선) | `pages/connect/ti-kakao/index.page.tsx` | `out/ti-kakao.html` | 진료항목 목록(인입 채널 심볼 병합) · 진료항목 상세 폼("카카오톡 예약하기에서도 보이기" 토글 + 자동 매핑·규격 검증 + 굿닥 미리보기) · 예약 신청 내역(채널 컬럼·상세 모달). LNB로 화면 이동. |

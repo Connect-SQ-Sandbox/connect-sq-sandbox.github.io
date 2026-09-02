@@ -1,0 +1,394 @@
+/* =========================================================================
+ * ti-category-c — 진료항목 분류 필드 분리(C안) 추가분
+ * connectRegister.css + connectAdminNonpayAug.css 뒤에 로드된다.
+ * 기존 rg-* / tk-* / ap-* 는 손대지 않고 tc-* 만 추가.
+ * plain CSS only · 외부요청 0
+ * ======================================================================= */
+
+/* ---------- 프로토타입 전용 정책 스위치 ---------- */
+.tc-policy {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+  padding: 10px 14px;
+  border: 1px dashed #caced8;
+  border-radius: 10px;
+  background: #f9f9fb;
+}
+
+.tc-policy-kicker {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #808799;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #f2f4f7;
+}
+
+.tc-policy-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #434956;
+}
+
+.tc-policy-note {
+  font-size: 12.5px;
+  color: #808799;
+}
+
+/* ---------- 진료항목명 자동완성 레이어 ---------- */
+.tc-anchor {
+  position: relative;
+}
+
+.tc-layer {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 40;
+  background: #fff;
+  border: 1px solid #e3e6ed;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(22, 24, 29, 0.12);
+  overflow: hidden;
+}
+
+.tc-layer-guide {
+  padding: 14px 16px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #808799;
+  background: #f9f9fb;
+}
+
+.tc-layer-list {
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.tc-sug {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  width: 100%;
+  text-align: left;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.tc-sug:hover {
+  background: #f6f7f9;
+}
+
+.tc-sep {
+  color: #caced8;
+}
+
+.tc-dim {
+  color: #808799;
+}
+
+.tc-strong {
+  color: #16181d;
+  font-weight: 600;
+}
+
+.tc-layer-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px;
+  border-top: 1px solid #f2f4f7;
+  background: #f9f9fb;
+}
+
+.tc-layer-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid #e3e6ed;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 500;
+  font-family: inherit;
+  color: #31353f;
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+.tc-layer-btn:hover {
+  border-color: #caced8;
+}
+
+.tc-layer-note {
+  padding-left: 2px;
+  font-size: 11.5px;
+  color: #808799;
+}
+
+/* ---------- 분류 필드 ---------- */
+.tc-cat-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 48px;
+  padding: 8px 10px 8px 14px;
+  border: 1px solid #e3e6ed;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.tc-cat-field.filled {
+  border-color: #caced8;
+}
+
+.tc-cat-field.err {
+  border-color: #ec3847;
+}
+
+.tc-cat-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #16181d;
+}
+
+.tc-cat-empty {
+  font-size: 14px;
+  color: #a8aebd;
+}
+
+.tc-cat-btn {
+  flex-shrink: 0;
+  padding: 7px 14px;
+  border: 1px solid #e3e6ed;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #434956;
+  cursor: pointer;
+}
+
+.tc-cat-btn:hover {
+  border-color: #a8aebd;
+}
+
+/* ---------- 역매칭 추천 ---------- */
+.tc-reco {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.tc-reco-lead {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #808799;
+}
+
+.tc-reco-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid #479dff;
+  border-radius: 8px;
+  background: #f5faff;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.tc-reco-btn:hover {
+  background: #e5f2ff;
+  border-color: #0073fa;
+}
+
+.tc-reco-path {
+  font-size: 14px;
+  font-weight: 700;
+  color: #056be1;
+}
+
+.tc-reco-cta {
+  flex-shrink: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #0073fa;
+}
+
+/* ---------- 분류 없음 경고 ---------- */
+.tc-warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(252, 125, 34, 0.05);
+  border: 1px solid rgba(252, 125, 34, 0.1);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #434956;
+}
+
+.tc-warn svg {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  color: #f26600;
+}
+
+.tc-warn b {
+  color: #f26600;
+}
+
+/* ---------- 목록: 미분류 그룹 배너 ---------- */
+.tc-list-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: rgba(252, 125, 34, 0.05);
+  border: 1px solid rgba(252, 125, 34, 0.1);
+  font-size: 13px;
+  line-height: 1.6;
+  color: #434956;
+}
+
+.tc-list-banner svg {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  color: #f26600;
+}
+
+.tc-list-banner b {
+  color: #f26600;
+}
+
+/* ---------- 분류 선택 시트 ---------- */
+.tc-modal {
+  width: 460px;
+  max-width: calc(100vw - 48px);
+  max-height: 72vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+.tc-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px 18px;
+  border-bottom: 1px solid #f2f4f7;
+}
+
+.tc-modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #16181d;
+}
+
+.tc-back {
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #808799;
+}
+
+.tc-back:hover {
+  color: #31353f;
+}
+
+.tc-modal-x {
+  display: inline-flex;
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  color: #808799;
+}
+
+.tc-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.tc-sheet-note {
+  padding: 4px 6px 10px;
+  font-size: 12.5px;
+  color: #808799;
+}
+
+.tc-pick {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-size: 14px;
+  font-family: inherit;
+  color: #31353f;
+}
+
+.tc-pick:hover {
+  background: #f6f7f9;
+}
+
+.tc-pick.on {
+  background: #f5faff;
+  color: #056be1;
+  font-weight: 600;
+}
+
+.tc-pick-meta {
+  flex-shrink: 0;
+  font-size: 12.5px;
+  color: #a8aebd;
+}
+
+.tc-pick-cta {
+  flex-shrink: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #0073fa;
+}

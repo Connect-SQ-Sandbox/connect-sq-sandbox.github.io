@@ -11,6 +11,7 @@ export const SHARED_CSS = ['styles/globals.css', 'styles/connectShell.css', 'sty
 export const SCREEN_CSS = {
   'ti-category-map': ['styles/tiCategoryMap.css'],
   'ti-kakao': ['styles/connectRegister.css', 'styles/connectTiKakao.css'],
+  'ti-category-c': ['styles/connectRegister.css', 'styles/connectAdminNonpayAug.css', 'styles/tiCategoryC.css'],
   'admin-nonpay-aug': ['styles/connectRegister.css', 'styles/connectAdminNonpayAug.css'],
   'kakao-booking': ['styles/kakaoBooking.css'],
   'kakao-booking-ticket': ['styles/kakaoBookingTicket.css'],

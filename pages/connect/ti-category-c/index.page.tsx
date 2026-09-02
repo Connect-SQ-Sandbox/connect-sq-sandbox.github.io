@@ -5,7 +5,7 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-category-c — 진료항목 분류 필드 분리(C안) + 카카오 연동
- * 상태     : 현행(active)   버전: v3   최종수정: 2026-09-01
+ * 상태     : 현행(active)   버전: v4   최종수정: 2026-09-01
  * PRD      : 없음(선행 탐색). 근거 = Notion "진료항목 분류 체계 현황과 개선 방향"
  * 배포URL  : (미배포) 예정 https://connect-sq-sandbox.github.io/out/ti-category-c.html
  * 관련 CSS : connectRegister.css + connectAdminNonpayAug.css + tiCategoryC.css(tc-*)
@@ -51,6 +51,11 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
  *   [보류] 기존 미분류 재고를 병원이 정리하도록 유도하는 알림·일괄 정리 화면.
  *
  * 변경 이력:
+ *   v4 2026-09-01 — ① 분류 선택 모달을 **고정 크기**(680×620, 뷰포트 초과 시 축소)로. 모드·목록
+ *                      길이에 따라 모달이 늘었다 줄었다 하던 문제 해결. 남는 여백은 하단 바로 마감
+ *                      (현재 선택 표시 + 닫기). ② **신규 등록 시 분류가 비어 있게** 수정 —
+ *                      좌측에서 보던 카테고리를 그대로 물려줘서 고르지도 않은 분류가 박혀 있었다.
+ *                      분류 없이 저장하면 목록의 '직접 입력 항목' 그룹으로 정규화.
  *   v3 2026-09-01 — 분류 선택 모달에 **좌우 2단** 모드 추가(기본). 좌측 대분류 15개 고정 목록 +
  *                   우측 해당 중분류 목록(소분류 예시 힌트 포함). 검색은 좌우 동시 필터.
  *                   모달 재진입 시 현재 분류의 대분류가 좌측 활성 + 우측 해당 항목 '선택됨'.
@@ -1845,7 +1850,10 @@ function TiKakao() {
   const nav = (p: Page) => { setPage(p); if (p === 'items') setScreen('list'); };
   const cloneItem = (it: Item): Item => ({ ...it, prices: it.prices.map((p) => ({ ...p })), keywords: [...it.keywords], sync: { ...it.sync }, kExtra: { ...it.kExtra, productImages: it.kExtra.productImages.map((image) => ({ ...image })), descriptionImages: it.kExtra.descriptionImages.map((image) => ({ ...image })), questions: it.kExtra.questions.map((q) => ({ ...q, options: [...q.options] })) } });
   const open = (it: Item) => { const next = cloneItem(it); setErrors({}); setSelId(it.id); setD(next); setFormBaseline(JSON.stringify(next)); setFormError(''); setScreen('form'); };
-  const create = () => { const next = mk({ id: UID++, name: '', cat1: selCat1 === CUSTOM_CAT ? CUSTOM_CAT : selCat1, cat2: groups[0]?.name || '' }); setErrors({}); setSelId(null); setD(next); setFormBaseline(JSON.stringify(next)); setFormError(''); setScreen('form'); };
+  /* C안 — 신규 등록은 **분류를 비운 상태**로 시작한다.
+   * 원래는 좌측에서 보고 있던 카테고리(selCat1/첫 그룹)를 그대로 물려줬는데, 그러면
+   * 병원이 고르지도 않은 분류가 이미 박혀 있어 분류 필드가 무의미해진다. */
+  const create = () => { const next = mk({ id: UID++, name: '', cat1: '', cat2: '' }); setErrors({}); setSelId(null); setD(next); setFormBaseline(JSON.stringify(next)); setFormError(''); setScreen('form'); };
   const closeForm = () => { setScreen('list'); setD(null); setLeaveOpen(false); setFormError(''); setErrors({}); };
   const requestCloseForm = () => { if (d && JSON.stringify(d) !== formBaseline) setLeaveOpen(true); else closeForm(); };
   // 저장 유효성 검증 — 카카오 상품 API required 필드 기준. 위반 필드별 메시지 맵을 반환(빈 객체면 통과).
@@ -1913,7 +1921,10 @@ function TiKakao() {
       : wasLinked
         ? { ...d.sync, product: 'ON_HOLD', schedule: 'ON_HOLD', lastAt: '방금 전', error: undefined }
         : makeSync('NOT_LINKED');
-    const saved = { ...d, sync: pendingSync, updatedAt: '2026.07.15' };
+    /* 분류를 안 고른 채 저장하면(필수 OFF) 목록의 '직접 입력 항목' 그룹으로 넣는다.
+     * cat1 을 빈 문자열로 두면 어느 대분류 그룹에도 안 걸려 목록에서 사라진다. */
+    const normalized: Item = !d.cat1 || d.cat1 === CUSTOM_CAT ? { ...d, cat1: CUSTOM_CAT, cat2: '' } : d;
+    const saved = { ...normalized, sync: pendingSync, updatedAt: '2026.07.15' };
     setItems((prev) => (selId === null ? [...prev, saved] : prev.map((it) => (it.id === saved.id ? saved : it))));
     closeForm();
     showToast(selId === null ? '진료항목을 등록했어요.' : '진료항목을 저장했어요.');
@@ -2593,7 +2604,7 @@ function TiKakao() {
 
               return (
                 <div className="ap-dim" onClick={closeSheet}>
-                  <div className={`ap-modal tc-modal${sheetMode === 'cols' ? ' wide' : ''}`} onClick={(e) => e.stopPropagation()}>
+                  <div className="ap-modal tc-modal" onClick={(e) => e.stopPropagation()}>
                     <div className="tc-modal-head">
                       {sheetMode === 'step' && sheetC1 ? (
                         <button className="tc-back" onClick={() => setSheetC1(null)}>‹ 대분류</button>
@@ -2730,10 +2741,14 @@ function TiKakao() {
                             return (
                               <button
                                 key={b.id}
-                                className={`tc-pick${on ? ' on' : ''}`}
+                                className={`tc-pick tc-pick-2line${on ? ' on' : ''}`}
                                 onClick={() => pick(sheetC1, b.name)}
                               >
-                                <span><span className="tc-dim">{sheetC1} › </span>{b.name}</span>
+                                <span className="tc-pick-main">
+                                  <span className="tc-pick-name"><span className="tc-dim">{sheetC1} › </span>{b.name}</span>
+                                  {/* 소분류 예시 힌트 — 좌우·트리와 동일하게, 이 중분류에 뭐가 들어가는지 */}
+                                  <span className="tc-tree-hint">{hint(b)}</span>
+                                </span>
                                 <span className="tc-pick-cta">{on ? '선택됨' : '선택'}</span>
                               </button>
                             );
@@ -2741,6 +2756,18 @@ function TiKakao() {
                         )}
                       </div>
                     )}
+
+                    {/* 하단 바 — 고정 높이에서 남는 여백을 마감하고 현재 선택을 확인시킨다 */}
+                    <div className="tc-modal-foot">
+                      <span className={`tc-modal-foot-cur${d.cat1 && d.cat1 !== CUSTOM_CAT ? '' : ' none'}`}>
+                        {d.cat1 && d.cat1 !== CUSTOM_CAT ? (
+                          <>현재 <b>{d.cat1} › {d.cat2}</b></>
+                        ) : (
+                          '아직 분류가 없어요'
+                        )}
+                      </span>
+                      <button className="tc-modal-foot-btn" onClick={closeSheet}>닫기</button>
+                    </div>
                   </div>
                 </div>
               );

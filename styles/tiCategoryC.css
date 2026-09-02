@@ -291,11 +291,15 @@
   color: #f26600;
 }
 
-/* ---------- 분류 선택 시트 ---------- */
+/* ---------- 분류 선택 모달 ----------
+ * 폭·높이를 고정한다. 모드(좌우/트리/단계)나 목록 길이에 따라 모달이 늘었다 줄었다 하면
+ * 형태 비교가 어렵고, 단계형에서 대분류(15개) → 중분류(1~12개)로 넘어갈 때 화면이 튄다.
+ * 내용이 짧으면 아래가 비는데, 그 여백은 하단 바로 마감한다. */
 .tc-modal {
-  width: 460px;
+  width: 680px;
   max-width: calc(100vw - 48px);
-  max-height: 72vh;
+  height: 620px;
+  max-height: calc(100vh - 96px);
   display: flex;
   flex-direction: column;
   padding: 0;
@@ -343,6 +347,7 @@
 
 .tc-modal-body {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 8px;
 }
@@ -553,11 +558,6 @@
 }
 
 /* ---------- 좌우 2단 컬럼 (목록 화면의 좌 카테고리 / 우 항목 구조와 동일한 결) ---------- */
-.tc-modal.wide {
-  width: 680px;
-  max-height: 76vh;
-}
-
 .tc-cols {
   display: flex;
   flex: 1;
@@ -677,4 +677,68 @@
 
 .tc-col-c2 .tc-tree-on {
   margin-top: 0;
+}
+
+/* ---------- 모달 하단 바 (고정 높이의 여백 마감 + 현재 선택 확인) ---------- */
+.tc-modal-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+  padding: 12px 18px;
+  border-top: 1px solid #f2f4f7;
+  background: #f9f9fb;
+}
+
+.tc-modal-foot-cur {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+  color: #808799;
+}
+
+.tc-modal-foot-cur b {
+  color: #16181d;
+  font-weight: 700;
+}
+
+.tc-modal-foot-cur.none {
+  color: #f26600;
+}
+
+.tc-modal-foot-btn {
+  flex-shrink: 0;
+  height: 36px;
+  padding: 0 18px;
+  border: 1px solid #e3e6ed;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #434956;
+}
+
+.tc-modal-foot-btn:hover {
+  border-color: #a8aebd;
+}
+
+/* ---------- 단계형 중분류 행 (소분류 힌트 포함 2줄) ---------- */
+.tc-pick-2line {
+  align-items: flex-start;
+}
+
+.tc-pick-main {
+  display: block;
+  flex: 1;
+  min-width: 0;
+}
+
+.tc-pick-name {
+  display: block;
+  font-size: 14px;
 }

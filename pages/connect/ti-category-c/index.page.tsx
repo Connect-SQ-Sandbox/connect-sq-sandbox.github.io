@@ -5,7 +5,7 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-category-c — 진료항목 분류 필드 분리(C안) + 카카오 연동
- * 상태     : 현행(active)   버전: v4   최종수정: 2026-09-01
+ * 상태     : 현행(active)   버전: v6   최종수정: 2026-09-01
  * PRD      : 없음(선행 탐색). 근거 = Notion "진료항목 분류 체계 현황과 개선 방향"
  * 배포URL  : (미배포) 예정 https://connect-sq-sandbox.github.io/out/ti-category-c.html
  * 관련 CSS : connectRegister.css + connectAdminNonpayAug.css + tiCategoryC.css(tc-*)
@@ -24,7 +24,7 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
  * 1. 진료항목명(자유 입력) / 분류(대분류 › 중분류)를 **별도 필드로 분리**.
  * 2. 자동완성에서 굿닥 표준 진료항목을 고르면 이름과 분류가 **함께** 채워진다.
  *    이름을 직접 입력하면 분류는 비어 있고, 분류 필드에서 따로 고른다.
- * 3. 분류 선택 = **좌우 2단**(기본) / 아코디언 트리 / 단계형. 모달 헤더 세그먼트로 전환 비교.
+ * 3. 분류 선택 = **좌우 2단**(기본) / 단계형. 모달 헤더 세그먼트로 전환 비교.
  *    좌우 2단은 진료항목 목록 화면의 좌 카테고리 / 우 항목 구조와 같은 결 — 병원이 이미 익숙하다.
  *    소분류는 어느 쪽에서도 고르지 않는다(부분 매핑).
  *    → 저장 형태: 대분류 + 중분류는 값, 소분류는 없음, 이름은 병원 입력값.
@@ -32,7 +32,8 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
  *    "이 중분류에 뭐가 들어가는지"를 모르면 병원이 고를 수 없기 때문.
  * 4. 이름에 분류 명칭이 들어 있으면 **역매칭 추천**을 원클릭으로 제안('이마보톡스' ⊃ '보톡스').
  * 5. 분류가 없으면 검색 노출 손실을 구체적으로 경고. 좌측 '직접 입력 항목' 그룹에도 배너.
- * 6. 필수 정책은 폼 상단 [분류 필수 검증] 스위치로 비교(프로토타입 전용 컨트롤).
+ * 6. 분류는 **필수 아님**(`REQUIRE_CATEGORY = false`). 미분류는 저장을 허용하고 경고만 노출한다.
+ *    고를 분류가 없을 때 강제하면 미분류가 오분류로 대체될 뿐이다. 정책을 뒤집을 땐 상수 한 줄.
  *
  * 핵심 결정 (why):
  *   [유지·자체] 소분류는 선택 대상에서 제외. 병원이 파는 단위가 중분류인 경우가 많다
@@ -51,6 +52,11 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
  *   [보류] 기존 미분류 재고를 병원이 정리하도록 유도하는 알림·일괄 정리 화면.
  *
  * 변경 이력:
+ *   v6 2026-09-01 — 폼 상단 [분류 필수 검증] 프로토타입 스위치 제거(세화님). 정책은 모듈 상수
+ *                   REQUIRE_CATEGORY(false) 로 고정 — 미분류 저장 허용 + 경고.
+ *   v5 2026-09-01 — 세로 아코디언 트리 모드 제거(세화님). 좌우 2단 / 단계형 두 형태만 남김.
+ *                   아코디언은 펼칠 때 아래 대분류가 밀려 화면이 흔들리는 문제가 있었고,
+ *                   좌우 2단이 같은 정보를 더 안정적으로 보여준다.
  *   v4 2026-09-01 — ① 분류 선택 모달을 **고정 크기**(680×620, 뷰포트 초과 시 축소)로. 모드·목록
  *                      길이에 따라 모달이 늘었다 줄었다 하던 문제 해결. 남는 여백은 하단 바로 마감
  *                      (현재 선택 표시 + 닫기). ② **신규 등록 시 분류가 비어 있게** 수정 —
@@ -305,6 +311,14 @@ function suggestCategories(raw: string): { c1: string; c2: string; matched: stri
   );
   return found.sort((x, y) => NORM(y.matched).length - NORM(x.matched).length).slice(0, 3);
 }
+
+/**
+ * 분류 필수 여부. 현재 정책 = **필수 아님**.
+ * 고를 분류가 없을 때 저장을 막으면 미분류가 오분류로 대체되고, 그건 되돌리기가 더 어렵다.
+ * 미분류는 저장을 허용하고 검색 노출 손실을 경고로만 알린다.
+ * 신규 등록만 필수로 돌리려면 이 값을 true 로 바꾼다(기존 항목 유예는 별도 처리 필요).
+ */
+const REQUIRE_CATEGORY = false;
 
 /** 받침에 따라 '으로/로'. 낱말을 넘겨야 한다(따옴표 포함 문자열 금지). */
 function roSuffix(word: string): string {
@@ -1799,18 +1813,14 @@ function TiKakao() {
   /* 분류 필드 (C안) */
   const [catSheet, setCatSheet] = useState(false);
   const [sheetC1, setSheetC1] = useState<string | null>(null);
-  /** 분류 선택 모달 형태 비교 — 'cols' 좌우 2단(기본) / 'tree' 아코디언 / 'step' 단계형 */
-  const [sheetMode, setSheetMode] = useState<'cols' | 'tree' | 'step'>('cols');
+  /** 분류 선택 모달 형태 비교 — 'cols' 좌우 2단(기본) / 'step' 대분류→중분류 단계형 */
+  const [sheetMode, setSheetMode] = useState<'cols' | 'step'>('cols');
   /** 좌우 2단에서 좌측에 선택된 대분류 */
   const [colC1, setColC1] = useState<string>(TAXONOMY[0].name);
-  /** 트리에서 펼쳐진 대분류 이름들 */
-  const [treeOpen, setTreeOpen] = useState<string[]>([]);
   /** 분류 검색어 — 대·중분류 명칭을 모두 훑고, 걸린 대분류는 자동으로 펼친다 */
   const [catQuery, setCatQuery] = useState('');
   const [nameOpen, setNameOpen] = useState(false);
   const [nameQuery, setNameQuery] = useState('');
-  /** 프로토타입 전용 — 분류 필수 정책을 켜고 끄며 비교. 기본 OFF(기존 항목 유예). */
-  const [requireCategory, setRequireCategory] = useState(false);
   const [showPlanned, setShowPlanned] = useState(false);
   const [devMode, setDevMode] = useState(false);
 
@@ -1862,7 +1872,7 @@ function TiKakao() {
     if (!v.name.trim()) e['name'] = '진료항목명을 입력해 주세요.';
     /* C안 — 분류 필수 정책이 켜진 경우에만 저장을 막는다.
      * OFF 에서는 경고만 노출하고 저장을 허용한다(기존 미분류 재고 유예). */
-    if (requireCategory && (!v.cat1 || v.cat1 === CUSTOM_CAT)) e['category'] = '분류를 선택해 주세요.';
+    if (REQUIRE_CATEGORY && (!v.cat1 || v.cat1 === CUSTOM_CAT)) e['category'] = '분류를 선택해 주세요.';
     v.prices.forEach((p) => {
       if (!p.title.trim()) e[`price-${p.id}-title`] = '가격명을 입력해 주세요.';
       if (p.type === 'fixed' && !p.amount) e[`price-${p.id}-amount`] = '가격을 입력해 주세요.';
@@ -2227,25 +2237,6 @@ function TiKakao() {
                     {formError && <div className="tk-form-error"><WarnIc />{formError}</div>}
                     <section className="rg-card required">
                       <div className="rg-group-title">필수 정보</div>
-                      {/* 프로토타입 전용 — 분류 필수 정책 비교 스위치. 실제 화면에는 없다. */}
-                      <div className="tc-policy">
-                        <span className="tc-policy-kicker">프로토타입</span>
-                        <button
-                          className={`rg-toggle${requireCategory ? '' : ' off'}`}
-                          aria-label="분류 필수 검증"
-                          aria-pressed={requireCategory}
-                          onClick={() => setRequireCategory((v) => !v)}
-                        >
-                          <span className="rg-toggle-knob" />
-                        </button>
-                        <span className="tc-policy-label">분류 필수 검증</span>
-                        <span className="tc-policy-note">
-                          {requireCategory
-                            ? '분류를 고르지 않으면 저장이 막혀요. (신규 등록 기준)'
-                            : '분류 없이도 저장돼요. 경고만 노출합니다. (기존 항목 유예 기준)'}
-                        </span>
-                      </div>
-
                       {/* 진료항목명 — 병원이 부르는 이름. 자유 입력. (C안) */}
                       <div className="rg-field">
                         <FieldHead
@@ -2323,7 +2314,7 @@ function TiKakao() {
                       {/* 분류 — 굿닥 표준 진료항목의 대분류 › 중분류. 이름과 분리된 별도 필드. (C안) */}
                       <div className="rg-field">
                         <FieldHead
-                          label={requireCategory ? '분류' : '분류'}
+                          label="분류"
                           helpers={['환자가 카테고리로 찾을 때 쓰입니다. 진료항목명과 별개로 지정해 주세요.']}
                         />
                         {(() => {
@@ -2343,7 +2334,6 @@ function TiKakao() {
                                     setSheetC1(null);
                                     setCatQuery('');
                                     const has = d.cat1 && d.cat1 !== CUSTOM_CAT;
-                                    setTreeOpen(has ? [d.cat1] : []);
                                     setColC1(has ? d.cat1 : TAXONOMY[0].name);
                                     setCatSheet(true);
                                   }}
@@ -2614,7 +2604,7 @@ function TiKakao() {
                       <div className="tc-modal-head-right">
                         {/* 프로토타입 전용 — 모달 형태 비교 */}
                         <div className="tc-seg">
-                          {([['cols', '좌우'], ['tree', '트리'], ['step', '단계']] as const).map(([key, label]) => (
+                          {([['cols', '좌우'], ['step', '단계']] as const).map(([key, label]) => (
                             <button
                               key={key}
                               className={`tc-seg-btn${sheetMode === key ? ' on' : ''}`}
@@ -2677,55 +2667,10 @@ function TiKakao() {
                       </div>
                     )}
 
-                    {/* ── 아코디언 트리 / 단계형 ── */}
-                    {sheetMode !== 'cols' && (
+                    {/* ── 단계형 (대분류 → 중분류) ── */}
+                    {sheetMode === 'step' && (
                       <div className="tc-modal-body">
-                        {sheetMode === 'tree' ? (
-                          <>
-                            <div className="tc-sheet-note">
-                              {q ? `‘${catQuery.trim()}’ — 중분류 ${total}개` : `대분류 ${TAXONOMY.length}개 · 중분류 ${total}개`}
-                            </div>
-                            {filtered.length === 0 && <div className="tc-sheet-empty">일치하는 분류가 없어요.</div>}
-                            {filtered.map(({ a, groups }) => {
-                              const open = !!q || treeOpen.includes(a.name);
-                              return (
-                                <div key={a.id} className="tc-tree-node">
-                                  <button
-                                    className={`tc-tree-c1${open ? ' open' : ''}`}
-                                    aria-expanded={open}
-                                    onClick={() =>
-                                      setTreeOpen((prev) =>
-                                        prev.includes(a.name) ? prev.filter((n) => n !== a.name) : [...prev, a.name]
-                                      )
-                                    }
-                                  >
-                                    <span className="tc-tree-caret" aria-hidden>{open ? '▾' : '▸'}</span>
-                                    <span className="tc-tree-c1-name">{a.name}</span>
-                                    <span className="tc-tree-count">{groups.length}</span>
-                                  </button>
-                                  {open && (
-                                    <div className="tc-tree-c2list">
-                                      {groups.map((b) => {
-                                        const on = d.cat1 === a.name && d.cat2 === b.name;
-                                        return (
-                                          <button
-                                            key={b.id}
-                                            className={`tc-tree-c2${on ? ' on' : ''}`}
-                                            onClick={() => pick(a.name, b.name)}
-                                          >
-                                            <span className="tc-tree-c2-name">{b.name}</span>
-                                            <span className="tc-tree-hint">{hint(b)}</span>
-                                            {on && <span className="tc-tree-on">선택됨</span>}
-                                          </button>
-                                        );
-                                      })}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </>
-                        ) : !sheetC1 ? (
+                        {!sheetC1 ? (
                           <>
                             <div className="tc-sheet-note">대분류 {TAXONOMY.length}개 · 중분류 {total}개 — 굿닥 표준 진료항목</div>
                             {TAXONOMY.map((a) => (
@@ -2746,7 +2691,7 @@ function TiKakao() {
                               >
                                 <span className="tc-pick-main">
                                   <span className="tc-pick-name"><span className="tc-dim">{sheetC1} › </span>{b.name}</span>
-                                  {/* 소분류 예시 힌트 — 좌우·트리와 동일하게, 이 중분류에 뭐가 들어가는지 */}
+                                  {/* 소분류 예시 힌트 — 좌우와 동일하게, 이 중분류에 뭐가 들어가는지 */}
                                   <span className="tc-tree-hint">{hint(b)}</span>
                                 </span>
                                 <span className="tc-pick-cta">{on ? '선택됨' : '선택'}</span>

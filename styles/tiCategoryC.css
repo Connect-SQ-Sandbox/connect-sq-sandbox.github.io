@@ -5,41 +5,6 @@
  * plain CSS only · 외부요청 0
  * ======================================================================= */
 
-/* ---------- 프로토타입 전용 정책 스위치 ---------- */
-.tc-policy {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 4px;
-  padding: 10px 14px;
-  border: 1px dashed #caced8;
-  border-radius: 10px;
-  background: #f9f9fb;
-}
-
-.tc-policy-kicker {
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: #808799;
-  text-transform: uppercase;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: #f2f4f7;
-}
-
-.tc-policy-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #434956;
-}
-
-.tc-policy-note {
-  font-size: 12.5px;
-  color: #808799;
-}
-
 /* ---------- 진료항목명 자동완성 레이어 ---------- */
 .tc-anchor {
   position: relative;
@@ -443,101 +408,7 @@
   color: #a8aebd;
 }
 
-/* ---------- 2뎁스 트리 ---------- */
-.tc-tree-node + .tc-tree-node {
-  margin-top: 2px;
-}
-
-.tc-tree-c1 {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 11px 12px;
-  border: 0;
-  border-radius: 8px;
-  background: none;
-  cursor: pointer;
-  text-align: left;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 700;
-  color: #16181d;
-}
-
-.tc-tree-c1:hover {
-  background: #f6f7f9;
-}
-
-.tc-tree-c1.open {
-  background: #f6f7f9;
-}
-
-.tc-tree-caret {
-  flex-shrink: 0;
-  width: 12px;
-  font-size: 10px;
-  color: #808799;
-}
-
-.tc-tree-c1-name {
-  flex: 1;
-  min-width: 0;
-}
-
-.tc-tree-count {
-  flex-shrink: 0;
-  min-width: 20px;
-  padding: 1px 6px;
-  border-radius: 999px;
-  background: #f2f4f7;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: #808799;
-  text-align: center;
-}
-
-.tc-tree-c1.open .tc-tree-count {
-  background: #e3e6ed;
-}
-
-.tc-tree-c2list {
-  padding: 2px 0 6px 20px;
-  margin-left: 12px;
-  border-left: 1px solid #e3e6ed;
-}
-
-.tc-tree-c2 {
-  display: block;
-  width: 100%;
-  padding: 8px 12px;
-  border: 0;
-  border-radius: 6px;
-  background: none;
-  cursor: pointer;
-  text-align: left;
-  font-family: inherit;
-}
-
-.tc-tree-c2:hover {
-  background: #f5faff;
-}
-
-.tc-tree-c2.on {
-  background: #f5faff;
-}
-
-.tc-tree-c2-name {
-  font-size: 14px;
-  font-weight: 500;
-  color: #31353f;
-}
-
-.tc-tree-c2.on .tc-tree-c2-name {
-  color: #056be1;
-  font-weight: 700;
-}
-
+/* ---------- 소분류 예시 힌트 · 선택됨 표기 (좌우 2단 / 단계형 공용) ---------- */
 .tc-tree-hint {
   display: block;
   margin-top: 1px;

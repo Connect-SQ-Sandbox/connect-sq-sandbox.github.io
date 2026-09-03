@@ -5,7 +5,7 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-category-c — 진료항목 분류 필드 분리(C안) + 카카오 연동
- * 상태     : 현행(active)   버전: v10   최종수정: 2026-09-03
+ * 상태     : 현행(active)   버전: v11   최종수정: 2026-09-03
  * PRD      : 없음(선행 탐색). 근거 = Notion "진료항목 분류 체계 현황과 개선 방향"
  * 배포URL  : (미배포) 예정 https://connect-sq-sandbox.github.io/out/ti-category-c.html
  * 관련 CSS : connectRegister.css + connectAdminNonpayAug.css + tiCategoryC.css(tc-*)
@@ -52,6 +52,11 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
  *   [보류] 기존 미분류 재고를 병원이 정리하도록 유도하는 알림·일괄 정리 화면.
  *
  * 변경 이력:
+ *   v11 2026-09-03 — 자유 상품 폼에 **공통 단위 + 옵션별 수량**을 추가(PO 스펙 6.3).
+ *                    상품 레벨에 공통 단위 하나, 옵션 행에는 수량만. '단위 없음'이면 수량
+ *                    비활성 + 빈값(0으로 해석 안 함), 단위 변경 시 수량 자동 환산 없음,
+ *                    금액 placeholder는 '총액'(회당 환산 오해 방지).
+ *                    ※ PO 프로토타입 v0.4에는 단위 UI가 없어 문서 6.3 기준으로 구현.
  *   v10 2026-09-03 — 표준/자유 세그먼트가 "병원이 고르는 선택지"로 오해되던 표시 수정(세화님).
  *                    **병원은 고르지 않는다** — 진료항목에 규격 스키마가 있으면 표준, 없으면
  *                    자유로 시스템이 판정한다. 세그먼트는 프로토타입 비교 장치이므로
@@ -92,7 +97,11 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
 
 /* ============================ 진료항목 타입 & mock ============================ */
 type PriceType = 'fixed' | 'discount' | 'consult';
-type Price = { id: number; title: string; content: string; type: PriceType; amount: string; original: string; sale: string };
+type Price = {
+  id: number; title: string; content: string; type: PriceType; amount: string; original: string; sale: string;
+  /** 옵션별 수량. 공통 단위가 '단위 없음'이면 비워 둔다(0으로 해석하지 않는다) */
+  qty?: string;
+};
 type SyncState = 'NOT_LINKED' | 'PENDING' | 'SYNCED' | 'FAILED' | 'ON_HOLD' | 'UPDATE_REQUIRED';
 type SyncObject = 'product' | 'item' | 'price' | 'schedule';
 type SyncInfo = Record<SyncObject, SyncState> & { lastAt: string; error?: string; attempts: number };
@@ -421,6 +430,23 @@ const rxTotal = (fee: string, drug: string, comp: string) =>
  */
 const REQUIRE_CATEGORY = false;
 
+/* =========================================================================
+ * 자유 상품 공통 단위 — PO 스펙 6.3
+ *
+ *  · 한 진료항목 안에서는 **공통 단위 하나**를 고르고, 옵션별로 수량과 가격을 넣는다.
+ *  · '단위 없음'을 고르면 수량 입력을 비활성화하고 값은 비워 둔다.
+ *    이를 0회·0원으로 해석하지 않는다.
+ *  · 단위를 바꿔도 기존 수량을 **자동 환산하지 않는다**.
+ *  · 단위가 다른 복합상품은 억지로 환산하지 않는다(그 경우 '단위 없음').
+ *  · 6.3은 "단위 추천은 검토된 허용 단위를 우선"하고 "'다른 병원이 가장 많이 선택'은
+ *    실제 집계가 있을 때만" 쓰라고 한다. 집계가 없으므로 여기서는 인기 순위를 쓰지 않고
+ *    허용 목록만 제시한다.
+ *  · 여러 회 패키지는 총액과 수량을 함께 안내한다. 회당 환산액을 1회 가격처럼 보이지 않게
+ *    금액 라벨을 '총액'으로 고정한다.
+ * ======================================================================= */
+const NO_UNIT = '단위 없음';
+const ALLOWED_UNITS = [NO_UNIT, '회', '팩', '펜', 'cc', '개', '주', '개월'];
+
 /** 받침에 따라 '으로/로'. 낱말을 넘겨야 한다(따옴표 포함 문자열 금지). */
 function roSuffix(word: string): string {
   const last = word.trim().slice(-1);
@@ -435,7 +461,8 @@ const CUSTOM_CAT = '직접 입력 항목';
 const mk = (p: Partial<Item> & { id: number; name: string; cat1: string; cat2: string }): Item => {
   const item: Item = {
     alias: '', intro: '', detail: '', keywords: [], hasImage: false, detailImages: 0,
-    prices: [{ id: UID++, title: '기본', content: '', type: 'fixed', amount: '', original: '', sale: '' }],
+    prices: [{ id: UID++, title: '기본', content: '', type: 'fixed', amount: '', original: '', sale: '', qty: '' }],
+    unit: NO_UNIT,
     gdVisible: true, kakaoOn: false, kExtra: emptyExtra(), sync: makeSync('NOT_LINKED'), updatedAt: '2026.07.14', activeReservations: 0,
     ...p
   };
@@ -1118,7 +1145,7 @@ function CanonicalPriceForm({
   );
 }
 
-function PriceRow({ p, onChange, onDelete, onDragStart, onDrop, titleErr, amountErr }: { p: Price; onChange: (u: Partial<Price>) => void; onDelete: () => void; onDragStart: () => void; onDrop: () => void; titleErr?: string; amountErr?: string }) {
+function PriceRow({ p, unit, onChange, onDelete, onDragStart, onDrop, titleErr, amountErr }: { p: Price; unit: string; onChange: (u: Partial<Price>) => void; onDelete: () => void; onDragStart: () => void; onDrop: () => void; titleErr?: string; amountErr?: string }) {
   const [open, setOpen] = useState(false);
   const cur = PRICE_TYPES.find((t) => t.value === p.type)!;
   const numCls = `rg-num${amountErr ? ' error' : ''}`;
@@ -1130,11 +1157,22 @@ function PriceRow({ p, onChange, onDelete, onDragStart, onDrop, titleErr, amount
         {titleErr && <p className="rg-error">{titleErr}</p>}
         <input className="rg-input" placeholder={`가격 설명을 입력해 주세요. (선택사항, 최대 ${PRICE_DESC_MAX}자)`} maxLength={PRICE_DESC_MAX} value={p.content} onChange={(e) => onChange({ content: e.target.value })} />
         <div className="rg-price-entry">
+          {/* 수량 — 공통 단위가 '단위 없음'이면 비활성 + 빈값 유지 (PO 6.3) */}
+          <div className="tc-qty">
+            <input
+              className="rg-num tc-qty-num"
+              placeholder={unit === NO_UNIT ? '—' : '수량'}
+              disabled={unit === NO_UNIT}
+              value={unit === NO_UNIT ? '' : (p.qty ?? '')}
+              onChange={(e) => onChange({ qty: e.target.value.replace(/[^0-9]/g, '') })}
+            />
+            <span className="rg-unit tc-qty-unit">{unit === NO_UNIT ? '' : unit}</span>
+          </div>
           <div className="rg-select-wrap">
             <button type="button" className={`rg-select${open ? ' open' : ''}`} onClick={() => setOpen((v) => !v)}>{cur.label}<span className="rg-select-ic"><SelectArrow /></span></button>
             {open && <div className="rg-select-menu" onMouseLeave={() => setOpen(false)}>{PRICE_TYPES.map((t) => (<button key={t.value} type="button" className={`rg-select-opt${t.value === p.type ? ' active' : ''}`} onClick={() => { onChange({ type: t.value }); setOpen(false); }}>{t.label}</button>))}</div>}
           </div>
-          {p.type === 'fixed' && (<><input className={numCls} placeholder="0" value={p.amount} onChange={(e) => onChange({ amount: e.target.value.replace(/[^0-9]/g, '') })} /><span className="rg-unit">원</span></>)}
+          {p.type === 'fixed' && (<><input className={numCls} placeholder="총액" value={p.amount} onChange={(e) => onChange({ amount: e.target.value.replace(/[^0-9]/g, '') })} /><span className="rg-unit">원</span></>)}
           {p.type === 'discount' && (<><input className={numCls} placeholder="정상가" value={p.original} onChange={(e) => onChange({ original: e.target.value.replace(/[^0-9]/g, '') })} /><span className="rg-price-arrow">→</span><input className={numCls} placeholder="판매가" value={p.sale} onChange={(e) => onChange({ sale: e.target.value.replace(/[^0-9]/g, '') })} /><span className="rg-unit">원</span></>)}
           {p.type === 'consult' && (<><input className="rg-num" value="0" disabled readOnly /><span className="rg-unit">원</span></>)}
         </div>
@@ -2672,11 +2710,33 @@ function TiKakao() {
                                 onChange={(u) => patch({ rx: { ...rx, ...u } })}
                               />
                             ) : (
+                              <>
+                              {/* 공통 단위 — 상품 레벨에 하나. 옵션별로는 수량만 넣는다 (PO 6.3) */}
+                              <div className="tc-unit-bar">
+                                <span className="tc-unit-label">공통 단위</span>
+                                <div className="tc-unit-chips">
+                                  {ALLOWED_UNITS.map((u) => (
+                                    <button
+                                      key={u}
+                                      className={`tc-unit-chip${(d.unit ?? NO_UNIT) === u ? ' on' : ''}`}
+                                      onClick={() => patch({ unit: u })}
+                                    >
+                                      {u}
+                                    </button>
+                                  ))}
+                                </div>
+                                <span className="tc-unit-note">
+                                  {(d.unit ?? NO_UNIT) === NO_UNIT
+                                    ? '수량 없이 총액만 받습니다. 0회·0원으로 해석하지 않아요.'
+                                    : '단위를 바꿔도 입력한 수량은 그대로 둡니다. 자동 환산하지 않아요.'}
+                                </span>
+                              </div>
                               <div className="rg-price-list">
                                 {d.prices.map((p) => (
                                   <PriceRow
                                     key={p.id}
                                     p={p}
+                                    unit={d.unit ?? NO_UNIT}
                                     onChange={(u) => setPrice(p.id, u)}
                                     onDelete={() => delPrice(p.id)}
                                     onDragStart={() => setDragPriceId(p.id)}
@@ -2686,6 +2746,7 @@ function TiKakao() {
                                   />
                                 ))}
                               </div>
+                              </>
                             )}
                           </div>
                         );

@@ -5,7 +5,7 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-category-c — 진료항목 분류 필드 분리(C안) + 카카오 연동
- * 상태     : 현행(active)   버전: v14   최종수정: 2026-09-03
+ * 상태     : 현행(active)   버전: v15   최종수정: 2026-09-03
  * PRD      : 없음(선행 탐색). 근거 = Notion "진료항목 분류 체계 현황과 개선 방향"
  * 배포URL  : (미배포) 예정 https://connect-sq-sandbox.github.io/out/ti-category-c.html
  * 관련 CSS : connectRegister.css + connectAdminNonpayAug.css + tiCategoryC.css(tc-*)
@@ -21,7 +21,10 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
  *      0 기여. 그중 194건(29.5%)은 마스터의 중분류·대분류명을 그대로 타이핑한 것 —
  *      마스터에 있는데 자동완성이 소분류(leaf)만 고르게 해서 도달하지 못한 물량.
  *
- * 1. 진료항목명(자유 입력) / 분류(대분류 › 중분류)를 **별도 필드로 분리**.
+ * 1. 입력 순서 = **환자에게 보이는 상품명(필수)** → 진료항목(표준) → 분류 → 가격 (PO 6.1).
+ *    상품명은 기존 '진료항목 노출명'(alias)을 맨 위 필수로 승격한 것이다. 표준 진료항목을
+ *    고르거나 분류를 바꿔도 상품명을 덮어쓰지 않는다.
+ *    기존 항목을 열 때 노출명이 비어 있으면 항목명을 폼 값으로 채워 보여준다(서버 일괄 변경 아님).
  * 2. 자동완성에서 굿닥 표준 진료항목을 고르면 이름과 분류가 **함께** 채워진다.
  *    이름을 직접 입력하면 분류는 비어 있고, 분류 필드에서 따로 고른다.
  * 3. 분류 선택 = **좌우 2단**(기본) / 단계형. 모달 헤더 세그먼트로 전환 비교.
@@ -52,6 +55,10 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
  *   [보류] 기존 미분류 재고를 병원이 정리하도록 유도하는 알림·일괄 정리 화면.
  *
  * 변경 이력:
+ *   v15 2026-09-03 — **환자에게 보이는 상품명을 맨 위 필수 필드로 승격**(PO 6.1, 세화님).
+ *                    추가 정보에 있던 '진료항목 노출명 (선택)' 을 올려 순서를
+ *                    상품명 → 진료항목(표준) → 분류 → 가격 으로. 빈칸·공백만이면 저장 차단.
+ *                    표준 진료항목 선택·분류 변경으로 상품명을 덮어쓰지 않는다.
  *   v14 2026-09-03 — 히스토리 연동을 **양방향(뒤로·앞으로)** 으로 재작성(세화님).
  *                    "뒤로가기 = 한 겹 닫기"에서 "화면 스냅샷을 history.state 에 싣고
  *                    popstate 에서 복원"으로 바꿔 앞으로가기도 동작한다.
@@ -2316,7 +2323,10 @@ function TiKakao() {
     setSelId(null);
   };
   const cloneItem = (it: Item): Item => ({ ...it, prices: it.prices.map((p) => ({ ...p })), keywords: [...it.keywords], sync: { ...it.sync }, kExtra: { ...it.kExtra, productImages: it.kExtra.productImages.map((image) => ({ ...image })), descriptionImages: it.kExtra.descriptionImages.map((image) => ({ ...image })), questions: it.kExtra.questions.map((q) => ({ ...q, options: [...q.options] })) } });
-  const open = (it: Item) => { const next = cloneItem(it); setErrors({}); setSelId(it.id); setD(next); setFormBaseline(JSON.stringify(next)); setFormError(''); pushView({ page: 'items', screen: 'form', itemId: it.id, sheet: false }); setScreen('form'); };
+  const open = (it: Item) => { const next = cloneItem(it);
+    /* PO 6.1 — 현재 환자에게 보이는 이름을 입력값으로 보여준다. 노출명이 비어 있으면 항목명을 쓴다.
+     * (서버의 빈 노출명을 일괄 채우는 것이 아니라, 폼에서 보여주는 값만 채운다) */
+    if (!next.alias.trim()) next.alias = next.name; setErrors({}); setSelId(it.id); setD(next); setFormBaseline(JSON.stringify(next)); setFormError(''); pushView({ page: 'items', screen: 'form', itemId: it.id, sheet: false }); setScreen('form'); };
   /* C안 — 신규 등록은 **분류를 비운 상태**로 시작한다.
    * 원래는 좌측에서 보고 있던 카테고리(selCat1/첫 그룹)를 그대로 물려줬는데, 그러면
    * 병원이 고르지도 않은 분류가 이미 박혀 있어 분류 필드가 무의미해진다. */
@@ -2331,7 +2341,9 @@ function TiKakao() {
   // 저장 유효성 검증 — 카카오 상품 API required 필드 기준. 위반 필드별 메시지 맵을 반환(빈 객체면 통과).
   const collectErrors = (v: Item): Record<string, string> => {
     const e: Record<string, string> = {};
-    if (!v.name.trim()) e['name'] = '진료항목명을 입력해 주세요.';
+    /* PO 6.1 — 상품명(노출명)은 프론트 필수. 빈칸·공백만이면 저장을 막고 해당 입력란으로 이동한다. */
+    if (!v.alias.trim()) e['alias'] = '상품명을 입력해주세요.';
+    if (!v.name.trim()) e['name'] = '진료항목을 입력해 주세요.';
     /* C안 — 분류 필수 정책이 켜진 경우에만 저장을 막는다.
      * OFF 에서는 경고만 노출하고 저장을 허용한다(기존 미분류 재고 유예). */
     if (REQUIRE_CATEGORY && (!v.cat1 || v.cat1 === CUSTOM_CAT)) e['category'] = '분류를 선택해 주세요.';
@@ -2701,13 +2713,32 @@ function TiKakao() {
                     {formError && <div className="tk-form-error"><WarnIc />{formError}</div>}
                     <section className="rg-card required">
                       <div className="rg-group-title">필수 정보</div>
-                      {/* 진료항목명 — 병원이 부르는 이름. 자유 입력. (C안) */}
+                      {/* 환자에게 보이는 상품명 — 기존 '진료항목 노출명'(alias)을 맨 위 필수로 승격. (PO 6.1)
+                        * 병원이 환자에게 설명하는 이름이다. 표준 진료항목 선택이나 분류 변경으로
+                        * 덮어쓰지 않는다. */}
                       <div className="rg-field">
                         <FieldHead
-                          label="진료항목명"
+                          label="환자에게 보이는 상품명 *"
+                          helpers={['환자에게 이 이름으로 보입니다. 병원에서 부르는 이름 그대로 입력해 주세요.']}
+                        />
+                        <input
+                          className={`rg-input${errors.alias ? ' error' : ''}`}
+                          placeholder="예) 리쥬란 힐러 1회, 마운자로 처방 (진료비 포함)"
+                          maxLength={ALIAS_MAX}
+                          value={d.alias}
+                          onChange={(e) => { patch({ alias: e.target.value }); clearErr('alias'); }}
+                        />
+                        <div className="rg-counter"><span className="rg-counter-num">{d.alias.length}</span>/{ALIAS_MAX}자</div>
+                        {errors.alias && <p className="rg-error">{errors.alias}</p>}
+                      </div>
+
+                      {/* 표준 진료항목 — 같은 진료끼리 묶어 검색·비교하기 위한 기준. (PO 6.2) */}
+                      <div className="rg-field">
+                        <FieldHead
+                          label="진료항목"
                           helpers={[
-                            '병원에서 부르는 이름 그대로 입력해 주세요.',
-                            '검색해서 굿닥 표준 진료항목을 고르면 아래 분류가 함께 채워집니다.',
+                            '같은 진료끼리 묶어 검색·비교하기 위한 굿닥 표준 진료항목이에요.',
+                            '검색해서 선택하면 아래 분류가 함께 채워집니다. 상품명은 바뀌지 않아요.',
                           ]}
                         />
                         <div className="tc-anchor">
@@ -2945,11 +2976,6 @@ function TiKakao() {
                       <div className="rg-field" data-policy-id="gcp1-kakao-product-images">
                         <FieldHead label="대표 사진" optional helpers={['진료항목을 대표하는 사진을 업로드해 주세요.']} />
                         {d.hasImage ? <div className="tk-thumb"><span>대표 이미지</span><button onClick={() => patch({ hasImage: false })} aria-label="삭제"><CloseIcon /></button></div> : <button className="rg-upload" onClick={() => patch({ hasImage: true })}><PhotoIcon /><span className="rg-upload-label">사진 추가</span></button>}
-                      </div>
-                      <div className="rg-field">
-                        <FieldHead label="진료항목 노출명" optional helpers={['비워두면 진료항목명과 동일하게 노출됩니다.']} />
-                        <input className="rg-input" placeholder="진료항목 노출명을 입력해 주세요." maxLength={ALIAS_MAX} value={d.alias} onChange={(e) => patch({ alias: e.target.value })} />
-                        <div className="rg-counter"><span className="rg-counter-num">{d.alias.length}</span>/{ALIAS_MAX}자</div>
                       </div>
                       <div className="rg-field">
                         <FieldHead label="한 줄 소개" optional helpers={['진료항목을 한눈에 이해할 수 있는 짧은 소개 문구를 입력해 주세요.']} />

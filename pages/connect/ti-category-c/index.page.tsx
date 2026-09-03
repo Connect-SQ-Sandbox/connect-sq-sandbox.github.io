@@ -5,7 +5,7 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-category-c — 진료항목 분류 필드 분리(C안) + 카카오 연동
- * 상태     : 현행(active)   버전: v12   최종수정: 2026-09-03
+ * 상태     : 현행(active)   버전: v13   최종수정: 2026-09-03
  * PRD      : 없음(선행 탐색). 근거 = Notion "진료항목 분류 체계 현황과 개선 방향"
  * 배포URL  : (미배포) 예정 https://connect-sq-sandbox.github.io/out/ti-category-c.html
  * 관련 CSS : connectRegister.css + connectAdminNonpayAug.css + tiCategoryC.css(tc-*)
@@ -52,6 +52,11 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
  *   [보류] 기존 미분류 재고를 병원이 정리하도록 유도하는 알림·일괄 정리 화면.
  *
  * 변경 이력:
+ *   v13 2026-09-03 — 접종형 스키마를 **제품 카드 구조**로 확장(세화님, 나닥 대상포진 화면 참고).
+ *                    중분류 아래 제품 여러 개를 나열하고 취급하는 것에만 가격을 넣는다
+ *                    (가격 유무 = 취급 여부). 제품별 단위가 다르다 — 싱그릭스만 1·2회.
+ *                    시드에 '대상포진 백신'(제품 3종, 2종만 취급) 추가.
+ *                    ※ 보류: 접종형 스키마 키를 중분류명으로 둘지(현재는 소분류·중분류명 혼용).
  *   v12 2026-09-03 — **브라우저 뒤로가기 연동**(세화님). 열 때 pushState, 닫을 때 history.back()
  *                    을 호출하고 실제 닫기는 popstate 에서만 수행해 상태와 히스토리를 일치시킴.
  *                    닫는 순서 = 분류 모달 → 이탈 확인 → 진료항목 폼 → 페이지.
@@ -388,10 +393,16 @@ interface RxSchema {
   source: string;
 }
 
-/** 접종형 스키마 — 접종 단위만 */
+/**
+ * 접종형 스키마 — **중분류 아래 제품 여러 개**를 동시에 취급한다.
+ * 처방형과 결정적으로 다른 지점 : 제품 하나를 고르는 게 아니라 전부 나열하고
+ * 병원이 **취급하는 제품에만 가격을 넣는다**(가격 유무 = 취급 여부).
+ * 제품별로 접종 단위가 다르다 — 싱그릭스만 1·2회, 나머지는 1회.
+ * 근거 = 나만의닥터 대상포진 백신 화면(제품 카드 3종, 취급 여부 컬럼 없음).
+ */
 interface VaccineSchema {
   kind: 'vaccine';
-  qtys: string[];
+  products: { name: string; qtys: string[] }[];
   source: string;
 }
 
@@ -400,7 +411,16 @@ type PriceSchema = RxSchema | VaccineSchema;
 const PRICE_SCHEMAS: Record<string, PriceSchema> = {
   마운자로: { kind: 'rx', qtys: ['1팩 처방', '2팩 처방', '3팩 처방'], doses: ['2.5mg', '5mg', '7.5mg', '10mg', '12.5mg', '15mg'], source: '제조사 규격 6종' },
   위고비: { kind: 'rx', qtys: ['1펜 처방', '2펜 처방', '3펜 처방'], doses: ['0.25mg', '0.5mg', '1.0mg', '1.7mg', '2.4mg'], source: '제조사 규격 5종' },
-  '가다실 9가': { kind: 'vaccine', qtys: ['1회 접종', '3회 접종'], source: '접종 프로토콜' }
+  '가다실 9가': { kind: 'vaccine', products: [{ name: '가다실 9가', qtys: ['1회 접종', '3회 접종'] }], source: '접종 프로토콜' },
+  '대상포진 백신': {
+    kind: 'vaccine',
+    products: [
+      { name: '스카이조스터주', qtys: ['1회 접종'] },
+      { name: '싱그릭스주', qtys: ['1회 접종', '2회 접종'] },
+      { name: '조스타박스주', qtys: ['1회 접종'] }
+    ],
+    source: '제품 3종 · 제품별 접종 프로토콜'
+  }
 };
 
 /** 처방형 입력값 — 조제 방식별로 분리해 담는다 */
@@ -412,6 +432,8 @@ interface RxPricing {
   inFee: Record<string, string>;
   /** 원내조제: 용량 → 취급 여부·약제비·원내조제비 */
   doses: Record<string, { on: boolean; drug: string; comp: string }>;
+  /** 접종형: 제품 → (단위 → 접종료). 값이 비면 미취급으로 본다 */
+  vac?: Record<string, Record<string, string>>;
 }
 
 const emptyRx = (sc: RxSchema): RxPricing => ({
@@ -510,7 +532,16 @@ const INITIAL: Item[] = [
       }
     } }),
   mk({ id: 10, cat1: '예방접종', cat2: 'HPV 백신', name: '가다실 9가', intro: '', keywords: [], hasImage: false,
-    rx: { mode: 'out', outFee: { '1회 접종': '180000', '3회 접종': '480000' }, inFee: {}, doses: {} } }),
+    rx: { mode: 'out', outFee: {}, inFee: {}, doses: {}, vac: { '가다실 9가': { '1회 접종': '180000', '3회 접종': '480000' } } } }),
+  /* 접종형 — 중분류 아래 제품 3종. 취급하는 것만 가격이 들어간다 */
+  mk({ id: 11, cat1: '예방접종', cat2: '대상포진 백신', name: '대상포진 백신', intro: '', keywords: ['대상포진'], hasImage: false,
+    rx: {
+      mode: 'out', outFee: {}, inFee: {}, doses: {},
+      vac: {
+        '싱그릭스주': { '1회 접종': '250000', '2회 접종': '500000' },
+        '조스타박스주': { '1회 접종': '160000' }
+      }
+    } }),
   mk({ id: 8, cat1: CUSTOM_CAT, cat2: '', name: '우리병원 시그니처 관리', intro: '원장 직접 시술', keywords: [], hasImage: false,
     prices: [{ id: UID++, title: '1회', content: '', type: 'fixed', amount: '150000', original: '', sale: '' }], gdVisible: true, kakaoOn: false })
 ];
@@ -1036,26 +1067,50 @@ function CanonicalPriceForm({
 }: { schema: PriceSchema; value: RxPricing; onChange: (u: Partial<RxPricing>) => void }) {
   const money = (v: string) => v.replace(/[^0-9]/g, '');
 
-  /* 접종형 — 단위별 접종료 1축 */
+  /* 접종형 — 제품 카드마다 단위별 접종료. 가격을 넣은 제품만 취급으로 본다 */
   if (schema.kind === 'vaccine') {
+    const vac = value.vac ?? {};
+    const setFee = (prod: string, q: string, v: string) =>
+      onChange({ vac: { ...vac, [prod]: { ...(vac[prod] ?? {}), [q]: v } } });
     return (
       <div className="tc-cp">
-        <div className="tc-cp-note">단위별 접종료를 입력해 주세요. <span className="tc-cp-src">{schema.source}</span></div>
-        <table className="tc-cp-table">
-          <thead><tr><th>단위</th><th className="num">접종료</th></tr></thead>
-          <tbody>
-            {schema.qtys.map((q) => (
-              <tr key={q}>
-                <td>{q}</td>
-                <td className="num">
-                  <input className="rg-num" placeholder="0" value={value.outFee[q] ?? ''}
-                    onChange={(e) => onChange({ outFee: { ...value.outFee, [q]: money(e.target.value) } })} />
-                  <span className="rg-unit">원</span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="tc-cp-note">
+          취급하는 제품에만 접종료를 넣어 주세요. <b>가격을 넣은 제품만</b> 환자에게 노출됩니다.
+          <span className="tc-cp-src"> {schema.source}</span>
+        </div>
+        <div className="tc-vac-list">
+          {schema.products.map((prod) => {
+            const fees = vac[prod.name] ?? {};
+            const handled = prod.qtys.some((q) => !!fees[q]);
+            return (
+              <div key={prod.name} className={`tc-vac-card${handled ? ' on' : ''}`}>
+                <div className="tc-vac-head">
+                  <span className="tc-vac-name">{prod.name}</span>
+                  <span className={`tc-vac-badge${handled ? ' on' : ''}`}>{handled ? '취급' : '미취급'}</span>
+                </div>
+                <table className="tc-cp-table">
+                  <thead><tr><th>단위</th><th className="num">접종료</th></tr></thead>
+                  <tbody>
+                    {prod.qtys.map((q) => (
+                      <tr key={q}>
+                        <td>{q}</td>
+                        <td className="num">
+                          <input
+                            className="rg-num"
+                            placeholder="미설정"
+                            value={fees[q] ?? ''}
+                            onChange={(e) => setFee(prod.name, q, money(e.target.value))}
+                          />
+                          <span className="rg-unit">원</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })}
+        </div>
       </div>
     );
   }
@@ -1189,6 +1244,37 @@ function PriceRow({ p, unit, onChange, onDelete, onDragStart, onDrop, titleErr, 
 function GoodocPreview({ d }: { d: Item }) {
   const title = d.alias || d.name;
   const priceLine = (p: Price) => (p.type === 'consult' ? '상담 후 결정' : p.type === 'discount' ? won(p.sale) : won(p.amount));
+
+  /* 표준 상품은 가격이 rx 에 있으므로 미리보기도 그쪽을 읽는다.
+   * (안 하면 폼에 금액을 넣었는데 미리보기가 '기본 0원'으로 남아 오해를 만든다) */
+  const schema = PRICE_SCHEMAS[d.name.trim()];
+  const canonicalRows: { key: string; name: string; val: string }[] = [];
+  if (schema && d.rx) {
+    if (schema.kind === 'vaccine') {
+      schema.products.forEach((prod) => {
+        const fees = d.rx!.vac?.[prod.name] ?? {};
+        prod.qtys.forEach((q) => {
+          if (fees[q]) canonicalRows.push({ key: `${prod.name}-${q}`, name: `${prod.name} · ${q}`, val: won(fees[q]) });
+        });
+      });
+    } else {
+      const isIn = d.rx.mode === 'in';
+      if (isIn) {
+        schema.doses.forEach((dose) => {
+          const row = d.rx!.doses[dose];
+          if (!row?.on) return;
+          const fee = d.rx!.inFee[schema.qtys[0]] ?? '';
+          const total = rxTotal(fee, row.drug, row.comp);
+          if (total) canonicalRows.push({ key: dose, name: `원내조제 · ${dose} · ${schema.qtys[0]}`, val: won(String(total)) });
+        });
+      } else {
+        schema.qtys.forEach((q) => {
+          const fee = d.rx!.outFee[q];
+          if (fee) canonicalRows.push({ key: q, name: `원외조제 · ${q}`, val: won(fee) });
+        });
+      }
+    }
+  }
   return (
     <div className="rg-preview tk-preview">
       <div className="tk-pv-scroll">
@@ -1198,12 +1284,21 @@ function GoodocPreview({ d }: { d: Item }) {
           {d.intro && <div className="tk-pv-intro">{d.intro}</div>}
           <div className="tk-pv-divider" />
           <div className="tk-pv-price-head">가격 정보</div>
-          {d.prices.map((p) => (
-            <div key={p.id} className="tk-pv-price-row">
-              <span className={`tk-pv-price-name${p.title ? '' : ' ph'}`}>{p.title || '가격명'}</span>
-              <span className="tk-pv-price-val">{p.type === 'discount' && p.original && <span className="tk-pv-strike">{won(p.original)}</span>}{priceLine(p)}</span>
-            </div>
-          ))}
+          {canonicalRows.length > 0
+            ? canonicalRows.map((r) => (
+                <div key={r.key} className="tk-pv-price-row">
+                  <span className="tk-pv-price-name">{r.name}</span>
+                  <span className="tk-pv-price-val">{r.val}</span>
+                </div>
+              ))
+            : schema && d.rx
+              ? <div className="tk-pv-price-row"><span className="tk-pv-price-name ph">가격을 입력해 주세요.</span></div>
+              : d.prices.map((p) => (
+                  <div key={p.id} className="tk-pv-price-row">
+                    <span className={`tk-pv-price-name${p.title ? '' : ' ph'}`}>{p.title || '가격명'}</span>
+                    <span className="tk-pv-price-val">{p.type === 'discount' && p.original && <span className="tk-pv-strike">{won(p.original)}</span>}{priceLine(p)}</span>
+                  </div>
+                ))}
           {(d.detail || d.detailImages > 0) && <div className="tk-pv-divider" />}
           {d.detail && <div className="tk-pv-detail">{d.detail}</div>}
           {d.detailImages > 0 && <div className="tk-pv-detail-imgs">{Array.from({ length: d.detailImages }).map((_, i) => <div key={i} className="tk-pv-detail-img">상세 이미지 {i + 1}</div>)}</div>}

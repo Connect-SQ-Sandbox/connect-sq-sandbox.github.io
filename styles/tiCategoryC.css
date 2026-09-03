@@ -904,3 +904,58 @@
 .rg-field.price > .tc-cp {
   margin-left: 24px;
 }
+
+/* ---------- 접종형 제품 카드 ---------- */
+.tc-vac-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+}
+
+.tc-vac-card {
+  border: 1px solid #e3e6ed;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.tc-vac-card.on {
+  border-color: #caced8;
+}
+
+.tc-vac-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 14px;
+  border-bottom: 1px solid #f2f4f7;
+}
+
+.tc-vac-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #16181d;
+}
+
+.tc-vac-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f2f4f7;
+  font-size: 11px;
+  font-weight: 700;
+  color: #a8aebd;
+}
+
+.tc-vac-badge.on {
+  background: #eefaf4;
+  color: #008a55;
+}
+
+.tc-vac-card .tc-cp-table th {
+  background: #f9f9fb;
+}
+
+.tc-vac-card .rg-num::placeholder {
+  color: #caced8;
+}

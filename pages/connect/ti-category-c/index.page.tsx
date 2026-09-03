@@ -5,7 +5,7 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-category-c — 진료항목 분류 필드 분리(C안) + 카카오 연동
- * 상태     : 현행(active)   버전: v7   최종수정: 2026-09-03
+ * 상태     : 현행(active)   버전: v9   최종수정: 2026-09-03
  * PRD      : 없음(선행 탐색). 근거 = Notion "진료항목 분류 체계 현황과 개선 방향"
  * 배포URL  : (미배포) 예정 https://connect-sq-sandbox.github.io/out/ti-category-c.html
  * 관련 CSS : connectRegister.css + connectAdminNonpayAug.css + tiCategoryC.css(tc-*)
@@ -52,6 +52,15 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
  *   [보류] 기존 미분류 재고를 병원이 정리하도록 유도하는 알림·일괄 정리 화면.
  *
  * 변경 이력:
+ *   v9 2026-09-03 — **표준 상품(Canonical) / 자유 상품(Custom)** 개념으로 정리(세화님).
+ *                   세그먼트 라벨도 최적화·공통 → 표준 상품·자유 상품.
+ *                   경쟁사(나만의닥터) 구조를 반영해 처방형 폼을 전면 교체 —
+ *                   조제 방식 탭(원외/원내) × 처방 수량 × 용량 3축, 원외는 용량 구분 없음,
+ *                   원내는 진료비 공통 + 용량별 취급·약제비·조제비, 총액은 계산 표기.
+ *                   이전 초안의 '포함 비용 체크박스'는 폐기 — 병원은 진료를 무조건 포함한다.
+ *   v8 2026-09-03 — 판매 형태를 '처방전만 / 처방 + 약제' 2분할로 좁힘. '패키지' 제거 —
+ *                   구성이 병원마다 달라 스키마로 고정할 수 없다(세화님). '처방 + 약제'는
+ *                   금액 수준이 신호라는 근거를 주석에 명시.
  *   v7 2026-09-03 — **항목별 가격 스키마** 제안 추가. PO 6.3 공통 단위 폼 위에 얹는 레이어로,
  *                   스키마가 정의된 소분류(마운자로·위고비·가다실 9가)는 판매 형태 → 포함 비용 →
  *                   규격 → 금액 순의 최적화 폼을 쓰고, 나머지는 공통 폼으로 폴백.
@@ -79,13 +88,7 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
 
 /* ============================ 진료항목 타입 & mock ============================ */
 type PriceType = 'fixed' | 'discount' | 'consult';
-type Price = {
-  id: number; title: string; content: string; type: PriceType; amount: string; original: string; sale: string;
-  /* 항목별 가격 스키마용 (스키마가 있는 진료항목에서만 씀) */
-  saleType?: string;   // 판매 형태 — 처방전만 / 처방+약제 / 패키지 등
-  dose?: string;       // 규격 — 용량(mg)·회차 등 제조사·프로토콜 규격에서 선택
-  includes?: string[]; // 포함 비용
-};
+type Price = { id: number; title: string; content: string; type: PriceType; amount: string; original: string; sale: string };
 type SyncState = 'NOT_LINKED' | 'PENDING' | 'SYNCED' | 'FAILED' | 'ON_HOLD' | 'UPDATE_REQUIRED';
 type SyncObject = 'product' | 'item' | 'price' | 'schedule';
 type SyncInfo = Record<SyncObject, SyncState> & { lastAt: string; error?: string; attempts: number };
@@ -332,53 +335,79 @@ function suggestCategories(raw: string): { c1: string; c2: string; matched: stri
  *      마운자로는 105개 병원이 각자 1건씩 등록했는데, 규격이 자유 텍스트라
  *      같은 약을 100곳이 파는데도 가격 비교가 성립하지 않는다.
  *
- * 데이터가 가리키는 축 : 별칭을 뜯어보니 용량(mg) 표기는 마운자로 108건 중 0건,
- *      위고비 101건 중 1건뿐이었다. 대신 이런 게 들어 있었다 —
- *        '처방전만 발행' '원외처방 (진료만)' '처방료 포함' '마운자로 + 복부지방검사'
- *      즉 병원이 구분하고 싶은 1순위는 용량이 아니라 **무엇이 포함되는가**다.
- *      그래서 스키마의 첫 필드를 '판매 형태', 다음을 '포함 비용'으로 두고 용량은 그 뒤에 놓는다.
+ * 구조 근거 = 경쟁사(나만의닥터) 어드민 분석 (진료비관리_대면_UI분석.md, 2026-09-03).
+ *      마운자로 구조가 이렇게 되어 있다 —
+ *        · 최상위 축은 **원내조제 / 원외조제 탭**(조제 방식). 각 탭에 취급 토글.
+ *        · **원외조제**: 용량 구분 없음. 처방 수량(1~3팩)별 진료비만.
+ *          처방전만 발행하니 용량별 가격 차이가 없다.
+ *        · **원내조제**: 진료비는 "모든 용량 공통"으로 수량별 1벌.
+ *          그 아래 용량 6종(2.5~15mg) 카드마다 취급 여부 + 약제비 + 원내조제비.
+ *        · 가격을 **총액이 아니라 구성요소로 분해**해 받고 총액은 계산해 보여준다
+ *          (수액도 총액 + 진료비 + 시술료 3줄 표기). 비교가 성립하는 이유가 여기다.
  *
- * 폴백 : 스키마가 없는 소분류는 PO 6.3 공통 폼을 그대로 쓴다. 대체가 아니라 위에 얹는 레이어다.
+ * 이전 초안에서 고친 것 (세화님 지적):
+ *      · 진료비를 '포함 비용' 체크박스로 뒀던 것 → **병원은 진료를 무조건 포함**하므로
+ *        옵션이 아니라 항상 입력하는 금액 필드다.
+ *      · 용량(mg)과 처방 수량(팩)을 하나로 뭉갰던 것 → 별개 두 축이다.
+ *      · '패키지' 선택지 → 구성이 병원마다 달라 스키마로 고정 불가. 제거.
+ *
+ * 개념 : 진료항목을 **표준 상품(Canonical Product)** 과 **자유 상품(Custom Product)** 으로 나눈다.
+ *        · 표준 상품 = 규격이 정해진 항목(제조사 용량·접종 프로토콜). 스키마로 입력받아
+ *          같은 상품끼리 가격 비교가 성립한다.
+ *        · 자유 상품 = 규격이 없거나 병원이 정의하는 항목. PO 6.3 공통 폼으로 자유 입력.
+ *        폴백이 자유 상품이므로 PO안은 그대로 살아 있다. 대체가 아니라 위에 얹는 레이어다.
  * 키   : 시안이라 소분류명 문자열로 매칭한다. 실제로는 master3Id 로 걸어야 한다.
  * 비용 : 스키마는 마스터와 같은 갱신 책임이 생긴다(신약 용량 추가·백신 제품 교체).
  *        상위 10종만 해도 48.5%가 덮이므로 그 이상은 승격 큐로 미룬다.
  * ======================================================================= */
 
-interface PriceSchema {
-  /** 판매 형태 — 이 항목에서 가격이 갈리는 1순위 축 */
-  saleTypes: string[];
-  /** 규격 라벨·후보. 제조사 규격이나 접종 프로토콜에서 온다 */
-  doseLabel: string;
+/** 처방형 스키마 — 조제 방식 × 처방 수량 × 용량 3축 */
+interface RxSchema {
+  kind: 'rx';
+  /** 처방 수량 단위 (용량과 별개 축) */
+  qtys: string[];
+  /** 용량 규격 — 원내조제에서만 쓴다 */
   doses: string[];
-  /** 포함 비용 후보 */
-  includes: string[];
-  /** 규격 출처 — 병원에게 "우리가 임의로 만든 값이 아니다"를 알린다 */
   source: string;
 }
 
+/** 접종형 스키마 — 접종 단위만 */
+interface VaccineSchema {
+  kind: 'vaccine';
+  qtys: string[];
+  source: string;
+}
+
+type PriceSchema = RxSchema | VaccineSchema;
+
 const PRICE_SCHEMAS: Record<string, PriceSchema> = {
-  마운자로: {
-    saleTypes: ['처방전만', '처방 + 약제', '패키지'],
-    doseLabel: '용량',
-    doses: ['2.5mg', '5mg', '7.5mg', '10mg', '12.5mg', '15mg'],
-    includes: ['초진료', '처방료', '체성분 검사'],
-    source: '제조사 규격 6종'
-  },
-  위고비: {
-    saleTypes: ['처방전만', '처방 + 약제', '패키지'],
-    doseLabel: '용량',
-    doses: ['0.25mg', '0.5mg', '1.0mg', '1.7mg', '2.4mg'],
-    includes: ['초진료', '처방료', '체성분 검사'],
-    source: '제조사 규격 5종'
-  },
-  '가다실 9가': {
-    saleTypes: ['1회 접종', '3회 완료'],
-    doseLabel: '접종 회차',
-    doses: ['1차', '2차', '3차'],
-    includes: ['진찰료'],
-    source: '접종 프로토콜 3회'
-  }
+  마운자로: { kind: 'rx', qtys: ['1팩 처방', '2팩 처방', '3팩 처방'], doses: ['2.5mg', '5mg', '7.5mg', '10mg', '12.5mg', '15mg'], source: '제조사 규격 6종' },
+  위고비: { kind: 'rx', qtys: ['1펜 처방', '2펜 처방', '3펜 처방'], doses: ['0.25mg', '0.5mg', '1.0mg', '1.7mg', '2.4mg'], source: '제조사 규격 5종' },
+  '가다실 9가': { kind: 'vaccine', qtys: ['1회 접종', '3회 접종'], source: '접종 프로토콜' }
 };
+
+/** 처방형 입력값 — 조제 방식별로 분리해 담는다 */
+interface RxPricing {
+  mode: 'out' | 'in';
+  /** 원외조제: 수량 → 진료비 (용량 구분 없음) */
+  outFee: Record<string, string>;
+  /** 원내조제: 수량 → 진료비. 모든 용량 공통 */
+  inFee: Record<string, string>;
+  /** 원내조제: 용량 → 취급 여부·약제비·원내조제비 */
+  doses: Record<string, { on: boolean; drug: string; comp: string }>;
+}
+
+const emptyRx = (sc: RxSchema): RxPricing => ({
+  mode: 'out',
+  outFee: Object.fromEntries(sc.qtys.map((q) => [q, ''])),
+  inFee: Object.fromEntries(sc.qtys.map((q) => [q, ''])),
+  doses: Object.fromEntries(sc.doses.map((d) => [d, { on: false, drug: '', comp: '' }]))
+});
+
+const nf = (v: string) => (v ? Number(v).toLocaleString('ko-KR') : '');
+/** 원내조제 총액 = 진료비 + 약제비 + 조제비 */
+const rxTotal = (fee: string, drug: string, comp: string) =>
+  [fee, drug, comp].reduce((n, v) => n + (Number(v) || 0), 0);
 
 /**
  * 분류 필수 여부. 현재 정책 = **필수 아님**.
@@ -430,14 +459,23 @@ const INITIAL: Item[] = [
   mk({ id: 7, cat1: '피부·미용', cat2: '보톡스', name: '보톡스 (이마)', intro: '이마 주름 개선', keywords: ['보톡스'], hasImage: false,
     prices: [{ id: UID++, title: '이마', content: '', type: 'discount', amount: '', original: '150000', sale: '99000' }], gdVisible: true, kakaoOn: true, activeReservations: 1,
     sync: { product: 'SYNCED', item: 'SYNCED', price: 'FAILED', schedule: 'ON_HOLD', lastAt: '2026.07.15 10:31', error: '가격 안내 정보를 카카오에 반영하지 못했어요.', attempts: 2 } }),
-  /* 항목별 가격 스키마가 붙는 항목 — 최적화 폼 확인용 */
+  /* 표준 상품 — 스키마 입력 폼 확인용 */
   mk({ id: 9, cat1: '다이어트', cat2: '다이어트 주사', name: '마운자로', intro: 'GLP-1 비만 치료 주사', keywords: ['마운자로', '비만치료'], hasImage: false,
-    prices: [
-      { id: UID++, title: '처방전만', content: '', type: 'fixed', amount: '30000', original: '', sale: '', saleType: '처방전만', dose: '2.5mg', includes: ['초진료'] },
-      { id: UID++, title: '처방 + 약제', content: '', type: 'fixed', amount: '320000', original: '', sale: '', saleType: '처방 + 약제', dose: '5mg', includes: ['초진료', '처방료'] }
-    ] }),
+    rx: {
+      mode: 'in',
+      outFee: { '1팩 처방': '30000', '2팩 처방': '30000', '3팩 처방': '30000' },
+      inFee: { '1팩 처방': '20000', '2팩 처방': '20000', '3팩 처방': '20000' },
+      doses: {
+        '2.5mg': { on: true, drug: '280000', comp: '20000' },
+        '5mg': { on: true, drug: '320000', comp: '20000' },
+        '7.5mg': { on: false, drug: '', comp: '' },
+        '10mg': { on: false, drug: '', comp: '' },
+        '12.5mg': { on: false, drug: '', comp: '' },
+        '15mg': { on: false, drug: '', comp: '' }
+      }
+    } }),
   mk({ id: 10, cat1: '예방접종', cat2: 'HPV 백신', name: '가다실 9가', intro: '', keywords: [], hasImage: false,
-    prices: [{ id: UID++, title: '1회 접종', content: '', type: 'fixed', amount: '180000', original: '', sale: '', saleType: '1회 접종', dose: '1차', includes: ['진찰료'] }] }),
+    rx: { mode: 'out', outFee: { '1회 접종': '180000', '3회 접종': '480000' }, inFee: {}, doses: {} } }),
   mk({ id: 8, cat1: CUSTOM_CAT, cat2: '', name: '우리병원 시그니처 관리', intro: '원장 직접 시술', keywords: [], hasImage: false,
     prices: [{ id: UID++, title: '1회', content: '', type: 'fixed', amount: '150000', original: '', sale: '' }], gdVisible: true, kakaoOn: false })
 ];
@@ -953,91 +991,125 @@ function FieldHead({ label, optional, helpers }: { label: string; optional?: boo
   );
 }
 /**
- * 항목별 최적화 가격 행 — 스키마가 정의된 소분류에서만 쓴다.
- * 순서는 판매 형태 → 포함 비용 → 규격 → 금액. 실측에서 병원이 구분하고 싶어한 순서다.
+ * 표준 상품 가격 폼 — 스키마가 정의된 소분류에서만 쓴다.
+ * 처방형은 조제 방식(원외/원내) × 처방 수량 × 용량 3축, 접종형은 접종 단위 1축.
+ * 가격은 총액이 아니라 구성요소(진료비·약제비·조제비)로 받고 총액은 계산해 보여준다 —
+ * 그래야 같은 상품끼리 비교가 성립한다. (근거: 나만의닥터 어드민 분석)
  */
-function SchemaPriceRow({
-  p, schema, onChange, onDelete, amountErr
-}: { p: Price; schema: PriceSchema; onChange: (u: Partial<Price>) => void; onDelete: () => void; amountErr?: string }) {
-  const [doseOpen, setDoseOpen] = useState(false);
-  const includes = p.includes ?? [];
-  const toggleInclude = (v: string) =>
-    onChange({ includes: includes.includes(v) ? includes.filter((x) => x !== v) : [...includes, v] });
+function CanonicalPriceForm({
+  schema, value, onChange
+}: { schema: PriceSchema; value: RxPricing; onChange: (u: Partial<RxPricing>) => void }) {
+  const money = (v: string) => v.replace(/[^0-9]/g, '');
 
-  return (
-    <div className="rg-price-row tk-price-row tc-sp">
-      <div className="rg-price-fields">
-        <div className="tc-sp-line">
-          <span className="tc-sp-label">판매 형태</span>
-          <div className="tc-sp-chips">
-            {schema.saleTypes.map((t) => (
-              <button
-                key={t}
-                type="button"
-                className={`tc-sp-chip${p.saleType === t ? ' on' : ''}`}
-                onClick={() => onChange({ saleType: t, title: t })}
-              >
-                {t}
-              </button>
+  /* 접종형 — 단위별 접종료 1축 */
+  if (schema.kind === 'vaccine') {
+    return (
+      <div className="tc-cp">
+        <div className="tc-cp-note">단위별 접종료를 입력해 주세요. <span className="tc-cp-src">{schema.source}</span></div>
+        <table className="tc-cp-table">
+          <thead><tr><th>단위</th><th className="num">접종료</th></tr></thead>
+          <tbody>
+            {schema.qtys.map((q) => (
+              <tr key={q}>
+                <td>{q}</td>
+                <td className="num">
+                  <input className="rg-num" placeholder="0" value={value.outFee[q] ?? ''}
+                    onChange={(e) => onChange({ outFee: { ...value.outFee, [q]: money(e.target.value) } })} />
+                  <span className="rg-unit">원</span>
+                </td>
+              </tr>
             ))}
-          </div>
-        </div>
-
-        <div className="tc-sp-line">
-          <span className="tc-sp-label">포함 비용</span>
-          <div className="tc-sp-chips">
-            {schema.includes.map((t) => (
-              <button
-                key={t}
-                type="button"
-                className={`tc-sp-chip check${includes.includes(t) ? ' on' : ''}`}
-                onClick={() => toggleInclude(t)}
-              >
-                {includes.includes(t) ? '✓ ' : ''}
-                {t}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="tc-sp-line">
-          <span className="tc-sp-label">{schema.doseLabel}</span>
-          <div className="rg-select-wrap tc-sp-select">
-            <button type="button" className={`rg-select${doseOpen ? ' open' : ''}`} onClick={() => setDoseOpen((v) => !v)}>
-              {p.dose || '선택'}
-              <span className="rg-select-ic"><SelectArrow /></span>
-            </button>
-            {doseOpen && (
-              <div className="rg-select-menu" onMouseLeave={() => setDoseOpen(false)}>
-                {schema.doses.map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    className={`rg-select-opt${v === p.dose ? ' active' : ''}`}
-                    onClick={() => { onChange({ dose: v }); setDoseOpen(false); }}
-                  >
-                    {v}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <span className="tc-sp-source">{schema.source}</span>
-        </div>
-
-        <div className="tc-sp-line">
-          <span className="tc-sp-label">금액</span>
-          <input
-            className={`rg-num${amountErr ? ' error' : ''}`}
-            placeholder="0"
-            value={p.amount}
-            onChange={(e) => onChange({ amount: e.target.value.replace(/[^0-9]/g, '') })}
-          />
-          <span className="rg-unit">원</span>
-        </div>
-        {amountErr && <p className="rg-error">{amountErr}</p>}
+          </tbody>
+        </table>
       </div>
-      <button className="rg-price-del" onClick={onDelete} aria-label="삭제"><CloseIcon /></button>
+    );
+  }
+
+  /* 처방형 — 조제 방식 탭 */
+  const isIn = value.mode === 'in';
+  return (
+    <div className="tc-cp">
+      <div className="tc-cp-tabs">
+        <button className={`tc-cp-tab${!isIn ? ' on' : ''}`} onClick={() => onChange({ mode: 'out' })}>원외조제</button>
+        <button className={`tc-cp-tab${isIn ? ' on' : ''}`} onClick={() => onChange({ mode: 'in' })}>원내조제</button>
+      </div>
+
+      {!isIn ? (
+        <>
+          <div className="tc-cp-note">
+            처방전만 발행하므로 <b>용량 구분이 없습니다.</b> 처방 수량별 진료비만 받습니다.
+          </div>
+          <table className="tc-cp-table">
+            <thead><tr><th>처방 수량</th><th className="num">진료비</th></tr></thead>
+            <tbody>
+              {schema.qtys.map((q) => (
+                <tr key={q}>
+                  <td>{q}</td>
+                  <td className="num">
+                    <input className="rg-num" placeholder="0" value={value.outFee[q] ?? ''}
+                      onChange={(e) => onChange({ outFee: { ...value.outFee, [q]: money(e.target.value) } })} />
+                    <span className="rg-unit">원</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      ) : (
+        <>
+          <div className="tc-cp-note">진료비는 <b>모든 용량에 공통</b>으로 적용됩니다.</div>
+          <table className="tc-cp-table">
+            <thead><tr><th>처방 수량</th><th className="num">진료비 (공통)</th></tr></thead>
+            <tbody>
+              {schema.qtys.map((q) => (
+                <tr key={q}>
+                  <td>{q}</td>
+                  <td className="num">
+                    <input className="rg-num" placeholder="0" value={value.inFee[q] ?? ''}
+                      onChange={(e) => onChange({ inFee: { ...value.inFee, [q]: money(e.target.value) } })} />
+                    <span className="rg-unit">원</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <div className="tc-cp-sub">
+            용량별 약제비 · 조제비 <span className="tc-cp-src">{schema.source}</span>
+          </div>
+          <table className="tc-cp-table dose">
+            <thead>
+              <tr><th>취급</th><th>용량</th><th className="num">약제비</th><th className="num">원내조제비</th><th className="num">총액 (1{schema.qtys[0].replace(/[^0-9]/g, '') ? schema.qtys[0].slice(1) : ''})</th></tr>
+            </thead>
+            <tbody>
+              {schema.doses.map((d) => {
+                const row = value.doses[d] ?? { on: false, drug: '', comp: '' };
+                const total = rxTotal(value.inFee[schema.qtys[0]] ?? '', row.drug, row.comp);
+                const set = (u: Partial<typeof row>) => onChange({ doses: { ...value.doses, [d]: { ...row, ...u } } });
+                return (
+                  <tr key={d} className={row.on ? '' : 'off'}>
+                    <td>
+                      <button className={`tc-cp-check${row.on ? ' on' : ''}`} aria-pressed={row.on}
+                        onClick={() => set({ on: !row.on })}>{row.on ? '✓' : ''}</button>
+                    </td>
+                    <td>{d}</td>
+                    <td className="num">
+                      <input className="rg-num" placeholder="0" disabled={!row.on} value={row.drug}
+                        onChange={(e) => set({ drug: money(e.target.value) })} />
+                    </td>
+                    <td className="num">
+                      <input className="rg-num" placeholder="0" disabled={!row.on} value={row.comp}
+                        onChange={(e) => set({ comp: money(e.target.value) })} />
+                    </td>
+                    <td className="num tc-cp-total">{row.on && total ? `${nf(String(total))}원` : '—'}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div className="tc-cp-foot">총액 = 진료비 + 약제비 + 원내조제비. 병원은 구성요소만 넣고 총액은 계산됩니다.</div>
+        </>
+      )}
     </div>
   );
 }
@@ -1983,8 +2055,8 @@ function TiKakao() {
   const [sheetMode, setSheetMode] = useState<'cols' | 'step'>('cols');
   /** 좌우 2단에서 좌측에 선택된 대분류 */
   const [colC1, setColC1] = useState<string>(TAXONOMY[0].name);
-  /** 항목별 스키마가 있을 때 최적화 폼 / PO 공통 폼 전환 비교 */
-  const [priceForm, setPriceForm] = useState<'schema' | 'common'>('schema');
+  /** 표준 상품(Canonical) / 자유 상품(Custom) 전환 비교 */
+  const [priceForm, setPriceForm] = useState<'canonical' | 'custom'>('canonical');
   /** 분류 검색어 — 대·중분류 명칭을 모두 훑고, 걸린 대분류는 자동으로 펼친다 */
   const [catQuery, setCatQuery] = useState('');
   const [nameOpen, setNameOpen] = useState(false);
@@ -2041,7 +2113,9 @@ function TiKakao() {
     /* C안 — 분류 필수 정책이 켜진 경우에만 저장을 막는다.
      * OFF 에서는 경고만 노출하고 저장을 허용한다(기존 미분류 재고 유예). */
     if (REQUIRE_CATEGORY && (!v.cat1 || v.cat1 === CUSTOM_CAT)) e['category'] = '분류를 선택해 주세요.';
-    v.prices.forEach((p) => {
+    /* 표준 상품 폼을 쓰는 동안은 자유 상품용 가격 옵션 검증을 건너뛴다 */
+    const usingCanonical = !!PRICE_SCHEMAS[v.name.trim()] && priceForm === 'canonical';
+    if (!usingCanonical) v.prices.forEach((p) => {
       if (!p.title.trim()) e[`price-${p.id}-title`] = '가격명을 입력해 주세요.';
       if (p.type === 'fixed' && !p.amount) e[`price-${p.id}-amount`] = '가격을 입력해 주세요.';
       if (p.type === 'discount') {
@@ -2545,58 +2619,50 @@ function TiKakao() {
                         })()}
                       </div>
                       {(() => {
-                        /* 항목별 가격 스키마 — 선택된 소분류에 정의가 있으면 최적화 폼을 쓴다.
-                         * 없으면 PO 6.3 공통 폼으로 폴백. 세그먼트로 두 형태를 비교할 수 있다. */
+                        /* 표준 상품 / 자유 상품 —
+                         * 스키마가 정의된 소분류는 표준 상품으로 보고 규격 기반 폼을 쓴다.
+                         * 없으면 자유 상품 = PO 6.3 공통 폼으로 폴백. 세그먼트로 두 형태를 비교. */
                         const schema = PRICE_SCHEMAS[d.name.trim()];
-                        const useSchema = !!schema && priceForm === 'schema';
+                        const canonical = !!schema && priceForm === 'canonical';
+                        const rx = d.rx ?? (schema && schema.kind === 'rx' ? emptyRx(schema) : { mode: 'out' as const, outFee: {}, inFee: {}, doses: {} });
                         return (
                           <div className="rg-field price" data-policy-id="gcp1-kakao-price">
                             <div className="tc-price-head">
                               <FieldHead
                                 label="가격 정보"
                                 helpers={[
-                                  useSchema
-                                    ? '이 진료항목은 규격이 정해져 있어, 규격을 고르고 금액만 입력합니다.'
+                                  canonical
+                                    ? '규격이 정해진 표준 상품입니다. 규격을 고르고 구성요소 금액만 입력해요.'
                                     : '환자에게 보여줄 가격 정보를 설정해 주세요. (예: 횟수별, 시술명별 등)'
                                 ]}
                               />
                               {schema && (
                                 <div className="tc-seg tc-price-seg">
                                   <button
-                                    className={`tc-seg-btn${priceForm === 'schema' ? ' on' : ''}`}
-                                    onClick={() => setPriceForm('schema')}
+                                    className={`tc-seg-btn${priceForm === 'canonical' ? ' on' : ''}`}
+                                    onClick={() => setPriceForm('canonical')}
                                   >
-                                    최적화
+                                    표준 상품
                                   </button>
                                   <button
-                                    className={`tc-seg-btn${priceForm === 'common' ? ' on' : ''}`}
-                                    onClick={() => setPriceForm('common')}
+                                    className={`tc-seg-btn${priceForm === 'custom' ? ' on' : ''}`}
+                                    onClick={() => setPriceForm('custom')}
                                   >
-                                    공통
+                                    자유 상품
                                   </button>
                                 </div>
                               )}
                             </div>
 
-                            {useSchema && (
-                              <div className="tc-sp-note">
-                                <b>{d.name.trim()}</b> — {schema.source}. 병원은 규격을 고르고 금액만 넣습니다.
-                                자유 입력이면 같은 약을 파는 병원끼리 규격 표기가 갈려 가격 비교가 성립하지 않습니다.
-                              </div>
-                            )}
-
-                            <div className="rg-price-list">
-                              {d.prices.map((p) =>
-                                useSchema ? (
-                                  <SchemaPriceRow
-                                    key={p.id}
-                                    p={p}
-                                    schema={schema}
-                                    onChange={(u) => setPrice(p.id, u)}
-                                    onDelete={() => delPrice(p.id)}
-                                    amountErr={errors[`price-${p.id}-amount`]}
-                                  />
-                                ) : (
+                            {canonical ? (
+                              <CanonicalPriceForm
+                                schema={schema}
+                                value={rx}
+                                onChange={(u) => patch({ rx: { ...rx, ...u } })}
+                              />
+                            ) : (
+                              <div className="rg-price-list">
+                                {d.prices.map((p) => (
                                   <PriceRow
                                     key={p.id}
                                     p={p}
@@ -2607,16 +2673,18 @@ function TiKakao() {
                                     titleErr={errors[`price-${p.id}-title`]}
                                     amountErr={errors[`price-${p.id}-amount`]}
                                   />
-                                )
-                              )}
-                            </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         );
                       })()}
+                      {!(PRICE_SCHEMAS[d.name.trim()] && priceForm === 'canonical') && (
                       <div className="rg-add-wrap">{d.prices.length < PRICE_OPTION_MAX
                         ? <button className="rg-add-btn" onClick={addPrice}><PlusIcon /> 가격 옵션 추가</button>
                         : <div className="rg-help">가격 옵션은 최대 {PRICE_OPTION_MAX}개까지 추가할 수 있어요.</div>}
                       </div>
+                      )}
                     </section>
 
                     <section className="rg-card extra" data-policy-id="gcp1-kakao-product-copy">

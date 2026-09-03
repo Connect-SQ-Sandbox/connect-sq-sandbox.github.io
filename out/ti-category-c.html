@@ -2502,6 +2502,17 @@ a {
   color: #5d6474;
 }
 
+/* ---------- 가격 필드 좌측 정렬 보정 ----------
+ * 베이스 CSS 는 드래그 핸들이 왼쪽으로 24px 튀어나오도록
+ *   .rg-field.price { padding-left: 0 }
+ *   .rg-field.price .rg-field-head { padding-left: 24px }
+ * 로 두고 헤더만 되돌려준다. 여기에 새로 끼워 넣은 블록들도 같은 보정이 필요하다.
+ * (안 하면 블록이 옵션 행보다 24px 왼쪽으로 튀어나와 어긋나 보인다) */
+.rg-field.price > .tc-unit-bar,
+.rg-field.price > .tc-cp {
+  margin-left: 24px;
+}
+
 </style>
 <div id="root"></div>
 <script>

@@ -5,7 +5,7 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-category-c — 진료항목 분류 필드 분리(C안) + 카카오 연동
- * 상태     : 현행(active)   버전: v13   최종수정: 2026-09-03
+ * 상태     : 현행(active)   버전: v14   최종수정: 2026-09-03
  * PRD      : 없음(선행 탐색). 근거 = Notion "진료항목 분류 체계 현황과 개선 방향"
  * 배포URL  : (미배포) 예정 https://connect-sq-sandbox.github.io/out/ti-category-c.html
  * 관련 CSS : connectRegister.css + connectAdminNonpayAug.css + tiCategoryC.css(tc-*)
@@ -52,6 +52,11 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
  *   [보류] 기존 미분류 재고를 병원이 정리하도록 유도하는 알림·일괄 정리 화면.
  *
  * 변경 이력:
+ *   v14 2026-09-03 — 히스토리 연동을 **양방향(뒤로·앞으로)** 으로 재작성(세화님).
+ *                    "뒤로가기 = 한 겹 닫기"에서 "화면 스냅샷을 history.state 에 싣고
+ *                    popstate 에서 복원"으로 바꿔 앞으로가기도 동작한다.
+ *                    같은 폼 안에서 모달만 토글할 때는 드래프트를 다시 클론하지 않아
+ *                    입력 중이던 값이 보존된다.
  *   v13 2026-09-03 — 접종형 스키마를 **제품 카드 구조**로 확장(세화님, 나닥 대상포진 화면 참고).
  *                    중분류 아래 제품 여러 개를 나열하고 취급하는 것에만 가격을 넣는다
  *                    (가격 유무 = 취급 여부). 제품별 단위가 다르다 — 싱그릭스만 1·2회.
@@ -2238,67 +2243,91 @@ function TiKakao() {
   const isCustom = selCat1 === CUSTOM_CAT;
   const customItems = useMemo(() => items.filter((i) => i.cat1 === selCat1), [items, selCat1]);
 
-  /* ── 브라우저 히스토리 연동 ──────────────────────────────
-   * 프로토타입도 뒤로가기로 한 겹씩 닫히게 한다. 규칙은 하나 —
-   * **열 때 pushState, 닫을 때는 history.back()** 을 호출하고 실제 닫기는 popstate 에서만
-   * 수행한다. 그래야 화면 상태와 히스토리가 어긋나지 않는다.
-   * 닫는 순서는 안쪽부터: 분류 모달 → 이탈 확인 모달 → 진료항목 폼 → 페이지.
-   * 단순화 : 뒤로가기로 폼을 닫을 때는 이탈 확인 모달을 거치지 않는다(취소 버튼 경로는 유지). */
-  const depth = useRef(0);
-  const suppress = useRef(false);
-  const view = useRef({ page, screen, catSheet, leaveOpen });
-  view.current = { page, screen, catSheet, leaveOpen };
+  /* ── 브라우저 히스토리 연동 (뒤로/앞으로 양방향) ──────────
+   * 화면 상태를 history.state 에 스냅샷으로 싣고 popstate 에서 **복원**한다.
+   * 앞선 버전은 "뒤로가기 = 한 겹 닫기"였는데, 그러면 앞으로가기로 되돌릴 정보가 없다.
+   *
+   * 스냅샷에 담는 것 : page / screen / itemId / sheet
+   *   · 이탈 확인 모달은 히스토리에 넣지 않는다(일시적 확인 단계).
+   *   · 폼 복원은 items 에서 itemId 로 다시 클론한다.
+   *
+   * 주의 — 같은 폼 안에서 모달만 열고 닫을 때는 **드래프트를 다시 클론하지 않는다.**
+   * 안 그러면 분류를 고르고 모달이 닫히는 순간 입력 중이던 값이 통째로 날아간다.
+   * 그래서 itemId 가 같으면 sheet 플래그만 토글한다. */
+  type ViewSnap = { page: Page; screen: Screen; itemId: number | null; sheet: boolean };
 
-  const pushLayer = () => {
-    depth.current += 1;
-    window.history.pushState({ proto: depth.current }, '');
+  const snap = useRef<ViewSnap>({ page: 'items', screen: 'list', itemId: null, sheet: false });
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+
+  const pushView = (next: ViewSnap) => {
+    snap.current = next;
+    window.history.pushState(next, '');
   };
-  /** 화면에서 닫기를 눌렀을 때 — 히스토리를 한 칸 되감아 popstate 가 실제 닫기를 하게 한다 */
-  const backLayer = (fallback: () => void) => {
-    if (depth.current > 0) window.history.back();
-    else fallback();
-  };
-  /** 이미 상태를 직접 닫은 경우(저장 후 등) 남은 히스토리 항목만 조용히 소비한다 */
-  const consumeLayer = () => {
-    if (depth.current > 0) {
-      suppress.current = true;
-      depth.current -= 1;
-      window.history.back();
+
+  const applyView = (v: ViewSnap) => {
+    const cur = snap.current;
+    snap.current = v;
+    setPage(v.page);
+    setLeaveOpen(false);
+
+    if (v.screen === 'form') {
+      const same = cur.screen === 'form' && cur.itemId === v.itemId;
+      if (!same) {
+        const it = v.itemId != null ? itemsRef.current.find((x) => x.id === v.itemId) : null;
+        const next = it ? cloneItem(it) : mk({ id: UID++, name: '', cat1: '', cat2: '' });
+        setSelId(it ? it.id : null);
+        setD(next);
+        setFormBaseline(JSON.stringify(next));
+        setErrors({});
+        setFormError('');
+      }
+      setScreen('form');
+    } else {
+      setScreen('list');
+      setD(null);
+      setSelId(null);
+      setErrors({});
+      setFormError('');
     }
-  };
 
-  const closeFormRef = useRef<() => void>(() => {});
+    setCatSheet(v.sheet);
+    if (!v.sheet) { setSheetC1(null); setCatQuery(''); }
+  };
+  const applyViewRef = useRef(applyView);
+  applyViewRef.current = applyView;
 
   useEffect(() => {
-    window.history.replaceState({ proto: 0 }, '');
-    const onPop = () => {
-      if (suppress.current) { suppress.current = false; return; }
-      if (depth.current > 0) depth.current -= 1;
-      const v = view.current;
-      if (v.catSheet) { setCatSheet(false); setSheetC1(null); setCatQuery(''); return; }
-      if (v.leaveOpen) { setLeaveOpen(false); return; }
-      if (v.screen === 'form') { closeFormRef.current(); return; }
-      if (v.page !== 'items') { setPage('items'); setScreen('list'); return; }
+    window.history.replaceState(snap.current, '');
+    const onPop = (e: PopStateEvent) => {
+      const v = (e.state ?? { page: 'items', screen: 'list', itemId: null, sheet: false }) as ViewSnap;
+      applyViewRef.current(v);
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
   }, []);
 
-  const nav = (p: Page) => { if (p !== page) pushLayer(); setPage(p); if (p === 'items') setScreen('list'); };
+  const nav = (p: Page) => {
+    if (p === page) return;
+    pushView({ page: p, screen: 'list', itemId: null, sheet: false });
+    setPage(p);
+    setScreen('list');
+    setD(null);
+    setSelId(null);
+  };
   const cloneItem = (it: Item): Item => ({ ...it, prices: it.prices.map((p) => ({ ...p })), keywords: [...it.keywords], sync: { ...it.sync }, kExtra: { ...it.kExtra, productImages: it.kExtra.productImages.map((image) => ({ ...image })), descriptionImages: it.kExtra.descriptionImages.map((image) => ({ ...image })), questions: it.kExtra.questions.map((q) => ({ ...q, options: [...q.options] })) } });
-  const open = (it: Item) => { const next = cloneItem(it); setErrors({}); setSelId(it.id); setD(next); setFormBaseline(JSON.stringify(next)); setFormError(''); pushLayer(); setScreen('form'); };
+  const open = (it: Item) => { const next = cloneItem(it); setErrors({}); setSelId(it.id); setD(next); setFormBaseline(JSON.stringify(next)); setFormError(''); pushView({ page: 'items', screen: 'form', itemId: it.id, sheet: false }); setScreen('form'); };
   /* C안 — 신규 등록은 **분류를 비운 상태**로 시작한다.
    * 원래는 좌측에서 보고 있던 카테고리(selCat1/첫 그룹)를 그대로 물려줬는데, 그러면
    * 병원이 고르지도 않은 분류가 이미 박혀 있어 분류 필드가 무의미해진다. */
-  const create = () => { const next = mk({ id: UID++, name: '', cat1: '', cat2: '' }); setErrors({}); setSelId(null); setD(next); setFormBaseline(JSON.stringify(next)); setFormError(''); pushLayer(); setScreen('form'); };
+  const create = () => { const next = mk({ id: UID++, name: '', cat1: '', cat2: '' }); setErrors({}); setSelId(null); setD(next); setFormBaseline(JSON.stringify(next)); setFormError(''); pushView({ page: 'items', screen: 'form', itemId: null, sheet: false }); setScreen('form'); };
   const closeForm = () => { setScreen('list'); setD(null); setLeaveOpen(false); setFormError(''); setErrors({}); };
-  closeFormRef.current = closeForm;
-  const requestCloseForm = () => {
-    if (d && JSON.stringify(d) !== formBaseline) { pushLayer(); setLeaveOpen(true); }
-    else backLayer(closeForm);
+    const requestCloseForm = () => {
+    if (d && JSON.stringify(d) !== formBaseline) setLeaveOpen(true);
+    else window.history.back();
   };
-  /** 이탈 확인 모달의 '확인' — 확인 모달 항목과 폼 항목을 함께 정리한다 */
-  const confirmLeave = () => { consumeLayer(); closeForm(); consumeLayer(); };
+  /** 이탈 확인 모달의 '확인' */
+  const confirmLeave = () => { setLeaveOpen(false); window.history.back(); };
   // 저장 유효성 검증 — 카카오 상품 API required 필드 기준. 위반 필드별 메시지 맵을 반환(빈 객체면 통과).
   const collectErrors = (v: Item): Record<string, string> => {
     const e: Record<string, string> = {};
@@ -2371,8 +2400,7 @@ function TiKakao() {
     const normalized: Item = !d.cat1 || d.cat1 === CUSTOM_CAT ? { ...d, cat1: CUSTOM_CAT, cat2: '' } : d;
     const saved = { ...normalized, sync: pendingSync, updatedAt: '2026.07.15' };
     setItems((prev) => (selId === null ? [...prev, saved] : prev.map((it) => (it.id === saved.id ? saved : it))));
-    consumeLayer();
-    closeForm();
+    window.history.back();
     showToast(selId === null ? '진료항목을 등록했어요.' : '진료항목을 저장했어요.');
     if (d.kakaoOn) {
       window.setTimeout(() => setItems((prev) => prev.map((item) => {
@@ -2771,7 +2799,7 @@ function TiKakao() {
                                     setCatQuery('');
                                     const has = d.cat1 && d.cat1 !== CUSTOM_CAT;
                                     setColC1(has ? d.cat1 : TAXONOMY[0].name);
-                                    pushLayer();
+                                    pushView({ page: 'items', screen: 'form', itemId: selId, sheet: true });
                                     setCatSheet(true);
                                   }}
                                 >
@@ -3075,23 +3103,23 @@ function TiKakao() {
             )}
 
             {leaveOpen && (
-              <div className="ap-dim" onClick={() => backLayer(() => setLeaveOpen(false))}><div className="ap-modal set-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="ap-dim" onClick={() => setLeaveOpen(false)}><div className="ap-modal set-modal" onClick={(e) => e.stopPropagation()}>
                 <div className="ap-modal-title">진료항목 정보 입력을 그만하시겠어요?</div>
                 <div className="set-modal-body">그만하면 지금까지 입력한 정보는 저장되지 않아요.</div>
-                <div className="ap-modal-btns"><button className="rg-btn-cancel" onClick={() => backLayer(() => setLeaveOpen(false))}>취소</button><button className="rg-btn-save" onClick={confirmLeave}>확인</button></div>
+                <div className="ap-modal-btns"><button className="rg-btn-cancel" onClick={() => setLeaveOpen(false)}>취소</button><button className="rg-btn-save" onClick={confirmLeave}>확인</button></div>
               </div></div>
             )}
 
             {/* 분류 선택 모달 — 좌우 2단(기본) / 아코디언 트리 / 단계형. 헤더 세그먼트로 전환 비교.
              * 소분류는 어느 형태에서도 고르지 않는다(부분 매핑). (C안) */}
             {catSheet && (() => {
-              const closeSheet = () => backLayer(() => { setCatSheet(false); setSheetC1(null); setCatQuery(''); });
-              /** 분류를 고르고 닫는 경우 — 상태는 아래에서 바꾸고 히스토리 항목만 소비 */
-              const closeSheetPicked = () => { consumeLayer(); setCatSheet(false); setSheetC1(null); setCatQuery(''); };
+              /* 닫기는 히스토리 뒤로 — popstate 가 같은 폼을 유지한 채 모달만 닫는다.
+               * itemId 가 같으면 드래프트를 다시 클론하지 않으므로 입력값이 보존된다. */
+              const closeSheet = () => window.history.back();
               const pick = (c1: string, c2: string) => {
                 patch({ cat1: c1, cat2: c2 });
                 clearErr('category');
-                closeSheetPicked();
+                closeSheet();
               };
               const hint = (b: Cat2Node) =>
                 b.items.slice(0, 3).map((c) => c.name).join(', ') + (b.items.length > 3 ? ` 외 ${b.items.length - 3}개` : '');

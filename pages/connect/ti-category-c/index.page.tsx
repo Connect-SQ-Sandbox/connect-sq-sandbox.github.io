@@ -5,7 +5,7 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-category-c — 진료항목 분류 필드 분리(C안) + 카카오 연동
- * 상태     : 현행(active)   버전: v15   최종수정: 2026-09-03
+ * 상태     : 현행(active)   버전: v17   최종수정: 2026-09-03
  * PRD      : 없음(선행 탐색). 근거 = Notion "진료항목 분류 체계 현황과 개선 방향"
  * 배포URL  : (미배포) 예정 https://connect-sq-sandbox.github.io/out/ti-category-c.html
  * 관련 CSS : connectRegister.css + connectAdminNonpayAug.css + tiCategoryC.css(tc-*)
@@ -55,6 +55,20 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
  *   [보류] 기존 미분류 재고를 병원이 정리하도록 유도하는 알림·일괄 정리 화면.
  *
  * 변경 이력:
+ *   v17 2026-09-03 — 진료항목 필드를 **표준 선택 전용(칩 확정형)** 으로. 자유 텍스트를 받지 않는다 —
+ *                    병원이 부르는 이름은 위의 상품명이 담당하므로 겹칠 이유가 없다.
+ *                    타이핑 값이 곧 확정값이던 탓에 검색 중 스키마 판정이 흔들려
+ *                    가격 폼이 자유 상품으로 튀던 문제도 함께 해결.
+ *                    표준 미지정 허용을 명시(PO 6.2·6.6) — name 필수 검증 제거,
+ *                    '표준 항목 없이 진행 (미지정)' 경로와 미지정 안내 추가.
+ *                    칩 ✕ 는 검색 모드 전환만 하므로(현행 규칙) 미지정 버튼을 별도로 둔다 —
+ *                    없으면 한 번 고른 표준을 되돌릴 수 없다.
+ *   v16 2026-09-03 — **자동완성에 중분류 단독 선택 추가**(세화님 "대상포진도 표준항목으로").
+ *                    그동안 소분류만 고를 수 있어 '대상포진 백신'(중분류)을 표준 진료항목으로
+ *                    지정할 방법이 없었다. 중분류 행은 `대분류 › 중분류 + 제품 N종`으로 표시하고,
+ *                    고르면 진료항목명 = 중분류명 / 소분류는 비운다(부분 매핑).
+ *                    접종형 제품명을 경쟁사 표기('스카이조스터주')에서 **마스터 소분류명**
+ *                    ('스카이조스터')으로 교체 — master3Id 로 걸 수 있어야 하므로.
  *   v15 2026-09-03 — **환자에게 보이는 상품명을 맨 위 필수 필드로 승격**(PO 6.1, 세화님).
  *                    추가 정보에 있던 '진료항목 노출명 (선택)' 을 올려 순서를
  *                    상품명 → 진료항목(표준) → 분류 → 가격 으로. 빈칸·공백만이면 저장 차단.
@@ -313,11 +327,24 @@ const TAXONOMY: Cat1Node[] = [
   ] },
 ];
 
-/** 자동완성 후보 = 소분류 1건 + 상위 경로 */
-interface Suggestion { c1: string; c2: string; c3: string }
+/**
+ * 자동완성 후보.
+ * c3 가 있으면 소분류, 없으면 **중분류 단독 선택**이다.
+ *
+ * 중분류를 선택지에 넣는 이유 — 실측(2026-09-01)에서 미분류 657건 중 194건(29.5%)이
+ * 대·중분류명을 그대로 타이핑한 것이었다. 병원이 파는 단위가 중분류인 경우가 많은데
+ * (예: '대상포진 백신' 을 파는 것이지 '조스타박스' 만 집어 파는 게 아니다)
+ * 자동완성이 소분류만 주니 갈 곳이 없어 직접 입력으로 샜다.
+ * PO 6.2 도 "없으면 아는 상위 분류까지만 남겨 저장"을 허용한다.
+ */
+interface Suggestion { c1: string; c2: string; c3?: string; kids?: number }
 
 const FLAT: Suggestion[] = TAXONOMY.flatMap((a) =>
-  a.groups.flatMap((b) => b.items.map((c) => ({ c1: a.name, c2: b.name, c3: c.name })))
+  a.groups.flatMap((b) => [
+    /* 중분류 단독 — 그 아래 제품·항목 수를 함께 보여준다 */
+    { c1: a.name, c2: b.name, kids: b.items.length } as Suggestion,
+    ...b.items.map((c) => ({ c1: a.name, c2: b.name, c3: c.name }))
+  ])
 );
 
 const NORM = (v: string) => v.replace(/[\s·/()]/g, '').toLowerCase();
@@ -327,7 +354,7 @@ const LEVEL_RANK: Record<MatchLevel, number> = { name: 0, group: 1, category: 2 
 
 function matchLevel(s: Suggestion, q: string): MatchLevel | null {
   if (!q) return null;
-  if (s.c3.includes(q)) return 'name';
+  if (s.c3?.includes(q)) return 'name';
   if (s.c2.includes(q)) return 'group';
   if (s.c1.includes(q)) return 'category';
   return null;
@@ -424,14 +451,17 @@ const PRICE_SCHEMAS: Record<string, PriceSchema> = {
   마운자로: { kind: 'rx', qtys: ['1팩 처방', '2팩 처방', '3팩 처방'], doses: ['2.5mg', '5mg', '7.5mg', '10mg', '12.5mg', '15mg'], source: '제조사 규격 6종' },
   위고비: { kind: 'rx', qtys: ['1펜 처방', '2펜 처방', '3펜 처방'], doses: ['0.25mg', '0.5mg', '1.0mg', '1.7mg', '2.4mg'], source: '제조사 규격 5종' },
   '가다실 9가': { kind: 'vaccine', products: [{ name: '가다실 9가', qtys: ['1회 접종', '3회 접종'] }], source: '접종 프로토콜' },
+  /* 제품명은 **굿닥 표준 진료항목의 소분류명**을 그대로 쓴다 — 나중에 master3Id 로 걸어야 하므로
+   * 경쟁사 표기('스카이조스터주')가 아니라 마스터 표기('스카이조스터')를 따른다.
+   * 순서도 마스터 순서. 접종 단위(싱그릭스 2회)는 마스터에 없는 정보라 스키마가 보완한다. */
   '대상포진 백신': {
     kind: 'vaccine',
     products: [
-      { name: '스카이조스터주', qtys: ['1회 접종'] },
-      { name: '싱그릭스주', qtys: ['1회 접종', '2회 접종'] },
-      { name: '조스타박스주', qtys: ['1회 접종'] }
+      { name: '스카이조스터', qtys: ['1회 접종'] },
+      { name: '조스타박스', qtys: ['1회 접종'] },
+      { name: '싱그릭스', qtys: ['1회 접종', '2회 접종'] }
     ],
-    source: '제품 3종 · 제품별 접종 프로토콜'
+    source: '표준 진료항목 소분류 3종 · 제품별 접종 프로토콜'
   }
 };
 
@@ -550,8 +580,8 @@ const INITIAL: Item[] = [
     rx: {
       mode: 'out', outFee: {}, inFee: {}, doses: {},
       vac: {
-        '싱그릭스주': { '1회 접종': '250000', '2회 접종': '500000' },
-        '조스타박스주': { '1회 접종': '160000' }
+        '싱그릭스': { '1회 접종': '250000', '2회 접종': '500000' },
+        '조스타박스': { '1회 접종': '160000' }
       }
     } }),
   mk({ id: 8, cat1: CUSTOM_CAT, cat2: '', name: '우리병원 시그니처 관리', intro: '원장 직접 시술', keywords: [], hasImage: false,
@@ -2343,7 +2373,7 @@ function TiKakao() {
     const e: Record<string, string> = {};
     /* PO 6.1 — 상품명(노출명)은 프론트 필수. 빈칸·공백만이면 저장을 막고 해당 입력란으로 이동한다. */
     if (!v.alias.trim()) e['alias'] = '상품명을 입력해주세요.';
-    if (!v.name.trim()) e['name'] = '진료항목을 입력해 주세요.';
+    /* 표준 진료항목은 필수가 아니다 — 못 찾으면 미지정으로 저장한다 (PO 6.2, 6.6) */
     /* C안 — 분류 필수 정책이 켜진 경우에만 저장을 막는다.
      * OFF 에서는 경고만 노출하고 저장을 허용한다(기존 미분류 재고 유예). */
     if (REQUIRE_CATEGORY && (!v.cat1 || v.cat1 === CUSTOM_CAT)) e['category'] = '분류를 선택해 주세요.';
@@ -2732,78 +2762,119 @@ function TiKakao() {
                         {errors.alias && <p className="rg-error">{errors.alias}</p>}
                       </div>
 
-                      {/* 표준 진료항목 — 같은 진료끼리 묶어 검색·비교하기 위한 기준. (PO 6.2) */}
+                      {/* 표준 진료항목 — 같은 진료끼리 묶어 검색·비교하기 위한 기준. (PO 6.2)
+                        * **표준 선택 전용 필드**다. 자유 텍스트를 받지 않는다 —
+                        * 병원이 부르는 이름은 위의 '환자에게 보이는 상품명'이 담당한다.
+                        * 맞는 표준이 없으면 비워 두고(미지정) 분류만 지정할 수 있다. */}
                       <div className="rg-field">
                         <FieldHead
                           label="진료항목"
                           helpers={[
                             '같은 진료끼리 묶어 검색·비교하기 위한 굿닥 표준 진료항목이에요.',
-                            '검색해서 선택하면 아래 분류가 함께 채워집니다. 상품명은 바뀌지 않아요.',
+                            '선택하면 아래 분류가 함께 채워집니다. 상품명은 바뀌지 않아요.',
                           ]}
                         />
-                        <div className="tc-anchor">
-                          <div className="rg-search">
-                            <input
-                              className={`rg-input${errors.name ? ' error' : ''}`}
-                              placeholder="진료항목명을 입력하거나 검색해 주세요."
-                              maxLength={50}
-                              value={d.name}
-                              onFocus={() => {
-                                setNameOpen(true);
-                                setNameQuery(d.name);
-                              }}
-                              onChange={(e) => {
-                                patch({ name: e.target.value });
-                                setNameQuery(e.target.value);
-                                setNameOpen(true);
-                                clearErr('name');
-                              }}
-                            />
-                            <span className="rg-search-ic"><SearchIcon /></span>
-                          </div>
 
-                          {/* 자동완성 — 표준 항목을 고르면 이름 + 분류 동시 확정 */}
+                        <div className="tc-anchor">
+                          {d.name.trim() && !nameOpen ? (
+                            /* 확정 상태 — 칩으로 보여준다(현행 유지) */
+                            <div className="tc-std-field">
+                              <span className="tc-std-chip">
+                                {d.name}
+                                <button
+                                  className="tc-std-x"
+                                  aria-label="진료항목 변경"
+                                  onClick={() => { setNameQuery(''); setNameOpen(true); }}
+                                >
+                                  <CloseIcon />
+                                </button>
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="rg-search">
+                              <input
+                                className="rg-input"
+                                placeholder="표준 진료항목을 검색해 주세요."
+                                value={nameQuery}
+                                autoFocus={nameOpen}
+                                onFocus={() => setNameOpen(true)}
+                                onChange={(e) => setNameQuery(e.target.value)}
+                              />
+                              <span className="rg-search-ic"><SearchIcon /></span>
+                            </div>
+                          )}
+
                           {nameOpen && (
                             <div className="tc-layer">
                               {nameQuery.trim().length === 0 ? (
-                                <div className="tc-layer-guide">공식 진료명·시술명으로 검색해 보세요. 예) 임플란트, 도수치료, 가다실 9가</div>
+                                <div className="tc-layer-guide">
+                                  공식 진료명·시술명·제품명으로 검색해 보세요. 예) 임플란트, 도수치료, 대상포진
+                                </div>
                               ) : searchMasters(nameQuery).length > 0 ? (
                                 <div className="tc-layer-list">
                                   {searchMasters(nameQuery).map((sg) => (
                                     <button
-                                      key={`${sg.c1}-${sg.c2}-${sg.c3}`}
+                                      key={`${sg.c1}-${sg.c2}-${sg.c3 ?? '__group'}`}
                                       className="tc-sug"
                                       onClick={() => {
-                                        patch({ name: sg.c3, cat1: sg.c1, cat2: sg.c2 });
+                                        /* 중분류를 고르면 진료항목명 = 중분류명, 소분류는 비운다(부분 매핑) */
+                                        patch({ name: sg.c3 ?? sg.c2, cat1: sg.c1, cat2: sg.c2 });
                                         clearErr('name', 'category');
+                                        setNameQuery('');
                                         setNameOpen(false);
                                       }}
                                     >
                                       <span className="tc-dim">{sg.c1}</span>
                                       <span className="tc-sep">›</span>
-                                      <span className="tc-dim">{sg.c2}</span>
-                                      <span className="tc-sep">›</span>
-                                      <span className="tc-strong">{sg.c3}</span>
+                                      {sg.c3 ? (
+                                        <>
+                                          <span className="tc-dim">{sg.c2}</span>
+                                          <span className="tc-sep">›</span>
+                                          <span className="tc-strong">{sg.c3}</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <span className="tc-strong">{sg.c2}</span>
+                                          <span className="tc-sug-kids">
+                                            {PRICE_SCHEMAS[sg.c2]?.kind === 'vaccine' ? `제품 ${sg.kids}종` : `하위 ${sg.kids}개`}
+                                          </span>
+                                        </>
+                                      )}
                                     </button>
                                   ))}
                                 </div>
                               ) : (
-                                <div className="tc-layer-guide">일치하는 표준 진료항목이 없어요. 입력한 이름을 그대로 쓸 수 있어요.</div>
+                                <div className="tc-layer-guide">
+                                  일치하는 표준 진료항목이 없어요. 비워 두고 <b>아래에서 분류만</b> 지정할 수 있습니다.
+                                </div>
                               )}
                               <div className="tc-layer-foot">
-                                <button className="tc-layer-btn" onClick={() => setNameOpen(false)}>
-                                  {d.name.trim() ? (
-                                    <>‘<b>{d.name.trim()}</b>’ 이름으로 쓰기</>
-                                  ) : (
-                                    <>닫기</>
-                                  )}
+                                {/* 미지정 경로 — PO 6.2 는 표준을 못 찾으면 비워 두고 저장하는 것을 허용한다.
+                                  * 이 버튼이 없으면 한 번 고른 표준을 되돌릴 방법이 없다. */}
+                                <button
+                                  className="tc-layer-btn"
+                                  onClick={() => { patch({ name: '' }); setNameQuery(''); setNameOpen(false); }}
+                                >
+                                  표준 항목 없이 진행 <b>(미지정)</b>
                                 </button>
-                                <span className="tc-layer-note">이름만 정해집니다. 분류는 아래에서 따로 골라요.</span>
+                                {d.name.trim() && (
+                                  <button
+                                    className="tc-layer-btn tc-layer-btn-quiet"
+                                    onClick={() => { setNameQuery(''); setNameOpen(false); }}
+                                  >
+                                    취소 — ‘{d.name}’ 유지
+                                  </button>
+                                )}
+                                <span className="tc-layer-note">
+                                  표준을 못 찾아도 저장할 수 있어요. 상품명과 분류만 있으면 됩니다.
+                                </span>
                               </div>
                             </div>
                           )}
                         </div>
-                        {errors.name && <p className="rg-error">{errors.name}</p>}
+                        {!d.name.trim() && !nameOpen && (
+                          <div className="tc-std-none">표준 진료항목 미지정 — 상품명·분류로만 저장됩니다.</div>
+                        )}
                       </div>
 
                       {/* 분류 — 굿닥 표준 진료항목의 대분류 › 중분류. 이름과 분리된 별도 필드. (C안) */}

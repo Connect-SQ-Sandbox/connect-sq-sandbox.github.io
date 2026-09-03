@@ -959,3 +959,68 @@
 .tc-vac-card .rg-num::placeholder {
   color: #caced8;
 }
+
+/* 자동완성 중분류 행 — 하위 개수 표기 */
+.tc-sug-kids {
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #f2f4f7;
+  font-size: 11px;
+  font-weight: 700;
+  color: #808799;
+}
+
+/* ---------- 진료항목: 표준 선택 전용 칩 ---------- */
+.tc-std-field {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 6px 10px;
+  border: 1px solid #e3e6ed;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.tc-std-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 6px 8px 6px 14px;
+  border-radius: 8px;
+  background: #16181d;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.tc-std-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.tc-std-x:hover { color: #fff; }
+.tc-std-x svg { width: 16px; height: 16px; }
+
+.tc-std-none {
+  margin-top: 8px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: #f9f9fb;
+  border: 1px solid #e3e6ed;
+  font-size: 12.5px;
+  color: #808799;
+}
+
+.tc-layer-btn-quiet {
+  background: #f9f9fb;
+  color: #808799;
+  font-weight: 500;
+}

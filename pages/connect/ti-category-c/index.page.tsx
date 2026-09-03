@@ -5,7 +5,7 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-category-c — 진료항목 분류 필드 분리(C안) + 카카오 연동
- * 상태     : 현행(active)   버전: v6   최종수정: 2026-09-01
+ * 상태     : 현행(active)   버전: v7   최종수정: 2026-09-03
  * PRD      : 없음(선행 탐색). 근거 = Notion "진료항목 분류 체계 현황과 개선 방향"
  * 배포URL  : (미배포) 예정 https://connect-sq-sandbox.github.io/out/ti-category-c.html
  * 관련 CSS : connectRegister.css + connectAdminNonpayAug.css + tiCategoryC.css(tc-*)
@@ -52,6 +52,10 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
  *   [보류] 기존 미분류 재고를 병원이 정리하도록 유도하는 알림·일괄 정리 화면.
  *
  * 변경 이력:
+ *   v7 2026-09-03 — **항목별 가격 스키마** 제안 추가. PO 6.3 공통 단위 폼 위에 얹는 레이어로,
+ *                   스키마가 정의된 소분류(마운자로·위고비·가다실 9가)는 판매 형태 → 포함 비용 →
+ *                   규격 → 금액 순의 최적화 폼을 쓰고, 나머지는 공통 폼으로 폴백.
+ *                   가격 정보 헤더 세그먼트로 [최적화 | 공통] 비교. 시드에 마운자로·가다실 9가 추가.
  *   v6 2026-09-01 — 폼 상단 [분류 필수 검증] 프로토타입 스위치 제거(세화님). 정책은 모듈 상수
  *                   REQUIRE_CATEGORY(false) 로 고정 — 미분류 저장 허용 + 경고.
  *   v5 2026-09-01 — 세로 아코디언 트리 모드 제거(세화님). 좌우 2단 / 단계형 두 형태만 남김.
@@ -75,7 +79,13 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
 
 /* ============================ 진료항목 타입 & mock ============================ */
 type PriceType = 'fixed' | 'discount' | 'consult';
-type Price = { id: number; title: string; content: string; type: PriceType; amount: string; original: string; sale: string };
+type Price = {
+  id: number; title: string; content: string; type: PriceType; amount: string; original: string; sale: string;
+  /* 항목별 가격 스키마용 (스키마가 있는 진료항목에서만 씀) */
+  saleType?: string;   // 판매 형태 — 처방전만 / 처방+약제 / 패키지 등
+  dose?: string;       // 규격 — 용량(mg)·회차 등 제조사·프로토콜 규격에서 선택
+  includes?: string[]; // 포함 비용
+};
 type SyncState = 'NOT_LINKED' | 'PENDING' | 'SYNCED' | 'FAILED' | 'ON_HOLD' | 'UPDATE_REQUIRED';
 type SyncObject = 'product' | 'item' | 'price' | 'schedule';
 type SyncInfo = Record<SyncObject, SyncState> & { lastAt: string; error?: string; attempts: number };
@@ -312,6 +322,64 @@ function suggestCategories(raw: string): { c1: string; c2: string; matched: stri
   return found.sort((x, y) => NORM(y.matched).length - NORM(x.matched).length).slice(0, 3);
 }
 
+/* =========================================================================
+ * 항목별 가격 스키마 — C안 확장 제안
+ *
+ * 왜 : 공통 단위 폼(PO 6.3)은 모든 진료항목에 자유 입력(단위·수량 직접입력)을 요구한다.
+ *      그런데 실측(2026-09-01)에서 등록이 극단적으로 쏠려 있다 —
+ *        표준 매핑 852건 / 고유 소분류 131종
+ *        상위  5종 37.1% · 상위 10종 48.5% · 상위 20종 61.0%
+ *      마운자로는 105개 병원이 각자 1건씩 등록했는데, 규격이 자유 텍스트라
+ *      같은 약을 100곳이 파는데도 가격 비교가 성립하지 않는다.
+ *
+ * 데이터가 가리키는 축 : 별칭을 뜯어보니 용량(mg) 표기는 마운자로 108건 중 0건,
+ *      위고비 101건 중 1건뿐이었다. 대신 이런 게 들어 있었다 —
+ *        '처방전만 발행' '원외처방 (진료만)' '처방료 포함' '마운자로 + 복부지방검사'
+ *      즉 병원이 구분하고 싶은 1순위는 용량이 아니라 **무엇이 포함되는가**다.
+ *      그래서 스키마의 첫 필드를 '판매 형태', 다음을 '포함 비용'으로 두고 용량은 그 뒤에 놓는다.
+ *
+ * 폴백 : 스키마가 없는 소분류는 PO 6.3 공통 폼을 그대로 쓴다. 대체가 아니라 위에 얹는 레이어다.
+ * 키   : 시안이라 소분류명 문자열로 매칭한다. 실제로는 master3Id 로 걸어야 한다.
+ * 비용 : 스키마는 마스터와 같은 갱신 책임이 생긴다(신약 용량 추가·백신 제품 교체).
+ *        상위 10종만 해도 48.5%가 덮이므로 그 이상은 승격 큐로 미룬다.
+ * ======================================================================= */
+
+interface PriceSchema {
+  /** 판매 형태 — 이 항목에서 가격이 갈리는 1순위 축 */
+  saleTypes: string[];
+  /** 규격 라벨·후보. 제조사 규격이나 접종 프로토콜에서 온다 */
+  doseLabel: string;
+  doses: string[];
+  /** 포함 비용 후보 */
+  includes: string[];
+  /** 규격 출처 — 병원에게 "우리가 임의로 만든 값이 아니다"를 알린다 */
+  source: string;
+}
+
+const PRICE_SCHEMAS: Record<string, PriceSchema> = {
+  마운자로: {
+    saleTypes: ['처방전만', '처방 + 약제', '패키지'],
+    doseLabel: '용량',
+    doses: ['2.5mg', '5mg', '7.5mg', '10mg', '12.5mg', '15mg'],
+    includes: ['초진료', '처방료', '체성분 검사'],
+    source: '제조사 규격 6종'
+  },
+  위고비: {
+    saleTypes: ['처방전만', '처방 + 약제', '패키지'],
+    doseLabel: '용량',
+    doses: ['0.25mg', '0.5mg', '1.0mg', '1.7mg', '2.4mg'],
+    includes: ['초진료', '처방료', '체성분 검사'],
+    source: '제조사 규격 5종'
+  },
+  '가다실 9가': {
+    saleTypes: ['1회 접종', '3회 완료'],
+    doseLabel: '접종 회차',
+    doses: ['1차', '2차', '3차'],
+    includes: ['진찰료'],
+    source: '접종 프로토콜 3회'
+  }
+};
+
 /**
  * 분류 필수 여부. 현재 정책 = **필수 아님**.
  * 고를 분류가 없을 때 저장을 막으면 미분류가 오분류로 대체되고, 그건 되돌리기가 더 어렵다.
@@ -328,7 +396,7 @@ function roSuffix(word: string): string {
   return code % 28 === 0 ? '로' : '으로';
 }
 
-const CAT_ORDER = ['피부·미용', '성형', '수액', '직접 입력 항목'];
+const CAT_ORDER = ['피부·미용', '다이어트', '예방접종', '성형', '수액', '직접 입력 항목'];
 const CUSTOM_CAT = '직접 입력 항목';
 
 const mk = (p: Partial<Item> & { id: number; name: string; cat1: string; cat2: string }): Item => {
@@ -362,6 +430,14 @@ const INITIAL: Item[] = [
   mk({ id: 7, cat1: '피부·미용', cat2: '보톡스', name: '보톡스 (이마)', intro: '이마 주름 개선', keywords: ['보톡스'], hasImage: false,
     prices: [{ id: UID++, title: '이마', content: '', type: 'discount', amount: '', original: '150000', sale: '99000' }], gdVisible: true, kakaoOn: true, activeReservations: 1,
     sync: { product: 'SYNCED', item: 'SYNCED', price: 'FAILED', schedule: 'ON_HOLD', lastAt: '2026.07.15 10:31', error: '가격 안내 정보를 카카오에 반영하지 못했어요.', attempts: 2 } }),
+  /* 항목별 가격 스키마가 붙는 항목 — 최적화 폼 확인용 */
+  mk({ id: 9, cat1: '다이어트', cat2: '다이어트 주사', name: '마운자로', intro: 'GLP-1 비만 치료 주사', keywords: ['마운자로', '비만치료'], hasImage: false,
+    prices: [
+      { id: UID++, title: '처방전만', content: '', type: 'fixed', amount: '30000', original: '', sale: '', saleType: '처방전만', dose: '2.5mg', includes: ['초진료'] },
+      { id: UID++, title: '처방 + 약제', content: '', type: 'fixed', amount: '320000', original: '', sale: '', saleType: '처방 + 약제', dose: '5mg', includes: ['초진료', '처방료'] }
+    ] }),
+  mk({ id: 10, cat1: '예방접종', cat2: 'HPV 백신', name: '가다실 9가', intro: '', keywords: [], hasImage: false,
+    prices: [{ id: UID++, title: '1회 접종', content: '', type: 'fixed', amount: '180000', original: '', sale: '', saleType: '1회 접종', dose: '1차', includes: ['진찰료'] }] }),
   mk({ id: 8, cat1: CUSTOM_CAT, cat2: '', name: '우리병원 시그니처 관리', intro: '원장 직접 시술', keywords: [], hasImage: false,
     prices: [{ id: UID++, title: '1회', content: '', type: 'fixed', amount: '150000', original: '', sale: '' }], gdVisible: true, kakaoOn: false })
 ];
@@ -876,6 +952,96 @@ function FieldHead({ label, optional, helpers }: { label: string; optional?: boo
     </div>
   );
 }
+/**
+ * 항목별 최적화 가격 행 — 스키마가 정의된 소분류에서만 쓴다.
+ * 순서는 판매 형태 → 포함 비용 → 규격 → 금액. 실측에서 병원이 구분하고 싶어한 순서다.
+ */
+function SchemaPriceRow({
+  p, schema, onChange, onDelete, amountErr
+}: { p: Price; schema: PriceSchema; onChange: (u: Partial<Price>) => void; onDelete: () => void; amountErr?: string }) {
+  const [doseOpen, setDoseOpen] = useState(false);
+  const includes = p.includes ?? [];
+  const toggleInclude = (v: string) =>
+    onChange({ includes: includes.includes(v) ? includes.filter((x) => x !== v) : [...includes, v] });
+
+  return (
+    <div className="rg-price-row tk-price-row tc-sp">
+      <div className="rg-price-fields">
+        <div className="tc-sp-line">
+          <span className="tc-sp-label">판매 형태</span>
+          <div className="tc-sp-chips">
+            {schema.saleTypes.map((t) => (
+              <button
+                key={t}
+                type="button"
+                className={`tc-sp-chip${p.saleType === t ? ' on' : ''}`}
+                onClick={() => onChange({ saleType: t, title: t })}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="tc-sp-line">
+          <span className="tc-sp-label">포함 비용</span>
+          <div className="tc-sp-chips">
+            {schema.includes.map((t) => (
+              <button
+                key={t}
+                type="button"
+                className={`tc-sp-chip check${includes.includes(t) ? ' on' : ''}`}
+                onClick={() => toggleInclude(t)}
+              >
+                {includes.includes(t) ? '✓ ' : ''}
+                {t}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="tc-sp-line">
+          <span className="tc-sp-label">{schema.doseLabel}</span>
+          <div className="rg-select-wrap tc-sp-select">
+            <button type="button" className={`rg-select${doseOpen ? ' open' : ''}`} onClick={() => setDoseOpen((v) => !v)}>
+              {p.dose || '선택'}
+              <span className="rg-select-ic"><SelectArrow /></span>
+            </button>
+            {doseOpen && (
+              <div className="rg-select-menu" onMouseLeave={() => setDoseOpen(false)}>
+                {schema.doses.map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    className={`rg-select-opt${v === p.dose ? ' active' : ''}`}
+                    onClick={() => { onChange({ dose: v }); setDoseOpen(false); }}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <span className="tc-sp-source">{schema.source}</span>
+        </div>
+
+        <div className="tc-sp-line">
+          <span className="tc-sp-label">금액</span>
+          <input
+            className={`rg-num${amountErr ? ' error' : ''}`}
+            placeholder="0"
+            value={p.amount}
+            onChange={(e) => onChange({ amount: e.target.value.replace(/[^0-9]/g, '') })}
+          />
+          <span className="rg-unit">원</span>
+        </div>
+        {amountErr && <p className="rg-error">{amountErr}</p>}
+      </div>
+      <button className="rg-price-del" onClick={onDelete} aria-label="삭제"><CloseIcon /></button>
+    </div>
+  );
+}
+
 function PriceRow({ p, onChange, onDelete, onDragStart, onDrop, titleErr, amountErr }: { p: Price; onChange: (u: Partial<Price>) => void; onDelete: () => void; onDragStart: () => void; onDrop: () => void; titleErr?: string; amountErr?: string }) {
   const [open, setOpen] = useState(false);
   const cur = PRICE_TYPES.find((t) => t.value === p.type)!;
@@ -1817,6 +1983,8 @@ function TiKakao() {
   const [sheetMode, setSheetMode] = useState<'cols' | 'step'>('cols');
   /** 좌우 2단에서 좌측에 선택된 대분류 */
   const [colC1, setColC1] = useState<string>(TAXONOMY[0].name);
+  /** 항목별 스키마가 있을 때 최적화 폼 / PO 공통 폼 전환 비교 */
+  const [priceForm, setPriceForm] = useState<'schema' | 'common'>('schema');
   /** 분류 검색어 — 대·중분류 명칭을 모두 훑고, 걸린 대분류는 자동으로 펼친다 */
   const [catQuery, setCatQuery] = useState('');
   const [nameOpen, setNameOpen] = useState(false);
@@ -2376,10 +2544,75 @@ function TiKakao() {
                           );
                         })()}
                       </div>
-                      <div className="rg-field price" data-policy-id="gcp1-kakao-price">
-                        <FieldHead label="가격 정보" helpers={['환자에게 보여줄 가격 정보를 설정해 주세요. (예: 횟수별, 시술명별 등)']} />
-                        <div className="rg-price-list">{d.prices.map((p) => (<PriceRow key={p.id} p={p} onChange={(u) => setPrice(p.id, u)} onDelete={() => delPrice(p.id)} onDragStart={() => setDragPriceId(p.id)} onDrop={() => movePrice(p.id)} titleErr={errors[`price-${p.id}-title`]} amountErr={errors[`price-${p.id}-amount`]} />))}</div>
-                      </div>
+                      {(() => {
+                        /* 항목별 가격 스키마 — 선택된 소분류에 정의가 있으면 최적화 폼을 쓴다.
+                         * 없으면 PO 6.3 공통 폼으로 폴백. 세그먼트로 두 형태를 비교할 수 있다. */
+                        const schema = PRICE_SCHEMAS[d.name.trim()];
+                        const useSchema = !!schema && priceForm === 'schema';
+                        return (
+                          <div className="rg-field price" data-policy-id="gcp1-kakao-price">
+                            <div className="tc-price-head">
+                              <FieldHead
+                                label="가격 정보"
+                                helpers={[
+                                  useSchema
+                                    ? '이 진료항목은 규격이 정해져 있어, 규격을 고르고 금액만 입력합니다.'
+                                    : '환자에게 보여줄 가격 정보를 설정해 주세요. (예: 횟수별, 시술명별 등)'
+                                ]}
+                              />
+                              {schema && (
+                                <div className="tc-seg tc-price-seg">
+                                  <button
+                                    className={`tc-seg-btn${priceForm === 'schema' ? ' on' : ''}`}
+                                    onClick={() => setPriceForm('schema')}
+                                  >
+                                    최적화
+                                  </button>
+                                  <button
+                                    className={`tc-seg-btn${priceForm === 'common' ? ' on' : ''}`}
+                                    onClick={() => setPriceForm('common')}
+                                  >
+                                    공통
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+
+                            {useSchema && (
+                              <div className="tc-sp-note">
+                                <b>{d.name.trim()}</b> — {schema.source}. 병원은 규격을 고르고 금액만 넣습니다.
+                                자유 입력이면 같은 약을 파는 병원끼리 규격 표기가 갈려 가격 비교가 성립하지 않습니다.
+                              </div>
+                            )}
+
+                            <div className="rg-price-list">
+                              {d.prices.map((p) =>
+                                useSchema ? (
+                                  <SchemaPriceRow
+                                    key={p.id}
+                                    p={p}
+                                    schema={schema}
+                                    onChange={(u) => setPrice(p.id, u)}
+                                    onDelete={() => delPrice(p.id)}
+                                    amountErr={errors[`price-${p.id}-amount`]}
+                                  />
+                                ) : (
+                                  <PriceRow
+                                    key={p.id}
+                                    p={p}
+                                    onChange={(u) => setPrice(p.id, u)}
+                                    onDelete={() => delPrice(p.id)}
+                                    onDragStart={() => setDragPriceId(p.id)}
+                                    onDrop={() => movePrice(p.id)}
+                                    titleErr={errors[`price-${p.id}-title`]}
+                                    amountErr={errors[`price-${p.id}-amount`]}
+                                  />
+                                )
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
                       <div className="rg-add-wrap">{d.prices.length < PRICE_OPTION_MAX
                         ? <button className="rg-add-btn" onClick={addPrice}><PlusIcon /> 가격 옵션 추가</button>
                         : <div className="rg-help">가격 옵션은 최대 {PRICE_OPTION_MAX}개까지 추가할 수 있어요.</div>}

@@ -5,7 +5,7 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-category-c — 진료항목 분류 필드 분리(C안) + 카카오 연동
- * 상태     : 현행(active)   버전: v9   최종수정: 2026-09-03
+ * 상태     : 현행(active)   버전: v10   최종수정: 2026-09-03
  * PRD      : 없음(선행 탐색). 근거 = Notion "진료항목 분류 체계 현황과 개선 방향"
  * 배포URL  : (미배포) 예정 https://connect-sq-sandbox.github.io/out/ti-category-c.html
  * 관련 CSS : connectRegister.css + connectAdminNonpayAug.css + tiCategoryC.css(tc-*)
@@ -52,6 +52,10 @@ import { POLICY_SOURCES, ADMIN_NONPAY_AUG_CHANGES } from '../../../content/chang
  *   [보류] 기존 미분류 재고를 병원이 정리하도록 유도하는 알림·일괄 정리 화면.
  *
  * 변경 이력:
+ *   v10 2026-09-03 — 표준/자유 세그먼트가 "병원이 고르는 선택지"로 오해되던 표시 수정(세화님).
+ *                    **병원은 고르지 않는다** — 진료항목에 규격 스키마가 있으면 표준, 없으면
+ *                    자유로 시스템이 판정한다. 세그먼트는 프로토타입 비교 장치이므로
+ *                    '프로토타입 · 입력 형태 비교' 라벨을 붙이고 버튼은 표준/자유로 줄였다.
  *   v9 2026-09-03 — **표준 상품(Canonical) / 자유 상품(Custom)** 개념으로 정리(세화님).
  *                   세그먼트 라벨도 최적화·공통 → 표준 상품·자유 상품.
  *                   경쟁사(나만의닥터) 구조를 반영해 처방형 폼을 전면 교체 —
@@ -2632,24 +2636,31 @@ function TiKakao() {
                                 label="가격 정보"
                                 helpers={[
                                   canonical
-                                    ? '규격이 정해진 표준 상품입니다. 규격을 고르고 구성요소 금액만 입력해요.'
+                                    ? '규격이 정해진 진료항목이라 규격을 고르고 구성요소 금액만 입력해요.'
                                     : '환자에게 보여줄 가격 정보를 설정해 주세요. (예: 횟수별, 시술명별 등)'
                                 ]}
                               />
                               {schema && (
-                                <div className="tc-seg tc-price-seg">
-                                  <button
-                                    className={`tc-seg-btn${priceForm === 'canonical' ? ' on' : ''}`}
-                                    onClick={() => setPriceForm('canonical')}
-                                  >
-                                    표준 상품
-                                  </button>
-                                  <button
-                                    className={`tc-seg-btn${priceForm === 'custom' ? ' on' : ''}`}
-                                    onClick={() => setPriceForm('custom')}
-                                  >
-                                    자유 상품
-                                  </button>
+                                /* 프로토타입 전용 비교 장치. 실제로는 병원이 고르지 않는다 —
+                                 * 진료항목에 규격 스키마가 있으면 표준 상품, 없으면 자유 상품으로
+                                 * 시스템이 판정한다. 여기 세그먼트는 두 형태를 한 화면에서
+                                 * 보여주기 위한 것이라 실제 화면에는 존재하지 않는다. */
+                                <div className="tc-price-compare">
+                                  <span className="tc-compare-kicker">프로토타입 · 입력 형태 비교</span>
+                                  <div className="tc-seg tc-price-seg">
+                                    <button
+                                      className={`tc-seg-btn${priceForm === 'canonical' ? ' on' : ''}`}
+                                      onClick={() => setPriceForm('canonical')}
+                                    >
+                                      표준
+                                    </button>
+                                    <button
+                                      className={`tc-seg-btn${priceForm === 'custom' ? ' on' : ''}`}
+                                      onClick={() => setPriceForm('custom')}
+                                    >
+                                      자유
+                                    </button>
+                                  </div>
                                 </div>
                               )}
                             </div>

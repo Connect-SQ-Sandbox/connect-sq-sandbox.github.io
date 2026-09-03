@@ -796,3 +796,23 @@
   padding: 7px 16px;
   vertical-align: middle;
 }
+
+/* 프로토타입 전용 — 입력 형태 비교. 실제 화면에는 없는 컨트롤임을 표시한다 */
+.tc-price-compare {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  padding: 4px 6px 4px 10px;
+  border: 1px dashed #caced8;
+  border-radius: 10px;
+  background: #f9f9fb;
+}
+
+.tc-compare-kicker {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #a8aebd;
+  white-space: nowrap;
+}

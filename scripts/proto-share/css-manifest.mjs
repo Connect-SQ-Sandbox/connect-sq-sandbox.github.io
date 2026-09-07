@@ -9,6 +9,7 @@ export const SHARED_CSS = ['styles/globals.css', 'styles/connectShell.css', 'sty
 
 /** 페이지 디렉터리명 -> 화면 전용 CSS */
 export const SCREEN_CSS = {
+  'treatment-create': ['styles/connectRegister.css', 'styles/connectAdminNonpayAug.css', 'styles/tiCategoryC.css', 'styles/treatmentCreateSept.css'],
   'ti-category-map': ['styles/tiCategoryMap.css'],
   'ti-kakao': ['styles/connectRegister.css', 'styles/connectTiKakao.css'],
   'ti-category-c': ['styles/connectRegister.css', 'styles/connectAdminNonpayAug.css', 'styles/tiCategoryC.css'],

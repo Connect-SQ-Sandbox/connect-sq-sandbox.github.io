@@ -2798,6 +2798,14 @@ Error generating stack: `+l.message+`
  *
  * 변경 이력
  *  v0.1 2026-09-07 최초. 스키마 전환 패치 + 일괄 등록 주입.
+ *  v1.0 2026-09-07 [수정8 보정3] 주입 스크립트의 MutationObserver가 죽던 문제.
+ *                   rAF로 디바운스했는데 탭이 숨겨지면 rAF가 실행되지 않아
+ *                   pending 플래그가 true로 고정됐다. setTimeout으로 교체하고
+ *                   콜백을 try/catch로 감쌌다.
+ *  v0.9 2026-09-07 [수정8 보정2] 펼친 메뉴의 옵션 높이가 눌리던 문제.
+ *                   .rg-select-menu가 flex 컨테이너인데 max-height:288px를 걸어
+ *                   옵션이 많으면 flex-shrink로 36px 아래로 압축됐음.
+ *                   .rg-select-opt에 flex:0 0 auto 로 높이 고정 후 스크롤.
  *  v0.8 2026-09-07 [수정8 보정] 커스텀 드롭다운 메뉴가 항상 열려 있던 문제.
  *                   .rg-select-menu의 author 규칙 display:flex 가 UA [hidden] 을
  *                   이겨서 hidden 속성이 무효였음. [hidden] 시 display:none 명시.
@@ -2841,6 +2849,9 @@ Error generating stack: `+l.message+`
 /* .rg-select-menu에 author 규칙 display:flex 가 걸려 있어 UA의 [hidden]{display:none}을 이긴다.
    hidden 속성만으로는 닫히지 않으므로 명시적으로 눌러준다. */
 .bx-sel-wrap .rg-select-menu[hidden]{display:none!important}
+/* 메뉴가 flex 컨테이너인데 max-height를 걸어서, 옵션이 많으면 flex-shrink로 36px 아래로
+   눌린다. PO 쪽은 옵션이 3개뿐이라 드러나지 않던 케이스. 높이를 고정하고 스크롤시킨다. */
+.bx-sel-wrap .rg-select-opt{flex:0 0 auto;height:36px;display:flex;align-items:center}
 /* 공통 단위는 분류 3열과 달리 폼 전체 폭을 쓸 이유가 없다 */
 .bx-sel-wrap[data-bx-for="공통 단위"]{flex:0 0 auto;width:180px}
 .bx-sel-wrap .rg-select-ic{transition:transform .15s}
@@ -3109,7 +3120,13 @@ html[data-bx-mode="edit"] .sep-chips{display:none!important}
   var pending=false;
   var mo=new MutationObserver(function(){
     if(pending) return; pending=true;
-    requestAnimationFrame(function(){ pending=false; mountBanner(); enhanceSelects(); });
+    /* rAF는 탭이 숨겨져 있으면 실행되지 않는다. 그 경우 pending이 true로 고정돼
+       옵저버가 영구히 죽으므로 setTimeout으로 디바운스한다. */
+    setTimeout(function(){
+      pending=false;
+      try{ mountBanner(); }catch(e){}
+      try{ enhanceSelects(); }catch(e){}
+    },0);
   });
   function boot(){
     var root=document.getElementById('root');

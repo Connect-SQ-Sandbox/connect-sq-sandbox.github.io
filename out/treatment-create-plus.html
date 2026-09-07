@@ -2798,6 +2798,10 @@ Error generating stack: `+l.message+`
  *
  * 변경 이력
  *  v0.1 2026-09-07 최초. 스키마 전환 패치 + 일괄 등록 주입.
+ *  v0.8 2026-09-07 [수정8 보정] 커스텀 드롭다운 메뉴가 항상 열려 있던 문제.
+ *                   .rg-select-menu의 author 규칙 display:flex 가 UA [hidden] 을
+ *                   이겨서 hidden 속성이 무효였음. [hidden] 시 display:none 명시.
+ *                   공통 단위 드롭다운 폭 180px 고정(분류 3열과 달리 전폭 불필요).
  *  v0.7 2026-09-07 [수정8] 분류(대·중·소)·공통 단위 드롭다운을 가격옵션과 같은
  *                   커스텀 컴포넌트(rg-select / rg-select-menu / rg-select-opt)로 교체.
  *                   원본은 native <select>라 열린 메뉴만 OS 스타일로 어긋났음.
@@ -2833,7 +2837,12 @@ Error generating stack: `+l.message+`
 .bx-sel-wrap{position:relative;flex:1 1 auto;min-width:0;width:100%}
 .bx-sel-wrap .rg-select{width:100%;justify-content:space-between}
 .bx-sel-wrap .rg-select[disabled]{background:#f4f6f8;color:#b0b8c1;cursor:not-allowed}
-.bx-sel-wrap .rg-select-menu{width:100%;min-width:150px;max-height:288px;overflow-y:auto}
+.bx-sel-wrap .rg-select-menu{width:100%;min-width:150px;max-width:300px;max-height:288px;overflow-y:auto}
+/* .rg-select-menu에 author 규칙 display:flex 가 걸려 있어 UA의 [hidden]{display:none}을 이긴다.
+   hidden 속성만으로는 닫히지 않으므로 명시적으로 눌러준다. */
+.bx-sel-wrap .rg-select-menu[hidden]{display:none!important}
+/* 공통 단위는 분류 3열과 달리 폼 전체 폭을 쓸 이유가 없다 */
+.bx-sel-wrap[data-bx-for="공통 단위"]{flex:0 0 auto;width:180px}
 .bx-sel-wrap .rg-select-ic{transition:transform .15s}
 .bx-sel-wrap .rg-select.open .rg-select-ic{transform:rotate(180deg)}
 select[data-bx-enh]{display:none!important}
@@ -3069,6 +3078,7 @@ html[data-bx-mode="edit"] .sep-chips{display:none!important}
           sel.dataset.bxEnh='1';
           wrap=document.createElement('div');
           wrap.className='rg-select-wrap bx-sel-wrap';
+          wrap.setAttribute('data-bx-for', lb);
           wrap.innerHTML='<button type="button" class="rg-select"><span></span>'+CARET+'</button>'
                        + '<div class="rg-select-menu" hidden></div>';
           sel.parentNode.insertBefore(wrap, sel.nextSibling);

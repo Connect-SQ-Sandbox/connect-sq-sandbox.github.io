@@ -2798,6 +2798,9 @@ Error generating stack: `+l.message+`
  *
  * 변경 이력
  *  v0.1 2026-09-07 최초. 스키마 전환 패치 + 일괄 등록 주입.
+ *  v1.1 2026-09-07 [수정9] 추천 칩을 분류 미선택 최초 상태에서만 노출.
+ *                   대분류에 값이 잡히면 html[data-bx-cat="set"] 으로 숨긴다.
+ *                   (기존 수정7의 편집 화면 숨김 규칙은 그대로 유지)
  *  v1.0 2026-09-07 [수정8 보정3] 주입 스크립트의 MutationObserver가 죽던 문제.
  *                   rAF로 디바운스했는데 탭이 숨겨지면 rAF가 실행되지 않아
  *                   pending 플래그가 true로 고정됐다. setTimeout으로 교체하고
@@ -2862,6 +2865,10 @@ select[data-bx-enh]{display:none!important}
    수정할 때는 분류를 갈아끼우도록 유도하는 오해만 남는다. */
 html[data-bx-mode="edit"] .sep-recommend-head,
 html[data-bx-mode="edit"] .sep-chips{display:none!important}
+/* 추천 칩은 분류를 아무것도 고르지 않은 최초 상태에서만 노출한다.
+   하나라도 고른 뒤에는 분류를 갈아끼우도록 유도하는 오해만 남는다. */
+html[data-bx-cat="set"] .sep-recommend-head,
+html[data-bx-cat="set"] .sep-chips{display:none!important}
 /* 표준/자유 입력형태 비교 토글 제거 — 시안 비교용 컨트롤이라 검토본에서는 노출 안 함 */
 .tc-price-compare{display:none!important}
 .bx-banner{display:flex;align-items:center;gap:12px;margin:0 20px 12px;padding:13px 16px;border-radius:8px;
@@ -3081,6 +3088,12 @@ html[data-bx-mode="edit"] .sep-chips{display:none!important}
     }
     if(menu.dataset.h!==html){ menu.innerHTML=html; menu.dataset.h=html; }
   }
+  /* 분류를 하나라도 골랐는지 루트에 표시한다(추천 칩 노출 제어용). */
+  function syncCatState(){
+    var s=document.querySelector('select[aria-label="대분류"]');
+    if(!s){ document.documentElement.removeAttribute('data-bx-cat'); return; }
+    document.documentElement.setAttribute('data-bx-cat', s.value? 'set' : 'empty');
+  }
   function enhanceSelects(){
     SEL_LABELS.forEach(function(lb){
       document.querySelectorAll('select[aria-label="'+lb+'"]').forEach(function(sel){
@@ -3108,6 +3121,7 @@ html[data-bx-mode="edit"] .sep-chips{display:none!important}
             nativeSet.call(sel, sel.options[i].value);
             sel.dispatchEvent(new Event('change',{bubbles:true}));
             closeAllMenus(null);
+            syncCatState();
           });
         }
         paint(wrap, sel);
@@ -3126,13 +3140,14 @@ html[data-bx-mode="edit"] .sep-chips{display:none!important}
       pending=false;
       try{ mountBanner(); }catch(e){}
       try{ enhanceSelects(); }catch(e){}
+      try{ syncCatState(); }catch(e){}
     },0);
   });
   function boot(){
     var root=document.getElementById('root');
     if(!root){ return setTimeout(boot,120); }
     mo.observe(root,{childList:true,subtree:true});
-    mountBanner(); enhanceSelects();
+    mountBanner(); enhanceSelects(); syncCatState();
   }
   boot();
 })();

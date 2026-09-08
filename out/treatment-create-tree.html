@@ -3453,11 +3453,15 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
    ══════════════════════════════════════════════════════════════ */
 .tt-tree{
   display:flex;background:#fff;
-  border:1px solid rgba(128,135,153,.2);border-radius:8px;overflow:hidden}
+  border:1px solid rgba(128,135,153,.2);border-radius:8px;
+  /* 폼 폭이 좁아지면(브라우저 1200 미만) 열을 짜부수지 말고 가로 스크롤로 넘긴다 */
+  overflow-x:auto;overflow-y:hidden}
 .tt-col{
-  flex:1 1 0;min-width:0;display:flex;flex-direction:column;
+  flex:1 1 0;min-width:152px;display:flex;flex-direction:column;
   border-left:1px solid #f2f4f7}
-.tt-col:first-child{border-left:0}
+/* 대분류 이름은 짧고 중분류 이름이 길다(홍역·풍진·볼거리 백신).
+   1:1:1 로 나누면 대분류 열이 남고 중분류가 잘리므로 첫 열만 고정한다. */
+.tt-col:first-child{border-left:0;flex:0 0 168px;min-width:168px}
 .tt-col-wide{flex:2 1 0}
 .tt-col-head{
   flex:0 0 auto;padding:8px 16px;background:#f9f9fb;

@@ -2752,7 +2752,7 @@ Error generating stack: `+l.message+`
  * 이어가기용 컨텍스트 헤더  (아래 주입 블록에 대한 것)
  * ─────────────────────────────────────────────────────────────
  * 이름     : treatment-create-plus (PO 시안 9/7 배포본의 보완 카피)
- * 상태     : 현행 · v2.4 · 2026-09-08
+ * 상태     : 현행 · v2.5 · 2026-09-08
  * 원본     : out/treatment-create.html (v0.4-draft, last-modified 9/7 09:58 KST)
  *            원본은 수정하지 않음. 이 파일은 별도 카피.
  * PRD      : CONNECT26-808 · https://goodoc.atlassian.net/browse/CONNECT26-808
@@ -3001,6 +3001,18 @@ Error generating stack: `+l.message+`
  *          CSS(.tc-cp-note/.tc-vac-head/.tc-vac-name/.tc-vac-badge)는 rx 폼이
  *          .tc-cp-note 를 계속 쓰므로 그대로 두었다.
  *          지점: ch() 의 vaccine 분기 3곳
+ *  [수정23] 접종형 표의 이중 테두리 제거. (세화님 지적)
+ *          .tc-cp(바깥) 안에 12px 여백을 두고 .tc-vac-card(안쪽)가 또 테두리를
+ *          가졌다. 수정22에서 카드 헤더를 없앤 뒤로는 안쪽 테두리가 구분할
+ *          대상이 없다 — 소분류를 고르면 카드가 항상 1장이다. 바깥만 남긴다.
+ *          (a) .tc-vac-list 의 padding 12 / gap 10 → 0. 표가 프레임에 붙는다.
+ *          (b) .tc-vac-card 의 border·radius·background 제거.
+ *          (c) 마지막 행 하단 선 제거 — .tc-cp 테두리와 겹쳐 이중선이 됐다.
+ *          (d) 카드가 2장 이상 붙는 경우(3종 묶음)를 위해 카드 사이 경계선만 둔다.
+ *          부작용: 카드 테두리 색이 취급 상태 신호였는데(.on) 그것까지 사라진다.
+ *          수정22에서 배지를 없앤 뒤 남은 마지막 신호였다. 이제 입력 여부는
+ *          금액 칸 자체로만 읽힌다.
+ *          지점: 주입 style 블록 말미
  *  [신설] 목록 화면에 독감 시즌 배너 + 일괄 등록 시트. 파일 하단 주입 블록.
  *
  * 주입 블록 기술 제약
@@ -3026,6 +3038,7 @@ Error generating stack: `+l.message+`
  *
  * 변경 이력
  *  v0.1 2026-09-07 최초. 스키마 전환 패치 + 일괄 등록 주입.
+ *  v2.5 2026-09-08 [수정23] 접종형 표 이중 테두리 제거(.tc-cp 하나만 프레임).
  *  v2.4 2026-09-08 [수정22] 접종형 표에서 안내 배너·제품 카드 헤더·표 헤더 제거.
  *  v2.3 2026-09-08 [수정21] 접종형 드롭다운 잘림 수정 + 접종료 셀 정렬을 독감 기준(좌측)으로.
  *  v2.2 2026-09-08 [수정20] 접종형 규격 행에 가격 유형(고정/할인/상담) 추가,
@@ -3379,6 +3392,19 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
 .tc-vac-card .tc-cp-table th.num{text-align:left}
 .tc-vac-card .tc-cp-table th:first-child,
 .tc-vac-card .tc-cp-table td:first-child{width:96px;white-space:nowrap}
+
+/* ══════════════════════════════════════════════════════════════
+   [수정23] 접종형 표의 이중 테두리 제거. (세화님 지적)
+   .tc-cp(바깥) 안에 12px 여백을 두고 .tc-vac-card(안쪽)가 또 테두리를 가졌다.
+   카드 헤더를 없앤 뒤로는 안쪽 테두리가 구분할 대상이 없다 — 소분류를 고르면
+   제품 카드가 항상 1장이다. 바깥 하나만 프레임으로 쓴다.
+   ══════════════════════════════════════════════════════════════ */
+.tc-cp>.tc-vac-list{padding:0;gap:0}
+.tc-vac-card,.tc-vac-card.on{border:0;border-radius:0;background:transparent}
+/* 마지막 행의 하단 선이 .tc-cp 테두리와 겹쳐 이중선이 되는 것 방지 */
+.tc-vac-card .tc-cp-table tbody tr:last-child>td{border-bottom:0}
+/* 제품이 2장 이상 붙는 경우(대상포진 3종 묶음)에는 카드 사이 경계선이 필요하다 */
+.tc-vac-card+.tc-vac-card{border-top:1px solid #f2f4f7}
 /* 할인은 필드가 2개라 좁은 폭에서 줄바꿈이 나던 것 — nowrap + 축소 허용으로 한 줄 유지 */
 .tc-vac-cell .rg-unit,.tc-vac-cell .rg-price-arrow{flex:0 0 auto;white-space:nowrap}
 </style>

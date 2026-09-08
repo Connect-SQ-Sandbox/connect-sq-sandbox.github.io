@@ -2752,7 +2752,7 @@ Error generating stack: `+l.message+`
  * 이어가기용 컨텍스트 헤더  (아래 주입 블록에 대한 것)
  * ─────────────────────────────────────────────────────────────
  * 이름     : treatment-create-tree (plus 의 분기 — 분류 선택 트리판)
- * 상태     : 현행 · t0.4 · 2026-09-08
+ * 상태     : 현행 · t0.5 · 2026-09-08
  * 분기원본 : out/treatment-create-plus.html (v2.5) 에서 카피.
  *            plus 는 그대로 유지한다. 아래 수정1~23 은 plus 에서 물려받은 이력이고,
  *            이 파일 고유 변경은 [트리판] 블록에 적는다.
@@ -2812,6 +2812,11 @@ Error generating stack: `+l.message+`
  *       튄다. getBoundingClientRect 차이로 해당 열의 scrollTop 만 만진다.
  *       이미 보이는 경우엔 아무 것도 하지 않아 일반 트리 클릭에는 영향이 없다.
  *       지점: 루트 div 에 ref 추가 · useEffect [cat1,cat2,name,s,c]
+ *  [T9] 소분류 열의 "중분류를 먼저 선택해 주세요." 를 박스 기준 수직·수평
+ *       중앙으로(t0.5). 기존에는 padding-top 28px 로 위쪽에 붙어 있었다.
+ *       .tt-col-body 가 300px 고정이라 안내 div 에 height:100% + flex 중앙.
+ *       검색 레이어의 "일치하는 분류가 없어요." 는 같은 .tt-empty 를 쓰지만
+ *       레이어 높이가 내용에 맞춰지므로 .tt-col-body> 자식 선택자로 좁혔다.
  *
  *  같이 사라진 것 — 모달을 없애면서 함께 빠졌다.
  *  (i)  전체 분류 검색. 소분류 187개를 이름으로 찾는 유일한 경로였다.
@@ -2828,6 +2833,7 @@ Error generating stack: `+l.message+`
  *
  *
  * 변경 이력(트리판)
+ *  t0.5 2026-09-08 [T9] 소분류 열 안내 문구를 박스 중앙 정렬.
  *  t0.4 2026-09-08 [T8] 선택 항목이 열 밖에 있으면 보이게 스크롤 보정.
  *  t0.3 2026-09-08 [T7] 트리 위 검색 추가(레이어 · 대·중분류 그룹핑).
  *  t0.2 2026-09-08 [T6] 행 카운트·우측 화살표 제거.
@@ -3565,6 +3571,12 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
   font:500 14px/22px var(--font-sans);color:#31353f;font-family:var(--font-sans)}
 .tt-litem:hover{background:#f9f9fb}
 .tt-litem.sel{background:rgba(0,115,250,.05);color:#066ae5;font-weight:600}
+
+/* [T9] 소분류 열 안내 문구를 박스 기준 수직·수평 중앙으로.
+   검색 레이어의 결과없음 문구는 높이가 내용에 맞춰지므로 건드리지 않는다. */
+.tt-col-body>.tt-empty{
+  display:flex;align-items:center;justify-content:center;
+  height:100%;padding:16px 20px;box-sizing:border-box}
 </style>
 <script>
 (function(){

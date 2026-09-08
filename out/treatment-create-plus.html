@@ -2752,7 +2752,7 @@ Error generating stack: `+l.message+`
  * 이어가기용 컨텍스트 헤더  (아래 주입 블록에 대한 것)
  * ─────────────────────────────────────────────────────────────
  * 이름     : treatment-create-plus (PO 시안 9/7 배포본의 보완 카피)
- * 상태     : 현행 · v1.8 · 2026-09-08
+ * 상태     : 현행 · v1.9 · 2026-09-08
  * 원본     : out/treatment-create.html (v0.4-draft, last-modified 9/7 09:58 KST)
  *            원본은 수정하지 않음. 이 파일은 별도 카피.
  * PRD      : CONNECT26-808 · https://goodoc.atlassian.net/browse/CONNECT26-808
@@ -2906,6 +2906,17 @@ Error generating stack: `+l.message+`
  *          Group_중분류 Case=기타 변이체는 힌트 "기타" + 카운트 1 인데,
  *          Case=대분류탐색 목업의 마지막 기타 행은 힌트가 비어 있고 카운트도 없다.
  *          컴포넌트 세트를 기준으로 봐서 "기타" + 1 을 유지했다.
+ *  [수정17] 소분류 리스트(Leaves)에 상·하 라인 추가. (피그마 18612:626204)
+ *          수정16에서 중분류 행 사이 구분선을 없앴는데, 펼친 소분류 블록의
+ *          상·하 경계선이 그 역할을 대신한다. 블록 경계가 없으면 어느 중분류에
+ *          속한 소분류인지 끊어 읽기 어렵다.
+ *          (a) .sep-leaves 상하 border 1px #F2F4F7.
+ *          (b) 배경 #F9F9FB → #F6F7F9 (Gray/15). 한 단계 진해졌다.
+ *          (c) 행 패딩 10/16 → 8/16.
+ *          (d) 체크 아이콘 자리 16×16 → 24×24 (마스크는 16px 유지).
+ *              결과 행(.sep-results)의 체크는 16×16 그대로다 — Row_결과는
+ *              래퍼 없이 16px 이고 Row_소분류만 24px 래퍼를 갖는다.
+ *          지점: 주입 style 블록 말미
  *  [신설] 목록 화면에 독감 시즌 배너 + 일괄 등록 시트. 파일 하단 주입 블록.
  *
  * 주입 블록 기술 제약
@@ -2931,6 +2942,7 @@ Error generating stack: `+l.message+`
  *
  * 변경 이력
  *  v0.1 2026-09-07 최초. 스키마 전환 패치 + 일괄 등록 주입.
+ *  v1.9 2026-09-08 [수정17] 소분류 리스트 상·하 라인 추가, 배경 #F6F7F9, 행 패딩 8/16.
  *  v1.8 2026-09-08 [수정16] 모달 헤더·푸터 복원(수정15의 초기화 모달 회귀 동반 수정),
  *                   DS Modal 800×640, 브라우즈 외곽 박스, 중분류 행 구분선 제거.
  *  v1.7 2026-09-08 [수정15] 분류 찾기 모달 피그마 신안 반영 — 추천 9종, 기타 아코디언화,
@@ -3217,6 +3229,22 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
   height:40px;padding:0 16px;border:0;border-radius:8px;background:#f2f4f7;
   font:600 14px/22px var(--font-sans);color:#434956}
 .sep-dialog:not(.sep-convert) .sep-dialog-foot .tc-cat-btn:hover{background:#e3e6ed}
+
+/* ══════════════════════════════════════════════════════════════
+   [수정17] 소분류 리스트(Leaves) — 상하 라인 추가. (피그마 18612:626204)
+   중분류 행에서 구분선을 없앤 대신, 펼친 소분류 블록의 상·하 경계선이
+   그 역할을 한다. 배경도 #F9F9FB → #F6F7F9(Gray/15) 로 한 단계 진해졌다.
+   ══════════════════════════════════════════════════════════════ */
+.sep-dialog .sep-leaves{
+  background:#f6f7f9;
+  border-top:1px solid #f2f4f7;
+  border-bottom:1px solid #f2f4f7}
+/* 행 높이 10/16 → 8/16 */
+.sep-dialog .sep-leaf{padding:8px 16px}
+/* 체크는 24×24 자리를 차지하고 그 안에 16px 아이콘. 비선택은 투명(자리 유지). */
+.sep-dialog .sep-leaf .sep-pick{
+  width:24px;height:24px;
+  -webkit-mask-size:16px 16px;mask-size:16px 16px}
 </style>
 <script>
 (function(){

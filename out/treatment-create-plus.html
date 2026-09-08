@@ -3327,11 +3327,11 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
    ══════════════════════════════════════════════════════════════ */
 /* td 는 table-cell 로 두고 안쪽 래퍼에서 배치한다(td 를 flex 로 만들면 행이 깨진다). */
 .tc-cp-table td .tc-vac-cell{
-  display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+  display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:nowrap}
 .tc-vac-cell .rg-select-wrap{flex:0 0 auto;position:relative}
-.tc-vac-cell .rg-select{width:116px;height:34px;padding:0 10px 0 12px;font-size:13px;gap:6px}
+.tc-vac-cell .rg-select{width:104px;height:34px;padding:0 8px 0 10px;font-size:13px;gap:4px}
 .tc-vac-cell .rg-select-menu{min-width:116px}
-.tc-vac-cell .rg-num{width:92px;height:34px}
+.tc-vac-cell .rg-num{flex:0 1 84px;width:84px;min-width:56px;height:34px;padding:0 8px}
 .tc-vac-cell .rg-unit{height:34px;font-size:13px}
 .tc-vac-cell .rg-price-arrow{color:#a8aebd;font-size:13px}
 .tc-vac-cell .rg-help{white-space:nowrap}
@@ -3354,7 +3354,7 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
 .tc-cp>.tc-cp-tabs{border-radius:10px 10px 0 0}
 .tc-vac-card{overflow:visible}
 .tc-vac-card>.tc-vac-head{border-radius:10px 10px 0 0}
-.tc-vac-cell .rg-select-menu{width:116px;min-width:116px;z-index:30}
+.tc-vac-cell .rg-select-menu{width:104px;min-width:104px;z-index:30}
 
 /* (b) 접종료 셀을 좌측 정렬로 — 독감 기본 행과 같은 방식이다.
        우측 정렬이면 할인을 고를 때 기존 필드가 왼쪽으로 밀리는데,
@@ -3362,7 +3362,9 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
 .tc-cp-table td .tc-vac-cell{justify-content:flex-start}
 .tc-vac-card .tc-cp-table th.num{text-align:left}
 .tc-vac-card .tc-cp-table th:first-child,
-.tc-vac-card .tc-cp-table td:first-child{width:112px;white-space:nowrap}
+.tc-vac-card .tc-cp-table td:first-child{width:96px;white-space:nowrap}
+/* 할인은 필드가 2개라 좁은 폭에서 줄바꿈이 나던 것 — nowrap + 축소 허용으로 한 줄 유지 */
+.tc-vac-cell .rg-unit,.tc-vac-cell .rg-price-arrow{flex:0 0 auto;white-space:nowrap}
 </style>
 <script>
 (function(){

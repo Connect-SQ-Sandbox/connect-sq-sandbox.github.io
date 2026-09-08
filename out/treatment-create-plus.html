@@ -2752,7 +2752,7 @@ Error generating stack: `+l.message+`
  * 이어가기용 컨텍스트 헤더  (아래 주입 블록에 대한 것)
  * ─────────────────────────────────────────────────────────────
  * 이름     : treatment-create-plus (PO 시안 9/7 배포본의 보완 카피)
- * 상태     : 현행 · v2.2 · 2026-09-08
+ * 상태     : 현행 · v2.3 · 2026-09-08
  * 원본     : out/treatment-create.html (v0.4-draft, last-modified 9/7 09:58 KST)
  *            원본은 수정하지 않음. 이 파일은 별도 카피.
  * PRD      : CONNECT26-808 · https://goodoc.atlassian.net/browse/CONNECT26-808
@@ -2975,6 +2975,17 @@ Error generating stack: `+l.message+`
  *              바로 포맷했는데 값이 객체가 되면서 NaN원 이 찍혔다. VZ()로 풀고
  *              유형별로(상담 후 결정 / 판매가 / 총액) 표기한다. 노출 조건도
  *              `c[h]` 진리값 → VH() 로 바꿔 금액이 없는 행은 뜨지 않는다.
+ *  [수정21] 접종형 규격 표 보정. (세화님 지적 2건)
+ *          (a) 열린 드롭다운이 카드에 잘렸다. .tc-cp 와 .tc-vac-card 의
+ *              overflow:hidden 이 원인이다. 둘의 overflow 를 풀고, 라운드 코너를
+ *              채우던 배경 요소(.tc-cp-note · .tc-cp-tabs · .tc-vac-head)에만
+ *              개별 radius 를 줘서 코너 밖으로 삐져나오지 않게 했다.
+ *              메뉴 폭 116px 고정 · z-index 30.
+ *          (b) 접종료 셀 정렬을 우측 → 좌측으로. 독감 기본 행과 같은 방식이다.
+ *              우측 정렬이면 할인을 고를 때 기존 필드가 왼쪽으로 밀리는데,
+ *              좌측 정렬이면 새 필드가 우측 여백으로 자란다.
+ *              단위 열 폭 112px 고정 · 접종료 헤더도 좌측 정렬로 맞췄다.
+ *          지점: 주입 style 블록 말미
  *  [신설] 목록 화면에 독감 시즌 배너 + 일괄 등록 시트. 파일 하단 주입 블록.
  *
  * 주입 블록 기술 제약
@@ -3000,6 +3011,7 @@ Error generating stack: `+l.message+`
  *
  * 변경 이력
  *  v0.1 2026-09-07 최초. 스키마 전환 패치 + 일괄 등록 주입.
+ *  v2.3 2026-09-08 [수정21] 접종형 드롭다운 잘림 수정 + 접종료 셀 정렬을 독감 기준(좌측)으로.
  *  v2.2 2026-09-08 [수정20] 접종형 규격 행에 가격 유형(고정/할인/상담) 추가,
  *                   독감 기본 행 "기본 가격 · 1회" → 금액 앞 "1회" 라벨.
  *  v2.1 2026-09-08 [수정19] 추천 규격 항목의 '공통 단위' 바 제거(단위도 고정이라 불필요).
@@ -3323,8 +3335,6 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
 .tc-vac-cell .rg-unit{height:34px;font-size:13px}
 .tc-vac-cell .rg-price-arrow{color:#a8aebd;font-size:13px}
 .tc-vac-cell .rg-help{white-space:nowrap}
-/* 할인 2칸이 들어가면 셀이 넓어지므로 단위 열을 좁혀 자리를 준다. */
-.tc-cp-table td:first-child{white-space:nowrap;width:1%}
 
 /* 독감 기본 행 — 타이틀 없이 "1회" 를 금액 앞에 둔다(접종형 표의 단위 열과 같은 역할). */
 .sep-preset-unit{
@@ -3332,6 +3342,27 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
   font:500 14px/22px var(--font-sans);color:#31353f}
 /* 타이틀이 빠져 위쪽 여백만 남으므로 박스 패딩을 줄인다. */
 .sep-preset-row{padding:12px 16px}
+
+/* ══════════════════════════════════════════════════════════════
+   [수정21] 접종형 규격 표 보정 — 드롭다운 잘림 + 정렬을 독감 기준으로
+   ══════════════════════════════════════════════════════════════ */
+/* (a) 열린 메뉴가 카드에 잘렸다. .tc-cp / .tc-vac-card 의 overflow:hidden 탓이다.
+       overflow 를 풀고, 라운드 코너를 채우던 배경 요소에만 개별 radius 를 준다
+       (그 둘만 흰색이 아니라 코너 밖으로 삐져나온다). */
+.tc-cp{overflow:visible}
+.tc-cp>.tc-cp-note{border-radius:10px 10px 0 0}
+.tc-cp>.tc-cp-tabs{border-radius:10px 10px 0 0}
+.tc-vac-card{overflow:visible}
+.tc-vac-card>.tc-vac-head{border-radius:10px 10px 0 0}
+.tc-vac-cell .rg-select-menu{width:116px;min-width:116px;z-index:30}
+
+/* (b) 접종료 셀을 좌측 정렬로 — 독감 기본 행과 같은 방식이다.
+       우측 정렬이면 할인을 고를 때 기존 필드가 왼쪽으로 밀리는데,
+       좌측 정렬이면 새 필드가 우측 여백으로 자란다. */
+.tc-cp-table td .tc-vac-cell{justify-content:flex-start}
+.tc-vac-card .tc-cp-table th.num{text-align:left}
+.tc-vac-card .tc-cp-table th:first-child,
+.tc-vac-card .tc-cp-table td:first-child{width:112px;white-space:nowrap}
 </style>
 <script>
 (function(){

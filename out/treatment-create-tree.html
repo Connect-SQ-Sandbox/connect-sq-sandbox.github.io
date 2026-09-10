@@ -4109,6 +4109,9 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
  *        오버레이는 노트를 줄여 옮긴 것이라 전문이 필요하면 링크로 넘어간다.
  *        노드 id 는 SPEC[*].fig 에 모아 뒀다 — 피그마에서 노드를 지우면 여기도 고친다.
  *
+ * 잘림 : 핀을 호스트 바깥(top/right -9px)에 두면 .tt-tree 의 overflow-x:auto 에
+ *        잘린다. 안쪽(6px)으로 옮기고 선택 아웃라인도 offset -2px 로 넣었다.
+ *
  * 구조 : SPEC(정책 데이터) · 앵커 셀렉터 · 핀 주입 · 패널 렌더.
  *        React 가 다시 그리면 핀이 날아가므로 MutationObserver 로 재주입한다.
  *        주입은 멱등이다(이미 있으면 건너뛴다).
@@ -4128,7 +4131,9 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
 .sx-fab.on .sx-dot{background:#4ade80}
 
 .sx-pin{
-  position:absolute;z-index:60;top:-9px;right:-9px;
+  /* 호스트 바깥(-9px)에 두면 .tt-tree 의 overflow-x:auto 에 잘린다.
+     안쪽으로 넣어 어떤 호스트에서도 온전히 보이게 한다. */
+  position:absolute;z-index:60;top:6px;right:6px;
   width:22px;height:22px;padding:0;border:0;border-radius:50%;
   background:#16181d;color:#fff;cursor:pointer;
   font:700 12px/22px var(--font-sans,Pretendard);text-align:center;
@@ -4136,7 +4141,7 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
 .sx-pin:hover{background:#0073fa}
 .sx-pin.act{background:#0073fa}
 .sx-host{position:relative!important}
-.sx-host.act{outline:2px dashed #0073fa;outline-offset:5px;border-radius:4px}
+.sx-host.act{outline:2px dashed #0073fa;outline-offset:-2px;border-radius:4px}
 
 .sx-panel{
   position:fixed;right:20px;bottom:70px;z-index:9001;width:360px;
@@ -4181,7 +4186,7 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
     cat: {
       t:'진료 항목 분류 — 정의', s:'.rg-field.sep-category',
       fig:[['분류찾기 컴포넌트','18674:83911']],
-      nt:['3. 분류 트리 — 정의'],
+      nt:['3. 분류 트리 — 정의','9. 미리보기 — 표준 진료항목명'],
       g:[{h:'무엇을 고르는가', li:[
         '고를 수 있는 건 <b>소분류</b>다. 고르면 대·중·소가 한 번에 확정된다.',
         '대분류 → 중분류 → 소분류 3단. 이전 열을 고르면 다음 열이 채워진다.',
@@ -4190,8 +4195,12 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
         '최초 상태는 <b>추천 항목</b> — 굿닥이 모아둔 13종(독감 9·HPV 1·대상포진 3). 병원이 바꿀 수 없다.']},
         {h:'직접입력은 없앤다', li:[
         '지금 서비스에는 검색 결과 아래 “‘{입력값}’ 진료항목 추가하기”로 <b>마스터 없이 등록</b>하는 경로가 있는데 그 경로를 닫는다.',
-        '찾는 분류가 없으면 <b>기타</b>로 받는다. 기타는 중·소분류에만 둔다.',
-        '기존 직접입력 항목의 마이그레이션은 별도로 정한다.']}]
+        '찾는 분류가 없으면 <b>중분류 기타까지는</b> 받는다. 다만 <b>대분류조차 없는 상품은 받지 않는다</b>.',
+        '기존 직접입력 항목의 마이그레이션은 PO 가 정한다.']},
+        {h:'미리보기 표기', li:[
+        '미리보기 상단에는 <b>가장 구체적으로 확정된, 기타가 아닌 이름</b>을 텍스트로 쓴다. 칩이 아니다.',
+        '소분류 정상 → 소분류명 · 소분류 기타 → 중분류명 · 중분류 기타 → 대분류명 · 대분류만 고름 → 대분류명.',
+        '아무것도 없으면 아예 표기하지 않는다. 이용자에게 “기타” 라는 말이 그대로 나가지 않게 하는 게 목적이다.']}]
     },
     search: {
       t:'분류 검색', s:'.tt-search-wrap',
@@ -4223,8 +4232,8 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
     },
     tree: {
       t:'분류 트리 — UI · 스크롤', s:'.tt-tree',
-      fig:[['분류찾기 컴포넌트','18674:83911'],['스크롤 다이어그램','18739:19939']],
-      nt:['4. 분류 트리 — UI 정책','5. 분류 트리 — 스크롤','6. 중분류 기타','9. 기등록 표기'],
+      fig:[['분류찾기 컴포넌트','18674:83911']],
+      nt:['4. 분류 트리 — UI 정책','5. 분류 트리 — 스크롤','6. 중분류 기타','10. 기등록 표기'],
       g:[{h:'열 동작', li:[
         '대분류 열 첫 행은 <b>“추천 항목”</b>이고 진입 시 선택돼 있다. 이때 우측은 추천 목록 한 판이 된다.',
         '대분류를 고르면 추천 목록이 사라지고 중분류·소분류 열이 나타난다.',

@@ -4053,7 +4053,10 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
  *        SPEC 객체와 피그마 노트를 함께 고친다 — 지금은 두 곳이지만,
  *        이 방식이 자리잡으면 여기를 원본으로 삼는 게 목표다.
  *
- * 링크 : 패널 하단에 그 영역의 피그마 노드 링크를 붙인다(컴포넌트 · 정책 노트).
+ * 링크 : 패널 하단에 두 갈래로 붙인다 — 정책 전문은 노션 섹션, 화면·케이스는
+ *        피그마 노드. 노션 URL 은 NOTION 상수 하나, 피그마 노드 id 는 SPEC[*].fig.
+ *        노션 블록 앵커는 MCP 로 못 뽑아서 페이지 링크 + 섹션명 라벨로 간다.
+ *        (구) 패널 하단에 그 영역의 피그마 노드 링크를 붙인다(컴포넌트 · 정책 노트).
  *        오버레이는 노트를 줄여 옮긴 것이라 전문이 필요하면 링크로 넘어간다.
  *        노드 id 는 SPEC[*].fig 에 모아 뒀다 — 피그마에서 노드를 지우면 여기도 고친다.
  *
@@ -4117,6 +4120,8 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
   background:rgba(255,255,255,.05);text-decoration:none;
   font:600 11.5px/16px var(--font-sans,Pretendard);color:#c9ced7;white-space:nowrap}
 .sx-lk:hover{background:rgba(0,115,250,.22);border-color:#0073fa;color:#fff}
+.sx-lk-nt{border-color:rgba(74,222,128,.35);background:rgba(74,222,128,.1);color:#a7e8bf}
+.sx-lk-nt:hover{background:rgba(74,222,128,.24);border-color:#4ade80;color:#fff}
 .sx-lk-sm{padding:1px 6px;font:600 10.5px/15px var(--font-sans,Pretendard);
   border-radius:4px;margin-left:4px;vertical-align:1px}
 </style>
@@ -4126,7 +4131,8 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
   var SPEC = {
     cat: {
       t:'진료 항목 분류 — 정의', s:'.rg-field.sep-category',
-      fig:[['분류찾기 컴포넌트','18674:83911'],['정의 노트','18732:22433']],
+      fig:[['분류찾기 컴포넌트','18674:83911']],
+      nt:['3. 분류 트리 — 정의'],
       g:[{h:'무엇을 고르는가', li:[
         '고를 수 있는 건 <b>소분류</b>다. 고르면 대·중·소가 한 번에 확정된다.',
         '대분류 → 중분류 → 소분류 3단. 이전 열을 고르면 다음 열이 채워진다.',
@@ -4140,7 +4146,8 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
     },
     search: {
       t:'분류 검색', s:'.tt-search-wrap',
-      fig:[['분류검색_레이어 컴포넌트','18688:1034322'],['검색 정의 노트','18716:23489'],['UI 정책 노트','18716:23500']],
+      fig:[['분류검색_레이어 컴포넌트','18688:1034322']],
+      nt:['1. 검색 — 정의','2. 검색 — UI 정책'],
       g:[{h:'무엇이 걸리는가', li:[
         '결과로 나오는 건 <b>소분류뿐</b>이다. 대·중분류는 검색어에 걸리기만 하고 행으로는 안 나온다.',
         '대·중·소분류 이름 어디에든 걸리면 결과에 넣는다. 대소문자는 구분하지 않는다.',
@@ -4166,7 +4173,8 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
     },
     tree: {
       t:'분류 트리 — UI · 스크롤', s:'.tt-tree',
-      fig:[['분류찾기 컴포넌트','18674:83911'],['UI 정책 노트','18732:22444'],['스크롤 정책 노트','18732:22453'],['스크롤 다이어그램','18739:19939']],
+      fig:[['분류찾기 컴포넌트','18674:83911'],['스크롤 다이어그램','18739:19939']],
+      nt:['4. 분류 트리 — UI 정책','5. 분류 트리 — 스크롤','6. 중분류 기타','9. 기등록 표기'],
       g:[{h:'열 동작', li:[
         '대분류 열 첫 행은 <b>“추천 항목”</b>이고 진입 시 선택돼 있다. 이때 우측은 추천 목록 한 판이 된다.',
         '대분류를 고르면 추천 목록이 사라지고 중분류·소분류 열이 나타난다.',
@@ -4187,7 +4195,8 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
     },
     name: {
       t:'진료 항목명 — 프리필', s:'label 이 “진료 항목명” 인 .rg-field',
-      fig:[['진료항목_필수정보 컴포넌트','18643:733773'],['프리필 노트','18757:21646']],
+      fig:[['진료항목_필수정보 컴포넌트','18643:733773']],
+      nt:['7. 진료항목명 프리필'],
       g:[{h:'기본', li:[
         '분류를 고르면 <b>소분류명을 항목명에 채운다</b>. 채운 뒤에도 고칠 수 있다.',
         '지금 서비스에서 추가 정보의 “진료항목 노출명(선택)”이던 필드가 이 자리로 올라오고 <b>필수</b>가 됐다.',
@@ -4200,7 +4209,8 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
     },
     price: {
       t:'가격 정보 — 분류를 바꿀 때', s:'.rg-field.price',
-      fig:[['가격정보_입력폼 컴포넌트','18679:109902'],['분류 변경 시 노트','18767:11469']],
+      fig:[['가격정보_입력폼 컴포넌트','18679:109902']],
+      nt:['8. 분류를 바꿀 때 함께 일어나는 일'],
       g:[{h:'분류가 바뀌면', li:[
         '<b>가격 옵션이 초기화된다.</b> 회차·용량 구성이 달라지기 때문이다.',
         '이미 입력한 가격이 있으면 <b>확인 모달을 먼저</b> 띄운다 — [유지하기] [초기화하고 변경]. 신규 등록에서도 가격을 넣은 뒤라면 똑같이 뜬다.',
@@ -4216,6 +4226,11 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
 
   var FIG='https://www.figma.com/design/RFF27IwBUWcsGrgeE2thzR/-CONNECT--%EC%BB%A4%EB%84%A5%ED%8A%B8-%EC%9B%B9%EB%B7%B0--PD?node-id=';
   var fu = function(id){ return FIG + id.replace(':','-'); };
+  // 정책 원본은 노션. 이 오버레이는 요약이다.
+  var NOTION='https://app.notion.com/p/3d73802f565b8182a09be7a3d262c5b1';
+  var nchip = function(label){
+    return '<a class="sx-lk sx-lk-nt" href="'+NOTION+'" target="_blank" rel="noopener">'
+      + label + '<span aria-hidden="true"> \u2197</span></a>'; };
   var chip = function(label,id,cls){
     return '<a class="sx-lk'+(cls?' '+cls:'')+'" href="'+fu(id)+'" target="_blank" rel="noopener">'
       + label + '<span aria-hidden="true"> ↗</span></a>'; };
@@ -4281,9 +4296,11 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
             + '<ul'+(g.tbd?' class="sx-tbd"':'')+'>'
             + g.li.map(function(x){return '<li>'+x+'</li>'}).join('') + '</ul>';
         }).join('')
-      + (d.fig ? '<div class="sx-fig"><h5>피그마에서 보기</h5><div class="sx-lks">'
+      + (d.nt ? '<div class="sx-fig"><h5>정책 전문 — 노션</h5><div class="sx-lks">'
+          + d.nt.map(function(x){return nchip(x)}).join('') + '</div></div>' : '')
+      + (d.fig ? '<div class="sx-fig"><h5>화면 · 케이스 — 피그마</h5><div class="sx-lks">'
           + d.fig.map(function(f){return chip(f[0],f[1])}).join('') + '</div></div>' : '')
-      + '<p class="sx-hint">이 패널은 피그마 정책 노트를 줄여 옮긴 것입니다. 전문은 위 노트 링크에서 보세요.</p>';
+      + '<p class="sx-hint">정책 원본은 노션입니다. 이 패널은 그 요약이고, 피그마는 화면과 케이스를 담습니다. 노션 링크를 열면 상단 목차에서 해당 섹션으로 바로 갈 수 있습니다.</p>';
     el.querySelector('.sx-close').onclick = close;
     document.body.appendChild(el);
     var p = document.querySelector('.sx-pin[data-k="'+k+'"]');

@@ -2752,7 +2752,7 @@ Error generating stack: `+l.message+`
  * 이어가기용 컨텍스트 헤더  (아래 주입 블록에 대한 것)
  * ─────────────────────────────────────────────────────────────
  * 이름     : treatment-create-tree (plus 의 분기 — 분류 선택 트리판)
- * 상태     : 현행 · t1.4 · 2026-09-10
+ * 상태     : 현행 · t1.5 · 2026-09-10
  * 분기원본 : out/treatment-create-plus.html (v2.5) 에서 카피.
  *            plus 는 그대로 유지한다. 아래 수정1~23 은 plus 에서 물려받은 이력이고,
  *            이 파일 고유 변경은 [트리판] 블록에 적는다.
@@ -2941,6 +2941,7 @@ Error generating stack: `+l.message+`
  *
  *
  * 변경 이력(트리판)
+ *  t1.5 2026-09-10 [T20] 스펙 오버레이(핸드오프 실험). 파일 끝 독립 블록 · 기본 off.
  *  t1.4 2026-09-10 [T19] 프리필 B안 확정 — 분류 변경 시 항목명 항상 덮어쓰기.
  *  t1.3 2026-09-10 [T18] 검색 가이드 레이어(현재 서비스 문구 유지).
  *  t1.2 2026-09-09 [T17] 추천 항목 9종 → 13종(피그마 추천 열과 동일).
@@ -3996,6 +3997,262 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
     if(!root){ return setTimeout(boot,120); }
     mo.observe(root,{childList:true,subtree:true});
     mountBanner(); enhanceSelects(); syncCatState();
+  }
+  boot();
+})();
+</script>
+
+<!--
+/**
+ * ══════════════════════════════════════════════════════════════
+ * [T20] 스펙 오버레이 (t1.5) — 핸드오프 실험
+ * ══════════════════════════════════════════════════════════════
+ * 목적 : 피그마 디스크립션을 프로토타입 안으로 옮긴다. 화면과 정책이
+ *        한 파일에 있으면 둘이 어긋날 수가 없다. 개발자는 눌러 보다가
+ *        그 자리에서 "왜 이렇게 동작하는지" 를 읽는다.
+ *
+ * 롤백 : 이 블록(주석 + style + script) 만 지우면 끝난다. 위쪽 번들
+ *        문자열을 한 글자도 건드리지 않았다. git revert 한 커밋으로도 된다.
+ *        기본은 off — 토글을 켜지 않으면 지금과 픽셀 하나 다르지 않다.
+ *
+ * 원본 : 피그마 "분류 선택 트리 — 정책" 프레임의 Guide/Note 6장.
+ *        (18732:22430) 내용을 스캔하기 쉽게 줄여 옮겼다. 정책이 바뀌면
+ *        SPEC 객체와 피그마 노트를 함께 고친다 — 지금은 두 곳이지만,
+ *        이 방식이 자리잡으면 여기를 원본으로 삼는 게 목표다.
+ *
+ * 구조 : SPEC(정책 데이터) · 앵커 셀렉터 · 핀 주입 · 패널 렌더.
+ *        React 가 다시 그리면 핀이 날아가므로 MutationObserver 로 재주입한다.
+ *        주입은 멱등이다(이미 있으면 건너뛴다).
+ * ══════════════════════════════════════════════════════════════
+ */
+-->
+<style>
+.sx-fab{
+  position:fixed;right:20px;bottom:20px;z-index:9000;
+  display:flex;align-items:center;gap:7px;height:38px;padding:0 14px;
+  border:1px solid #caced8;border-radius:19px;background:#fff;cursor:pointer;
+  font:600 13px/38px var(--font-sans,Pretendard);color:#31353f;
+  box-shadow:0 2px 10px rgba(22,24,29,.12)}
+.sx-fab:hover{background:#f9f9fb}
+.sx-fab.on{background:#16181d;border-color:#16181d;color:#fff}
+.sx-fab .sx-dot{width:7px;height:7px;border-radius:50%;background:#caced8}
+.sx-fab.on .sx-dot{background:#4ade80}
+
+.sx-pin{
+  position:absolute;z-index:60;top:-9px;right:-9px;
+  width:22px;height:22px;padding:0;border:0;border-radius:50%;
+  background:#16181d;color:#fff;cursor:pointer;
+  font:700 12px/22px var(--font-sans,Pretendard);text-align:center;
+  box-shadow:0 1px 4px rgba(22,24,29,.3)}
+.sx-pin:hover{background:#0073fa}
+.sx-pin.act{background:#0073fa}
+.sx-host{position:relative!important}
+.sx-host.act{outline:2px dashed #0073fa;outline-offset:5px;border-radius:4px}
+
+.sx-panel{
+  position:fixed;right:20px;bottom:70px;z-index:9001;width:360px;
+  max-height:64vh;overflow-y:auto;padding:18px 18px 20px;
+  background:#16181d;border-radius:12px;color:#e8eaee;
+  box-shadow:0 10px 34px rgba(0,0,0,.32)}
+.sx-panel h4{margin:0 0 3px;font:700 14px/21px var(--font-sans,Pretendard);color:#fff}
+.sx-panel .sx-sel{margin:0 0 13px;font:400 11px/16px ui-monospace,Menlo,monospace;color:#7f8794}
+.sx-panel h5{margin:14px 0 6px;font:700 11.5px/17px var(--font-sans,Pretendard);color:#4ade80;
+  letter-spacing:.02em}
+.sx-panel ul{margin:0;padding:0;list-style:none}
+.sx-panel li{position:relative;margin:0 0 6px;padding-left:11px;
+  font:400 12.5px/19px var(--font-sans,Pretendard);color:#c9ced7}
+.sx-panel li:before{content:'';position:absolute;left:0;top:8px;width:3px;height:3px;
+  border-radius:50%;background:#5d6474}
+.sx-panel li b{color:#fff;font-weight:600}
+.sx-panel .sx-tbd li:before{background:#a35c00}
+.sx-panel .sx-tbd li{color:#d9b184}
+.sx-close{position:absolute;right:12px;top:12px;width:22px;height:22px;padding:0;
+  border:0;border-radius:5px;background:rgba(255,255,255,.08);color:#c9ced7;cursor:pointer;
+  font:400 14px/22px var(--font-sans,Pretendard)}
+.sx-close:hover{background:rgba(255,255,255,.16)}
+.sx-hint{margin:14px 0 0;padding-top:12px;border-top:1px solid rgba(255,255,255,.1);
+  font:400 11px/17px var(--font-sans,Pretendard);color:#7f8794}
+</style>
+<script>
+(function(){
+  // ── 정책 데이터. 피그마 "분류 선택 트리 — 정책" 노트 6장에서 옮겼다.
+  var SPEC = {
+    cat: {
+      t:'진료 항목 분류 — 정의', s:'.rg-field.sep-category',
+      g:[{h:'무엇을 고르는가', li:[
+        '고를 수 있는 건 <b>소분류</b>다. 고르면 대·중·소가 한 번에 확정된다.',
+        '대분류 → 중분류 → 소분류 3단. 이전 열을 고르면 다음 열이 채워진다.',
+        '고른 뒤에도 경로가 3열에 <b>계속 보인다</b>. 지금 서비스는 고르면 잎 이름만 남는데, 경로를 계속 보여주는 게 이번 개편의 목적이다.',
+        '편집으로 들어오면 3열이 저장된 분류에 맞춰 열린다.',
+        '최초 상태는 <b>추천 항목</b> — 굿닥이 모아둔 13종(독감 9·HPV 1·대상포진 3). 병원이 바꿀 수 없다.']},
+        {h:'직접입력은 없앤다', li:[
+        '지금 서비스에는 검색 결과 아래 “‘{입력값}’ 진료항목 추가하기”로 <b>마스터 없이 등록</b>하는 경로가 있는데 그 경로를 닫는다.',
+        '찾는 분류가 없으면 <b>기타</b>로 받는다. 기타는 중·소분류에만 둔다.',
+        '기존 직접입력 항목의 마이그레이션은 별도로 정한다.']}]
+    },
+    search: {
+      t:'분류 검색', s:'.tt-search-wrap',
+      g:[{h:'무엇이 걸리는가', li:[
+        '결과로 나오는 건 <b>소분류뿐</b>이다. 대·중분류는 검색어에 걸리기만 하고 행으로는 안 나온다.',
+        '대·중·소분류 이름 어디에든 걸리면 결과에 넣는다. 대소문자는 구분하지 않는다.',
+        '우선순위 <b>소분류 &gt; 중분류 &gt; 대분류</b>. 같은 순위 안에서는 표준 분류 순서를 따른다.',
+        '결과는 그룹으로 묶이므로 그룹 위치는 그 그룹에서 <b>가장 높은 순위 항목</b>이 결정한다.',
+        '“기타”는 검색되지 않는다. 초성 검색도 지원하지 않는다.']},
+        {h:'레이어', li:[
+        '검색어 없이 포커스하면 <b>“이렇게 검색해 보세요”</b> 가이드를 띄운다. 지금 서비스 문구를 유지한다.',
+        '검색어가 없으면 결과 레이어를 띄우지 않는다. 공백만 남은 경우도 같다.',
+        '“대분류 › 중분류”로 묶고 그룹 이름은 그룹당 한 번. 그룹 사이 구분선.',
+        '결과가 최대 높이를 넘으면 레이어 안에서만 스크롤한다.',
+        '0건이어도 레이어는 유지하고 안내 문구를 보여준다. <b>지금 서비스는 0건 시각 UI가 없다</b>(스크린리더 전용) — 이번에 정의한 것.',
+        '고르면 대·중·소가 확정되고 레이어가 닫히며, 트리 3열도 그 경로로 이동한다.']},
+        {h:'미정', tbd:1, li:[
+        '키보드 ↑↓ 이동과 Enter 확정',
+        '검색어 일치 글자 강조',
+        '레이어 바깥 클릭으로 닫기',
+        '0건 문구를 다음 행동 유도형으로 바꿀지',
+        '조회 시점 — 클라이언트 필터면 즉시, 서버 검색이면 지금 서비스처럼 300ms 대기']}]
+    },
+    tree: {
+      t:'분류 트리 — UI · 스크롤', s:'.tt-tree',
+      g:[{h:'열 동작', li:[
+        '대분류 열 첫 행은 <b>“추천 항목”</b>이고 진입 시 선택돼 있다. 이때 우측은 추천 목록 한 판이 된다.',
+        '대분류를 고르면 추천 목록이 사라지고 중분류·소분류 열이 나타난다.',
+        '중분류를 고르기 전까지 소분류 열은 안내 문구만.',
+        '행에는 <b>이름만</b> 쓴다. 하위 개수나 우측 화살표는 넣지 않는다.',
+        '이미 같은 소분류로 등록된 상품이 있으면 행 우측에 개수를 숫자로 표기한다. 선택을 막지 않는다. 추천 항목 행에는 붙이지 않는다.']},
+        {h:'중분류 기타', li:[
+        '중분류에서 기타를 고르면 소분류 열에 <b>기타 하나만</b> 남는다. 비활성으로 막지 않는다.',
+        '선택지가 하나여도 <b>자동으로 고르지 않는다</b>. 직접 골라야 “여기까지 고르면 끝”이 분명해진다.',
+        '중분류 기타만 고른 상태로 저장하면 “대·중·소분류를 모두 선택해 주세요.”로 막힌다.']},
+        {h:'스크롤', li:[
+        '열 헤더는 <b>고정</b>이다. 스크롤은 열 본문에서만, 세 열이 <b>각각 따로</b> 일어난다.',
+        '본문 높이는 내용에 따라 늘어나지 않는 고정값이다. 짧은 열은 아래가 빈다.',
+        '마지막 행이 반쯤 잘려 보이게 두어 아래에 더 있다는 걸 알린다.',
+        '검색이나 편집으로 잡힌 항목이 본문 밖이면 보이도록 스크롤을 맞춘다. 세 열 각각 따로 계산한다.',
+        '폼 폭이 좁아지면 트리 박스가 가로 스크롤한다. 열 폭을 짜부수지 않는다.']},
+        {h:'미정', tbd:1, li:['본문 높이 — 디자인 607, 프로토타입 300(7.5행). 반 행이 잘려 스크롤이 드러나는 300 쪽을 권한다.']}]
+    },
+    name: {
+      t:'진료 항목명 — 프리필', s:'label 이 “진료 항목명” 인 .rg-field',
+      g:[{h:'기본', li:[
+        '분류를 고르면 <b>소분류명을 항목명에 채운다</b>. 채운 뒤에도 고칠 수 있다.',
+        '지금 서비스에서 추가 정보의 “진료항목 노출명(선택)”이던 필드가 이 자리로 올라오고 <b>필수</b>가 됐다.',
+        '지금 서비스의 “비워두면 진료항목명과 동일하게 노출됩니다” 폴백을 화면에 드러낸 것이다.']},
+        {h:'분류를 다시 바꿀 때 — 항상 덮어쓴다', li:[
+        '이름을 고쳤든 안 고쳤든, 신규든 편집이든 <b>새 소분류명으로 덮어쓴다</b>. 예외 없다.',
+        '“스카이셀플루 4가 (성인)” → 테라텍트로 바꾸면 <b>“테라텍트”</b>. 수식어는 다시 입력해야 한다.',
+        '규칙이 한 문장이고 발동 조건이 사용자의 행위 그 자체라 예측할 수 있다. 손댄 이름을 지키는 안과 앞부분만 갈아 끼우는 안을 함께 시험해 고른 결과다.',
+        '기타를 고르면 채우지 않고 <b>비운다</b> — 이름이 “기타”인 항목 노출 방지.']}]
+    },
+    price: {
+      t:'가격 정보 — 분류를 바꿀 때', s:'.rg-field.price',
+      g:[{h:'분류가 바뀌면', li:[
+        '<b>가격 옵션이 초기화된다.</b> 회차·용량 구성이 달라지기 때문이다.',
+        '이미 입력한 가격이 있으면 <b>확인 모달을 먼저</b> 띄운다 — [유지하기] [초기화하고 변경]. 신규 등록에서도 가격을 넣은 뒤라면 똑같이 뜬다.',
+        '가격을 넣지 않았으면 모달 없이 바로 적용한다.',
+        '항목명도 새 소분류명으로 덮어쓴다. 소개·상세 소개·사진·키워드는 유지한다.']},
+        {h:'가격 폼이 세 갈래로 갈린다', li:[
+        '<b>일반</b> — 가격 옵션을 자유롭게 쓰고 추가할 수 있다.',
+        '<b>추천(독감 9종)</b> — “1회” 한 행이 고정되고 옵션 추가가 없다.',
+        '<b>접종형(가다실 9가·대상포진 3종 등)</b> — 제품의 접종 회차만큼 행이 고정된다. 가다실 9가는 1회·3회 두 행. 옵션 추가가 없다.']},
+        {h:'단위', li:['수량·단위 입력은 없다. 지금 서비스도 원래 없다 — 수량·용량은 옵션명에 자유 입력한다.']}]
+    }
+  };
+
+  var ON = false, CUR = null;
+
+  function findHost(k){
+    if(k==='name'){
+      var fs = document.querySelectorAll('.rg-field');
+      for(var i=0;i<fs.length;i++){
+        var l = fs[i].querySelector('label,.rg-label');
+        if(l && l.textContent.indexOf('진료 항목명')===0) return fs[i];
+      }
+      return null;
+    }
+    return document.querySelector(SPEC[k].s);
+  }
+
+  function clearPins(){
+    document.querySelectorAll('.sx-pin').forEach(function(p){ p.remove(); });
+    document.querySelectorAll('.sx-host').forEach(function(h){ h.classList.remove('sx-host','act'); });
+  }
+
+  function mountPins(){
+    if(!ON) return;
+    Object.keys(SPEC).forEach(function(k){
+      var host = findHost(k);
+      if(!host || host.querySelector(':scope > .sx-pin')) return;
+      host.classList.add('sx-host');
+      var b = document.createElement('button');
+      b.type='button'; b.className='sx-pin'; b.textContent='i';
+      b.setAttribute('aria-label', SPEC[k].t + ' 스펙 보기');
+      b.dataset.k = k;
+      b.onclick = function(e){ e.stopPropagation(); open(k); };
+      host.appendChild(b);
+    });
+    // 선택된 핀 표시 복원
+    if(CUR){
+      var p = document.querySelector('.sx-pin[data-k="'+CUR+'"]');
+      if(p){ p.classList.add('act'); var h=p.parentElement; if(h) h.classList.add('act'); }
+    }
+  }
+
+  function close(){
+    CUR = null;
+    var pn = document.getElementById('sx-panel'); if(pn) pn.remove();
+    document.querySelectorAll('.sx-pin.act').forEach(function(p){p.classList.remove('act')});
+    document.querySelectorAll('.sx-host.act').forEach(function(h){h.classList.remove('act')});
+  }
+
+  function open(k){
+    if(CUR===k){ close(); return; }
+    close();
+    CUR = k;
+    var d = SPEC[k];
+    var el = document.createElement('div');
+    el.id='sx-panel'; el.className='sx-panel';
+    el.innerHTML = '<button type="button" class="sx-close" aria-label="닫기">✕</button>'
+      + '<h4>'+d.t+'</h4><p class="sx-sel">'+d.s+'</p>'
+      + d.g.map(function(g){
+          return '<h5'+(g.tbd?' style="color:#e0a35c"':'')+'>'+g.h+'</h5>'
+            + '<ul'+(g.tbd?' class="sx-tbd"':'')+'>'
+            + g.li.map(function(x){return '<li>'+x+'</li>'}).join('') + '</ul>';
+        }).join('')
+      + '<p class="sx-hint">피그마 “분류 선택 트리 — 정책” 노트와 같은 내용입니다. 화면과 정책이 한 파일에 있어 서로 어긋날 수 없습니다.</p>';
+    el.querySelector('.sx-close').onclick = close;
+    document.body.appendChild(el);
+    var p = document.querySelector('.sx-pin[data-k="'+k+'"]');
+    if(p){ p.classList.add('act'); p.parentElement.classList.add('act'); }
+  }
+
+  function toggle(){
+    ON = !ON;
+    var fab = document.getElementById('sx-fab');
+    fab.classList.toggle('on', ON);
+    fab.querySelector('.sx-txt').textContent = ON ? '스펙 보기 켜짐' : '스펙 보기';
+    if(ON) mountPins(); else { close(); clearPins(); }
+  }
+
+  function boot(){
+    if(!document.body) return setTimeout(boot,120);
+    var fab = document.createElement('button');
+    fab.type='button'; fab.id='sx-fab'; fab.className='sx-fab';
+    fab.innerHTML = '<span class="sx-dot"></span><span class="sx-txt">스펙 보기</span>';
+    fab.onclick = toggle;
+    document.body.appendChild(fab);
+
+    // React 가 다시 그리면 핀이 날아간다. 디바운스해서 재주입.
+    var t = null;
+    new MutationObserver(function(){
+      if(!ON) return;
+      clearTimeout(t); t = setTimeout(mountPins, 80);
+    }).observe(document.body,{childList:true,subtree:true});
+
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape' && CUR) close(); });
+
+    // ?spec=1 로 열면 켜진 상태로 시작
+    if(/[?&]spec=1/.test(location.search)) setTimeout(toggle, 400);
   }
   boot();
 })();

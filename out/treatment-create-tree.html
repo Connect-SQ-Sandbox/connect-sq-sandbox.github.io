@@ -4020,6 +4020,10 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
  *        SPEC 객체와 피그마 노트를 함께 고친다 — 지금은 두 곳이지만,
  *        이 방식이 자리잡으면 여기를 원본으로 삼는 게 목표다.
  *
+ * 링크 : 패널 하단에 그 영역의 피그마 노드 링크를 붙인다(컴포넌트 · 정책 노트).
+ *        오버레이는 노트를 줄여 옮긴 것이라 전문이 필요하면 링크로 넘어간다.
+ *        노드 id 는 SPEC[*].fig 에 모아 뒀다 — 피그마에서 노드를 지우면 여기도 고친다.
+ *
  * 구조 : SPEC(정책 데이터) · 앵커 셀렉터 · 핀 주입 · 패널 렌더.
  *        React 가 다시 그리면 핀이 날아가므로 MutationObserver 로 재주입한다.
  *        주입은 멱등이다(이미 있으면 건너뛴다).
@@ -4072,6 +4076,16 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
 .sx-close:hover{background:rgba(255,255,255,.16)}
 .sx-hint{margin:14px 0 0;padding-top:12px;border-top:1px solid rgba(255,255,255,.1);
   font:400 11px/17px var(--font-sans,Pretendard);color:#7f8794}
+.sx-fig{margin-top:16px;padding-top:13px;border-top:1px solid rgba(255,255,255,.1)}
+.sx-fig h5{margin:0 0 8px}
+.sx-lks{display:flex;flex-wrap:wrap;gap:6px}
+.sx-lk{
+  display:inline-block;padding:4px 9px;border:1px solid rgba(255,255,255,.18);border-radius:6px;
+  background:rgba(255,255,255,.05);text-decoration:none;
+  font:600 11.5px/16px var(--font-sans,Pretendard);color:#c9ced7;white-space:nowrap}
+.sx-lk:hover{background:rgba(0,115,250,.22);border-color:#0073fa;color:#fff}
+.sx-lk-sm{padding:1px 6px;font:600 10.5px/15px var(--font-sans,Pretendard);
+  border-radius:4px;margin-left:4px;vertical-align:1px}
 </style>
 <script>
 (function(){
@@ -4079,6 +4093,7 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
   var SPEC = {
     cat: {
       t:'진료 항목 분류 — 정의', s:'.rg-field.sep-category',
+      fig:[['분류찾기 컴포넌트','18674:83911'],['정의 노트','18732:22433']],
       g:[{h:'무엇을 고르는가', li:[
         '고를 수 있는 건 <b>소분류</b>다. 고르면 대·중·소가 한 번에 확정된다.',
         '대분류 → 중분류 → 소분류 3단. 이전 열을 고르면 다음 열이 채워진다.',
@@ -4092,6 +4107,7 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
     },
     search: {
       t:'분류 검색', s:'.tt-search-wrap',
+      fig:[['분류검색_레이어 컴포넌트','18688:1034322'],['검색 정의 노트','18716:23489'],['UI 정책 노트','18716:23500']],
       g:[{h:'무엇이 걸리는가', li:[
         '결과로 나오는 건 <b>소분류뿐</b>이다. 대·중분류는 검색어에 걸리기만 하고 행으로는 안 나온다.',
         '대·중·소분류 이름 어디에든 걸리면 결과에 넣는다. 대소문자는 구분하지 않는다.',
@@ -4114,13 +4130,14 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
     },
     tree: {
       t:'분류 트리 — UI · 스크롤', s:'.tt-tree',
+      fig:[['분류찾기 컴포넌트','18674:83911'],['UI 정책 노트','18732:22444'],['스크롤 정책 노트','18732:22453'],['스크롤 다이어그램','18739:19939']],
       g:[{h:'열 동작', li:[
         '대분류 열 첫 행은 <b>“추천 항목”</b>이고 진입 시 선택돼 있다. 이때 우측은 추천 목록 한 판이 된다.',
         '대분류를 고르면 추천 목록이 사라지고 중분류·소분류 열이 나타난다.',
         '중분류를 고르기 전까지 소분류 열은 안내 문구만.',
         '행에는 <b>이름만</b> 쓴다. 하위 개수나 우측 화살표는 넣지 않는다.',
         '이미 같은 소분류로 등록된 상품이 있으면 행 우측에 개수를 숫자로 표기한다. 선택을 막지 않는다. 추천 항목 행에는 붙이지 않는다.']},
-        {h:'중분류 기타', li:[
+        {h:'중분류 기타', lk:['Case=중분류기타','18738:1034294'], li:[
         '중분류에서 기타를 고르면 소분류 열에 <b>기타 하나만</b> 남는다. 비활성으로 막지 않는다.',
         '선택지가 하나여도 <b>자동으로 고르지 않는다</b>. 직접 골라야 “여기까지 고르면 끝”이 분명해진다.',
         '중분류 기타만 고른 상태로 저장하면 “대·중·소분류를 모두 선택해 주세요.”로 막힌다.']},
@@ -4134,6 +4151,7 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
     },
     name: {
       t:'진료 항목명 — 프리필', s:'label 이 “진료 항목명” 인 .rg-field',
+      fig:[['진료항목_필수정보 컴포넌트','18643:733773'],['프리필 노트','18757:21646']],
       g:[{h:'기본', li:[
         '분류를 고르면 <b>소분류명을 항목명에 채운다</b>. 채운 뒤에도 고칠 수 있다.',
         '지금 서비스에서 추가 정보의 “진료항목 노출명(선택)”이던 필드가 이 자리로 올라오고 <b>필수</b>가 됐다.',
@@ -4146,6 +4164,7 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
     },
     price: {
       t:'가격 정보 — 분류를 바꿀 때', s:'.rg-field.price',
+      fig:[['가격정보_입력폼 컴포넌트','18679:109902'],['분류 변경 시 노트','18767:11469']],
       g:[{h:'분류가 바뀌면', li:[
         '<b>가격 옵션이 초기화된다.</b> 회차·용량 구성이 달라지기 때문이다.',
         '이미 입력한 가격이 있으면 <b>확인 모달을 먼저</b> 띄운다 — [유지하기] [초기화하고 변경]. 신규 등록에서도 가격을 넣은 뒤라면 똑같이 뜬다.',
@@ -4158,6 +4177,12 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
         {h:'단위', li:['수량·단위 입력은 없다. 지금 서비스도 원래 없다 — 수량·용량은 옵션명에 자유 입력한다.']}]
     }
   };
+
+  var FIG='https://www.figma.com/design/RFF27IwBUWcsGrgeE2thzR/-CONNECT--%EC%BB%A4%EB%84%A5%ED%8A%B8-%EC%9B%B9%EB%B7%B0--PD?node-id=';
+  var fu = function(id){ return FIG + id.replace(':','-'); };
+  var chip = function(label,id,cls){
+    return '<a class="sx-lk'+(cls?' '+cls:'')+'" href="'+fu(id)+'" target="_blank" rel="noopener">'
+      + label + '<span aria-hidden="true"> ↗</span></a>'; };
 
   var ON = false, CUR = null;
 
@@ -4215,11 +4240,14 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
     el.innerHTML = '<button type="button" class="sx-close" aria-label="닫기">✕</button>'
       + '<h4>'+d.t+'</h4><p class="sx-sel">'+d.s+'</p>'
       + d.g.map(function(g){
-          return '<h5'+(g.tbd?' style="color:#e0a35c"':'')+'>'+g.h+'</h5>'
+          return '<h5'+(g.tbd?' style="color:#e0a35c"':'')+'>'+g.h
+            + (g.lk?' '+chip(g.lk[0],g.lk[1],'sx-lk-sm'):'') + '</h5>'
             + '<ul'+(g.tbd?' class="sx-tbd"':'')+'>'
             + g.li.map(function(x){return '<li>'+x+'</li>'}).join('') + '</ul>';
         }).join('')
-      + '<p class="sx-hint">피그마 “분류 선택 트리 — 정책” 노트와 같은 내용입니다. 화면과 정책이 한 파일에 있어 서로 어긋날 수 없습니다.</p>';
+      + (d.fig ? '<div class="sx-fig"><h5>피그마에서 보기</h5><div class="sx-lks">'
+          + d.fig.map(function(f){return chip(f[0],f[1])}).join('') + '</div></div>' : '')
+      + '<p class="sx-hint">이 패널은 피그마 정책 노트를 줄여 옮긴 것입니다. 전문은 위 노트 링크에서 보세요.</p>';
     el.querySelector('.sx-close').onclick = close;
     document.body.appendChild(el);
     var p = document.querySelector('.sx-pin[data-k="'+k+'"]');

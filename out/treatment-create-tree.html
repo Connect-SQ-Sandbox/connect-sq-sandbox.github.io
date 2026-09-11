@@ -2875,6 +2875,10 @@ Error generating stack: `+l.message+`
  *       (f) 헤더 설명을 추천·접종형 공통으로 통일 —
  *           "취급하는 항목에만 가격을 입력해 주세요. 가격을 넣은 항목만
  *            이용자에게 보여져요."
+ *       (g) 접종형 바깥 박스(.tc-cp 테두리·라운드·흰 배경) 제거. 피그마
+ *           Case=추천 은 테두리 없는 흰 영역이다. 처방형(마운자로 등)의 .tc-cp
+ *           는 탭 UI 라 박스가 필요하므로 :has(>.tc-vac-list) 로 접종형만 골랐다.
+ *           제품별 .tc-vac-card 테두리는 [수정22] 에서 이미 빠져 있었다.
  *       프로토타입 전용인 [표준/자유] 세그먼트는 그대로 뒀다(피그마에 없지만
  *       "프로토타입 · 입력 형태 비교" 라고 이미 표시돼 있다).
  *
@@ -3991,7 +3995,12 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
 .tc-vac-card .tc-cp-table td .tc-vac-cell .rg-unit{height:40px;font-size:14px}
 .tc-vac-card .tc-cp-table td .tc-vac-cell .rg-price-arrow{color:#16181d;font-size:14px}
 
-/* (d) 상담 후 결정 — 비활성 입력칸 */
+/* (d) 접종형 바깥 박스 제거 — 피그마 Case=추천 은 테두리 없는 흰 영역이다.
+       처방형(마운자로 등)의 .tc-cp 는 탭 UI 라 박스를 유지해야 하므로
+       접종형 목록을 품은 .tc-cp 만 골라 푼다. */
+.tc-cp:has(>.tc-vac-list){border:0;border-radius:0;background:transparent}
+
+/* (e) 상담 후 결정 — 비활성 입력칸 */
 .tc-vac-card .tc-cp-table td .tc-vac-cell .rg-num:disabled{
   background:#f6f7f9;border-color:#f2f4f7;color:#808799}
 

@@ -2752,7 +2752,7 @@ Error generating stack: `+l.message+`
  * 이어가기용 컨텍스트 헤더  (아래 주입 블록에 대한 것)
  * ─────────────────────────────────────────────────────────────
  * 이름     : treatment-create-tree (plus 의 분기 — 분류 선택 트리판)
- * 상태     : 현행 · t3.5 · 2026-09-11
+ * 상태     : 현행 · t3.6 · 2026-09-11
  * 분기원본 : out/treatment-create-plus.html (v2.5) 에서 카피.
  *            plus 는 그대로 유지한다. 아래 수정1~23 은 plus 에서 물려받은 이력이고,
  *            이 파일 고유 변경은 [트리판] 블록에 적는다.
@@ -2859,6 +2859,14 @@ Error generating stack: `+l.message+`
  *        그룹핑 로직을 gb() 헬퍼로 빼서 둘이 같은 함수를 쓴다.
  *        추천이 나중에 다른 중분류(가다실 등)를 포함하면 그룹이 늘어난다.
  *        CSS .tt-row-reco / .tt-reco-body / .tt-path 는 참조 없이 남겨뒀다.
+ *  [T39] 노트별 마지막 업데이트일을 박았다(t3.6. 세화님 요청).
+ *       SPEC 항목마다 u:'YYYY-MM-DD'. 패널 하단 안내 위에 한 줄로 뜬다.
+ *       <b>전체 배포일이 아니라 그 노트를 건드린 날</b>이다. 패널을 고칠 때
+ *       그 항목의 u 만 올린다 — 안 건드린 노트의 날짜가 같이 밀리면
+ *       "이 영역이 최근에 바뀌었나" 를 판단할 수 없게 된다.
+ *       지금은 일곱 개 다 2026-09-11 이다. 오늘 전부 손댔기 때문이고,
+ *       앞으로 갈린다.
+ *
  *  [T38] As-is / To-be 에서 "동일" 줄을 전부 뺐다(t3.5. 세화님 지적).
  *       "같은데 왜 왜왜 다른것만 써줘야 의미있는거아니야" —
  *       As-is 와 To-be 가 같으면 그 줄은 아무것도 알려주지 않는다.
@@ -3227,6 +3235,7 @@ Error generating stack: `+l.message+`
  *
  *
  * 변경 이력(트리판)
+ *  t3.6 2026-09-11 [T39] 오버레이 노트별 마지막 업데이트일 표기.
  *  t3.5 2026-09-11 [T38] As-is / To-be 는 달라지는 것만 — "동일" 줄 전부 제거.
  *  t3.4 2026-09-11 [T37] 가격 유효성·상한 상세 제거(As-is 동일 명시로 대체).
  *  t3.3 2026-09-11 [T36c] 할인 상한 가드 버그 수정 + 초과분 원 단위 표기 + 화살표 정렬.
@@ -4517,6 +4526,12 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
   border:0;border-radius:5px;background:rgba(255,255,255,.08);color:#c9ced7;cursor:pointer;
   font:400 14px/22px var(--font-sans,Pretendard)}
 .sx-close:hover{background:rgba(255,255,255,.16)}
+/* [T39] 노트별 마지막 업데이트일. 패널마다 따로 관리한다 —
+   그 영역을 건드린 날만 올린다(전체 배포일이 아니다). */
+.sx-upd{margin:16px 0 0;padding-top:13px;border-top:1px solid rgba(255,255,255,.1);
+  font:500 11px/17px var(--font-sans,Pretendard);color:#7f8794}
+.sx-upd b{color:#c9ced7;font-weight:600}
+.sx-upd+.sx-hint{margin-top:6px;padding-top:0;border-top:0}
 .sx-hint{margin:14px 0 0;padding-top:12px;border-top:1px solid rgba(255,255,255,.1);
   font:400 11px/17px var(--font-sans,Pretendard);color:#7f8794}
 .sx-fig{margin-top:16px;padding-top:13px;border-top:1px solid rgba(255,255,255,.1)}
@@ -4545,7 +4560,7 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
 
   var SPEC = {
     cat: {
-      t:'진료 항목 분류 — 정의', s:'.rg-field.sep-category',
+      t:'진료 항목 분류 — 정의', s:'.rg-field.sep-category', u:'2026-09-11',
       fig:[['분류찾기 컴포넌트','18674:83911']],
       nt:['3. 분류 트리 — 정의'],
       g:[{h:'선택 규칙', li:[
@@ -4563,7 +4578,7 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
         AB('“‘{입력값}’ 진료항목 추가하기”로 마스터 없이 등록할 수 있다.','직접입력 없음. 중분류 기타까지 받는다.')]}]
     },
     search: {
-      t:'분류 검색', s:'.tt-search-wrap',
+      t:'분류 검색', s:'.tt-search-wrap', u:'2026-09-11',
       fig:[['분류검색_레이어 컴포넌트','18688:1034322']],
       nt:['1. 검색 — 정의','2. 검색 — UI 정책'],
       g:[{h:'검색 조건', li:[
@@ -4587,7 +4602,7 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
         AB('0건일 때 시각 UI 가 없다(스크린리더 전용).','두 줄 안내를 보여준다.')]}]
     },
     tree: {
-      t:'분류 트리 — UI · 스크롤', s:'.tt-tree',
+      t:'분류 트리 — UI · 스크롤', s:'.tt-tree', u:'2026-09-11',
       fig:[['분류찾기 컴포넌트','18674:83911']],
       nt:['4. 분류 트리 — UI 정책','5. 분류 트리 — 스크롤','6. 중분류 기타','10. 기등록 표기'],
       g:[{h:'열 동작', li:[
@@ -4610,7 +4625,7 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
         AB('추천 항목이 없다.','대분류 열 첫 행. 13종.')]}]
     },
     name: {
-      t:'진료 항목명 — 프리필', s:'label 이 “진료 항목명” 인 .rg-field',
+      t:'진료 항목명 — 프리필', s:'label 이 “진료 항목명” 인 .rg-field', u:'2026-09-11',
       fig:[['진료항목_필수정보 컴포넌트','18643:733773']],
       nt:['7. 진료항목명 프리필'],
       g:[{h:'프리필 규칙', li:[
@@ -4624,7 +4639,7 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
         AB('노출명이 추가 정보의 선택 필드. 비우면 진료항목명과 동일하게 노출된다.','필수 정보로 올라오고 필수. 분류에서 프리필된다.')]}]
     },
     price: {
-      t:'가격 정보 — 분류를 바꿀 때', s:'.rg-field.price',
+      t:'가격 정보 — 분류를 바꿀 때', s:'.rg-field.price', u:'2026-09-11',
       fig:[['가격정보_입력폼 컴포넌트','18679:109902']],
       nt:['8. 분류를 바꿀 때 함께 일어나는 일'],
       g:[{h:'분류 변경 시 초기화', li:[
@@ -4642,7 +4657,7 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
         ]
     },
     preview: {
-      t:'미리보기 — 표준 진료항목명', s:'.rg-preview',
+      t:'미리보기 — 표준 진료항목명', s:'.rg-preview', u:'2026-09-11',
       fig:[['미리보기 표기 케이스 3종','18824:14771']],
       nt:['9. 미리보기 — 표준 진료항목명'],
       g:[{h:'표기 규칙', li:[
@@ -4654,7 +4669,7 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
         '이용자에게 “기타” 가 그대로 나가지 않게 하는 게 이 규칙의 목적이다.']}]
     },
     bulk: {
-      t:'한 번에 등록하기', s:'#bx-banner', pos:'left',
+      t:'한 번에 등록하기', s:'#bx-banner', pos:'left', u:'2026-09-11',
       tbd:'이번 개편 범위에 포함되지 않습니다.',
       g:[{h:'미정 범위', li:[
         '진입 배너와 벌크 등록 화면 <b>전부</b> 확정된 스펙이 없다. 화면이 있다고 구현 대상으로 읽으면 안 된다.',
@@ -4744,6 +4759,7 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
           + d.nt.map(function(x){return nchip(x)}).join('') + '</div></div>' : '')
       + (d.fig ? '<div class="sx-fig fg"><h5>화면 · 케이스 — 피그마</h5><div class="sx-lks">'
           + d.fig.map(function(f){return chip(f[0],f[1])}).join('') + '</div></div>' : '')
+      + (d.u ? '<p class="sx-upd">이 노트 마지막 업데이트 <b>'+d.u+'</b></p>' : '')
       + (d.tbd
           ? '<p class="sx-hint">확정된 스펙이 없는 영역입니다. 노션·피그마에도 정의가 없어 링크할 곳이 없습니다.</p>'
           : '<p class="sx-hint">정책 원본은 노션입니다. 이 패널은 그 요약이고, 피그마는 화면과 케이스를 담습니다. 노션 링크를 열면 상단 목차에서 해당 섹션으로 바로 갈 수 있습니다.</p>');

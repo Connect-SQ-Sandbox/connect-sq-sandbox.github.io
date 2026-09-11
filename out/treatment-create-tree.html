@@ -2752,7 +2752,7 @@ Error generating stack: `+l.message+`
  * 이어가기용 컨텍스트 헤더  (아래 주입 블록에 대한 것)
  * ─────────────────────────────────────────────────────────────
  * 이름     : treatment-create-tree (plus 의 분기 — 분류 선택 트리판)
- * 상태     : 현행 · t2.2 · 2026-09-10
+ * 상태     : 현행 · t2.3 · 2026-09-11
  * 분기원본 : out/treatment-create-plus.html (v2.5) 에서 카피.
  *            plus 는 그대로 유지한다. 아래 수정1~23 은 plus 에서 물려받은 이력이고,
  *            이 파일 고유 변경은 [트리판] 블록에 적는다.
@@ -2859,6 +2859,14 @@ Error generating stack: `+l.message+`
  *        그룹핑 로직을 gb() 헬퍼로 빼서 둘이 같은 함수를 쓴다.
  *        추천이 나중에 다른 중분류(가다실 등)를 포함하면 그룹이 늘어난다.
  *        CSS .tt-row-reco / .tt-reco-body / .tt-path 는 참조 없이 남겨뒀다.
+ *  [T28] 스펙 오버레이의 링크를 출처별 색으로 갈랐다(t2.3. 세화님 요청).
+ *       피그마 = 보라(#a259ff 계열), 노션 = 초록(#4ade80 계열)로 고정한다.
+ *       기존에는 피그마 링크만 무채색이라 그룹 헤더 옆 인라인 칩
+ *       (Case=중분류기타 같은 것)이 어디로 가는 링크인지 색으로 안 읽혔다.
+ *       chip() 이 만드는 링크는 전부 피그마라 .sx-lk-fg 를 함수에서 고정으로
+ *       붙인다 — 호출부는 안 건드린다. 섹션 헤더 "화면 · 케이스 — 피그마" 도
+ *       .sx-fig.fg 로 같은 보라를 쓴다. 본문 그룹 헤더의 초록은 그대로 뒀다.
+ *
  *  [T27] 스펙 오버레이에서 미정·하지 않는 것 그룹을 뺐다(t2.2. 세화님 요청).
  *       노션도 같은 이유로 정리해서 정책만 남긴다. 오버레이는 그 요약이니
  *       미정 상태를 들고 있을 이유가 없다.
@@ -3013,6 +3021,7 @@ Error generating stack: `+l.message+`
  *
  *
  * 변경 이력(트리판)
+ *  t2.3 2026-09-11 [T28] 스펙 오버레이 링크 색 구분 — 피그마 보라 · 노션 초록.
  *  t2.2 2026-09-10 [T27] 스펙 오버레이에서 미정 그룹 제거.
  *  t2.1 2026-09-10 [T26] 미리보기 표기 = 가장 구체적으로 확정된 이름. 플레이스홀더 제거.
  *  t2.0 2026-09-10 [T25] 미리보기 분류 표기 칩→평문 + 기타 표기 규칙.
@@ -4181,6 +4190,9 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
 .sx-lk:hover{background:rgba(0,115,250,.22);border-color:#0073fa;color:#fff}
 .sx-lk-nt{border-color:rgba(74,222,128,.35);background:rgba(74,222,128,.1);color:#a7e8bf}
 .sx-lk-nt:hover{background:rgba(74,222,128,.24);border-color:#4ade80;color:#fff}
+.sx-lk-fg{border-color:rgba(162,89,255,.4);background:rgba(162,89,255,.12);color:#cbaaff}
+.sx-lk-fg:hover{background:rgba(162,89,255,.26);border-color:#a259ff;color:#fff}
+.sx-fig.fg h5{color:#b57bff}
 .sx-lk-sm{padding:1px 6px;font:600 10.5px/15px var(--font-sans,Pretendard);
   border-radius:4px;margin-left:4px;vertical-align:1px}
 </style>
@@ -4289,7 +4301,7 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
     return '<a class="sx-lk sx-lk-nt" href="'+NOTION+'" target="_blank" rel="noopener">'
       + label + '<span aria-hidden="true"> \u2197</span></a>'; };
   var chip = function(label,id,cls){
-    return '<a class="sx-lk'+(cls?' '+cls:'')+'" href="'+fu(id)+'" target="_blank" rel="noopener">'
+    return '<a class="sx-lk sx-lk-fg'+(cls?' '+cls:'')+'" href="'+fu(id)+'" target="_blank" rel="noopener">'
       + label + '<span aria-hidden="true"> ↗</span></a>'; };
 
   var ON = false, CUR = null;
@@ -4355,7 +4367,7 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
         }).join('')
       + (d.nt ? '<div class="sx-fig"><h5>정책 전문 — 노션</h5><div class="sx-lks">'
           + d.nt.map(function(x){return nchip(x)}).join('') + '</div></div>' : '')
-      + (d.fig ? '<div class="sx-fig"><h5>화면 · 케이스 — 피그마</h5><div class="sx-lks">'
+      + (d.fig ? '<div class="sx-fig fg"><h5>화면 · 케이스 — 피그마</h5><div class="sx-lks">'
           + d.fig.map(function(f){return chip(f[0],f[1])}).join('') + '</div></div>' : '')
       + '<p class="sx-hint">정책 원본은 노션입니다. 이 패널은 그 요약이고, 피그마는 화면과 케이스를 담습니다. 노션 링크를 열면 상단 목차에서 해당 섹션으로 바로 갈 수 있습니다.</p>';
     el.querySelector('.sx-close').onclick = close;

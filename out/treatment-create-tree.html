@@ -2752,7 +2752,7 @@ Error generating stack: `+l.message+`
  * 이어가기용 컨텍스트 헤더  (아래 주입 블록에 대한 것)
  * ─────────────────────────────────────────────────────────────
  * 이름     : treatment-create-tree (plus 의 분기 — 분류 선택 트리판)
- * 상태     : 현행 · t3.6 · 2026-09-11
+ * 상태     : 현행 · t3.7 · 2026-09-11
  * 분기원본 : out/treatment-create-plus.html (v2.5) 에서 카피.
  *            plus 는 그대로 유지한다. 아래 수정1~23 은 plus 에서 물려받은 이력이고,
  *            이 파일 고유 변경은 [트리판] 블록에 적는다.
@@ -2859,6 +2859,14 @@ Error generating stack: `+l.message+`
  *        그룹핑 로직을 gb() 헬퍼로 빼서 둘이 같은 함수를 쓴다.
  *        추천이 나중에 다른 중분류(가다실 등)를 포함하면 그룹이 늘어난다.
  *        CSS .tt-row-reco / .tt-reco-body / .tt-path 는 참조 없이 남겨뒀다.
+ *  [T40] 기등록 배지를 피그마 DS Badge 실측대로 정사각으로(t3.7. 세화님 요청).
+ *       20x20 · radius 3 · 좌우 패딩 0 · Medium 10/14 #434956 ·
+ *       배경 #808799 10% · 가운데 정렬.
+ *       [T15] 에서 min-width 36 으로 재 놨던 게 틀렸다 — DS Badge 는
+ *       가로 36 이 아니라 20 정사각이고, 최소 폭은 안쪽 Count 프레임의 16 이다.
+ *       min-width 로 둬서 세 자리 수는 잘리지 않고 옆으로만 늘어난다.
+ *       .tt-reg 하나를 트리 행과 검색 레이어 항목이 같이 쓴다.
+ *
  *  [T39] 노트별 마지막 업데이트일을 박았다(t3.6. 세화님 요청).
  *       SPEC 항목마다 u:'YYYY-MM-DD'. 패널 하단 안내 위에 한 줄로 뜬다.
  *       <b>전체 배포일이 아니라 그 노트를 건드린 날</b>이다. 패널을 고칠 때
@@ -3235,6 +3243,7 @@ Error generating stack: `+l.message+`
  *
  *
  * 변경 이력(트리판)
+ *  t3.7 2026-09-11 [T40] 기등록 배지 20x20 정사각(피그마 DS Badge 실측).
  *  t3.6 2026-09-11 [T39] 오버레이 노트별 마지막 업데이트일 표기.
  *  t3.5 2026-09-11 [T38] As-is / To-be 는 달라지는 것만 — "동일" 줄 전부 제거.
  *  t3.4 2026-09-11 [T37] 가격 유효성·상한 상세 제거(As-is 동일 명시로 대체).
@@ -4062,13 +4071,17 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
 /* 그룹 헤더 30 → 34 */
 .tt-lgroup-head,.tt-ghead{padding:8px 16px}
 
-/* 배지는 라벨 없이 숫자만. DS Badge 는 pill 이 아니라 radius 3 이고
-   최소 폭 36 에 가운데 정렬이라 한 자리 수여도 폭이 흔들리지 않는다.
+/* 배지는 라벨 없이 숫자만. [T40] 피그마 DS Badge 실측으로 교체 —
+   20x20 <b>정사각</b> · radius 3 · 좌우 패딩 0 · Medium 10/14 #434956 ·
+   배경 #808799 10%. 앞서 min-width 36 으로 두어 가로로 길쭉했다.
+   min-width 로 둬서 세 자리 수는 잘리지 않고 옆으로만 늘어난다.
    행이 선택돼도 배지 색은 그대로다(DS Row 4개 배리언트 전부 Tone=Neutral). */
 .tt-reg{
-  min-width:36px;padding:1px 6px;border-radius:3px;text-align:center;
+  box-sizing:border-box;flex:0 0 auto;
+  min-width:20px;height:20px;padding:1px 0;border-radius:3px;
+  display:inline-flex;align-items:center;justify-content:center;
   background:rgba(128,135,153,.1);
-  font:500 10px/18px var(--font-sans);color:#434956}
+  font:500 10px/14px var(--font-sans);color:#434956}
 .tt-row.sel .tt-reg,.tt-litem.sel .tt-reg{background:rgba(128,135,153,.1);color:#434956}
 
 /* ── [T18] 검색어 없이 포커스하면 검색 가이드를 띄운다(t1.3).

@@ -2752,7 +2752,7 @@ Error generating stack: `+l.message+`
  * 이어가기용 컨텍스트 헤더  (아래 주입 블록에 대한 것)
  * ─────────────────────────────────────────────────────────────
  * 이름     : treatment-create-tree (plus 의 분기 — 분류 선택 트리판)
- * 상태     : 현행 · t2.5 · 2026-09-11
+ * 상태     : 현행 · t2.6 · 2026-09-11
  * 분기원본 : out/treatment-create-plus.html (v2.5) 에서 카피.
  *            plus 는 그대로 유지한다. 아래 수정1~23 은 plus 에서 물려받은 이력이고,
  *            이 파일 고유 변경은 [트리판] 블록에 적는다.
@@ -2859,6 +2859,16 @@ Error generating stack: `+l.message+`
  *        그룹핑 로직을 gb() 헬퍼로 빼서 둘이 같은 함수를 쓴다.
  *        추천이 나중에 다른 중분류(가다실 등)를 포함하면 그룹이 늘어난다.
  *        CSS .tt-row-reco / .tt-reco-body / .tt-path 는 참조 없이 남겨뒀다.
+ *  [T31] 목록의 "한 번에 등록하기" 를 TBD 로 명시했다(t2.6. 세화님 요청).
+ *       이번 개편 범위가 아닌데 프로토타입에 화면이 있어 구현 대상으로 읽힐 수
+ *       있었다. 배너(#bx-banner)에 핀을 달고 확정 스펙과 갈랐다 —
+ *       핀은 검정 'i' 대신 주황 '?', 패널에는 TBD 태그와 주황 바.
+ *       노션·피그마 링크 줄은 통째로 안 나온다(정의가 없어 링크할 곳이 없다).
+ *       하단 안내문도 "정책 원본은 노션" 대신 전용 문구로 바꾼다.
+ *       핀 위치는 pos:'left' — 배너 우측 끝에 CTA 버튼이 있어 겹친다.
+ *       [T27] 에서 오버레이의 "미정" 그룹을 전부 뺐지만 그건 정책 미결 항목이고,
+ *       이건 범위 경계 표시라 성격이 다르다.
+ *
  *  [T30] 피그마·프로토타입·노션 3자 대조로 구버전 정책 잔재를 털었다(t2.5).
  *       프로토타입
  *         · 스펙 오버레이 가격 항의 모달 버튼이 [유지하기]/[초기화하고 변경] 그대로였다.
@@ -3062,6 +3072,7 @@ Error generating stack: `+l.message+`
  *
  *
  * 변경 이력(트리판)
+ *  t2.6 2026-09-11 [T31] 한 번에 등록하기 = TBD 표시(범위 밖).
  *  t2.5 2026-09-11 [T30] 피그마·노션·프로토타입 3자 대조 — 구버전 정책 잔재 정리.
  *  t2.4 2026-09-11 [T29] 가격 초기화 모달 형태·문구를 피그마 18775:384554 대로.
  *  t2.3 2026-09-11 [T28] 스펙 오버레이 링크 색 구분 — 피그마 보라 · 노션 초록.
@@ -4224,6 +4235,19 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
   box-shadow:0 1px 4px rgba(22,24,29,.3)}
 .sx-pin:hover{background:#0073fa}
 .sx-pin.act{background:#0073fa}
+/* [T31] 미확정 영역 핀. 확정 스펙(검정·i)과 색·글자를 갈라 한눈에 구분한다.
+   .left 는 우측에 CTA 가 있는 호스트용(한 번에 등록하기 배너). */
+.sx-pin.tbd{background:#b45309}
+.sx-pin.tbd:hover,.sx-pin.tbd.act{background:#d97706}
+.sx-pin.left{left:6px;right:auto}
+.sx-host.act:has(>.sx-pin.tbd){outline-color:#d97706}
+.sx-tbdtag{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:4px;
+  background:rgba(217,119,6,.18);color:#fbbf24;
+  font:700 10px/16px var(--font-sans,Pretendard);vertical-align:2px;letter-spacing:.04em}
+.sx-panel .sx-sel:has(+.sx-tbdbar){margin-bottom:8px}
+.sx-tbdbar{margin:0 0 13px;padding:8px 10px;border-radius:6px;
+  background:rgba(217,119,6,.12);border:1px solid rgba(217,119,6,.3);
+  font:600 12px/18px var(--font-sans,Pretendard);color:#fbbf24}
 .sx-host{position:relative!important}
 .sx-host.act{outline:2px dashed #0073fa;outline-offset:-2px;border-radius:4px}
 
@@ -4359,6 +4383,14 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
         '<b>추천(독감 9종)</b> — “1회” 한 행이 고정되고 옵션 추가가 없다.',
         '<b>접종형(가다실 9가·대상포진 3종 등)</b> — 제품의 접종 회차만큼 행이 고정된다. 가다실 9가는 1회·3회 두 행. 옵션 추가가 없다.']},
         {h:'단위', li:['수량·단위 입력은 없다. 지금 서비스도 원래 없다 — 수량·용량은 옵션명에 자유 입력한다.']}]
+    },
+    bulk: {
+      t:'한 번에 등록하기', s:'#bx-banner', pos:'left',
+      tbd:'이번 개편 범위에 포함되지 않습니다.',
+      g:[{h:'무엇이 정해지지 않았나', li:[
+        '진입 배너와 벌크 등록 화면 <b>전부</b> 확정된 스펙이 없다. 화면이 있다고 구현 대상으로 읽으면 안 된다.',
+        '정책 문서(노션)에도 항목이 없다. 여기에 링크할 섹션이 없는 이유다.',
+        '이번 범위는 <b>분류 개편</b>뿐이다 — 검색 · 트리 · 진료 항목명 프리필 · 분류 변경 시 가격 처리.']}]
     }
   };
 
@@ -4399,8 +4431,11 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
       if(!host || host.querySelector(':scope > .sx-pin')) return;
       host.classList.add('sx-host');
       var b = document.createElement('button');
-      b.type='button'; b.className='sx-pin'; b.textContent='i';
-      b.setAttribute('aria-label', SPEC[k].t + ' 스펙 보기');
+      var sp = SPEC[k];
+      b.type='button';
+      b.className = 'sx-pin' + (sp.tbd?' tbd':'') + (sp.pos==='left'?' left':'');
+      b.textContent = sp.tbd ? '?' : 'i';
+      b.setAttribute('aria-label', sp.t + (sp.tbd?' — 미정 스펙 보기':' 스펙 보기'));
       b.dataset.k = k;
       b.onclick = function(e){ e.stopPropagation(); open(k); };
       host.appendChild(b);
@@ -4427,7 +4462,9 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
     var el = document.createElement('div');
     el.id='sx-panel'; el.className='sx-panel';
     el.innerHTML = '<button type="button" class="sx-close" aria-label="닫기">✕</button>'
-      + '<h4>'+d.t+'</h4><p class="sx-sel">'+d.s+'</p>'
+      + '<h4>'+d.t+(d.tbd?' <span class="sx-tbdtag">TBD</span>':'')+'</h4>'
+      + '<p class="sx-sel">'+d.s+'</p>'
+      + (d.tbd ? '<p class="sx-tbdbar">'+d.tbd+'</p>' : '')
       + d.g.map(function(g){
           return '<h5>'+g.h
             + (g.lk?' '+chip(g.lk[0],g.lk[1],'sx-lk-sm'):'') + '</h5>'
@@ -4438,7 +4475,9 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
           + d.nt.map(function(x){return nchip(x)}).join('') + '</div></div>' : '')
       + (d.fig ? '<div class="sx-fig fg"><h5>화면 · 케이스 — 피그마</h5><div class="sx-lks">'
           + d.fig.map(function(f){return chip(f[0],f[1])}).join('') + '</div></div>' : '')
-      + '<p class="sx-hint">정책 원본은 노션입니다. 이 패널은 그 요약이고, 피그마는 화면과 케이스를 담습니다. 노션 링크를 열면 상단 목차에서 해당 섹션으로 바로 갈 수 있습니다.</p>';
+      + (d.tbd
+          ? '<p class="sx-hint">확정된 스펙이 없는 영역입니다. 노션·피그마에도 정의가 없어 링크할 곳이 없습니다.</p>'
+          : '<p class="sx-hint">정책 원본은 노션입니다. 이 패널은 그 요약이고, 피그마는 화면과 케이스를 담습니다. 노션 링크를 열면 상단 목차에서 해당 섹션으로 바로 갈 수 있습니다.</p>');
     el.querySelector('.sx-close').onclick = close;
     document.body.appendChild(el);
     var p = document.querySelector('.sx-pin[data-k="'+k+'"]');

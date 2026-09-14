@@ -4,7 +4,10 @@
 /* ---------- 목록 · 총 건수 (실제 DataTableLayout 과 동일) ---------- */
 .ap-body .ap-total { margin: 0 0 8px; font: 600 13px/1.5 var(--font-sans); color: #5D6474; }
 
-/* ---------- 상세 · 진료 정보 카드(무료접종형) ---------- */
+/* ---------- 상세 · 최소 변경판 대상자 행 — 기준 문구가 길어 이 행만 줄바꿈 ---------- */
+.apx-free-row .apx-price-name { white-space: normal; overflow: visible; text-overflow: clip; }
+
+/* ---------- 상세 · 진료 정보 카드(무료접종형 전용 레이아웃, ?card=custom) ---------- */
 .apx-treat-free .apx-treat-title { margin-top: 4px; }
 .apx-free-target { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 8px; background: var(--gray-10); }
 .apx-free-target-label { flex-shrink: 0; font: 400 14px/21px var(--font-sans); color: var(--gray-60); }

@@ -440,7 +440,8 @@ const FREE_TARGET_LABEL: Record<FreeTargetType, string> = { PREGNANT: '임신부
 const FREE_TARGET_CRITERIA: Record<FreeTargetType, string> = { PREGNANT: '', CHILD: '2021.01.01~2025.08.31 출생자', SENIOR: '1960.12.31 이전 출생자' };
 type FreeVaccineInfo = { category: string; targetType: FreeTargetType; targetLabel: string; criteria: string };
 const freeVaccine = (t: FreeTargetType): FreeVaccineInfo => ({ category: '독감백신', targetType: t, targetLabel: FREE_TARGET_LABEL[t], criteria: FREE_TARGET_CRITERIA[t] });
-const FREE_ITEM_TITLE = '상담 후 결정';
+/** 병원향 항목명 — 환자 화면의 '상담 후 결정'은 어드민에서 가격 유형과 충돌하므로 쓰지 않는다 */
+const FREE_ITEM_TITLE = '독감 무료접종';
 const FREE_STATUS_LINE = '국가 무료접종 대상자로 신청됨';
 /** 비교용 — `?card=custom` 이면 전용 레이아웃(대상자 박스 + 상태 1줄) 카드 */
 const CARD_CUSTOM = (() => { try { return /[?&]card=custom/.test(window.location.search); } catch { return false; } })();
@@ -549,9 +550,9 @@ const isSameAsVisitor = (a: Appt) => !!a.reserverName && a.reserverName === a.vi
 /** [실제] 표준 진료항목(마스터 매핑)인지 — 직접입력이면 항목명 뱃지 미노출. */
 const isStandardTreatmentItem = (t: Appt['treatmentItem']) => t?.master1Id != null;
 /** [신규] 목록 진료항목 열 — 무료접종형은 1행 "독감백신 · 상담 후 결정", 2행 금액 자리에 "무료접종 · {대상자}". */
-const itemCellPrimary = (a: Appt) => (a.freeVaccine ? `${a.freeVaccine.category} · ${FREE_ITEM_TITLE}` : (a.treatmentItem.alias || a.treatmentItem.name || '-'));
-const itemCellSub = (a: Appt) => (a.freeVaccine ? `무료접종 · ${a.freeVaccine.targetLabel}` : formatTotalPrice(a.prices));
-const freeSearchText = (a: Appt) => (a.freeVaccine ? `${a.freeVaccine.category} ${FREE_ITEM_TITLE} 무료접종 ${a.freeVaccine.targetLabel}` : '');
+const itemCellPrimary = (a: Appt) => (a.freeVaccine ? FREE_ITEM_TITLE : (a.treatmentItem.alias || a.treatmentItem.name || '-'));
+const itemCellSub = (a: Appt) => (a.freeVaccine ? `${a.freeVaccine.targetLabel} · 무료` : formatTotalPrice(a.prices));
+const freeSearchText = (a: Appt) => (a.freeVaccine ? `${a.freeVaccine.category} ${FREE_ITEM_TITLE} 국가 무료접종 ${a.freeVaccine.targetLabel}` : '');
 /** [실제] 상세 응답 additionalInfos → 표시용 질문·답변. 빈 답변은 제외해 '답변 없음' 판정에 쓴다. */
 const toKakaoAnswers = (infos?: ApptAdditionalInfo[]) =>
   (infos ?? []).map((info) => {
@@ -1240,7 +1241,7 @@ function ApptScreen({ appts, setAppts, hospitalLinked, failNextSync, consumeFail
                         <div className="apx-price-list">
                           <SpecHost id="target-row" spec={spec}>
                             <div className="apx-price-row apx-free-row">
-                              <span className="apx-price-name">{`무료접종 · ${detail.freeVaccine.targetLabel}${detail.freeVaccine.criteria ? ` (${detail.freeVaccine.criteria})` : ''}`}</span>
+                              <span className="apx-price-name">{`${detail.freeVaccine.targetLabel}${detail.freeVaccine.criteria ? ` (${detail.freeVaccine.criteria})` : ''}`}</span>
                               <span className="apx-price-val">무료</span>
                             </div>
                           </SpecHost>
@@ -1691,8 +1692,8 @@ const SPEC: Record<string, SpecEntry> = {
     where: '예약 신청 내역 > 테이블 > 진료항목',
     asis: ['1행 진료항목 노출명', '2행 선택 옵션 예상 결제 금액 합산'],
     tobe: [
-      '무료접종형이면 1행 "독감백신 · 상담 후 결정"',
-      '2행은 금액 자리에 "무료접종 · {대상자 유형}" (예: 무료접종 · 어르신)',
+      '무료접종형이면 1행 "독감 무료접종"(상세 항목명과 동일)',
+      '2행은 금액 자리에 "{대상자 유형} · 무료" (예: 어르신 · 무료)',
       '목적: 목록만 훑어도 국가 조달 물량 건인지 구분',
       '상품형 행은 As-is 그대로',
       '검색(진료항목명)은 "독감", "무료접종", "상담 후 결정", 대상자 유형으로도 걸린다',
@@ -1705,19 +1706,21 @@ const SPEC: Record<string, SpecEntry> = {
     asis: ['분류 뱃지 · 노출명 · 소개 문구 · 썸네일', '선택 옵션 목록(옵션명 · 개별 가격)', '예상 결제 금액 합산', '고지 "방문 후 상담을 통해 변경될 수 있어요"'],
     tobe: [
       '유형 구분자 신설: 상품형(As-is) / 무료접종형(신규). 데이터는 스냅샷의 freeVaccine 유무',
-      '카드 구조는 상품형과 동일(최소 변경): 분류 뱃지 "독감백신" · 항목명 "상담 후 결정" · 옵션 행 1개 · 예상 결제 금액 · 고지',
-      '옵션 행 1개: "무료접종 · {유형} ({기준 문구})" / 값 "무료". 예상 결제 금액 "무료". 소개·썸네일 없음',
+      '카드 구조는 상품형과 동일(최소 변경): 분류 뱃지 "독감백신" · 항목명 "독감 무료접종" · 옵션 행 1개 · 예상 결제 금액 · 고지',
+      '항목명은 환자 화면의 "상담 후 결정"을 쓰지 않는다 — 어드민에서 그 말은 가격 유형이라 항목명 자리에 있으면 상담 후 가격을 정하는 상품으로 읽힌다',
+      '옵션 행 1개: "{유형} ({기준 문구})" / 값 "무료". 예상 결제 금액 "무료". 소개·썸네일 없음',
+      '유저향(상담 후 결정)과 병원향(독감 무료접종)은 같은 스냅샷을 화면마다 다르게 표기한다. 저장 데이터는 하나',
       '비교용 ?card=custom: 전용 레이아웃(대상자 박스 + 상태 1줄)',
       '고지 문구: "무료접종 대상 여부는 방문 시 확인해 주세요. 대상이 아니면 유료 접종으로 안내해 주세요."',
       '진료정보는 신청 시점 스냅샷(As-is 동일). 유료 전환돼도 내역은 수정하지 않고 고지 문구로만 안내',
-      '식별자는 무료 백신 대상자 유형. "상담 후 결정"·제품 미특정·금액 없음은 그 파생 표현. 병원 등록 독감 상품과 무관(상품 0개여도 발생)'
+      '식별자는 무료 백신 대상자 유형. 항목명·제품 미특정·금액 "무료"는 그 파생 표현. 병원 등록 독감 상품과 무관(상품 0개여도 발생)'
     ]
   },
   'target-row': {
     title: '대상자 행 · 기준 문구',
-    where: '예약 상세 > 진료 정보 > 무료 백신 대상자',
+    where: '예약 상세 > 진료 정보 > 옵션 행',
     tobe: [
-      '"무료 백신 대상자  {유형} ({기준 문구})" — 유형 = 임신부 / 어린이 / 어르신',
+      '"{유형} ({기준 문구})" — 유형 = 임신부 / 어린이 / 어르신. 옵션 행 자리',
       '기준 문구는 굿닥 운영값(연도별 출생 범위)을 신청 시점에 스냅샷. 매년 바뀌므로 현재값을 참조하지 않는다',
       '임신부는 출생 기준이 없어 유형만 표기',
       '대상 적합 여부는 굿닥이 판정하지 않는다. 병원이 방문자 정보의 생년월일과 이 문구를 눈으로 대조'

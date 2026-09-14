@@ -436,8 +436,8 @@ type ApptAdditionalInfo = { name: string; value?: string; values?: string[] };
  * 임신부는 출생 범위 기준이 없어 criteria 빈 문자열. */
 type FreeTargetType = 'PREGNANT' | 'CHILD' | 'SENIOR';
 const FREE_TARGET_LABEL: Record<FreeTargetType, string> = { PREGNANT: '임신부', CHILD: '어린이', SENIOR: '어르신' };
-/** [보류] 운영 어드민 관리값 대체 — 2026-27 절기 예시 */
-const FREE_TARGET_CRITERIA: Record<FreeTargetType, string> = { PREGNANT: '', CHILD: '2021.01.01~2025.08.31 출생자', SENIOR: '1960.12.31 이전 출생자' };
+/** 운영값 대체 상수 — 2026-2027절기 공고(질병관리청 정책 제2026-452호) 기준: 어린이 생후 6개월~14세, 어르신 65세 이상 */
+const FREE_TARGET_CRITERIA: Record<FreeTargetType, string> = { PREGNANT: '', CHILD: '2012.01.01~2026.08.31 출생자', SENIOR: '1961.12.31 이전 출생자' };
 type FreeVaccineInfo = { category: string; targetType: FreeTargetType; targetLabel: string; criteria: string };
 const freeVaccine = (t: FreeTargetType): FreeVaccineInfo => ({ category: '독감백신', targetType: t, targetLabel: FREE_TARGET_LABEL[t], criteria: FREE_TARGET_CRITERIA[t] });
 /** 병원향 항목명 — 환자 화면의 '상담 후 결정'은 어드민에서 가격 유형과 충돌하므로 쓰지 않는다 */

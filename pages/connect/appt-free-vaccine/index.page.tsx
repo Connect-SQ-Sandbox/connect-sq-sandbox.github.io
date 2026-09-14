@@ -471,7 +471,7 @@ const INITIAL_APPTS: Appt[] = [
   { treatmentItemApptId: 301, status: APPT_STATUS.REQUESTED, deviceType: 1, visitDate: '20261016', visitKoTime: '10:00', createdAt: '2026-10-13T08:20:00',
     treatmentItem: { name: '독감백신', master1Id: null }, prices: [], freeVaccine: freeVaccine('SENIOR'),
     visitorName: '박정자', visitorPhone: '01055551234', visitorBirth: 19580302, visitorRrn7: 2,
-    reserverName: '박정자', reserverPhone: '01055551234' },
+    reserverName: '박정자', reserverPhone: '01055551234', reserverMemo: '혈압약 복용 중인데 접종 가능한지 궁금합니다. 오전 일찍 방문할게요.' },
   { treatmentItemApptId: 201, status: APPT_STATUS.REQUESTED, deviceType: 2, visitDate: '20261018', visitKoTime: '15:00', createdAt: '2026-10-14T09:12:00',
     treatmentItem: { name: '레이저 토닝', alias: '', shortDescription: '색소·톤 개선 레이저', master1Id: 11 },
     prices: [{ treatmentItemPriceId: PID++, title: '1회', priceType: PRICE_TYPE.FIXED, originPrice: 80000 }],

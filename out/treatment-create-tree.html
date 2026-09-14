@@ -2752,7 +2752,7 @@ Error generating stack: `+l.message+`
  * 이어가기용 컨텍스트 헤더  (아래 주입 블록에 대한 것)
  * ─────────────────────────────────────────────────────────────
  * 이름     : treatment-create-tree (plus 의 분기 — 분류 선택 트리판)
- * 상태     : 현행 · t5.7 · 2026-09-16
+ * 상태     : 현행 · t5.8 · 2026-09-16
  * 분기원본 : out/treatment-create-plus.html (v2.5) 에서 카피.
  *            plus 는 그대로 유지한다. 아래 수정1~23 은 plus 에서 물려받은 이력이고,
  *            이 파일 고유 변경은 [트리판] 블록에 적는다.
@@ -3304,6 +3304,11 @@ Error generating stack: `+l.message+`
  *
  *
  * 변경 이력(트리판)
+ *  t5.8 2026-09-16 [T50] 접종형 행의 왼쪽 들여쓰기 제거(세화님 지적).
+ *                  [수정23](b) 에서 tr 에 padding-left:24px 를 줬는데, 바깥 .tc-cp 가
+ *                  이미 margin-left:24px 라 합쳐서 48px 이 됐다. 폼의 기준선은 339px —
+ *                  진료항목명 입력칸·분류 트리·.tc-cp 가 모두 거기서 시작한다.
+ *                  접종형 행만 24px 더 들어가 있었다. padding-left 를 0 으로.
  *  t5.7 2026-09-16 [T49] 진료항목명 헬퍼에서 "분류와 관계없이 필수 정보예요." 삭제(세화님 요청).
  *  t5.6 2026-09-16 [T48] 정책 문서 보완 5건 검토 — 문서에 없던 동작을 노션·오버레이에 반영.
  *                  (1) 검색 랭크 정렬은 그룹 안에서도 적용된다. RK() 로 한 번 정렬한 뒤
@@ -4266,7 +4271,7 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
 .tc-vac-card .tc-cp-table>tbody>tr,
 .tc-vac-card .tc-cp-table>tbody>tr>td{
   display:block;width:auto;padding:0;border:0;text-align:left;white-space:normal}
-.tc-vac-card .tc-cp-table>tbody>tr{padding:8px 8px 8px 24px;border-radius:8px}
+.tc-vac-card .tc-cp-table>tbody>tr{padding:8px 8px 8px 0;border-radius:8px}
 .tc-vac-card .tc-cp-table>tbody>tr>td:first-child{
   margin-bottom:8px;font:600 14px/22px var(--font-sans);color:#31353f}
 .tc-vac-list{gap:0;padding:0 0 8px}

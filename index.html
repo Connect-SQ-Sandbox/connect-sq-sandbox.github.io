@@ -27,6 +27,10 @@
     .tag.lock { background:rgba(255,153,0,.14); color:#C2731B; }
     .tag.plan { background:#fff1c7; color:#855800; }
     .card-desc { font-size:14px; line-height:1.6; color:var(--gray70); }
+    .card-list { margin:8px 0 0; padding:0; list-style:none; font-size:14px; line-height:1.6; color:var(--gray70); }
+    .card-list li { position:relative; padding-left:11px; margin-top:3px; }
+    .card-list li::before { content:''; position:absolute; left:0; top:9px; width:3px; height:3px; border-radius:50%; background:var(--gray40); }
+    .card-list b { color:var(--gray100); }
     .card-foot { display:flex; justify-content:space-between; align-items:flex-end; margin-top:12px; }
     .card-go { font-size:13px; font-weight:600; color:var(--blue); }
     .card-date { font-size:12px; color:var(--gray70); opacity:.6; }
@@ -50,7 +54,13 @@
     <div class="grid">
       <a class="card" href="out/treatment-create-tree.html">
         <div class="card-top"><span class="card-title">진료항목 어드민 · 분류 선택 트리판</span><span class="tag now">신규</span></div>
-        <div class="card-desc"><b>분류 선택을 모달에서 꺼내 폼 안에 3열 트리로 놓은 버전</b>입니다. <b>대분류 → 중분류 → 소분류</b> 순서로, 이전 열을 고르면 다음 열이 채워집니다. 최초 상태는 <b>추천 항목</b>이고 고르면 우측 두 칸이 합쳐져 독감 9종 목록이 됩니다. <b>기타는 대분류에서 빼고 중·소분류에만</b> 둡니다. 트리 위 <b>검색</b>은 결과를 레이어로 띄우고 <b>대분류 › 중분류 그룹</b> 아래 소분류를 나열합니다 — 고르면 하단 트리의 세 열도 그 경로로 이동합니다. <b>우측 상단 [스펙 보기]</b> 를 켜면 영역마다 ⓘ 가 붙고, 누르면 그 영역의 정책이 패널로 뜹니다 — 피그마 디스크립션을 프로토타입 안으로 옮긴 핸드오프 실험입니다. <b>예약 신청 내역·상세에 독감 무료접종형 진료정보를 더했습니다</b> — LNB <b>예약 신청 내역</b>으로 가면 환자가 무료 백신 대상자(임신부·어린이·어르신)로 신청해 제품을 특정하지 않은 건이 <b>“독감 무료접종 / 어르신 · 무료”</b>로 보이고, 상세의 진료 정보 카드는 상품형 구조 그대로 <b>옵션 행 자리에 대상자 행(유형 + 신청 시점 기준 문구)</b>이 한 줄 들어가고 예상 결제 금액이 <b>무료</b>가 됩니다. 스펙 보기에 목록 열 · 상세 카드 · 대상자 행 3핀이 추가됐습니다.</div>
+        <div class="card-desc"><b>분류 선택을 모달에서 꺼내 폼 안에 3열 트리로 놓은 버전</b>입니다.</div>
+        <ul class="card-list">
+          <li><b>트리</b> — 대분류 → 중분류 → 소분류 순으로 좁혀 갑니다. 처음엔 <b>추천 항목</b>(독감 9종)이 열려 있고, <b>기타</b>는 대분류에서 빼고 중·소분류에만 뒀습니다.</li>
+          <li><b>검색</b> — 결과를 레이어로 띄웁니다. 고르면 아래 트리의 세 열도 그 경로로 따라 이동합니다.</li>
+          <li><b>스펙 보기</b>(우측 상단) — 켜면 영역마다 ⓘ 가 붙고, 누르면 그 영역의 정책이 패널로 뜹니다. 피그마 디스크립션을 프로토타입 안으로 옮긴 핸드오프 실험입니다.</li>
+          <li><b>예약 신청 내역</b> — 제품을 특정하지 않고 들어온 <b>독감 무료접종</b> 건이 목록·상세에 어떻게 보이는지 함께 담았습니다.</li>
+        </ul>
         <div class="card-foot"><span class="card-go">트리판 열어보기 →</span><span class="card-date">마지막 업데이트 2026.09.14</span></div>
       </a>
       <a class="card" href="out/admin-nonpay-aug.html">

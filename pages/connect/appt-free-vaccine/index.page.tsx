@@ -508,6 +508,11 @@ const INITIAL_APPTS: Appt[] = [
     treatmentItem: { name: '독감백신', master1Id: null }, prices: [], freeVaccine: freeVaccine('PREGNANT'),
     visitorName: '최유진', visitorPhone: '01044443333', visitorBirth: 19930811, visitorRrn7: 2,
     reserverName: '최유진', reserverPhone: '01044443333' },
+  // [신규] 무료접종형 — 임신부(기준 문구 없음). 확정대기 상태로 예약 신청 탭에서 보이는 케이스.
+  { treatmentItemApptId: 304, status: APPT_STATUS.REQUESTED, deviceType: 1, visitDate: '20261018', visitKoTime: '11:00', createdAt: '2026-10-14T13:20:00',
+    treatmentItem: { name: '독감백신', master1Id: null }, prices: [], freeVaccine: freeVaccine('PREGNANT'),
+    visitorName: '정민서', visitorPhone: '01066667777', visitorBirth: 19940622, visitorRrn7: 2,
+    reserverName: '정민서', reserverPhone: '01066667777', reserverMemo: '임신 20주예요. 접종 가능한지 확인 부탁드려요.' },
   { treatmentItemApptId: 205, status: APPT_STATUS.COMPLETED, deviceType: 2, visitDate: '20261005', visitKoTime: '13:00', createdAt: '2026-10-05T09:40:00', statusChangedAt: '2026-10-05T13:55:00',
     treatmentItem: { name: '실 리프팅', alias: '', master1Id: 11 },
     prices: [{ treatmentItemPriceId: PID++, title: '상담', priceType: PRICE_TYPE.CONSULT }],

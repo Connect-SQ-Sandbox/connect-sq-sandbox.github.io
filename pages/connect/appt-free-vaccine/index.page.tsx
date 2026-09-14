@@ -442,7 +442,7 @@ type FreeVaccineInfo = { category: string; targetType: FreeTargetType; targetLab
 const freeVaccine = (t: FreeTargetType): FreeVaccineInfo => ({ category: '독감백신', targetType: t, targetLabel: FREE_TARGET_LABEL[t], criteria: FREE_TARGET_CRITERIA[t] });
 const FREE_ITEM_TITLE = '상담 후 결정';
 const FREE_STATUS_LINE = '국가 무료접종 대상자로 신청됨';
-const FREE_FOOTER = '무료 대상 여부는 병원에서 확인 후 접종되며, 대상이 아닌 경우 유료로 안내될 수 있어요';
+const FREE_FOOTER = '무료접종 대상 여부는 방문 시 확인해 주세요. 대상이 아니면 유료 접종으로 안내해 주세요.';
 
 type Appt = {
   treatmentItemApptId: number;
@@ -1678,7 +1678,7 @@ const SPEC: Record<string, SpecEntry> = {
       '유형 구분자 신설: 상품형(As-is) / 무료접종형(신규). 데이터는 스냅샷의 freeVaccine 유무',
       '무료접종형 카드 = ① 분류 뱃지 "독감백신" ② 항목명 "상담 후 결정"(유저 카드 미러링) ③ 대상자 행 ④ 상태 1줄 "국가 무료접종 대상자로 신청됨" ⑤ 고지 문구',
       '소개 문구 · 썸네일 · 옵션 목록 · 예상 결제 금액은 표시하지 않음 — 원본 상품이 없다',
-      '고지 문구: "무료 대상 여부는 병원에서 확인 후 접종되며, 대상이 아닌 경우 유료로 안내될 수 있어요"',
+      '고지 문구: "무료접종 대상 여부는 방문 시 확인해 주세요. 대상이 아니면 유료 접종으로 안내해 주세요."',
       '진료정보는 신청 시점 스냅샷(As-is 동일). 유료 전환돼도 내역은 수정하지 않고 고지 문구로만 안내',
       '식별자는 무료 백신 대상자 유형. "상담 후 결정"·제품 미특정·금액 없음은 그 파생 표현. 병원 등록 독감 상품과 무관(상품 0개여도 발생)'
     ]

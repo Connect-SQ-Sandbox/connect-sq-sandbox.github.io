@@ -2752,7 +2752,7 @@ Error generating stack: `+l.message+`
  * 이어가기용 컨텍스트 헤더  (아래 주입 블록에 대한 것)
  * ─────────────────────────────────────────────────────────────
  * 이름     : treatment-create-tree (plus 의 분기 — 분류 선택 트리판)
- * 상태     : 현행 · t4.0 · 2026-09-14
+ * 상태     : 현행 · t4.1 · 2026-09-14
  * 분기원본 : out/treatment-create-plus.html (v2.5) 에서 카피.
  *            plus 는 그대로 유지한다. 아래 수정1~23 은 plus 에서 물려받은 이력이고,
  *            이 파일 고유 변경은 [트리판] 블록에 적는다.
@@ -2859,6 +2859,16 @@ Error generating stack: `+l.message+`
  *        그룹핑 로직을 gb() 헬퍼로 빼서 둘이 같은 함수를 쓴다.
  *        추천이 나중에 다른 중분류(가다실 등)를 포함하면 그룹이 늘어난다.
  *        CSS .tt-row-reco / .tt-reco-body / .tt-path 는 참조 없이 남겨뒀다.
+ *  [T44] 스펙 보기 토글을 우측 상단으로 올렸다(t4.1. 세화님 요청).
+ *       우측 하단은 눈에 안 띄었다. FAB right:20/top:20, 패널은 그 아래
+ *       top:70 으로 따라 내려온다.
+ *       패널 max-height 를 calc(100vh - 90px) 로 잡았는데 box-sizing 이
+ *       content-box 라 패딩 38 이 더해져 뷰포트 아래로 18px 삐져나왔다.
+ *       border-box 로 바꾸고 width 도 패딩 포함 396 으로 적었다.
+ *       (기존 360 + 패딩 36 = 396 이라 보이는 폭은 그대로다.)
+ *       검색 패널의 As-is / To-be 그룹 삭제(세화님 요청) — 0건 상태 한 줄만
+ *       남아 있던 그룹이다. 이제 AB 줄은 분류 3 · 트리 2 · 항목명 1 로 여섯이다.
+ *
  *  [T43] 할인 에러가 입력해도 안 지워지던 버그 수정 + 동일 문장 열거 제거(t4.0).
  *       (a) [버그] [T36b] 에서 검증 키를 -amount 하나에서
  *           -amount/-original/-sale 셋으로 쪼갤 때, 에러를 지우는 쪽인
@@ -3279,6 +3289,7 @@ Error generating stack: `+l.message+`
  *
  *
  * 변경 이력(트리판)
+ *  t4.1 2026-09-14 [T44] 스펙 보기 토글 우측 상단으로 · 검색 패널 As-is/To-be 제거.
  *  t4.0 2026-09-14 [T43] 할인 에러 미해제 버그 수정 + "동일" 문장 열거 제거.
  *  t3.9 2026-09-11 [T42] 짝 없는 부정문을 긍정형으로 보강.
  *  t3.8 2026-09-11 [T41] 기등록 배지 표기 문장 정정(추천 목록에도 붙는다).
@@ -4517,7 +4528,8 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
 -->
 <style>
 .sx-fab{
-  position:fixed;right:20px;bottom:20px;z-index:9000;
+  /* [T44] 우측 하단은 눈에 안 띄어 우측 상단으로 올렸다(세화님). */
+  position:fixed;right:20px;top:20px;z-index:9000;
   display:flex;align-items:center;gap:7px;height:38px;padding:0 14px;
   border:1px solid #caced8;border-radius:19px;background:#fff;cursor:pointer;
   font:600 13px/38px var(--font-sans,Pretendard);color:#31353f;
@@ -4560,8 +4572,10 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
 .sx-host.act{outline:2px dashed #0073fa;outline-offset:-2px;border-radius:4px}
 
 .sx-panel{
-  position:fixed;right:20px;bottom:70px;z-index:9001;width:360px;
-  max-height:64vh;overflow-y:auto;padding:18px 18px 20px;
+  /* FAB 아래로 내려온다. 뷰포트 아래쪽 여백(20)까지만 쓰도록 높이를 잡는다. */
+  position:fixed;right:20px;top:70px;z-index:9001;
+  box-sizing:border-box;width:396px;
+  max-height:calc(100vh - 90px);overflow-y:auto;padding:18px 18px 20px;
   background:#16181d;border-radius:12px;color:#e8eaee;
   box-shadow:0 10px 34px rgba(0,0,0,.32)}
 .sx-panel h4{margin:0 0 3px;font:700 14px/21px var(--font-sans,Pretendard);color:#fff}
@@ -4630,7 +4644,7 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
         AB('“‘{입력값}’ 진료항목 추가하기”로 마스터 없이 등록할 수 있다.','직접입력 없음. 중분류 기타까지 받는다.')]}]
     },
     search: {
-      t:'분류 검색', s:'.tt-search-wrap', u:'2026-09-11',
+      t:'분류 검색', s:'.tt-search-wrap', u:'2026-09-14',
       fig:[['분류검색_레이어 컴포넌트','18688:1034322']],
       nt:['1. 검색 — 정의','2. 검색 — UI 정책'],
       g:[{h:'검색 조건', li:[
@@ -4649,9 +4663,7 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
         '<b>결과없음</b> 0건이어도 레이어는 유지하고 <b>두 줄 안내</b>를 보여준다 — “일치하는 분류가 없어요. / 다른 이름으로 검색하거나, 아래 목록에서 직접 찾아보세요.” 재시도와 트리 탐색을 같이 유도한다.',
         '0건 화면에는 기타로 등록하라는 안내를 두지 않는다.',
         '고르면 대·중·소가 확정되고 레이어가 닫히며, 트리 3열도 그 경로로 이동한다.',
-        '레이어는 <b>바깥을 누르면 닫힌다</b>. Esc 로도 닫힌다.']},
-        {h:'As-is / To-be', li:[
-        AB('0건일 때 시각 UI 가 없다(스크린리더 전용).','두 줄 안내를 보여준다.')]}]
+        '레이어는 <b>바깥을 누르면 닫힌다</b>. Esc 로도 닫힌다.']}]
     },
     tree: {
       t:'분류 트리 — UI · 스크롤', s:'.tt-tree', u:'2026-09-11',

@@ -2752,7 +2752,7 @@ Error generating stack: `+l.message+`
  * 이어가기용 컨텍스트 헤더  (아래 주입 블록에 대한 것)
  * ─────────────────────────────────────────────────────────────
  * 이름     : treatment-create-tree (plus 의 분기 — 분류 선택 트리판)
- * 상태     : 현행 · t5.1 · 2026-09-15
+ * 상태     : 현행 · t5.2 · 2026-09-15
  * 분기원본 : out/treatment-create-plus.html (v2.5) 에서 카피.
  *            plus 는 그대로 유지한다. 아래 수정1~23 은 plus 에서 물려받은 이력이고,
  *            이 파일 고유 변경은 [트리판] 블록에 적는다.
@@ -3304,6 +3304,8 @@ Error generating stack: `+l.message+`
  *
  *
  * 변경 이력(트리판)
+ *  t5.2 2026-09-15 [T45k] 스펙 보기를 기본 켜짐으로(세화님 요청). 끄고 열려면 ?spec=0.
+ *                  ?spec=1 은 계속 켜진 채로 열리니 기존 링크는 그대로 동작한다.
  *  t5.1 2026-09-15 [T45j] 무료접종형 스펙 3핀에 피그마 링크 — 목록 화면 · 예약 상세 모달 ·
  *                  진료정보 섹션 유형별 3종(어린이 · 어르신 · 임신부). 세화님이 섹션
  *                  18854:397014 에 유형별로 갈라 배치해 뒀다.
@@ -4936,8 +4938,8 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
 
     document.addEventListener('keydown', function(e){ if(e.key==='Escape' && CUR) close(); });
 
-    // ?spec=1 로 열면 켜진 상태로 시작
-    if(/[?&]spec=1/.test(location.search)) setTimeout(toggle, 400);
+    // 기본은 켜진 상태로 시작한다. ?spec=0 으로 열면 꺼진 채로 둔다.
+    if(!/[?&]spec=0/.test(location.search)) setTimeout(toggle, 400);
   }
   boot();
 })();

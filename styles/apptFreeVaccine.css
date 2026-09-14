@@ -1,6 +1,9 @@
 /* appt-free-vaccine — 예약 신청 내역 · 무료접종형 진료정보 + [SX] 스펙 보기 오버레이
  * 공용 셸(connectShell.css)과 admin-nonpay-aug 화면 CSS 위에 얹는 차분만 둔다. */
 
+/* ---------- 목록 · 총 건수 (실제 DataTableLayout 과 동일) ---------- */
+.ap-body .ap-total { margin: 0 0 8px; font: 600 13px/1.5 var(--font-sans); color: #5D6474; }
+
 /* ---------- 상세 · 진료 정보 카드(무료접종형) ---------- */
 .apx-treat-free .apx-treat-title { margin-top: 4px; }
 .apx-free-target { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 8px; background: var(--gray-10); }

@@ -1118,6 +1118,8 @@ function ApptScreen({ appts, setAppts, hospitalLinked, failNextSync, consumeFail
           </div>
         </div>
 
+        {/* 총 건수 — 실제 DataTableLayout: 테이블 위, gap 8, caption1_600, GRAY_70 */}
+        <div className="ap-total">총 {rows.length.toLocaleString('ko-KR')}건</div>
         {/* 테이블 — 연동 병원은 채널이 첫 열(84px·중앙정렬) */}
         <div className="apx-table-scroll">
           <div className={`apx-table${hospitalLinked ? ' has-channel' : ''}`}>
@@ -1150,7 +1152,6 @@ function ApptScreen({ appts, setAppts, hospitalLinked, failNextSync, consumeFail
             ))}
           </div>
         </div>
-        <div className="ap-total">전체 {rows.length}건</div>
         {totalPages > 1 && (
           <div className="apx-pagination">
             {Array.from({ length: totalPages }).map((_, i) => (
@@ -1664,9 +1665,10 @@ const SPEC: Record<string, SpecEntry> = {
       '무료접종형이면 1행 "독감백신 · 상담 후 결정"',
       '2행은 금액 자리에 "무료접종 · {대상자 유형}" (예: 무료접종 · 어르신)',
       '목적: 목록만 훑어도 국가 조달 물량 건인지 구분',
-      '상품형 행은 As-is 그대로'
-    ],
-    note: '검색(진료항목명)은 "독감", "무료접종", "상담 후 결정", 대상자 유형으로도 걸린다.'
+      '상품형 행은 As-is 그대로',
+      '검색(진료항목명)은 "독감", "무료접종", "상담 후 결정", 대상자 유형으로도 걸린다',
+      '무료접종형만 모아 보는 필터는 없다'
+    ]
   },
   'detail-card': {
     title: '상세 · 진료 정보 카드',
@@ -1677,27 +1679,18 @@ const SPEC: Record<string, SpecEntry> = {
       '무료접종형 카드 = ① 분류 뱃지 "독감백신" ② 항목명 "상담 후 결정"(유저 카드 미러링) ③ 대상자 행 ④ 상태 1줄 "국가 무료접종 대상자로 신청됨" ⑤ 고지 문구',
       '소개 문구 · 썸네일 · 옵션 목록 · 예상 결제 금액은 표시하지 않음 — 원본 상품이 없다',
       '고지 문구: "무료 대상 여부는 병원에서 확인 후 접종되며, 대상이 아닌 경우 유료로 안내될 수 있어요"',
-      '진료정보는 신청 시점 스냅샷(As-is 동일). 유료 전환돼도 내역은 수정하지 않고 고지 문구로 커버'
-    ],
-    note: '식별자는 "무료 백신 대상자 유형"이다. "상담 후 결정"·제품 미특정·금액 없음은 그 파생 표현. 병원 등록 독감 상품과 무관(상품 0개여도 발생).'
+      '진료정보는 신청 시점 스냅샷(As-is 동일). 유료 전환돼도 내역은 수정하지 않고 고지 문구로만 안내',
+      '식별자는 무료 백신 대상자 유형. "상담 후 결정"·제품 미특정·금액 없음은 그 파생 표현. 병원 등록 독감 상품과 무관(상품 0개여도 발생)'
+    ]
   },
   'target-row': {
     title: '대상자 행 · 기준 문구',
     where: '예약 상세 > 진료 정보 > 무료 백신 대상자',
-    tbd: true,
     tobe: [
       '"무료 백신 대상자  {유형} ({기준 문구})" — 유형 = 임신부 / 어린이 / 어르신',
       '기준 문구는 굿닥 운영값(연도별 출생 범위)을 신청 시점에 스냅샷. 매년 바뀌므로 현재값을 참조하지 않는다',
       '임신부는 출생 기준이 없어 유형만 표기',
       '대상 적합 여부는 굿닥이 판정하지 않는다. 병원이 방문자 정보의 생년월일과 이 문구를 눈으로 대조'
-    ],
-    decided: [
-      '참여기관 판정은 공공기관 위탁의료기관 데이터로. 어드민 설정 없음',
-      '목록 필터 "무료접종만 보기"는 제외(오버스펙)',
-      '유료 전환 시 내역 수정 없음. 스냅샷 유지, 유료 가격은 이미 등록된 상품 가격으로 현장 안내'
-    ],
-    open: [
-      '기준 문구 운영값 관리 위치 — 제안: 서버 측 "절기 설정" 1레코드(대상군별 라벨·기준 문구·시작일), 어드민 UI 없이 연 1회 갱신, 예약 생성 시 라벨+문구 복사'
     ]
   }
 };
@@ -1725,7 +1718,7 @@ function SpecPanel({ entry, onClose }: { entry: SpecEntry; onClose: () => void }
     <aside className="sx-panel" role="dialog" aria-label={entry.title} onClick={(e) => e.stopPropagation()}>
       <div className="sx-panel-head">
         <div>
-          <div className="sx-panel-eyebrow">{entry.tbd ? '미결 포함 · PO 확인 대기' : '정책 · 초안 2026-09-14'}</div>
+          <div className="sx-panel-eyebrow">정책</div>
           <div className="sx-panel-title">{entry.title}</div>
           <div className="sx-panel-where">{entry.where}</div>
         </div>

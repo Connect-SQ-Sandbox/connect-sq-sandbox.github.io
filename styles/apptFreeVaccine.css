@@ -1,0 +1,49 @@
+/* appt-free-vaccine — 예약 신청 내역 · 무료접종형 진료정보 + [SX] 스펙 보기 오버레이
+ * 공용 셸(connectShell.css)과 admin-nonpay-aug 화면 CSS 위에 얹는 차분만 둔다. */
+
+/* ---------- 상세 · 진료 정보 카드(무료접종형) ---------- */
+.apx-treat-free .apx-treat-title { margin-top: 4px; }
+.apx-free-target { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 8px; background: var(--gray-10); }
+.apx-free-target-label { flex-shrink: 0; font: 400 14px/21px var(--font-sans); color: var(--gray-60); }
+.apx-free-target-val { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0 6px; text-align: right; font: 600 14px/21px var(--font-sans); color: var(--gray-90); }
+.apx-free-target-crit { font: 400 13px/21px var(--font-sans); font-style: normal; color: var(--gray-60); }
+.apx-free-status { display: flex; align-items: center; gap: 6px; font: 500 14px/21px var(--font-sans); color: var(--gray-80); }
+.apx-free-status-ic { display: inline-flex; width: 16px; height: 16px; color: var(--gray-50); }
+.apx-free-status-ic svg { width: 16px; height: 16px; }
+
+/* ---------- [SX] 스펙 보기 — 핀·FAB·패널 (기본 off) ---------- */
+.sx-fab { position: fixed; right: 132px; top: 20px; z-index: 9000; display: flex; align-items: center; gap: 7px; height: 38px; padding: 0 14px; border: 1px solid #caced8; border-radius: 19px; background: #fff; cursor: pointer; font: 600 13px/38px var(--font-sans); color: #31353f; box-shadow: 0 2px 10px rgba(22, 24, 29, .12); }
+.sx-fab:hover { background: #f9f9fb; }
+.sx-fab.on { background: #16181d; border-color: #16181d; color: #fff; }
+.sx-fab .sx-dot { width: 7px; height: 7px; border-radius: 50%; background: #caced8; }
+.sx-fab.on .sx-dot { background: #4ade80; }
+
+.sx-host { position: relative; }
+.sx-host.inline { display: inline-flex; align-items: center; gap: 6px; padding-right: 2px; }
+.sx-host.block { display: block; outline: 1.5px dashed transparent; outline-offset: 4px; border-radius: 10px; transition: outline-color .12s; }
+.sx-host.block.act { outline-color: #0073fa; }
+.sx-host.block.tbd.act { outline-color: #d97706; }
+.sx-pin { flex-shrink: 0; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 50%; background: #16181d; color: #fff; cursor: pointer; font: 700 11px/20px var(--font-sans); text-align: center; box-shadow: 0 1px 4px rgba(22, 24, 29, .3); }
+.sx-host.block > .sx-pin { position: absolute; z-index: 60; top: -2px; right: -2px; }
+.sx-host.inline > .sx-pin { position: static; }
+.sx-pin:hover, .sx-pin.act { background: #0073fa; }
+.sx-pin.tbd { background: #b45309; }
+.sx-pin.tbd:hover, .sx-pin.tbd.act { background: #d97706; }
+
+.sx-panel { position: fixed; top: 72px; right: 20px; z-index: 9100; width: 380px; max-height: calc(100vh - 96px); display: flex; flex-direction: column; background: #fff; border: 1px solid #e3e6ec; border-radius: 14px; box-shadow: 0 12px 40px rgba(22, 24, 29, .18); overflow: hidden; }
+.sx-panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px 18px 12px; border-bottom: 1px solid var(--gray-20); }
+.sx-panel-eyebrow { font: 600 11px/16px var(--font-sans); letter-spacing: .02em; color: #0073fa; text-transform: uppercase; }
+.sx-panel-title { margin-top: 2px; font: 700 16px/24px var(--font-sans); color: #16181d; }
+.sx-panel-where { margin-top: 2px; font: 400 12px/18px var(--font-sans); color: var(--gray-60); }
+.sx-panel-close { flex-shrink: 0; width: 28px; height: 28px; padding: 6px; border: 0; border-radius: 6px; background: transparent; color: var(--gray-60); cursor: pointer; }
+.sx-panel-close:hover { background: var(--gray-10); }
+.sx-panel-close svg { width: 16px; height: 16px; }
+.sx-panel-body { overflow: auto; padding: 12px 18px 16px; display: flex; flex-direction: column; gap: 14px; }
+.sx-panel-body h4 { margin: 0 0 6px; font: 700 12px/18px var(--font-sans); color: var(--gray-60); }
+.sx-panel-body ul { margin: 0; padding-left: 16px; display: flex; flex-direction: column; gap: 5px; }
+.sx-panel-body li { font: 400 13px/20px var(--font-sans); color: #31353f; overflow-wrap: anywhere; }
+.sx-panel-body section.decided { padding: 10px 12px; border-radius: 8px; background: #eefbf3; }
+.sx-panel-body section.decided h4 { color: #15803d; }
+.sx-panel-body section.tbd { padding: 10px 12px; border-radius: 8px; background: #fff7ed; }
+.sx-panel-body section.tbd h4 { color: #b45309; }
+.sx-panel-note { margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--gray-10); font: 400 12px/18px var(--font-sans); color: var(--gray-70); }

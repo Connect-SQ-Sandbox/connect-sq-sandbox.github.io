@@ -2752,7 +2752,7 @@ Error generating stack: `+l.message+`
  * 이어가기용 컨텍스트 헤더  (아래 주입 블록에 대한 것)
  * ─────────────────────────────────────────────────────────────
  * 이름     : treatment-create-tree (plus 의 분기 — 분류 선택 트리판)
- * 상태     : 현행 · t6.9 · 2026-09-18
+ * 상태     : 현행 · t7.0 · 2026-09-18
  * 분기원본 : out/treatment-create-plus.html (v2.5) 에서 카피.
  *            plus 는 그대로 유지한다. 아래 수정1~23 은 plus 에서 물려받은 이력이고,
  *            이 파일 고유 변경은 [트리판] 블록에 적는다.
@@ -3304,6 +3304,10 @@ Error generating stack: `+l.message+`
  *
  *
  * 변경 이력(트리판)
+ *  t7.0 2026-09-18 [T56b] 노션 정책 문서가 "UI 정책" DB 로 옮겨가 오버레이 NOTION 주소 교체.
+ *                  3d73802f… → d893802f565b82e0a05a818459c204c2. 페이지 id 가 바뀌었으니
+ *                  이동이 아니라 새 페이지다 — 11개 섹션과 DEV 피그마 링크까지 그대로 옮겨진 것
+ *                  확인했다. nchip() 이 이 상수 하나만 쓰므로 패널 11곳이 같이 따라간다.
  *  t6.9 2026-09-18 [T56] 피그마가 PD → DEV 파일로 이관돼 오버레이 링크를 전부 옮겼다(세화님).
  *                  파일키 RFF27IwBUWcsGrgeE2thzR(PD) → GP44fafZvoHssSx85Bk1OP(DEV),
  *                  페이지는 "9월 - 진료항목 분류 개편"(13802:2). 노드 12개를 새로 찾아 매핑했다 —
@@ -4945,7 +4949,7 @@ html[data-bx-cat="set"] .sep-chips{display:none!important}
   var FIG='https://www.figma.com/design/GP44fafZvoHssSx85Bk1OP/-CONNECT--%EC%BB%A4%EB%84%A5%ED%8A%B8-%EC%9B%B9%EB%B7%B0--DEV?node-id=';
   var fu = function(id){ return FIG + id.replace(':','-'); };
   // 정책 원본은 노션. 이 오버레이는 요약이다.
-  var NOTION='https://app.notion.com/p/3d73802f565b8182a09be7a3d262c5b1';
+  var NOTION='https://app.notion.com/p/d893802f565b82e0a05a818459c204c2';
   var nchip = function(label){
     return '<a class="sx-lk sx-lk-nt" href="'+NOTION+'" target="_blank" rel="noopener">'
       + label + '<span aria-hidden="true"> \u2197</span></a>'; };

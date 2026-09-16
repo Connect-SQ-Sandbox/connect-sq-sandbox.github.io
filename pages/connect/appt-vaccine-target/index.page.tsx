@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : appt-vaccine-target — 독감 무료접종 대상자 선택 UX (유저향 모바일 신청 웹)
  *            `무료 백신 대상자`를 고른 뒤 하위 뎁스(주성분 · 독감백신 종류)를 어떻게 처리할지 5안 비교 + 실제 동작.
- * 상태     : 현행(active)   버전: v1.6   최종수정: 2026-09-16
+ * 상태     : 현행(active)   버전: v2.0   최종수정: 2026-09-16
  * PRD      : 미발행 — Claude Design 핸드오프 `무료접종 대상자 선택 UX-handoff.zip`(2026-09-16) 이식.
  *            원본 캔버스 = `무료접종 대상자 선택 UX.dc.html` + 컴포넌트 `VaccineScreen.dc.html` / `VaccineLive.dc.html`.
  * 짝 화면  : 병원(어드민)향 = 예약 신청 내역 · 독감 무료접종형 진료정보 → out/treatment-create-tree.html?spec=1 의 [T45]
@@ -13,9 +13,9 @@ import React, { useEffect, useMemo, useState } from 'react';
  * 관련 CSS : apptVaccineTarget.css (캔버스 크롬만. 모바일 프레임 내부는 원본대로 인라인 스타일)
  * 기술제약 : react-only · plain CSS · mock · 네트워크 0
  *
- * 화면구성 : ① 실제 동작(기본 진입) — 상단 `안` 세그먼트로 A~E를, `예약자 불일치` 세그먼트로 F-1~F-4를 바꿔 가며
+ * 화면구성 : ① 실제 동작(기본 진입) — 상단 `안` 세그먼트로 A~E를, `진료 대상자` 세그먼트로 F-1~F-4를 바꿔 가며
  *               직접 눌러보는 인터랙티브 화면 + 우측 확인 포인트
- *            ② 비교 보드 — 안 A~E × 상태 ①②③ + 예약 정보 확인 카드 ④, 비교표, 부록(예약자 불일치 F-1~F-4)
+ *            ② 비교 보드 — 안 A~E × 상태 ①②③ + 예약 정보 확인 카드 ④, 비교표, 부록(진료 대상자 처리 F-1~F-4)
  *
  * 핵심 결정 (why):
  *   [확정·디자인] 대상자 선택은 제품 선택 위 별도 아코디언 행(`무료 백신 대상자`)이고 선택지는
@@ -31,14 +31,15 @@ import React, { useEffect, useMemo, useState } from 'react';
  *                화면에 보이는 letter는 `LETTER` 맵에서만 나온다. 순위가 또 바뀌면 그 맵과 라벨 문자열만 고치면 된다.
  *   [보류]       채택안은 아직 미정(추천 순위 ≠ 확정). 다만 진입 기본값은 추천 1순위인 **안 A(하위 뎁스 접기)**로 둔다
  *                (2026-09-16 세화님 지시). 열자마자 A가 선택돼 있을 뿐, 확정 채택안이라는 뜻은 아니다.
- *   [보류]       예약자 불일치(고른 대상자와 예약자 생년월일이 어긋남) 처리 4안 미정 —
- *                F-1 체크 비활성 / F-2 체크 후 즉시 해제 / F-3 사전 경고(대상자 선택 즉시 알리고 신청서에서 이어받음) /
- *                F-4 자동 전환(체크 UI를 없애고 입력 폼으로 시작).
- *                F-3·F-4는 "신청서에서 조건을 검증하는 게 어색하다"는 피드백에서 나온 방향(2026-09-16 세화님).
- *   [유지·자체] 실제 동작의 예약자는 **만 34세 고정**이고 불일치는 `어린이`·`어르신`에서만 발동한다(임신부는 나이 기준 없음).
- *                이 대조는 자격 판정이 아니라 이미 아는 예약자 생년월일로 하는 안내다 — 판정 금지 원칙과 충돌하지 않는다.
- *                `예약자 불일치 = 끔`일 때는 예약자=대상자인 일반 케이스(체크된 `예약자와 동일해요`, 입력 폼 없음)를 그려
- *                F-4의 구조 차이를 그 자리에서 비교할 수 있게 했다.
+ *   [확정·세화님] 진료 대상자 처리의 **프레이밍 전환**(2026-09-16) — 어린이·영유아는 부모가 자녀를 대신 예약하는 것이
+ *                기본 케이스다. 생년월일 불일치를 오류로 다루는 F-1·F-2 방식은 정상 케이스를 막힌 동작으로 만든다.
+ *                F-3·F-4는 대조·경고 배너를 전부 버리고 **본인/대리 여부를 중립적으로 먼저 묻는다**. 고른 값은 그대로 신뢰.
+ *   [보류]       처리 4안 미정 — F-1 체크 비활성 / F-2 체크 후 즉시 해제(둘 다 대조 방식, 비교용으로 남겨 둠) /
+ *                F-3 대상자 선택 화면 통합형(G-1) / F-4 신청서 섹션 재설계형(G-2).
+ *   [유지·자체] F-3의 `누구를 위한 접종인가요?`는 **필수 질문**으로 두어 답하기 전에는 `다음`을 막았다.
+ *                프리셋이 없는 안이라 미답 상태를 허용하면 분기가 정해지지 않는다 — 다른 판단이면 이 게이팅만 풀면 된다.
+ *   [유지·자체] F-4 프리셋은 `어린이`만 `다른 분`이고 어르신·임신부는 `예약자 본인`이다(영유아 카테고리는 아직 없음).
+ *   [유지·자체] F-1·F-2용 예약자는 만 34세 고정이고 불일치는 `어린이`·`어르신`에서만 발동한다(임신부는 나이 기준 없음).
  *   [유지·자체] 원본 캔버스는 안 A의 유료 제품 가격을 250,000원 단일값 mock으로 뒀다. 실제 접종료가 아니라
  *                가격 행이 있는지 없는지를 보기 위한 자리표시값이라 그대로 옮겼다.
  *   [유지·자체] 안 D의 시트를 스와이프로 닫는 경로는 원본에도 정의가 없어 구현하지 않았다(딤 탭 = 무동작).
@@ -51,6 +52,9 @@ import React, { useEffect, useMemo, useState } from 'react';
  * 변경 이력:
  *   v1    2026-09-16 — Claude Design 핸드오프 이식(비교 보드 + 실제 동작 2모드). 신규.
  *   v1.1  2026-09-16 — 진입 기본 모드를 비교 보드 → 실제 동작으로 변경(세화님 지시). 5안 비교는 세그먼트로 이동.
+ *   v2.0  2026-09-16 — F-3·F-4를 **본인/대리를 묻는 방식**으로 다시 그림(세화님 지시). 생년월일 대조·경고 배너 폐기.
+ *                      F-3 = 대상자 선택 화면 통합형(G-1, 2장) · F-4 = 신청서 섹션 재설계형(G-2, 2장). 실제 동작도 같이 교체.
+ *                      세그먼트 이름 `예약자 불일치` → `진료 대상자`. RowData.warn 슬롯 제거.
  *   v1.6  2026-09-16 — `예약자 불일치`를 바꿔도 진행 상태(대상자 선택·현재 화면)를 유지하도록 수정(세화님 피드백).
  *                      초기화되면 같은 지점에서 F안을 갈아 끼우는 비교가 안 된다. 안(A~E) 변경 시에만 리셋.
  *   v1.5  2026-09-16 — F-1~F-4의 **실제 동작 버전** 추가(세화님 지시). 상단 `예약자 불일치` 세그먼트로 안 A~E와 조합해
@@ -68,13 +72,19 @@ import React, { useEffect, useMemo, useState } from 'react';
 /** 내부 id는 동작 이름, 화면에 보이는 A~E는 추천 순위(LETTER)로 따로 매긴다. */
 type Variant = 'collapse' | 'readonly' | 'disabled' | 'presplit' | 'asis';
 
-/** 예약자 불일치 처리 4안 + 끔. 실제 동작 모드에서 안 A~E와 조합해 눌러본다. */
+/**
+ * 진료 대상자 처리 4안 + 끔. 실제 동작 모드에서 안 A~E와 조합해 눌러본다.
+ * F1·F2 = 생년월일 대조 방식(예약자 나이와 어긋나면 오류로 다룸).
+ * F3·F4 = 본인/대리를 그냥 물어보는 방식 — 어린이는 부모가 대신 예약하는 게 기본 케이스라
+ *         "불일치 = 오류" 프레이밍 자체가 틀렸다는 판단(2026-09-16). 대조·경고 로직 없음.
+ */
 type MismatchMode = 'off' | 'F1' | 'F2' | 'F3' | 'F4';
 
-/** 실제 동작에서 쓰는 가상의 예약자 나이 — 어린이·어르신 기준 어느 쪽에도 맞지 않는 값 */
+/** 누구를 위한 접종인가 — F3·F4가 묻는 값 */
+type Whom = 'self' | 'other';
+
+/** F1·F2(생년월일 대조 방식)에서만 쓰는 가상의 예약자 나이 */
 const BOOKER_AGE = 34;
-const preWarnCopy = (label: string) =>
-  '예약자님은 만 ' + BOOKER_AGE + '세로, 선택하신 ' + label + ' 대상에 해당하지 않아요. 신청서에서 별도 대상자 정보를 입력하게 돼요.';
 
 /** 추천 순위 = 표시 이름. A 접기 > B 읽기 전용 > C 비활성 > D 사전 분기 > E 현행 유지 */
 const LETTER: Record<Variant, string> = {
@@ -194,8 +204,6 @@ type RowData = {
   valueDim?: boolean;
   chev: Chev;
   helper?: string | null;
-  /** 행 아래 파란 인라인 경고(F-3 사전 경고형에서 사용) */
-  warn?: string | null;
   chips?: ChipData[] | null;
   onToggle?: (() => void) | null;
 };
@@ -264,22 +272,6 @@ function AccordionRow({ row }: { row: RowData }) {
       {row.helper ? (
         <div style={{ padding: '0 20px 16px', font: '400 13px/1.5 Pretendard, sans-serif', color: '#8B95A1', wordBreak: 'keep-all' }}>
           {row.helper}
-        </div>
-      ) : null}
-
-      {row.warn ? (
-        <div
-          style={{
-            margin: '0 20px 16px',
-            background: '#EEF5FF',
-            borderRadius: 8,
-            padding: 14,
-            font: '400 13px/1.6 Pretendard, sans-serif',
-            color: '#0073FA',
-            wordBreak: 'keep-all'
-          }}
-        >
-          {row.warn}
         </div>
       ) : null}
 
@@ -456,6 +448,8 @@ type ScreenModel = {
   onCta?: () => void;
   onBack?: () => void;
   scroll?: boolean;
+  /** 진료항목 선택 화면에서 행 아래·요약 카드 위에 끼워 넣을 질문(F-3 본인/대리) */
+  question?: React.ReactNode;
   /** 예약 정보 확인 화면에서 카드 아래에 이어 붙일 영역(진료 대상자 섹션) */
   extra?: React.ReactNode;
 };
@@ -480,6 +474,7 @@ function Screen({ model }: { model: ScreenModel }) {
             {model.rows.map((row, i) => (
               <AccordionRow key={i} row={row} />
             ))}
+            {model.question}
             {model.summary ? <SummaryCard summary={model.summary} /> : null}
           </>
         )}
@@ -644,23 +639,34 @@ function LiveScreen({ variant, mismatch }: { variant: Variant; mismatch: Mismatc
   const [s, setS] = useState<LiveState>(() => initialState(variant));
   /** F-2에서 `예약자와 동일해요`를 눌러본 적이 있는가 */
   const [tried, setTried] = useState(false);
+  /** F-3 — 대상자 선택 화면에서 고른 본인/대리(고르기 전 null) */
+  const [whom, setWhom] = useState<Whom | null>(null);
+  /** F-4 — 신청서 섹션에서 고른 본인/대리(카테고리에 따라 프리셋) */
+  const [sectionWhom, setSectionWhom] = useState<Whom | null>(null);
 
   // 안(A~E)을 바꿀 때만 흐름을 처음부터 다시 태운다.
   useEffect(() => {
     setS(initialState(variant));
     setTried(false);
+    setWhom(null);
+    setSectionWhom(null);
   }, [variant]);
 
   // 불일치 처리(F-1~F-4)는 같은 화면·같은 선택 상태에서 갈아 끼워야 비교가 되므로 진행 상태를 건드리지 않는다.
   // F-2의 `눌러봤음`만 초기화한다.
   useEffect(() => {
     setTried(false);
+    setSectionWhom(null);
   }, [mismatch]);
 
   const free = !!s.target && s.target !== 'none';
   const isConfirm = s.screen === 'confirm';
-  /** 예약자(만 34세)가 고른 대상 기준을 벗어나는가 — 임신부는 나이 기준이 없어 제외 */
-  const mismatched = mismatch !== 'off' && (s.target === 'child' || s.target === 'senior');
+  /** 생년월일 대조 방식(F-1·F-2)에서만 쓰는 판정 — 임신부는 나이 기준이 없어 제외 */
+  const mismatched = (mismatch === 'F1' || mismatch === 'F2') && (s.target === 'child' || s.target === 'senior');
+  /** 본인/대리를 묻는 방식(F-3·F-4)이 켜져 있고 무료접종 대상자를 고른 상태인가 */
+  const asking = (mismatch === 'F3' || mismatch === 'F4') && free;
+  /** F-4 기본값 — 어린이는 부모가 대신 예약하는 게 기본 케이스라 `다른 분`으로 프리셋(수정 가능) */
+  const sectionValue: Whom = sectionWhom ?? (s.target === 'child' ? 'other' : 'self');
 
   const pickTarget = (key: TargetKey) => {
     setS((prev) => {
@@ -682,6 +688,8 @@ function LiveScreen({ variant, mismatch }: { variant: Variant; mismatch: Mismatc
   const toggle = (name: 'target' | 'base' | 'kind') => setS((prev) => ({ ...prev, open: prev.open === name ? null : name }));
 
   const ready = (() => {
+    // F-3은 대상자 선택 화면에서 본인/대리를 고르기 전에는 넘어갈 수 없다(필수 질문).
+    if (mismatch === 'F3' && free && whom === null) return false;
     if (!s.target) return false;
     if (s.target === 'none') return !!(s.base && s.kind);
     if (variant === 'asis') return !!(s.base && s.kind);
@@ -699,7 +707,6 @@ function LiveScreen({ variant, mismatch }: { variant: Variant; mismatch: Mismatc
         value: !open && s.target ? T[s.target].label : null,
         chev: open ? 'up' : 'down',
         helper: variant === 'disabled' && free && !open ? '무료접종 대상자는 병원에서 접종 백신을 정해요' : null,
-        warn: mismatch === 'F3' && mismatched && !open && s.target ? preWarnCopy(T[s.target].label) : null,
         chips: open
           ? TARGETS.map((t) => ({
               label: t.label,
@@ -782,8 +789,10 @@ function LiveScreen({ variant, mismatch }: { variant: Variant; mismatch: Mismatc
   steps.push(s.target ? T[s.target].label : '대상자 미선택');
   if (s.base) steps.push(s.base);
   if (s.kind) steps.push(s.kind);
-  if (mismatch !== 'off')
-    steps.push(MISMATCH_LABEL[mismatch] + (mismatched ? ' · 예약자 불일치' : ' · 예약자 일치'));
+  if (mismatch === 'F1' || mismatch === 'F2') steps.push(MISMATCH_LABEL[mismatch] + (mismatched ? ' · 예약자 불일치' : ' · 예약자 일치'));
+  else if (mismatch === 'F3')
+    steps.push('F-3 · ' + (!free ? '질문 없음' : whom === null ? '본인/대리 미선택' : whom === 'self' ? WHOM_SELF : WHOM_OTHER_SHORT));
+  else if (mismatch === 'F4') steps.push('F-4 · ' + (!free ? '질문 없음' : sectionValue === 'self' ? WHOM_SELF : WHOM_OTHER_SHORT));
   steps.push(ready ? 'CTA 활성' : 'CTA 비활성');
 
   let tapNote: string;
@@ -793,10 +802,15 @@ function LiveScreen({ variant, mismatch }: { variant: Variant; mismatch: Mismatc
   else if (free) tapNote = '대상자를 골랐으므로 하위 뎁스 선택 없이 CTA가 열립니다. 대상자 행을 다시 눌러 `해당 없음`으로 바꿔보세요.';
   else tapNote = '유료 흐름: 주성분 → 독감백신 종류 순으로 고릅니다.';
   if (isConfirm) tapNote = '좌측 상단 ←를 누르면 선택 화면으로 돌아갑니다.';
-  if (mismatch !== 'off' && !mismatched)
+  if ((mismatch === 'F1' || mismatch === 'F2') && !mismatched)
     tapNote = '예약자(만 ' + BOOKER_AGE + '세)와 어긋나는 대상은 `어린이`·`어르신`입니다. 둘 중 하나를 고르면 ' + MISMATCH_LABEL[mismatch] + ' 처리가 켜집니다.';
   else if (mismatch === 'F2' && isConfirm && !tried) tapNote = '`예약자와 동일해요`를 눌러보세요 — 체크가 되지 않고 배너가 뜹니다.';
-  else if (mismatch === 'F3' && mismatched && !isConfirm) tapNote = '대상자 행 아래 경고가 먼저 뜹니다. `다음`을 눌러 신청서에서 어떻게 이어받는지 보세요.';
+  else if (mismatch === 'F3' && asking && !isConfirm)
+    tapNote = whom === null ? '`누구를 위한 접종인가요?`에 답해야 `다음`이 열립니다. 생년월일 대조는 하지 않습니다.' : '`다음`을 눌러 신청서가 어떻게 달라지는지 보세요.';
+  else if (mismatch === 'F4' && asking && !isConfirm) tapNote = '`다음`을 눌러 신청서의 진료 대상자 섹션을 보세요. 어린이는 `다른 분`이 기본값입니다.';
+  else if (mismatch === 'F4' && asking && isConfirm) tapNote = '세그먼트를 눌러 본인/대리를 바꿔보세요. 프리셋은 어디까지나 기본값이고 수정할 수 있습니다.';
+  else if ((mismatch === 'F3' || mismatch === 'F4') && !free)
+    tapNote = '이 질문은 무료접종 대상자를 고른 흐름에서만 나옵니다. `임신부`·`어린이`·`어르신` 중 하나를 골라보세요.';
 
   const model: ScreenModel = {
     navTitle: isConfirm ? '예약 정보 확인' : '굿닥의원',
@@ -821,9 +835,14 @@ function LiveScreen({ variant, mismatch }: { variant: Variant; mismatch: Mismatc
           onClick: () => pickTarget(t.key)
         }))
       : null,
-    extra: isConfirm ? (
+    question: !isConfirm && mismatch === 'F3' && asking ? <WhomQuestion value={whom} onPick={setWhom} /> : null,
+    extra: !isConfirm ? null : mismatch === 'F4' && asking ? (
+      <WhomSection value={sectionValue} onPick={setSectionWhom} />
+    ) : mismatch === 'F3' && asking ? (
+      whom === 'other' ? <PlainTargetSection /> : null
+    ) : (
       <LiveTargetSection mode={mismatch} mismatched={mismatched} tried={tried} onTry={() => setTried(true)} />
-    ) : null,
+    ),
     ctaOn: ready || isConfirm,
     ctaLabel: isConfirm ? '예약 신청하기' : '다음',
     onCta: () => {
@@ -1033,12 +1052,103 @@ function CompareBoard() {
 /* ---- 부록 · 예약자 불일치 처리 ---- */
 
 const MISMATCH_BANNER = '예약자는 선택한 무료접종 대상에 해당하지 않아요. 진료 대상자 정보를 직접 입력해 주세요.';
-/** F-3 ① 대상자 선택 단계에서 곧바로 띄우는 사전 경고 */
-const PREWARN_BANNER = '예약자님은 만 34세로, 선택하신 어린이 대상에 해당하지 않아요. 신청서에서 별도 대상자 정보를 입력하게 돼요.';
-/** F-3 ② 앞 단계 경고를 이어받는 신청서 배너 */
-const PREWARN_FOLLOWUP = '앞에서 안내드린 대로, 예약자는 선택한 무료접종 대상에 해당하지 않아요. 진료 대상자 정보를 직접 입력해 주세요.';
-/** F-4 체크박스를 없앤 대신 남기는 안내 한 줄 */
-const NO_CHECKBOX_LEAD = '예약자님과 다른 분의 정보를 입력해주세요';
+
+/* ---- F-3 · F-4 공통 · 본인/대리 2지선다 ---- */
+
+const WHOM_Q = '누구를 위한 접종인가요?';
+const WHOM_SELF = '예약자 본인';
+const WHOM_OTHER_SHORT = '다른 분';
+const WHOM_OTHER_LONG = '다른 분(자녀 등)';
+
+/** 칩 2개짜리 2지선다. 대상자 칩과 같은 규격을 쓴다. */
+function TwoChoice({
+  options,
+  value,
+  onPick
+}: {
+  options: { key: Whom; label: string }[];
+  value: Whom | null;
+  onPick?: (w: Whom) => void;
+}) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+      {options.map((o) => (
+        <div
+          key={o.key}
+          onClick={onPick ? () => onPick(o.key) : undefined}
+          style={{
+            minHeight: 52,
+            padding: '8px 12px',
+            boxSizing: 'border-box',
+            borderRadius: 8,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: value === o.key ? '1.5px solid #111' : '1px solid #E5E8EB',
+            background: '#fff',
+            cursor: onPick ? 'pointer' : 'default',
+            fontSize: 15,
+            fontWeight: value === o.key ? 600 : 400,
+            lineHeight: 1.3,
+            color: '#111',
+            textAlign: 'center'
+          }}
+        >
+          {o.label}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** F-3(G-1) — 대상자 선택 화면에 바로 이어 붙는 질문 */
+function WhomQuestion({ value, onPick }: { value: Whom | null; onPick?: (w: Whom) => void }) {
+  return (
+    <div style={{ borderTop: '1px solid #EEF0F3', padding: '18px 20px 20px' }}>
+      <div style={{ font: '600 17px/1.4 Pretendard, sans-serif', color: '#111', paddingBottom: 12 }}>{WHOM_Q}</div>
+      <TwoChoice
+        options={[
+          { key: 'self', label: WHOM_SELF },
+          { key: 'other', label: WHOM_OTHER_SHORT }
+        ]}
+        value={value}
+        onPick={onPick}
+      />
+    </div>
+  );
+}
+
+/** F-4(G-2) — 신청서의 `진료 대상자` 섹션 자체를 2지선다로 재설계한 버전 */
+function WhomSection({ value, onPick }: { value: Whom; onPick?: (w: Whom) => void }) {
+  return (
+    <div style={{ padding: '0 20px 20px' }}>
+      <div style={{ font: '600 17px/1.4 Pretendard, sans-serif', color: '#111', paddingBottom: 12 }}>진료 대상자</div>
+      <TwoChoice
+        options={[
+          { key: 'self', label: WHOM_SELF },
+          { key: 'other', label: WHOM_OTHER_LONG }
+        ]}
+        value={value}
+        onPick={onPick}
+      />
+      {value === 'other' ? (
+        <div style={{ paddingTop: 20 }}>
+          <TargetFields />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** F-3(G-1)에서 `다른 분`을 골랐을 때의 신청서 섹션 — 체크박스·배너 없이 폼으로 시작 */
+function PlainTargetSection() {
+  return (
+    <div style={{ padding: '0 20px 20px' }}>
+      <div style={{ font: '600 17px/1.4 Pretendard, sans-serif', color: '#111', paddingBottom: 14 }}>진료 대상자</div>
+      <TargetFields />
+    </div>
+  );
+}
 
 /** 체크박스 3종 — 체크됨(일반) / 비활성 / 빈 상태 */
 function CheckBox({ kind }: { kind: 'on' | 'dim' | 'empty' }) {
@@ -1099,19 +1209,14 @@ function LiveTargetSection({
   onTry: () => void;
 }) {
   const showForm = mismatched && mode !== 'off';
-  const noCheckbox = showForm && mode === 'F4';
-  const dim = showForm && (mode === 'F1' || mode === 'F3');
-  const banner = mode === 'F3' ? PREWARN_FOLLOWUP : MISMATCH_BANNER;
+  const noCheckbox = false;
+  const dim = showForm && mode === 'F1';
 
   return (
     <div style={{ padding: '0 20px 20px' }}>
       <div style={{ font: '600 17px/1.4 Pretendard, sans-serif', color: '#111', paddingBottom: noCheckbox ? 6 : 14 }}>진료 대상자</div>
 
-      {noCheckbox ? (
-        <div style={{ font: '400 13px/1.5 Pretendard, sans-serif', color: '#8B95A1', wordBreak: 'keep-all', paddingBottom: 20 }}>
-          {NO_CHECKBOX_LEAD}
-        </div>
-      ) : (
+      {noCheckbox ? null : (
         <div
           onClick={showForm && mode === 'F2' ? onTry : undefined}
           style={{
@@ -1127,7 +1232,7 @@ function LiveTargetSection({
         </div>
       )}
 
-      {showForm && (mode === 'F1' || mode === 'F3' || (mode === 'F2' && tried)) ? <InfoBanner text={banner} /> : null}
+      {showForm && (mode === 'F1' || (mode === 'F2' && tried)) ? <InfoBanner text={MISMATCH_BANNER} /> : null}
       {showForm ? <TargetFields /> : null}
     </div>
   );
@@ -1244,12 +1349,13 @@ function MismatchFrame({
   );
 }
 
-/** F-3 ① — 대상자 선택 화면에서 칩을 고르는 즉시 띄우는 사전 경고 (안 A 접기 기준) */
-function PreWarnFrame() {
+/** F-3(G-1) ① — 대상자 선택 화면에 본인/대리 질문을 바로 이어 붙인 화면 (안 A 접기 기준) */
+function WhomQuestionFrame() {
   const model: ScreenModel = {
     navTitle: '굿닥의원',
     isConfirm: false,
-    rows: [{ label: '무료 백신 대상자', value: '어린이', chev: 'down', warn: PREWARN_BANNER }],
+    rows: [{ label: '무료 백신 대상자', value: '어린이', chev: 'down' }],
+    question: <WhomQuestion value="other" />,
     summary: { title: '무료접종 희망 · 어린이', body: SUMMARY_BODY },
     card: null,
     sheet: null,
@@ -1258,9 +1364,55 @@ function PreWarnFrame() {
   };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: 375 }}>
-      <FrameCaption badge="F-3-①" caption="대상자 선택 즉시 · 인라인 사전 경고" />
+      <FrameCaption badge="F-3-①" caption="대상자 선택 화면 통합 · 본인/대리를 바로 질문" />
       <Screen model={model} />
-      <div className="avt-note">칩을 고르는 순간 예약자 생년월일과 대조해 알려준다. 신청서까지 가서 막히지 않지만, 다음 화면에서 같은 사실을 다시 말하게 된다.</div>
+      <div className="avt-note">
+        카테고리를 고른 직후 같은 화면에서 묻는다. 생년월일을 대조하지 않으므로 경고도 오류도 없고, 고른 값을 그대로 신뢰한다.
+      </div>
+    </div>
+  );
+}
+
+/** F-3(G-1) ② — `다른 분`을 골랐을 때의 신청서 */
+function PlainTargetFrame() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: 375 }}>
+      <FrameCaption badge="F-3-②" caption="`다른 분` 선택 결과 · 체크박스·배너 없이 폼으로 시작" />
+      <div className="avt-frame">
+        <StatusBar />
+        <NavBar title="예약 정보 확인" />
+        <div style={{ flex: 1, minHeight: 0, paddingTop: 8 }}>
+          <div style={{ padding: '0 20px 20px' }}>
+            <div style={{ font: '700 22px/1.35 Pretendard, sans-serif', color: '#111' }}>예약 정보를 확인해주세요</div>
+          </div>
+          <PlainTargetSection />
+        </div>
+        <Cta on={false} label="예약 신청하기" />
+        <HomeIndicator />
+      </div>
+      <div className="avt-note">`예약자 본인`을 골랐다면 이 섹션 자체가 없다. 앞 화면의 답이 곧 분기라 신청서에서 다시 물을 것이 없다.</div>
+    </div>
+  );
+}
+
+/** F-4(G-2) — 신청서의 진료 대상자 섹션을 본인/대리 2지선다로 재설계 */
+function WhomSectionFrame({ value, badge, caption, note }: { value: Whom; badge: string; caption: string; note: string }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: 375 }}>
+      <FrameCaption badge={badge} caption={caption} />
+      <div className="avt-frame">
+        <StatusBar />
+        <NavBar title="예약 정보 확인" />
+        <div style={{ flex: 1, minHeight: 0, paddingTop: 8 }}>
+          <div style={{ padding: '0 20px 20px' }}>
+            <div style={{ font: '700 22px/1.35 Pretendard, sans-serif', color: '#111' }}>예약 정보를 확인해주세요</div>
+          </div>
+          <WhomSection value={value} />
+        </div>
+        <Cta on={false} label="예약 신청하기" />
+        <HomeIndicator />
+      </div>
+      <div className="avt-note">{note}</div>
     </div>
   );
 }
@@ -1330,21 +1482,23 @@ const MISMATCH_INFO: Record<Exclude<MismatchMode, 'off'>, { title: string; desc:
     checks: ['`예약자와 동일해요`를 눌러보기 — 체크되지 않고 배너가 나타남', '왜 풀렸는지 헷갈리는 정도를 체감']
   },
   F3: {
-    title: 'F-3 · 사전 경고형',
-    desc: '대상자 칩을 고르는 즉시 예약자 생년월일과 대조해 선택 화면에서 먼저 알리고, 신청서 배너는 `앞에서 안내드린 대로`로 이어받는다.',
+    title: 'F-3 · 대상자 선택 화면 통합형',
+    desc: '대상자 카테고리를 고른 직후 같은 화면에서 `누구를 위한 접종인가요?`를 묻는다. 생년월일 대조·경고는 없고, 고른 값을 그대로 신뢰한다.',
     checks: [
-      '`어린이`를 고르면 대상자 행 아래에 경고가 바로 뜨는지 확인',
-      '`다음` → 신청서에서 같은 사실을 다시 말하는 것이 과한지 확인',
-      '`임신부`로 바꾸면 경고가 사라짐(나이 기준이 없는 대상)'
+      '`어린이` 선택 → 같은 화면에 본인/대리 질문이 이어 붙는지 확인',
+      '답하기 전에는 `다음`이 열리지 않는 것(필수 질문)을 확인',
+      '`다른 분` → 신청서가 체크박스·배너 없이 입력 폼으로 시작',
+      '`예약자 본인` → 신청서에 진료 대상자 섹션이 아예 없음'
     ]
   },
   F4: {
-    title: 'F-4 · 자동 전환형',
-    desc: '체크박스와 배너를 없애고, 불일치면 `진료 대상자` 섹션이 처음부터 입력 폼으로 시작한다.',
+    title: 'F-4 · 신청서 섹션 재설계형',
+    desc: '신청서의 `진료 대상자` 섹션을 체크박스 대신 본인/대리 2지선다로 바꾼다. 어린이는 `다른 분`이 기본값이고 수정할 수 있다.',
     checks: [
-      '신청서에 체크박스가 아예 없는 것을 확인',
-      '`끔`으로 바꿔 예약자=대상자인 일반 케이스(체크된 상태)와 구조 차이를 비교',
-      '안내 한 줄의 위치가 자연스러운지 확인'
+      '`어린이`로 신청서에 가면 `다른 분`이 이미 선택돼 있는지 확인',
+      '`예약자 본인`으로 바꾸면 입력 폼이 접히는지 확인',
+      '`어르신`·`임신부`에서는 기본값이 `예약자 본인`인 것을 확인',
+      '이 질문이 생년월일 검증을 대체한다는 게 읽히는지 확인'
     ]
   }
 };
@@ -1388,7 +1542,7 @@ export default function ApptVaccineTargetPage() {
         ) : null}
         {live ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span className="avt-seg-label">예약자 불일치</span>
+            <span className="avt-seg-label">진료 대상자</span>
             <div className="avt-seg">
               {MISMATCH_MODES.map((m) => (
                 <button key={m} type="button" className={'avt-seg-item' + (m === mismatch ? ' is-on' : '')} onClick={() => setMismatch(m)}>
@@ -1445,8 +1599,10 @@ export default function ApptVaccineTargetPage() {
               <div className="avt-hint">
                 대상 여부 판정·서류·인증 UI는 없습니다. 유저 자기 선언과 고지 문구로만 처리하고, 제품과 금액은 병원 상담 후 결정됩니다.
                 {mismatch === 'off'
-                  ? ' 예약자 본인이 고른 대상 기준을 벗어나는 경우는 상단 `예약자 불일치` 세그먼트에서 F-1~F-4로 바꿔 볼 수 있습니다.'
-                  : ' 예약자는 만 ' + BOOKER_AGE + '세로 두었고, 이 대조는 자격 판정이 아니라 이미 아는 예약자 정보로 하는 안내입니다.'}
+                  ? ' 예약자 본인이 아닌 사람의 접종을 신청하는 경우는 상단 `진료 대상자` 세그먼트에서 F-1~F-4로 바꿔 볼 수 있습니다.'
+                  : mismatch === 'F1' || mismatch === 'F2'
+                    ? ' F-1·F-2는 예약자(만 ' + BOOKER_AGE + '세) 생년월일과 대조해 불일치를 오류로 다루는 방식입니다.'
+                    : ' F-3·F-4는 대조를 하지 않습니다 — 어린이는 부모가 대신 예약하는 것이 기본 케이스라, 오류가 아니라 질문으로 다룹니다.'}
               </div>
             </div>
           </div>
@@ -1488,41 +1644,41 @@ export default function ApptVaccineTargetPage() {
             <div className="avt-opt" id="1g">
               <div className="avt-olabel">
                 <span className="avt-oid">1g</span>
-                <b>부록 · 예약자 불일치 처리</b>
+                <b>부록 · 진료 대상자 처리</b>
                 <span>
-                  `어린이`를 골랐는데 예약자 본인 생년월일이 어린이 기준을 벗어난 경우. F-1·F-2는 신청서에서 조건을 검증하는 방식이고, "신청서에서 검증하는 게
-                  어색하다"는 피드백에 따라 더 이른 시점에 알리는 F-3, 체크박스 자체를 없애는 F-4를 덧붙였다.
+                  `어린이`를 골랐을 때 예약자 본인과 접종 대상이 다른 경우. F-1·F-2는 예약자 생년월일과 대조해 <b>불일치를 오류로</b> 다뤘는데, 어린이·영유아는
+                  부모가 자녀를 대신 예약하는 것이 오히려 기본 케이스라 그 프레이밍 자체가 틀렸다. F-3·F-4는 대조·경고를 버리고{' '}
+                  <b>본인/대리 여부를 중립적으로 먼저 묻는</b> 방향이다.
                 </span>
               </div>
               <div className="avt-row">
                 <MismatchFrame
                   badge="F-1"
-                  caption="체크박스 비활성 + 배너 상시 노출"
+                  caption="[대조 방식] 체크박스 비활성 + 배너 상시 노출"
                   checkbox="disabled"
                   banner={MISMATCH_BANNER}
-                  note="체크 자체를 막아 잘못된 선택이 일어나지 않지만, 왜 못 누르는지 배너를 읽어야 안다."
+                  note="체크 자체를 막아 잘못된 선택이 일어나지 않지만, 왜 못 누르는지 배너를 읽어야 안다. 대리 예약을 오류로 취급하는 것이 이 방식의 한계."
                 />
                 <MismatchFrame
                   badge="F-2"
-                  caption="체크는 유지 · 시도 시 배너 후 해제"
+                  caption="[대조 방식] 체크는 유지 · 시도 시 배너 후 해제"
                   checkbox="empty"
                   banner={MISMATCH_BANNER}
-                  note="체크는 눌리지만 즉시 해제되고 같은 배너가 뜬다. 누를 수 있어 답답함이 적은 대신, 왜 풀렸는지 한 번은 헷갈릴 수 있다."
+                  note="체크는 눌리지만 즉시 해제되고 같은 배너가 뜬다. 역시 정상적인 대리 예약을 막힌 동작으로 경험하게 된다."
                 />
-                <PreWarnFrame />
-                <MismatchFrame
-                  badge="F-3-②"
-                  caption="사전 경고형 · 신청서는 F-1과 동일 + 연결 문구"
-                  checkbox="disabled"
-                  banner={PREWARN_FOLLOWUP}
-                  note="앞 단계 경고를 `앞에서 안내드린 대로`로 이어받아 반복을 설명으로 바꾼다. 두 화면에서 같은 말을 두 번 하는 것이 과하지 않은지가 확인 포인트."
+                <WhomQuestionFrame />
+                <PlainTargetFrame />
+                <WhomSectionFrame
+                  badge="F-4-①"
+                  caption="신청서 섹션 재설계 · 어린이는 `다른 분`이 기본값"
+                  value="other"
+                  note="체크박스 대신 2지선다를 기본 질문으로 둔다. 어린이·영유아는 `다른 분`으로 프리셋하되 수정할 수 있고, 고르면 바로 아래 입력 폼이 열린다."
                 />
-                <MismatchFrame
-                  badge="F-4"
-                  caption="자동 전환형 · 체크박스 없이 입력 폼으로 시작"
-                  checkbox="none"
-                  lead={NO_CHECKBOX_LEAD}
-                  note="체크 UI가 없어 `눌러도 되는지` 헷갈림이 원천 제거된다. 대신 예약자=대상자인 일반 케이스와 섹션 구조가 달라지는 것이 위화감을 주지 않는지가 확인 포인트."
+                <WhomSectionFrame
+                  badge="F-4-②"
+                  caption="같은 섹션에서 `예약자 본인`으로 바꾼 상태"
+                  value="self"
+                  note="프리셋이 틀렸을 때 유저가 한 번에 되돌릴 수 있다. 이 질문이 곧 검증을 대체하므로 생년월일 대조·에러 배너는 없다."
                 />
               </div>
             </div>

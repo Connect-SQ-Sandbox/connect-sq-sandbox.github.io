@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : appt-vaccine-target — 독감 무료접종 대상자 선택 UX (유저향 모바일 신청 웹)
  *            `무료 백신 대상자`를 고른 뒤 하위 뎁스(주성분 · 독감백신 종류)를 어떻게 처리할지 5안 비교 + 실제 동작.
- * 상태     : 현행(active)   버전: v1.2   최종수정: 2026-09-16
+ * 상태     : 현행(active)   버전: v1.3   최종수정: 2026-09-16
  * PRD      : 미발행 — Claude Design 핸드오프 `무료접종 대상자 선택 UX-handoff.zip`(2026-09-16) 이식.
  *            원본 캔버스 = `무료접종 대상자 선택 UX.dc.html` + 컴포넌트 `VaccineScreen.dc.html` / `VaccineLive.dc.html`.
  * 짝 화면  : 병원(어드민)향 = 예약 신청 내역 · 독감 무료접종형 진료정보 → out/treatment-create-tree.html?spec=1 의 [T45]
@@ -28,7 +28,8 @@ import React, { useEffect, useMemo, useState } from 'react';
  *                D 사전 분기 / E 읽기 전용)과 **다르다** — 핸드오프 캔버스와 대조할 때 주의.
  *                코드의 variant id는 letter가 아니라 동작 이름(collapse/readonly/disabled/presplit/asis)이고,
  *                화면에 보이는 letter는 `LETTER` 맵에서만 나온다. 순위가 또 바뀌면 그 맵과 라벨 문자열만 고치면 된다.
- *   [보류]       채택안은 아직 미정(추천 순위 ≠ 확정). 진입 기본값은 안 C(비활성) — 원본 캔버스 기본값을 그대로 둔 것.
+ *   [보류]       채택안은 아직 미정(추천 순위 ≠ 확정). 다만 진입 기본값은 추천 1순위인 **안 A(하위 뎁스 접기)**로 둔다
+ *                (2026-09-16 세화님 지시). 열자마자 A가 선택돼 있을 뿐, 확정 채택안이라는 뜻은 아니다.
  *   [보류]       예약자 불일치(고른 대상자와 예약자 생년월일이 어긋남) 처리 F-1(체크 비활성)/F-2(체크 후 해제) 미정.
  *   [유지·자체] 원본 캔버스는 안 A의 유료 제품 가격을 250,000원 단일값 mock으로 뒀다. 실제 접종료가 아니라
  *                가격 행이 있는지 없는지를 보기 위한 자리표시값이라 그대로 옮겼다.
@@ -42,6 +43,7 @@ import React, { useEffect, useMemo, useState } from 'react';
  * 변경 이력:
  *   v1    2026-09-16 — Claude Design 핸드오프 이식(비교 보드 + 실제 동작 2모드). 신규.
  *   v1.1  2026-09-16 — 진입 기본 모드를 비교 보드 → 실제 동작으로 변경(세화님 지시). 5안 비교는 세그먼트로 이동.
+ *   v1.3  2026-09-16 — 진입 시 선택된 안을 C → A(추천 1순위)로 변경(세화님 지시).
  *   v1.2  2026-09-16 — A~E를 추천 순위대로 재명명(세화님 지시: 접기 > 읽기 전용 > 비활성 > 사전 분기 > 현행).
  *                      variant id를 letter → 동작 이름으로 바꾸고 표시 letter는 LETTER 맵으로 분리.
  * └──────────────────────────────────────────────────────
@@ -1083,7 +1085,7 @@ const VARIANTS: Variant[] = ['collapse', 'readonly', 'disabled', 'presplit', 'as
 
 export default function ApptVaccineTargetPage() {
   const [mode, setMode] = useState<'board' | 'live'>('live');
-  const [variant, setVariant] = useState<Variant>('disabled');
+  const [variant, setVariant] = useState<Variant>('collapse');
   const live = mode === 'live';
   const info = useMemo(() => LIVE_INFO[variant], [variant]);
 

@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : appt-vaccine-target — 독감 무료접종 대상자 선택 UX (유저향 모바일 신청 웹)
  *            `무료 백신 대상자`를 고른 뒤 하위 뎁스(주성분 · 독감백신 종류)를 어떻게 처리할지 5안 비교 + 실제 동작.
- * 상태     : 현행(active)   버전: v1.1   최종수정: 2026-09-16
+ * 상태     : 현행(active)   버전: v1.2   최종수정: 2026-09-16
  * PRD      : 미발행 — Claude Design 핸드오프 `무료접종 대상자 선택 UX-handoff.zip`(2026-09-16) 이식.
  *            원본 캔버스 = `무료접종 대상자 선택 UX.dc.html` + 컴포넌트 `VaccineScreen.dc.html` / `VaccineLive.dc.html`.
  * 짝 화면  : 병원(어드민)향 = 예약 신청 내역 · 독감 무료접종형 진료정보 → out/treatment-create-tree.html?spec=1 의 [T45]
@@ -23,8 +23,12 @@ import React, { useEffect, useMemo, useState } from 'react';
  *                예상 결제 금액은 `미정`. 판정·서류·인증 UI는 두지 않고 유저 자기 선언 + 고지 문구로만 처리.
  *   [확정·디자인] 고지 문구 1종을 대상자 선택 지점·요약 카드·예약 정보 확인 카드에 반복 노출한다 —
  *                "대상 여부는 병원에서 확인하며, 대상이 아닌 경우 유료 접종으로 안내될 수 있어요".
- *   [보류]       하위 뎁스 처리 방식 5안(A 현행 / B 접기 / C 비활성 / D 사전 분기 / E 읽기 전용) 중 채택안 미정.
- *                캔버스 기본값은 C였고 이 이식본도 C로 진입한다 — 선호가 아니라 원본 기본값 유지.
+ *   [확정·세화님] A~E는 **추천 순위**로 매긴 이름이다(2026-09-16) — A 하위 뎁스 접기 > B 읽기 전용 행 >
+ *                C 하위 뎁스 비활성 > D 사전 분기 > E 현행 유지. 원본 캔버스의 이름(A 현행 / B 접기 / C 비활성 /
+ *                D 사전 분기 / E 읽기 전용)과 **다르다** — 핸드오프 캔버스와 대조할 때 주의.
+ *                코드의 variant id는 letter가 아니라 동작 이름(collapse/readonly/disabled/presplit/asis)이고,
+ *                화면에 보이는 letter는 `LETTER` 맵에서만 나온다. 순위가 또 바뀌면 그 맵과 라벨 문자열만 고치면 된다.
+ *   [보류]       채택안은 아직 미정(추천 순위 ≠ 확정). 진입 기본값은 안 C(비활성) — 원본 캔버스 기본값을 그대로 둔 것.
  *   [보류]       예약자 불일치(고른 대상자와 예약자 생년월일이 어긋남) 처리 F-1(체크 비활성)/F-2(체크 후 해제) 미정.
  *   [유지·자체] 원본 캔버스는 안 A의 유료 제품 가격을 250,000원 단일값 mock으로 뒀다. 실제 접종료가 아니라
  *                가격 행이 있는지 없는지를 보기 위한 자리표시값이라 그대로 옮겼다.
@@ -38,12 +42,24 @@ import React, { useEffect, useMemo, useState } from 'react';
  * 변경 이력:
  *   v1    2026-09-16 — Claude Design 핸드오프 이식(비교 보드 + 실제 동작 2모드). 신규.
  *   v1.1  2026-09-16 — 진입 기본 모드를 비교 보드 → 실제 동작으로 변경(세화님 지시). 5안 비교는 세그먼트로 이동.
+ *   v1.2  2026-09-16 — A~E를 추천 순위대로 재명명(세화님 지시: 접기 > 읽기 전용 > 비활성 > 사전 분기 > 현행).
+ *                      variant id를 letter → 동작 이름으로 바꾸고 표시 letter는 LETTER 맵으로 분리.
  * └──────────────────────────────────────────────────────
  */
 
 /* ============================ 공통 상수 ============================ */
 
-type Variant = 'A' | 'B' | 'C' | 'D' | 'E';
+/** 내부 id는 동작 이름, 화면에 보이는 A~E는 추천 순위(LETTER)로 따로 매긴다. */
+type Variant = 'collapse' | 'readonly' | 'disabled' | 'presplit' | 'asis';
+
+/** 추천 순위 = 표시 이름. A 접기 > B 읽기 전용 > C 비활성 > D 사전 분기 > E 현행 유지 */
+const LETTER: Record<Variant, string> = {
+  collapse: 'A',
+  readonly: 'B',
+  disabled: 'C',
+  presplit: 'D',
+  asis: 'E'
+};
 type TargetKey = 'none' | 'pregnant' | 'child' | 'senior';
 
 type Target = { key: TargetKey; label: string; sub?: string };
@@ -472,7 +488,7 @@ function buildStatic(variant: Variant, step: string): ScreenModel & { caption: s
     chips: [chip('3가 백신', null, false, 1), chip('4가 백신', null, false, 1)]
   });
 
-  if (variant === 'D') {
+  if (variant === 'presplit') {
     if (step === '1') {
       rows.push(baseRow(), kindRow());
       sheet = TARGETS.map((t) => ({ key: t.key, label: t.label, sub: t.sub, selected: false }));
@@ -498,16 +514,16 @@ function buildStatic(variant: Variant, step: string): ScreenModel & { caption: s
   } else {
     caption = '`어린이` 선택 후';
     cta = true;
-    if (variant === 'A') {
+    if (variant === 'asis') {
       rows.push(
         targetRowValue('어린이'),
         { label: '주성분', chev: 'up', chips: [chip('3가 백신', null, true, 2)] },
         { label: '독감백신 종류', value: DECIDED, chev: 'down' }
       );
-    } else if (variant === 'B') {
+    } else if (variant === 'collapse') {
       rows.push(targetRowValue('어린이'));
       summary = { title: '무료접종 희망 · 어린이', body: SUMMARY_BODY };
-    } else if (variant === 'C') {
+    } else if (variant === 'disabled') {
       rows.push(
         targetRowValue('어린이', '무료접종 대상자는 병원에서 접종 백신을 정해요'),
         { label: '주성분', dim: true, chev: 'dim' },
@@ -565,9 +581,9 @@ function initialState(variant: Variant): LiveState {
     target: null,
     base: null,
     kind: null,
-    open: variant === 'D' ? null : 'target',
+    open: variant === 'presplit' ? null : 'target',
     screen: 'select',
-    sheetOpen: variant === 'D'
+    sheetOpen: variant === 'presplit'
   };
 }
 
@@ -584,7 +600,7 @@ function LiveScreen({ variant }: { variant: Variant }) {
   const pickTarget = (key: TargetKey) => {
     setS((prev) => {
       const next: LiveState = { ...prev, target: key, sheetOpen: false, screen: 'select' };
-      if (key === 'none' || variant === 'A') {
+      if (key === 'none' || variant === 'asis') {
         next.base = null;
         next.kind = null;
         next.open = 'base';
@@ -603,21 +619,21 @@ function LiveScreen({ variant }: { variant: Variant }) {
   const ready = (() => {
     if (!s.target) return false;
     if (s.target === 'none') return !!(s.base && s.kind);
-    if (variant === 'A') return !!(s.base && s.kind);
+    if (variant === 'asis') return !!(s.base && s.kind);
     return true;
   })();
 
   const rows: RowData[] = (() => {
     const list: RowData[] = [];
 
-    if (variant !== 'D') {
+    if (variant !== 'presplit') {
       const open = s.open === 'target';
       list.push({
         label: '무료 백신 대상자',
         onToggle: () => toggle('target'),
         value: !open && s.target ? T[s.target].label : null,
         chev: open ? 'up' : 'down',
-        helper: variant === 'C' && free && !open ? '무료접종 대상자는 병원에서 접종 백신을 정해요' : null,
+        helper: variant === 'disabled' && free && !open ? '무료접종 대상자는 병원에서 접종 백신을 정해요' : null,
         chips: open
           ? TARGETS.map((t) => ({
               label: t.label,
@@ -630,13 +646,13 @@ function LiveScreen({ variant }: { variant: Variant }) {
       });
     }
 
-    if (free && (variant === 'B' || variant === 'D')) return list;
+    if (free && (variant === 'collapse' || variant === 'presplit')) return list;
 
-    if (free && variant === 'C') {
+    if (free && variant === 'disabled') {
       list.push({ label: '주성분', dim: true, chev: 'dim' }, { label: '독감백신 종류', dim: true, chev: 'dim' });
       return list;
     }
-    if (free && variant === 'E') {
+    if (free && variant === 'readonly') {
       list.push(
         { label: '주성분', value: DECIDED, valueDim: true, chev: null },
         { label: '독감백신 종류', value: DECIDED, valueDim: true, chev: null }
@@ -650,7 +666,7 @@ function LiveScreen({ variant }: { variant: Variant }) {
     }
 
     const baseOpen = s.open === 'base';
-    const baseOptions = free && variant === 'A' ? ['3가 백신'] : ['3가 백신', '4가 백신'];
+    const baseOptions = free && variant === 'asis' ? ['3가 백신'] : ['3가 백신', '4가 백신'];
     list.push({
       label: '주성분',
       onToggle: () => toggle('base'),
@@ -668,7 +684,7 @@ function LiveScreen({ variant }: { variant: Variant }) {
     });
 
     const kindOpen = s.open === 'kind';
-    const kindOptions = free && variant === 'A' ? [{ name: DECIDED, price: null as string | null }] : PRODUCTS[s.base || ''] || [];
+    const kindOptions = free && variant === 'asis' ? [{ name: DECIDED, price: null as string | null }] : PRODUCTS[s.base || ''] || [];
     list.push({
       label: '독감백신 종류',
       onToggle: s.base ? () => toggle('kind') : () => {},
@@ -696,16 +712,16 @@ function LiveScreen({ variant }: { variant: Variant }) {
     : null;
 
   const steps: string[] = [];
-  if (variant === 'D') steps.push(s.target ? '사전 분기 완료' : '사전 분기 대기');
+  if (variant === 'presplit') steps.push(s.target ? '사전 분기 완료' : '사전 분기 대기');
   steps.push(s.target ? T[s.target].label : '대상자 미선택');
   if (s.base) steps.push(s.base);
   if (s.kind) steps.push(s.kind);
   steps.push(ready ? 'CTA 활성' : 'CTA 비활성');
 
   let tapNote: string;
-  if (!s.target && variant !== 'D') tapNote = '칩을 눌러 대상자를 고르면 안 ' + variant + '의 처리 방식이 그대로 동작합니다.';
-  else if (variant === 'D' && s.sheetOpen) tapNote = '시트에서 선택하면 유료/무료 흐름이 갈립니다.';
-  else if (free && variant === 'A') tapNote = '선택지가 1개뿐인 두 단계를 탭으로 통과해야 CTA가 열립니다.';
+  if (!s.target && variant !== 'presplit') tapNote = '칩을 눌러 대상자를 고르면 안 ' + LETTER[variant] + '의 처리 방식이 그대로 동작합니다.';
+  else if (variant === 'presplit' && s.sheetOpen) tapNote = '시트에서 선택하면 유료/무료 흐름이 갈립니다.';
+  else if (free && variant === 'asis') tapNote = '선택지가 1개뿐인 두 단계를 탭으로 통과해야 CTA가 열립니다.';
   else if (free) tapNote = '대상자를 골랐으므로 하위 뎁스 선택 없이 CTA가 열립니다. 대상자 행을 다시 눌러 `해당 없음`으로 바꿔보세요.';
   else tapNote = '유료 흐름: 주성분 → 독감백신 종류 순으로 고릅니다.';
   if (isConfirm) tapNote = '좌측 상단 ←를 누르면 선택 화면으로 돌아갑니다.';
@@ -715,12 +731,12 @@ function LiveScreen({ variant }: { variant: Variant }) {
     isConfirm,
     rows: isConfirm ? [] : rows,
     summary:
-      !isConfirm && free && (variant === 'B' || variant === 'D') && tgt
+      !isConfirm && free && (variant === 'collapse' || variant === 'presplit') && tgt
         ? {
             title: '무료접종 희망 · ' + tgt.label,
             body: SUMMARY_BODY,
-            link: variant === 'D' ? '변경' : null,
-            onLink: variant === 'D' ? () => setS((prev) => ({ ...prev, sheetOpen: true })) : undefined
+            link: variant === 'presplit' ? '변경' : null,
+            onLink: variant === 'presplit' ? () => setS((prev) => ({ ...prev, sheetOpen: true })) : undefined
           }
         : null,
     card,
@@ -750,7 +766,7 @@ function LiveScreen({ variant }: { variant: Variant }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: 375 }}>
       <Screen model={model} />
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: 375 }}>
-        <div className="avt-status">{'안 ' + variant + ' · ' + steps.join(' · ')}</div>
+        <div className="avt-status">{'안 ' + LETTER[variant] + ' · ' + steps.join(' · ')}</div>
         <button type="button" className="avt-reset" onClick={() => setS(initialState(variant))}>
           초기화
         </button>
@@ -767,43 +783,39 @@ type Frame = { step: string; label: string; note?: string };
 const OPTIONS: { id: string; variant: Variant; title: string; desc: string; frames: Frame[] }[] = [
   {
     id: '1a',
-    variant: 'A',
-    title: '안 A · 현행 유지 (기준선)',
-    desc:
-      '`어린이` 선택 시 주성분 선택지가 `3가 백신` 1개만 남아 선택된 상태로 표시되고, 종류 행에는 `병원 상담 후 결정`이 들어간다. 유저는 두 단계를 탭으로 통과해 `다음`을 누른다. 원안 그대로.',
+    variant: 'collapse',
+    title: '안 A · 하위 뎁스 접기',
+    desc: '`어린이` 선택 즉시 주성분·종류 아코디언이 사라지고 그 자리에 요약 카드 1장이 뜬다. `해당 없음`으로 바꾸면 아코디언이 다시 나타난다.',
     frames: [
       { step: '1', label: 'A-①' },
       { step: '2', label: 'A-②' },
       {
         step: '3',
         label: 'A-③',
-        note: '유저가 3가 백신을 직접 고른 것처럼 보인다. 선택지가 1개뿐이라 선택의 의미가 없는데도 탭을 요구한다.'
+        note: '전환 힌트 · `해당 없음`으로 되돌리면 주성분·종류 2행이 다시 삽입되고 요약 카드는 제거된다. 행 삽입/삭제와 함께 CTA 활성 상태도 바뀐다.'
       },
       { step: '4', label: 'A-④' }
     ]
   },
   {
     id: '1b',
-    variant: 'B',
-    title: '안 B · 하위 뎁스 접기',
-    desc: '`어린이` 선택 즉시 주성분·종류 아코디언이 사라지고 그 자리에 요약 카드 1장이 뜬다. `해당 없음`으로 바꾸면 아코디언이 다시 나타난다.',
+    variant: 'readonly',
+    title: '안 B · 읽기 전용 행으로 치환',
+    desc:
+      '주성분·종류가 비활성이 아니라 값이 채워진 읽기 전용 행으로 바뀐다. chevron 없음. "선택할 것이 없다"가 아니라 "이미 정해졌다"로 읽힌다. 안 A와 안 C의 중간안.',
     frames: [
       { step: '1', label: 'B-①' },
       { step: '2', label: 'B-②' },
-      {
-        step: '3',
-        label: 'B-③',
-        note: '전환 힌트 · `해당 없음`으로 되돌리면 주성분·종류 2행이 다시 삽입되고 요약 카드는 제거된다. 행 삽입/삭제와 함께 CTA 활성 상태도 바뀐다.'
-      },
+      { step: '3', label: 'B-③', note: '라벨은 검정, 값은 회색으로 두어 유저가 고른 값(E-③의 `3가 백신`)과 시스템 확정값을 색으로 구분한다.' },
       { step: '4', label: 'B-④' }
     ]
   },
   {
     id: '1c',
-    variant: 'C',
+    variant: 'disabled',
     title: '안 C · 하위 뎁스 비활성',
     desc:
-      '주성분·종류 아코디언이 남아 있되 비활성(회색 라벨, 흐린 chevron, 탭 불가). 대상자 행 바로 아래 한 줄 헬퍼. 레이아웃이 안 A와 완전히 같아 위치 기억이 유지된다.',
+      '주성분·종류 아코디언이 남아 있되 비활성(회색 라벨, 흐린 chevron, 탭 불가). 대상자 행 바로 아래 한 줄 헬퍼. 레이아웃이 안 E와 완전히 같아 위치 기억이 유지된다.',
     frames: [
       { step: '1', label: 'C-①' },
       { step: '2', label: 'C-②' },
@@ -813,7 +825,7 @@ const OPTIONS: { id: string; variant: Variant; title: string; desc: string; fram
   },
   {
     id: '1d',
-    variant: 'D',
+    variant: 'presplit',
     title: '안 D · 사전 분기 (질문을 앞으로)',
     desc: '화면 진입 시 바텀시트가 먼저 뜬다. 대상자를 고르면 아코디언 없는 결과 카드 화면, `아니요`를 고르면 대상자 섹션이 없는 기존 유료 2단 화면으로 갈린다.',
     frames: [
@@ -829,14 +841,18 @@ const OPTIONS: { id: string; variant: Variant; title: string; desc: string; fram
   },
   {
     id: '1e',
-    variant: 'E',
-    title: '안 E · 읽기 전용 행으로 치환',
+    variant: 'asis',
+    title: '안 E · 현행 유지 (기준선)',
     desc:
-      '주성분·종류가 비활성이 아니라 값이 채워진 읽기 전용 행으로 바뀐다. chevron 없음. "선택할 것이 없다"가 아니라 "이미 정해졌다"로 읽힌다. 안 B와 안 C의 중간안.',
+      '`어린이` 선택 시 주성분 선택지가 `3가 백신` 1개만 남아 선택된 상태로 표시되고, 종류 행에는 `병원 상담 후 결정`이 들어간다. 유저는 두 단계를 탭으로 통과해 `다음`을 누른다. 원안 그대로.',
     frames: [
       { step: '1', label: 'E-①' },
       { step: '2', label: 'E-②' },
-      { step: '3', label: 'E-③', note: '라벨은 검정, 값은 회색으로 두어 유저가 고른 값(A-③의 `3가 백신`)과 시스템 확정값을 색으로 구분한다.' },
+      {
+        step: '3',
+        label: 'E-③',
+        note: '유저가 3가 백신을 직접 고른 것처럼 보인다. 선택지가 1개뿐이라 선택의 의미가 없는데도 탭을 요구한다.'
+      },
       { step: '4', label: 'E-④' }
     ]
   }
@@ -856,19 +872,7 @@ const CMP_HEADS = [
 
 const CMP_ROWS: { name: string; cells: Cell[]; memo: string }[] = [
   {
-    name: 'A · 현행 유지',
-    cells: [
-      { tone: 'hi', v: '4', tail: ' · 아코디언 2회 + 항목 2회' },
-      { tone: 'hi', v: '상' },
-      { tone: 'lo', v: '하', tail: ' · 행 구조 동일' },
-      { tone: 'lo', v: '하', tail: ' · 추가 문구 없음' },
-      { tone: 'lo', v: '상', tail: ' · 그대로 사용' }
-    ],
-    memo:
-      '장 — 구현 비용 0, 기존 데이터 구조 그대로. 단 — 선택지가 1개뿐인 단계를 두 번 통과시키고, 3가 백신을 유저가 고른 값으로 기록한다.'
-  },
-  {
-    name: 'B · 하위 뎁스 접기',
+    name: 'A · 하위 뎁스 접기',
     cells: [
       { tone: 'lo', v: '0' },
       { tone: 'lo', v: '하' },
@@ -877,6 +881,18 @@ const CMP_ROWS: { name: string; cells: Cell[]; memo: string }[] = [
       { tone: 'mid', v: '중', tail: ' · 요약 카드 신규' }
     ],
     memo: '장 — 고를 수 없는 것을 아예 보여주지 않아 가장 짧다. 단 — 전환 시 화면이 크게 재구성되고, 유료 흐름에 무엇이 있었는지 기억이 끊긴다.'
+  },
+  {
+    name: 'B · 읽기 전용 행',
+    cells: [
+      { tone: 'lo', v: '0' },
+      { tone: 'mid', v: '중' },
+      { tone: 'lo', v: '하', tail: ' · 값만 교체' },
+      { tone: 'lo', v: '하', tail: ' · 값 자체가 설명' },
+      { tone: 'mid', v: '중', tail: ' · 읽기 전용 행 추가' }
+    ],
+    memo:
+      '장 — "이미 정해졌다"로 읽혀 추가 설명이 거의 필요 없고 레이아웃도 안정적이다. 단 — 값이 채워져 있어 유저가 고른 값과 구분이 약하고, 행별 색 규칙을 새로 정해야 한다.'
   },
   {
     name: 'C · 하위 뎁스 비활성',
@@ -888,7 +904,7 @@ const CMP_ROWS: { name: string; cells: Cell[]; memo: string }[] = [
       { tone: 'lo', v: '상', tail: ' · disabled 상태만 추가' }
     ],
     memo:
-      '장 — 레이아웃이 안 A와 동일해 위치 기억이 유지되고, 유료로 바꾸면 무엇이 열리는지 보인다. 단 — 탭이 안 되는 행이 남아 한 번은 눌러보게 된다.'
+      '장 — 레이아웃이 안 E와 동일해 위치 기억이 유지되고, 유료로 바꾸면 무엇이 열리는지 보인다. 단 — 탭이 안 되는 행이 남아 한 번은 눌러보게 된다.'
   },
   {
     name: 'D · 사전 분기',
@@ -902,16 +918,16 @@ const CMP_ROWS: { name: string; cells: Cell[]; memo: string }[] = [
     memo: '장 — 유료/무료 흐름이 섞이지 않아 각 화면이 가장 단순해진다. 단 — 모든 유저가 질문을 먼저 받고, 시트 닫기·되돌리기 정의가 늘어난다.'
   },
   {
-    name: 'E · 읽기 전용 행',
+    name: 'E · 현행 유지',
     cells: [
-      { tone: 'lo', v: '0' },
-      { tone: 'mid', v: '중' },
-      { tone: 'lo', v: '하', tail: ' · 값만 교체' },
-      { tone: 'lo', v: '하', tail: ' · 값 자체가 설명' },
-      { tone: 'mid', v: '중', tail: ' · 읽기 전용 행 추가' }
+      { tone: 'hi', v: '4', tail: ' · 아코디언 2회 + 항목 2회' },
+      { tone: 'hi', v: '상' },
+      { tone: 'lo', v: '하', tail: ' · 행 구조 동일' },
+      { tone: 'lo', v: '하', tail: ' · 추가 문구 없음' },
+      { tone: 'lo', v: '상', tail: ' · 그대로 사용' }
     ],
     memo:
-      '장 — "이미 정해졌다"로 읽혀 추가 설명이 거의 필요 없고 레이아웃도 안정적이다. 단 — 값이 채워져 있어 유저가 고른 값과 구분이 약하고, 행별 색 규칙을 새로 정해야 한다.'
+      '장 — 구현 비용 0, 기존 데이터 구조 그대로. 단 — 선택지가 1개뿐인 단계를 두 번 통과시키고, 3가 백신을 유저가 고른 값으로 기록한다.'
   }
 ];
 
@@ -1015,8 +1031,8 @@ function MismatchFrame({ badge, caption, disabled, note }: { badge: string; capt
 /* ============================ 실제 동작 우측 주석 ============================ */
 
 const LIVE_INFO: Record<Variant, { title: string; desc: string; checks: string[] }> = {
-  A: {
-    title: '안 A · 현행 유지 (기준선)',
+  asis: {
+    title: '안 E · 현행 유지 (기준선)',
     desc:
       '`어린이`를 고르면 주성분 아코디언이 열리지만 선택지는 `3가 백신` 하나뿐이고, 그것을 고르면 종류 아코디언에 `병원 상담 후 결정` 하나가 남는다. 두 단계를 모두 탭해야 `다음`이 열린다.',
     checks: [
@@ -1026,8 +1042,8 @@ const LIVE_INFO: Record<Variant, { title: string; desc: string; checks: string[]
       '`해당 없음`으로 바꾸면 3가/4가와 제품 목록·가격이 나타남'
     ]
   },
-  B: {
-    title: '안 B · 하위 뎁스 접기',
+  collapse: {
+    title: '안 A · 하위 뎁스 접기',
     desc: '`어린이`를 고르면 주성분·종류 아코디언 2행이 화면에서 사라지고 요약 카드가 그 자리를 대신한다. `다음`은 즉시 활성.',
     checks: [
       '`어린이` 선택 → 아래 2행이 사라지고 요약 카드로 교체됨',
@@ -1035,7 +1051,7 @@ const LIVE_INFO: Record<Variant, { title: string; desc: string; checks: string[]
       '전환할 때 CTA 활성 상태가 함께 바뀌는 정도를 체감'
     ]
   },
-  C: {
+  disabled: {
     title: '안 C · 하위 뎁스 비활성',
     desc: '주성분·종류 행이 제자리에 남은 채 회색으로 비활성화되고, 대상자 행 아래에 한 줄 헬퍼가 붙는다. 행 개수와 높이가 유료 흐름과 동일하다.',
     checks: [
@@ -1044,13 +1060,13 @@ const LIVE_INFO: Record<Variant, { title: string; desc: string; checks: string[]
       '`해당 없음`과 번갈아 선택해 레이아웃이 흔들리지 않는지 확인'
     ]
   },
-  D: {
+  presplit: {
     title: '안 D · 사전 분기',
     desc: '진입 즉시 바텀시트가 대상자 여부를 먼저 묻는다. 대상자를 고르면 아코디언 없는 결과 카드 화면, `아니요`를 고르면 대상자 섹션이 없는 유료 2단 화면으로 갈린다.',
     checks: ['시트에서 `어린이` → 결과 카드만 있는 화면', '`변경`을 눌러 시트를 다시 띄우고 `아니요`로 전환', '`아니요` 경로에는 대상자 행이 아예 없는 것을 확인']
   },
-  E: {
-    title: '안 E · 읽기 전용 행',
+  readonly: {
+    title: '안 B · 읽기 전용 행',
     desc: '주성분·종류 행이 값이 채워진 읽기 전용 행으로 바뀐다. chevron이 없어 열리지 않고, 값은 회색으로 두어 유저가 고른 값과 구분한다.',
     checks: [
       '`어린이` 선택 → 두 행에 `병원 상담 후 결정`이 채워짐',
@@ -1062,11 +1078,12 @@ const LIVE_INFO: Record<Variant, { title: string; desc: string; checks: string[]
 
 /* ============================ 페이지 ============================ */
 
-const VARIANTS: Variant[] = ['A', 'B', 'C', 'D', 'E'];
+/** 추천 순위대로 나열한다(= 표시 이름 A~E 순). */
+const VARIANTS: Variant[] = ['collapse', 'readonly', 'disabled', 'presplit', 'asis'];
 
 export default function ApptVaccineTargetPage() {
   const [mode, setMode] = useState<'board' | 'live'>('live');
-  const [variant, setVariant] = useState<Variant>('C');
+  const [variant, setVariant] = useState<Variant>('disabled');
   const live = mode === 'live';
   const info = useMemo(() => LIVE_INFO[variant], [variant]);
 
@@ -1088,7 +1105,7 @@ export default function ApptVaccineTargetPage() {
             <div className="avt-seg">
               {VARIANTS.map((v) => (
                 <button key={v} type="button" className={'avt-seg-item' + (v === variant ? ' is-on' : '')} onClick={() => setVariant(v)}>
-                  {v}
+                  {LETTER[v]}
                 </button>
               ))}
             </div>
@@ -1096,7 +1113,7 @@ export default function ApptVaccineTargetPage() {
         ) : null}
         <span className="avt-spacer" />
         <span className="avt-bar-note">
-          {live ? '화면 안을 직접 눌러 동작을 확인하세요' : '안 A~E × 상태 ①②③ + 예약 정보 확인 카드'}
+          {live ? '화면 안을 직접 눌러 동작을 확인하세요' : '안 A~E(추천순) × 상태 ①②③ + 예약 정보 확인 카드'}
         </span>
       </div>
 
@@ -1135,7 +1152,7 @@ export default function ApptVaccineTargetPage() {
         <section className="avt-turn">
           <div className="avt-thd">
             <span className="avt-tid">1</span>
-            <span className="avt-tname">하위 뎁스(주성분·독감백신 종류) 처리 5안 · 상태별 비교</span>
+            <span className="avt-tname">하위 뎁스(주성분·독감백신 종류) 처리 5안 · 상태별 비교 (A~E = 추천순)</span>
           </div>
           <div className="avt-opts">
             {OPTIONS.map((opt) => (
@@ -1184,7 +1201,7 @@ export default function ApptVaccineTargetPage() {
             </div>
           </div>
           <p className="avt-next">
-            다음 단계로 좋은 것 · "안 C와 안 E를 합쳐서 주성분만 읽기 전용, 종류는 비활성으로" · "안 B의 요약 카드 카피 대안 3개" · "안 D 시트를 닫았을 때의 상태 정의"
+            다음 단계로 좋은 것 · "안 C와 안 B를 합쳐서 주성분만 읽기 전용, 종류는 비활성으로" · "안 A의 요약 카드 카피 대안 3개" · "안 D 시트를 닫았을 때의 상태 정의"
           </p>
         </section>
       )}

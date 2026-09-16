@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : appt-vaccine-target — 독감 무료접종 대상자 선택 UX (유저향 모바일 신청 웹)
  *            `무료 백신 대상자`를 고른 뒤 하위 뎁스(주성분 · 독감백신 종류)를 어떻게 처리할지 5안 비교 + 실제 동작.
- * 상태     : 현행(active)   버전: v2.1   최종수정: 2026-09-16
+ * 상태     : 현행(active)   버전: v2.2   최종수정: 2026-09-16
  * PRD      : 미발행 — Claude Design 핸드오프 `무료접종 대상자 선택 UX-handoff.zip`(2026-09-16) 이식.
  *            원본 캔버스 = `무료접종 대상자 선택 UX.dc.html` + 컴포넌트 `VaccineScreen.dc.html` / `VaccineLive.dc.html`.
  * 짝 화면  : 병원(어드민)향 = 예약 신청 내역 · 독감 무료접종형 진료정보 → out/treatment-create-tree.html?spec=1 의 [T45]
@@ -58,6 +58,8 @@ import React, { useEffect, useMemo, useState } from 'react';
  * 변경 이력:
  *   v1    2026-09-16 — Claude Design 핸드오프 이식(비교 보드 + 실제 동작 2모드). 신규.
  *   v1.1  2026-09-16 — 진입 기본 모드를 비교 보드 → 실제 동작으로 변경(세화님 지시). 5안 비교는 세그먼트로 이동.
+ *   v2.2  2026-09-16 — 세그먼트에 번호만 있어 무슨 안인지 모르겠다는 피드백 → letter 옆에 짧은 이름을 붙이고,
+ *                      `처리`는 대조 방식(F-1·F-2)과 질문 방식(F-3·F-4) 사이에 구분선을 넣었다. 상단 바는 줄바꿈 허용.
  *   v2.1  2026-09-16 — 최상단 `이슈` 축 신설(① 하위 뎁스 / ② 진료 대상자). 섞여 있던 두 결정을 갈라 화면당 변수 1개로.
  *                      ②를 부록 1g → 2a~2d로 승격하고 비교표를 새로 만듦.
  *   v2.0  2026-09-16 — F-3·F-4를 **본인/대리를 묻는 방식**으로 다시 그림(세화님 지시). 생년월일 대조·경고 배너 폐기.
@@ -93,6 +95,15 @@ type Whom = 'self' | 'other';
 
 /** F1·F2(생년월일 대조 방식)에서만 쓰는 가상의 예약자 나이 */
 const BOOKER_AGE = 34;
+
+/** 세그먼트에 letter와 함께 붙이는 짧은 이름 */
+const VARIANT_SHORT: Record<Variant, string> = {
+  collapse: '접기',
+  readonly: '읽기 전용',
+  disabled: '비활성',
+  presplit: '사전 분기',
+  asis: '현행'
+};
 
 /** 추천 순위 = 표시 이름. A 접기 > B 읽기 전용 > C 비활성 > D 사전 분기 > E 현행 유지 */
 const LETTER: Record<Variant, string> = {
@@ -1477,6 +1488,13 @@ const LIVE_INFO: Record<Variant, { title: string; desc: string; checks: string[]
 
 const MISMATCH_MODES: MismatchMode[] = ['off', 'F1', 'F2', 'F3', 'F4'];
 const MISMATCH_LABEL: Record<MismatchMode, string> = { off: '끔', F1: 'F-1', F2: 'F-2', F3: 'F-3', F4: 'F-4' };
+const MISMATCH_SHORT: Record<MismatchMode, string> = {
+  off: '일반 케이스',
+  F1: '체크 비활성',
+  F2: '체크 후 해제',
+  F3: '앞 화면에서 질문',
+  F4: '신청서에서 질문'
+};
 
 const MISMATCH_INFO: Record<Exclude<MismatchMode, 'off'>, { title: string; desc: string; checks: string[] }> = {
   F1: {
@@ -1659,7 +1677,7 @@ export default function ApptVaccineTargetPage() {
             <div className="avt-seg">
               {VARIANTS.map((v) => (
                 <button key={v} type="button" className={'avt-seg-item' + (v === variant ? ' is-on' : '')} onClick={() => setVariant(v)}>
-                  {LETTER[v]}
+                  {LETTER[v]} <span className="avt-seg-sub">{VARIANT_SHORT[v]}</span>
                 </button>
               ))}
             </div>
@@ -1670,15 +1688,20 @@ export default function ApptVaccineTargetPage() {
             <span className="avt-seg-label">처리</span>
             <div className="avt-seg">
               {MISMATCH_MODES.map((m) => (
-                <button key={m} type="button" className={'avt-seg-item' + (m === mismatch ? ' is-on' : '')} onClick={() => setMismatch(m)}>
-                  {MISMATCH_LABEL[m]}
-                </button>
+                <React.Fragment key={m}>
+                  {m === 'F3' ? <span className="avt-seg-div" title="왼쪽 = 생년월일 대조 방식 · 오른쪽 = 본인/대리 질문 방식" /> : null}
+                  <button type="button" className={'avt-seg-item' + (m === mismatch ? ' is-on' : '')} onClick={() => setMismatch(m)}>
+                    {m === 'off' ? '끔' : MISMATCH_LABEL[m]} <span className="avt-seg-sub">{MISMATCH_SHORT[m]}</span>
+                  </button>
+                </React.Fragment>
               ))}
             </div>
           </div>
         ) : null}
         <span className="avt-spacer" />
-        <span className="avt-bar-note">{live ? meta.liveNote : meta.boardNote}</span>
+        <span className="avt-bar-note">
+          {live && !depth ? '구분선 왼쪽 = 생년월일 대조 방식(폐기 예정) · 오른쪽 = 본인/대리 질문 방식' : live ? meta.liveNote : meta.boardNote}
+        </span>
       </div>
 
       {live ? (

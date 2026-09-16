@@ -10,9 +10,9 @@ export const SHARED_CSS = ['styles/globals.css', 'styles/connectShell.css', 'sty
 /** 페이지 디렉터리명 -> 화면 전용 CSS */
 export const SCREEN_CSS = {
   'treatment-create': ['styles/connectRegister.css', 'styles/connectAdminNonpayAug.css', 'styles/tiCategoryC.css', 'styles/treatmentCreateSept.css'],
-  'ti-category-map': ['styles/tiCategoryMap.css'],
+  'kakao-spec-test': ['styles/kakaoSpecTest.css'],
+  'kakao-realcode-test': ['styles/kakaoRealcodeTest.css'],
   'ti-kakao': ['styles/connectRegister.css', 'styles/connectTiKakao.css'],
-  'ti-category-c': ['styles/connectRegister.css', 'styles/connectAdminNonpayAug.css', 'styles/tiCategoryC.css'],
   'admin-nonpay-aug': ['styles/connectRegister.css', 'styles/connectAdminNonpayAug.css'],
   'appt-free-vaccine': ['styles/connectRegister.css', 'styles/connectAdminNonpayAug.css', 'styles/apptFreeVaccine.css'],
   'appt-vaccine-target': ['styles/apptVaccineTarget.css'],
@@ -35,8 +35,8 @@ export function resolveCssFiles(pagePath) {
   const dir = match ? match[1] : null;
   const screen = dir && SCREEN_CSS[dir] ? SCREEN_CSS[dir] : [];
 
-  // 폼 단독 탐색 페이지: 공용 shell/드로어 CSS를 상속하지 않고 리셋(globals)만 사용
-  if (dir === 'ti-category-map') return ['styles/globals.css', ...screen];
-
+  // 스펙-only 실험 페이지: 공용 shell/드로어 CSS를 상속하지 않고 리셋(globals)만 사용
+  if (dir === 'kakao-spec-test') return ['styles/globals.css', ...screen];
+  if (dir === 'kakao-realcode-test') return ['styles/globals.css', ...screen];
   return [...SHARED_CSS, ...screen];
 }

@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : appt-vaccine-target — 독감 무료접종 대상자 선택 UX (유저향 모바일 신청 웹)
  *            `무료 백신 대상자`를 고른 뒤 하위 뎁스(주성분 · 독감백신 종류)를 어떻게 처리할지 5안 비교 + 실제 동작.
- * 상태     : 현행(active)   버전: v2.2   최종수정: 2026-09-16
+ * 상태     : 현행(active)   버전: v2.3   최종수정: 2026-09-16
  * PRD      : 미발행 — Claude Design 핸드오프 `무료접종 대상자 선택 UX-handoff.zip`(2026-09-16) 이식.
  *            원본 캔버스 = `무료접종 대상자 선택 UX.dc.html` + 컴포넌트 `VaccineScreen.dc.html` / `VaccineLive.dc.html`.
  * 짝 화면  : 병원(어드민)향 = 예약 신청 내역 · 독감 무료접종형 진료정보 → out/treatment-create-tree.html?spec=1 의 [T45]
@@ -16,7 +16,8 @@ import React, { useEffect, useMemo, useState } from 'react';
  * 화면구성 : 최상단 `이슈` 축으로 결정 2건을 갈라 놓는다 — 한 화면에 변수 1개만 둔다.
  *            이슈 ① 하위 뎁스 처리 — 안 A~E. 실제 동작은 `안` 세그먼트 / 비교 보드는 1a~1e + 1f 비교표.
  *            이슈 ② 진료 대상자 — F-1~F-4. 실제 동작은 `처리` 세그먼트(안은 A 고정) /
- *                     비교 보드는 2a 대조 방식 참고(F-1·F-2) · 2b F-3 · 2c F-4 · 2d 비교표.
+ *                     비교 보드는 안별 행(2a F-1 · 2b F-2 · 2c F-3 · 2d F-4) + 2e 비교표.
+ *                     ②의 모든 행은 **같은 조건**(안 A + 어린이 + 대리 접종)에서 ① 선택 화면 → ② 신청서 진입 → ③ 동작 후 순.
  *            각 이슈 안에서 `비교 보드 / 실제 동작`(기본 진입) 2모드는 그대로.
  *
  * 핵심 결정 (why):
@@ -58,6 +59,9 @@ import React, { useEffect, useMemo, useState } from 'react';
  * 변경 이력:
  *   v1    2026-09-16 — Claude Design 핸드오프 이식(비교 보드 + 실제 동작 2모드). 신규.
  *   v1.1  2026-09-16 — 진입 기본 모드를 비교 보드 → 실제 동작으로 변경(세화님 지시). 5안 비교는 세그먼트로 이동.
+ *   v2.3  2026-09-16 — 이슈 ② 비교 보드를 안별 행으로 재배치(세화님 피드백: F-1~F-4가 섞여 헷갈림).
+ *                      모든 행을 안 A + 어린이 같은 조건으로 고정하고 단계(①선택 화면 →②신청서 →③동작 후)를 열로 맞췄다.
+ *                      대조/질문 방식은 행 설명의 머리말로만 구분(2a 참고 묶음 해체).
  *   v2.2  2026-09-16 — 세그먼트에 번호만 있어 무슨 안인지 모르겠다는 피드백 → letter 옆에 짧은 이름을 붙이고,
  *                      `처리`는 대조 방식(F-1·F-2)과 질문 방식(F-3·F-4) 사이에 구분선을 넣었다. 상단 바는 줄바꿈 허용.
  *   v2.1  2026-09-16 — 최상단 `이슈` 축 신설(① 하위 뎁스 / ② 진료 대상자). 섞여 있던 두 결정을 갈라 화면당 변수 1개로.
@@ -618,13 +622,25 @@ function buildStatic(variant: Variant, step: string): ScreenModel & { caption: s
   };
 }
 
-function StaticScreen({ variant, step, label, note }: { variant: Variant; step: string; label: string; note?: string }) {
+function StaticScreen({
+  variant,
+  step,
+  label,
+  note,
+  caption
+}: {
+  variant: Variant;
+  step: string;
+  label: string;
+  note?: string;
+  caption?: string;
+}) {
   const model = buildStatic(variant, step);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: 375 }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
         <span className="avt-badge">{label}</span>
-        <span style={{ font: '600 13px/1.3 Pretendard, sans-serif', color: '#31353F' }}>{model.caption}</span>
+        <span style={{ font: '600 13px/1.3 Pretendard, sans-serif', color: '#31353F' }}>{caption ?? model.caption}</span>
       </div>
       <Screen model={model} />
       {note ? <div className="avt-note">{note}</div> : null}
@@ -1414,6 +1430,25 @@ function PlainTargetFrame() {
   );
 }
 
+/** 진료 대상자 섹션이 아예 없는 신청서 — F-3에서 `예약자 본인`을 골랐을 때 */
+function ConfirmOnlyFrame({ badge, caption, note }: { badge: string; caption: string; note: string }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: 375 }}>
+      <FrameCaption badge={badge} caption={caption} />
+      <div className="avt-frame">
+        <StatusBar />
+        <NavBar title="예약 정보 확인" />
+        <div style={{ flex: 1, minHeight: 0 }}>
+          <ConfirmCard card={{ title: DECIDED, sub: '어린이 (22.1.1~26.8.31 출생자)', price: '미정', notice: true }} />
+        </div>
+        <Cta on label="예약 신청하기" />
+        <HomeIndicator />
+      </div>
+      <div className="avt-note">{note}</div>
+    </div>
+  );
+}
+
 /** F-4(G-2) — 신청서의 진료 대상자 섹션을 본인/대리 2지선다로 재설계 */
 function WhomSectionFrame({ value, badge, caption, note }: { value: Whom; badge: string; caption: string; note: string }) {
   return (
@@ -1810,29 +1845,32 @@ export default function ApptVaccineTargetPage() {
             </div>
           ) : (
             <div className="avt-opts">
+              <div className="avt-hint" style={{ maxWidth: 1180 }}>
+                네 안 모두 <b>같은 조건</b>에서 나란히 놓았습니다 — 하위 뎁스 처리 <b>안 A(접기)</b> · 무료 백신 대상자 <b>어린이</b> · 접종받는 사람은 예약자 본인이
+                아님. 각 행은 왼쪽부터 <b>① 진료항목 선택 화면 → ② 신청서 진입 직후 → ③ 유저가 한 번 더 움직인 뒤</b> 순서입니다. ①이 같은 안끼리는 그 화면에서
+                아무것도 달라지지 않는다는 뜻입니다.
+              </div>
+
               <div className="avt-opt" id="2a">
                 <div className="avt-olabel">
                   <span className="avt-oid">2a</span>
-                  <b>참고 · 대조 방식 2안 (폐기 예정)</b>
-                  <span>
-                    예약자 생년월일과 대조해 <b>불일치를 오류로</b> 다루던 방식. 어린이·영유아는 부모가 자녀를 대신 예약하는 것이 기본 케이스라 이 프레이밍 자체가
-                    틀렸다는 판단이다. 비교 기준선으로만 남겨 둔다.
-                  </span>
+                  <b>F-1 · 체크 비활성</b>
+                  <span>[대조 방식 · 폐기 예정] 예약자 생년월일과 대조해 신청서에서 체크 자체를 막는다. 선택 화면에서는 아무 일도 일어나지 않는다.</span>
                 </div>
                 <div className="avt-row">
-                  <MismatchFrame
-                    badge="F-1"
-                    caption="[대조] 체크박스 비활성 + 배너 상시 노출"
-                    checkbox="disabled"
-                    banner={MISMATCH_BANNER}
-                    note="체크 자체를 막아 잘못된 선택이 일어나지 않지만, 정상적인 대리 예약이 막힌 동작으로 보인다."
+                  <StaticScreen
+                    variant="collapse"
+                    step="3"
+                    label="F-1-①"
+                    caption="진료항목 선택 · 안 A + 어린이 (변화 없음)"
+                    note="대조 방식은 선택 화면에 손대지 않는다. 유저는 여기서 아무 낌새도 채지 못한 채 신청서로 간다."
                   />
                   <MismatchFrame
-                    badge="F-2"
-                    caption="[대조] 체크는 유지 · 시도 시 배너 후 해제"
-                    checkbox="empty"
+                    badge="F-1-②"
+                    caption="신청서 진입 직후 · 체크 비활성 + 배너"
+                    checkbox="disabled"
                     banner={MISMATCH_BANNER}
-                    note="체크는 눌리지만 즉시 해제되고 같은 배너가 뜬다. 눌렀는데 풀리는 동작이라 오작동처럼 읽힐 수 있다."
+                    note="정상적인 대리 예약인데 체크가 막혀 있고, 왜 막혔는지는 배너를 읽어야 안다."
                   />
                 </div>
               </div>
@@ -1840,33 +1878,46 @@ export default function ApptVaccineTargetPage() {
               <div className="avt-opt" id="2b">
                 <div className="avt-olabel">
                   <span className="avt-oid">2b</span>
-                  <b>F-3 · 대상자 선택 화면 통합형</b>
-                  <span>카테고리를 고른 직후 같은 화면에서 본인/대리를 묻는다. 신청서에 닿기 전에 분기가 끝나고, 생년월일 대조·경고는 없다.</span>
+                  <b>F-2 · 체크 후 즉시 해제</b>
+                  <span>[대조 방식 · 폐기 예정] 체크는 눌리지만 즉시 풀리고 배너가 뜬다. F-1과 ①·②가 같고 ③에서만 갈린다.</span>
                 </div>
                 <div className="avt-row">
-                  <WhomQuestionFrame />
-                  <PlainTargetFrame />
+                  <StaticScreen
+                    variant="collapse"
+                    step="3"
+                    label="F-2-①"
+                    caption="진료항목 선택 · 안 A + 어린이 (변화 없음)"
+                    note="F-1과 완전히 같은 화면이다."
+                  />
+                  <MismatchFrame
+                    badge="F-2-②"
+                    caption="신청서 진입 직후 · 체크는 살아 있고 배너 없음"
+                    checkbox="empty"
+                    note="입력 폼은 이미 열려 있지만 왜 열렸는지는 아직 설명되지 않은 상태."
+                  />
+                  <MismatchFrame
+                    badge="F-2-③"
+                    caption="`예약자와 동일해요`를 눌러본 뒤 · 체크가 풀리고 배너"
+                    checkbox="empty"
+                    banner={MISMATCH_BANNER}
+                    note="눌렀는데 풀리는 동작이라, 정상 예약을 오히려 오작동처럼 느끼게 한다."
+                  />
                 </div>
               </div>
 
               <div className="avt-opt" id="2c">
                 <div className="avt-olabel">
                   <span className="avt-oid">2c</span>
-                  <b>F-4 · 신청서 섹션 재설계형</b>
-                  <span>신청서의 `진료 대상자` 섹션을 체크박스 대신 본인/대리 2지선다로 바꾼다. 어린이는 `다른 분`이 기본값이고 수정할 수 있다.</span>
+                  <b>F-3 · 앞 화면에서 질문</b>
+                  <span>[질문 방식] 대상자를 고른 직후 같은 화면에서 본인/대리를 묻는다. 대조·경고가 없고, 답에 따라 신청서가 갈린다.</span>
                 </div>
                 <div className="avt-row">
-                  <WhomSectionFrame
-                    badge="F-4-①"
-                    caption="어린이는 `다른 분`이 기본값 · 폼이 함께 열림"
-                    value="other"
-                    note="체크박스 대신 2지선다를 기본 질문으로 둔다. 고르면 바로 아래 입력 폼이 열린다."
-                  />
-                  <WhomSectionFrame
-                    badge="F-4-②"
-                    caption="같은 섹션에서 `예약자 본인`으로 바꾼 상태"
-                    value="self"
-                    note="프리셋이 틀렸을 때 한 번에 되돌릴 수 있다. 이 질문이 곧 검증을 대체하므로 대조·에러 배너는 없다."
+                  <WhomQuestionFrame />
+                  <PlainTargetFrame />
+                  <ConfirmOnlyFrame
+                    badge="F-3-③"
+                    caption="① 에서 `예약자 본인`을 골랐을 때의 신청서"
+                    note="앞 화면의 답이 곧 분기라, 진료 대상자 섹션 자체가 없다. 대조 방식에서는 이 케이스도 늘 섹션을 그린다."
                   />
                 </div>
               </div>
@@ -1874,6 +1925,35 @@ export default function ApptVaccineTargetPage() {
               <div className="avt-opt" id="2d">
                 <div className="avt-olabel">
                   <span className="avt-oid">2d</span>
+                  <b>F-4 · 신청서에서 질문</b>
+                  <span>[질문 방식] 선택 화면은 그대로 두고, 신청서의 `진료 대상자` 섹션을 체크박스 대신 2지선다로 바꾼다.</span>
+                </div>
+                <div className="avt-row">
+                  <StaticScreen
+                    variant="collapse"
+                    step="3"
+                    label="F-4-①"
+                    caption="진료항목 선택 · 안 A + 어린이 (변화 없음)"
+                    note="F-1·F-2와 같은 화면이다. 질문을 신청서에 두었으므로 앞 화면은 건드리지 않는다."
+                  />
+                  <WhomSectionFrame
+                    badge="F-4-②"
+                    caption="신청서 진입 직후 · 어린이는 `다른 분`이 기본값"
+                    value="other"
+                    note="묻는 자리와 입력하는 자리가 같아 자연스럽고, 프리셋 덕에 어린이 케이스는 추가 탭이 없다."
+                  />
+                  <WhomSectionFrame
+                    badge="F-4-③"
+                    caption="`예약자 본인`으로 바꾼 뒤 · 폼이 접힘"
+                    value="self"
+                    note="프리셋이 틀렸을 때 한 번에 되돌릴 수 있다. 이 질문이 곧 검증을 대체하므로 대조·에러 배너는 없다."
+                  />
+                </div>
+              </div>
+
+              <div className="avt-opt" id="2e">
+                <div className="avt-olabel">
+                  <span className="avt-oid">2e</span>
                   <b>비교표</b>
                 </div>
                 <BookerCompareBoard />

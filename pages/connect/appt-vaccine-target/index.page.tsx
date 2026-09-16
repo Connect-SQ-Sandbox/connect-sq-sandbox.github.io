@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : appt-vaccine-target — 독감 무료접종 대상자 선택 UX (유저향 모바일 신청 웹)
  *            `무료 백신 대상자`를 고른 뒤 하위 뎁스(주성분 · 독감백신 종류)를 어떻게 처리할지 5안 비교 + 실제 동작.
- * 상태     : 현행(active)   버전: v1.3   최종수정: 2026-09-16
+ * 상태     : 현행(active)   버전: v1.4   최종수정: 2026-09-16
  * PRD      : 미발행 — Claude Design 핸드오프 `무료접종 대상자 선택 UX-handoff.zip`(2026-09-16) 이식.
  *            원본 캔버스 = `무료접종 대상자 선택 UX.dc.html` + 컴포넌트 `VaccineScreen.dc.html` / `VaccineLive.dc.html`.
  * 짝 화면  : 병원(어드민)향 = 예약 신청 내역 · 독감 무료접종형 진료정보 → out/treatment-create-tree.html?spec=1 의 [T45]
@@ -14,7 +14,7 @@ import React, { useEffect, useMemo, useState } from 'react';
  * 기술제약 : react-only · plain CSS · mock · 네트워크 0
  *
  * 화면구성 : ① 실제 동작(기본 진입) — 상단 `안` 세그먼트로 A~E를 바꿔 가며 직접 눌러보는 인터랙티브 화면 + 우측 확인 포인트
- *            ② 비교 보드 — 안 A~E × 상태 ①②③ + 예약 정보 확인 카드 ④, 비교표, 부록(예약자 불일치 F-1/F-2)
+ *            ② 비교 보드 — 안 A~E × 상태 ①②③ + 예약 정보 확인 카드 ④, 비교표, 부록(예약자 불일치 F-1~F-4)
  *
  * 핵심 결정 (why):
  *   [확정·디자인] 대상자 선택은 제품 선택 위 별도 아코디언 행(`무료 백신 대상자`)이고 선택지는
@@ -30,7 +30,10 @@ import React, { useEffect, useMemo, useState } from 'react';
  *                화면에 보이는 letter는 `LETTER` 맵에서만 나온다. 순위가 또 바뀌면 그 맵과 라벨 문자열만 고치면 된다.
  *   [보류]       채택안은 아직 미정(추천 순위 ≠ 확정). 다만 진입 기본값은 추천 1순위인 **안 A(하위 뎁스 접기)**로 둔다
  *                (2026-09-16 세화님 지시). 열자마자 A가 선택돼 있을 뿐, 확정 채택안이라는 뜻은 아니다.
- *   [보류]       예약자 불일치(고른 대상자와 예약자 생년월일이 어긋남) 처리 F-1(체크 비활성)/F-2(체크 후 해제) 미정.
+ *   [보류]       예약자 불일치(고른 대상자와 예약자 생년월일이 어긋남) 처리 4안 미정 —
+ *                F-1 체크 비활성 / F-2 체크 후 즉시 해제 / F-3 사전 경고(대상자 선택 즉시 알리고 신청서에서 이어받음) /
+ *                F-4 자동 전환(체크 UI를 없애고 입력 폼으로 시작).
+ *                F-3·F-4는 "신청서에서 조건을 검증하는 게 어색하다"는 피드백에서 나온 방향(2026-09-16 세화님).
  *   [유지·자체] 원본 캔버스는 안 A의 유료 제품 가격을 250,000원 단일값 mock으로 뒀다. 실제 접종료가 아니라
  *                가격 행이 있는지 없는지를 보기 위한 자리표시값이라 그대로 옮겼다.
  *   [유지·자체] 안 D의 시트를 스와이프로 닫는 경로는 원본에도 정의가 없어 구현하지 않았다(딤 탭 = 무동작).
@@ -43,6 +46,8 @@ import React, { useEffect, useMemo, useState } from 'react';
  * 변경 이력:
  *   v1    2026-09-16 — Claude Design 핸드오프 이식(비교 보드 + 실제 동작 2모드). 신규.
  *   v1.1  2026-09-16 — 진입 기본 모드를 비교 보드 → 실제 동작으로 변경(세화님 지시). 5안 비교는 세그먼트로 이동.
+ *   v1.4  2026-09-16 — 부록에 F-3(사전 경고형 2장)·F-4(자동 전환형) 추가. 행 아래 인라인 경고 슬롯(warn) 신설.
+ *                      정적 D-① 시트의 `해당 없음`을 실제 동작과 같은 `아니요, 유료로 접종할게요`로 통일.
  *   v1.3  2026-09-16 — 진입 시 선택된 안을 C → A(추천 1순위)로 변경(세화님 지시).
  *   v1.2  2026-09-16 — A~E를 추천 순위대로 재명명(세화님 지시: 접기 > 읽기 전용 > 비활성 > 사전 분기 > 현행).
  *                      variant id를 letter → 동작 이름으로 바꾸고 표시 letter는 LETTER 맵으로 분리.
@@ -172,6 +177,8 @@ type RowData = {
   valueDim?: boolean;
   chev: Chev;
   helper?: string | null;
+  /** 행 아래 파란 인라인 경고(F-3 사전 경고형에서 사용) */
+  warn?: string | null;
   chips?: ChipData[] | null;
   onToggle?: (() => void) | null;
 };
@@ -240,6 +247,22 @@ function AccordionRow({ row }: { row: RowData }) {
       {row.helper ? (
         <div style={{ padding: '0 20px 16px', font: '400 13px/1.5 Pretendard, sans-serif', color: '#8B95A1', wordBreak: 'keep-all' }}>
           {row.helper}
+        </div>
+      ) : null}
+
+      {row.warn ? (
+        <div
+          style={{
+            margin: '0 20px 16px',
+            background: '#EEF5FF',
+            borderRadius: 8,
+            padding: 14,
+            font: '400 13px/1.6 Pretendard, sans-serif',
+            color: '#0073FA',
+            wordBreak: 'keep-all'
+          }}
+        >
+          {row.warn}
         </div>
       ) : null}
 
@@ -493,7 +516,13 @@ function buildStatic(variant: Variant, step: string): ScreenModel & { caption: s
   if (variant === 'presplit') {
     if (step === '1') {
       rows.push(baseRow(), kindRow());
-      sheet = TARGETS.map((t) => ({ key: t.key, label: t.label, sub: t.sub, selected: false }));
+      // 시트의 `해당 없음`은 유료 선택지라 실제 동작 화면과 같은 카피를 쓴다
+      sheet = TARGETS.map((t) => ({
+        key: t.key,
+        label: t.key === 'none' ? '아니요, 유료로 접종할게요' : t.label,
+        sub: t.sub,
+        selected: false
+      }));
       caption = '진입 직후 · 사전 분기 바텀시트';
     } else if (step === '2') {
       rows.push(paidBaseOpen(), kindRow());
@@ -960,72 +989,141 @@ function CompareBoard() {
 /* ---- 부록 · 예약자 불일치 처리 ---- */
 
 const MISMATCH_BANNER = '예약자는 선택한 무료접종 대상에 해당하지 않아요. 진료 대상자 정보를 직접 입력해 주세요.';
+/** F-3 ① 대상자 선택 단계에서 곧바로 띄우는 사전 경고 */
+const PREWARN_BANNER = '예약자님은 만 34세로, 선택하신 어린이 대상에 해당하지 않아요. 신청서에서 별도 대상자 정보를 입력하게 돼요.';
+/** F-3 ② 앞 단계 경고를 이어받는 신청서 배너 */
+const PREWARN_FOLLOWUP = '앞에서 안내드린 대로, 예약자는 선택한 무료접종 대상에 해당하지 않아요. 진료 대상자 정보를 직접 입력해 주세요.';
+/** F-4 체크박스를 없앤 대신 남기는 안내 한 줄 */
+const NO_CHECKBOX_LEAD = '예약자님과 다른 분의 정보를 입력해주세요';
 
-function MismatchFrame({ badge, caption, disabled, note }: { badge: string; caption: string; disabled: boolean; note: string }) {
+function TargetFields() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div>
+        <span className="avt-flab">이름</span>
+        <div className="avt-fld">이름을 입력해주세요</div>
+      </div>
+      <div>
+        <span className="avt-flab">연락처</span>
+        <div className="avt-fld">010-0000-0000</div>
+      </div>
+      <div>
+        <span className="avt-flab">생년월일 · 성별</span>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <div className="avt-fld" style={{ flex: 1.4 }}>
+            YYMMDD
+          </div>
+          <div className="avt-fld" style={{ flex: 1 }}>
+            성별
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FrameCaption({ badge, caption }: { badge: string; caption: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+      <span className="avt-badge">{badge}</span>
+      <span className="avt-cap">{caption}</span>
+    </div>
+  );
+}
+
+/**
+ * 신청서(예약 정보 확인)의 `진료 대상자` 섹션 대안 프레임.
+ * checkbox — 'disabled' 체크 불가(F-1 · F-3②) / 'empty' 체크는 되지만 시도 시 해제(F-2) / 'none' 체크 UI 자체가 없음(F-4)
+ */
+function MismatchFrame({
+  badge,
+  caption,
+  checkbox,
+  banner,
+  lead,
+  note
+}: {
+  badge: string;
+  caption: string;
+  checkbox: 'disabled' | 'empty' | 'none';
+  banner?: string | null;
+  lead?: string | null;
+  note: string;
+}) {
+  const dim = checkbox === 'disabled';
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: 375 }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-        <span className="avt-badge">{badge}</span>
-        <span className="avt-cap">{caption}</span>
-      </div>
+      <FrameCaption badge={badge} caption={caption} />
       <div className="avt-frame">
         <StatusBar />
         <NavBar title="예약 정보 확인" />
         <div style={{ flex: 1, minHeight: 0, padding: '8px 20px 0' }}>
           <div style={{ font: '700 22px/1.35 Pretendard, sans-serif', color: '#111', paddingBottom: 20 }}>예약 정보를 확인해주세요</div>
-          <div style={{ font: '600 17px/1.4 Pretendard, sans-serif', color: '#111', paddingBottom: 14 }}>진료 대상자</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 14 }}>
-            {disabled ? (
-              <svg width="22" height="22" viewBox="0 0 22 22" style={{ flex: 'none' }}>
-                <rect x="1" y="1" width="20" height="20" rx="5" fill="#F2F4F7" stroke="#E5E8EB" />
-                <path d="M6.5 11.2l3 3 6-6.4" fill="none" stroke="#C4C9D0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            ) : (
-              <svg width="22" height="22" viewBox="0 0 22 22" style={{ flex: 'none' }}>
-                <rect x="1" y="1" width="20" height="20" rx="5" fill="#fff" stroke="#CACED8" />
-              </svg>
-            )}
-            <span style={{ font: '400 15px/1.4 Pretendard, sans-serif', color: disabled ? '#C4C9D0' : '#111' }}>예약자와 동일해요</span>
-          </div>
-          <div
-            style={{
-              background: '#EEF5FF',
-              borderRadius: 8,
-              padding: 14,
-              font: '400 13px/1.6 Pretendard, sans-serif',
-              color: '#0073FA',
-              wordBreak: 'keep-all',
-              marginBottom: 20
-            }}
-          >
-            {MISMATCH_BANNER}
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div>
-              <span className="avt-flab">이름</span>
-              <div className="avt-fld">이름을 입력해주세요</div>
+          <div style={{ font: '600 17px/1.4 Pretendard, sans-serif', color: '#111', paddingBottom: lead ? 6 : 14 }}>진료 대상자</div>
+
+          {lead ? (
+            <div style={{ font: '400 13px/1.5 Pretendard, sans-serif', color: '#8B95A1', wordBreak: 'keep-all', paddingBottom: 20 }}>{lead}</div>
+          ) : null}
+
+          {checkbox === 'none' ? null : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 14 }}>
+              {dim ? (
+                <svg width="22" height="22" viewBox="0 0 22 22" style={{ flex: 'none' }}>
+                  <rect x="1" y="1" width="20" height="20" rx="5" fill="#F2F4F7" stroke="#E5E8EB" />
+                  <path d="M6.5 11.2l3 3 6-6.4" fill="none" stroke="#C4C9D0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              ) : (
+                <svg width="22" height="22" viewBox="0 0 22 22" style={{ flex: 'none' }}>
+                  <rect x="1" y="1" width="20" height="20" rx="5" fill="#fff" stroke="#CACED8" />
+                </svg>
+              )}
+              <span style={{ font: '400 15px/1.4 Pretendard, sans-serif', color: dim ? '#C4C9D0' : '#111' }}>예약자와 동일해요</span>
             </div>
-            <div>
-              <span className="avt-flab">연락처</span>
-              <div className="avt-fld">010-0000-0000</div>
+          )}
+
+          {banner ? (
+            <div
+              style={{
+                background: '#EEF5FF',
+                borderRadius: 8,
+                padding: 14,
+                font: '400 13px/1.6 Pretendard, sans-serif',
+                color: '#0073FA',
+                wordBreak: 'keep-all',
+                marginBottom: 20
+              }}
+            >
+              {banner}
             </div>
-            <div>
-              <span className="avt-flab">생년월일 · 성별</span>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <div className="avt-fld" style={{ flex: 1.4 }}>
-                  YYMMDD
-                </div>
-                <div className="avt-fld" style={{ flex: 1 }}>
-                  성별
-                </div>
-              </div>
-            </div>
-          </div>
+          ) : null}
+
+          <TargetFields />
         </div>
         <Cta on={false} label="예약 신청하기" />
         <HomeIndicator />
       </div>
       <div className="avt-note">{note}</div>
+    </div>
+  );
+}
+
+/** F-3 ① — 대상자 선택 화면에서 칩을 고르는 즉시 띄우는 사전 경고 (안 A 접기 기준) */
+function PreWarnFrame() {
+  const model: ScreenModel = {
+    navTitle: '굿닥의원',
+    isConfirm: false,
+    rows: [{ label: '무료 백신 대상자', value: '어린이', chev: 'down', warn: PREWARN_BANNER }],
+    summary: { title: '무료접종 희망 · 어린이', body: SUMMARY_BODY },
+    card: null,
+    sheet: null,
+    ctaOn: true,
+    ctaLabel: '다음'
+  };
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: 375 }}>
+      <FrameCaption badge="F-3-①" caption="대상자 선택 즉시 · 인라인 사전 경고" />
+      <Screen model={model} />
+      <div className="avt-note">칩을 고르는 순간 예약자 생년월일과 대조해 알려준다. 신청서까지 가서 막히지 않지만, 다음 화면에서 같은 사실을 다시 말하게 된다.</div>
     </div>
   );
 }
@@ -1184,20 +1282,40 @@ export default function ApptVaccineTargetPage() {
               <div className="avt-olabel">
                 <span className="avt-oid">1g</span>
                 <b>부록 · 예약자 불일치 처리</b>
-                <span>`어린이`를 골랐는데 예약자 본인 생년월일이 어린이 기준을 벗어난 경우. 예약 정보 확인 화면의 `진료 대상자` 섹션.</span>
+                <span>
+                  `어린이`를 골랐는데 예약자 본인 생년월일이 어린이 기준을 벗어난 경우. F-1·F-2는 신청서에서 조건을 검증하는 방식이고, "신청서에서 검증하는 게
+                  어색하다"는 피드백에 따라 더 이른 시점에 알리는 F-3, 체크박스 자체를 없애는 F-4를 덧붙였다.
+                </span>
               </div>
               <div className="avt-row">
                 <MismatchFrame
                   badge="F-1"
                   caption="체크박스 비활성 + 배너 상시 노출"
-                  disabled
+                  checkbox="disabled"
+                  banner={MISMATCH_BANNER}
                   note="체크 자체를 막아 잘못된 선택이 일어나지 않지만, 왜 못 누르는지 배너를 읽어야 안다."
                 />
                 <MismatchFrame
                   badge="F-2"
                   caption="체크는 유지 · 시도 시 배너 후 해제"
-                  disabled={false}
+                  checkbox="empty"
+                  banner={MISMATCH_BANNER}
                   note="체크는 눌리지만 즉시 해제되고 같은 배너가 뜬다. 누를 수 있어 답답함이 적은 대신, 왜 풀렸는지 한 번은 헷갈릴 수 있다."
+                />
+                <PreWarnFrame />
+                <MismatchFrame
+                  badge="F-3-②"
+                  caption="사전 경고형 · 신청서는 F-1과 동일 + 연결 문구"
+                  checkbox="disabled"
+                  banner={PREWARN_FOLLOWUP}
+                  note="앞 단계 경고를 `앞에서 안내드린 대로`로 이어받아 반복을 설명으로 바꾼다. 두 화면에서 같은 말을 두 번 하는 것이 과하지 않은지가 확인 포인트."
+                />
+                <MismatchFrame
+                  badge="F-4"
+                  caption="자동 전환형 · 체크박스 없이 입력 폼으로 시작"
+                  checkbox="none"
+                  lead={NO_CHECKBOX_LEAD}
+                  note="체크 UI가 없어 `눌러도 되는지` 헷갈림이 원천 제거된다. 대신 예약자=대상자인 일반 케이스와 섹션 구조가 달라지는 것이 위화감을 주지 않는지가 확인 포인트."
                 />
               </div>
             </div>

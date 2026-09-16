@@ -15,6 +15,7 @@ export const SCREEN_CSS = {
   'ti-category-c': ['styles/connectRegister.css', 'styles/connectAdminNonpayAug.css', 'styles/tiCategoryC.css'],
   'admin-nonpay-aug': ['styles/connectRegister.css', 'styles/connectAdminNonpayAug.css'],
   'appt-free-vaccine': ['styles/connectRegister.css', 'styles/connectAdminNonpayAug.css', 'styles/apptFreeVaccine.css'],
+  'appt-vaccine-target': ['styles/apptVaccineTarget.css'],
   'kakao-booking': ['styles/kakaoBooking.css'],
   'kakao-booking-ticket': ['styles/kakaoBookingTicket.css'],
   'kakao-booking-skin': ['styles/kakaoBookingSkin.css'],

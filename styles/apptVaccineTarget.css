@@ -1,0 +1,210 @@
+/* =============================================================
+   appt-vaccine-target — 독감 무료접종 대상자 선택 UX 비교 보드
+   Claude Design 핸드오프("무료접종 대상자 선택 UX.dc.html")를
+   React 프로토타입으로 이식하면서 캔버스 레벨 크롬만 CSS로 옮겼다.
+   모바일 프레임 내부는 원본과 동일하게 인라인 스타일로 유지한다.
+   클래스 접두사 avt- 로 다른 화면과 충돌하지 않는다.
+   ============================================================= */
+
+/* globals.css 의 html,body{height:100%} 는 문서가 뷰포트보다 길어지면 배경이
+   끊기고 sticky 기준이 어긋난다. 이 화면에서만 되돌린다. */
+html,
+body {
+  height: auto;
+  min-height: 100%;
+  background: #f6f7f9;
+}
+
+.avt-root {
+  min-height: 100%;
+  background: #f6f7f9;
+  color: #16181d;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.avt-root a { color: #0073fa; text-decoration: none; }
+.avt-root a:hover { color: #115fd4; }
+
+/* ---- 상단 바 ---- */
+.avt-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 48px;
+  background: #fff;
+  border-bottom: 1px solid #eef0f3;
+}
+.avt-bar-title { font: 700 15px/1.3 Pretendard, sans-serif; color: #16181d; }
+.avt-bar-note { font: 400 12px/1.5 Pretendard, sans-serif; color: #808799; }
+.avt-spacer { flex: 1; }
+
+.avt-seg { display: flex; padding: 3px; background: #f2f4f7; border-radius: 8px; gap: 2px; }
+.avt-seg-item {
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 6px;
+  font: 600 12.5px/1 Pretendard, sans-serif;
+  color: #808799;
+  background: transparent;
+  cursor: pointer;
+  user-select: none;
+}
+.avt-seg-item.is-on { color: #16181d; background: #fff; box-shadow: 0 1px 2px rgba(22, 24, 29, 0.1); }
+.avt-seg-label { font: 400 12.5px/1 Pretendard, sans-serif; color: #808799; }
+
+/* ---- 섹션 ---- */
+.avt-turn { padding: 36px 48px 40px; border-bottom: 1px solid rgba(0, 0, 0, 0.08); }
+.avt-thd { display: flex; align-items: baseline; gap: 10px; margin: 0 0 24px; }
+.avt-tid {
+  font: 600 10px ui-monospace, Menlo, monospace;
+  padding: 3px 7px;
+  background: #16181d;
+  color: #fff;
+  border-radius: 4px;
+}
+.avt-tname { font: 600 13px/1.2 Pretendard, sans-serif; color: #16181d; }
+
+.avt-opts { display: flex; flex-direction: column; gap: 44px; align-items: flex-start; }
+.avt-opt { flex: none; display: flex; flex-direction: column; gap: 12px; scroll-margin-top: 16px; }
+.avt-oid {
+  font: 600 10.5px ui-monospace, Menlo, monospace;
+  padding: 3px 7px;
+  background: rgba(22, 24, 29, 0.08);
+  color: #16181d;
+  border-radius: 5px;
+}
+.avt-olabel {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font: 400 12.5px/1.5 Pretendard, sans-serif;
+  color: #5d6474;
+  max-width: 1570px;
+  word-break: keep-all;
+}
+.avt-olabel b { font: 600 14px/1.4 Pretendard, sans-serif; color: #16181d; white-space: nowrap; }
+.avt-row { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+.avt-next { margin: 30px 0 0; font: 12px/1.7 Pretendard, sans-serif; color: #808799; }
+
+/* ---- 비교표 ---- */
+.avt-cmp {
+  display: grid;
+  grid-template-columns: 120px repeat(5, 1fr);
+  background: #fff;
+  border: 1px solid #eef0f3;
+  border-radius: 12px;
+  overflow: hidden;
+  width: 1120px;
+  max-width: 100%;
+}
+.avt-cmp > div {
+  padding: 14px 16px;
+  border-top: 1px solid #eef0f3;
+  font: 400 13px/1.5 Pretendard, sans-serif;
+  color: #31353f;
+  word-break: keep-all;
+}
+.avt-cmp > .avt-h {
+  border-top: none;
+  background: #f9f9fb;
+  font: 600 12.5px/1.4 Pretendard, sans-serif;
+  color: #5d6474;
+}
+.avt-cmp > .avt-n { font: 600 14px/1.4 Pretendard, sans-serif; color: #16181d; }
+.avt-cmp > .avt-memo {
+  grid-column: 1 / -1;
+  background: #f9f9fb;
+  padding: 10px 16px;
+  font: 400 12.5px/1.6 Pretendard, sans-serif;
+  color: #5d6474;
+  border-top: 1px dashed #e3e6ed;
+}
+.avt-hi { color: #d6173a; font-weight: 600; }
+.avt-mid { color: #b26a00; font-weight: 600; }
+.avt-lo { color: #0b7a55; font-weight: 600; }
+
+/* ---- 화면 프레임 · 부록 카드 ---- */
+.avt-frame {
+  position: relative;
+  width: 375px;
+  height: 812px;
+  background: #fff;
+  border: 1px solid #eef0f3;
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font-family: Pretendard, sans-serif;
+}
+.avt-sbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+  padding: 0 22px 0 26px;
+  flex: none;
+  font: 600 15px/1 Pretendard, sans-serif;
+  color: #111;
+}
+.avt-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 56px;
+  padding: 0 12px 0 8px;
+  flex: none;
+  font: 600 17px/1.4 Pretendard, sans-serif;
+  color: #111;
+}
+.avt-flab { display: block; font: 600 13px/1.4 Pretendard, sans-serif; color: #5d6474; margin-bottom: 6px; }
+.avt-fld {
+  height: 52px;
+  border: 1px solid #e5e8eb;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  font: 400 15px/1 Pretendard, sans-serif;
+  color: #c4c9d0;
+}
+.avt-badge {
+  font: 600 11px ui-monospace, Menlo, monospace;
+  padding: 2px 6px;
+  background: #111;
+  color: #fff;
+  border-radius: 4px;
+}
+.avt-cap { font: 400 11.5px/1.3 Pretendard, sans-serif; color: #8b95a1; }
+.avt-note { width: 375px; font: 400 12px/1.6 Pretendard, sans-serif; color: #8b95a1; word-break: keep-all; }
+
+/* ---- 실제 동작 우측 주석 ---- */
+.avt-side { width: 420px; display: flex; flex-direction: column; gap: 14px; }
+.avt-card { background: #fff; border: 1px solid #eef0f3; border-radius: 12px; padding: 18px; }
+.avt-card-title { font: 600 14px/1.4 Pretendard, sans-serif; color: #16181d; margin-bottom: 10px; }
+.avt-card-body { font: 400 13px/1.7 Pretendard, sans-serif; color: #5d6474; word-break: keep-all; }
+.avt-check { display: flex; gap: 8px; font: 400 13px/1.6 Pretendard, sans-serif; color: #5d6474; word-break: keep-all; }
+.avt-check span:first-child { color: #0073fa; flex: none; }
+.avt-hint {
+  background: #eef5ff;
+  border-radius: 12px;
+  padding: 16px;
+  font: 400 12.5px/1.7 Pretendard, sans-serif;
+  color: #115fd4;
+  word-break: keep-all;
+}
+.avt-reset {
+  flex: none;
+  padding: 7px 12px;
+  border: 1px solid #e3e6ed;
+  border-radius: 6px;
+  background: #fff;
+  font: 600 12px/1 Pretendard, sans-serif;
+  color: #5d6474;
+  cursor: pointer;
+}
+.avt-status { flex: 1; font: 400 12px/1.5 Pretendard, sans-serif; color: #5d6474; word-break: keep-all; }
+.avt-tapnote { width: 375px; font: 400 12px/1.6 Pretendard, sans-serif; color: #808799; word-break: keep-all; }

@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : appt-vaccine-target — 독감 무료접종 대상자 선택 UX (유저향 모바일 신청 웹)
  *            `무료 백신 대상자`를 고른 뒤 하위 뎁스(주성분 · 독감백신 종류)를 어떻게 처리할지 5안 비교 + 실제 동작.
- * 상태     : 현행(active)   버전: v1   최종수정: 2026-09-16
+ * 상태     : 현행(active)   버전: v1.1   최종수정: 2026-09-16
  * PRD      : 미발행 — Claude Design 핸드오프 `무료접종 대상자 선택 UX-handoff.zip`(2026-09-16) 이식.
  *            원본 캔버스 = `무료접종 대상자 선택 UX.dc.html` + 컴포넌트 `VaccineScreen.dc.html` / `VaccineLive.dc.html`.
  * 짝 화면  : 병원(어드민)향 = 예약 신청 내역 · 독감 무료접종형 진료정보 → out/treatment-create-tree.html?spec=1 의 [T45]
@@ -13,8 +13,8 @@ import React, { useEffect, useMemo, useState } from 'react';
  * 관련 CSS : apptVaccineTarget.css (캔버스 크롬만. 모바일 프레임 내부는 원본대로 인라인 스타일)
  * 기술제약 : react-only · plain CSS · mock · 네트워크 0
  *
- * 화면구성 : ① 비교 보드(기본 진입) — 안 A~E × 상태 ①②③ + 예약 정보 확인 카드 ④, 비교표, 부록(예약자 불일치 F-1/F-2)
- *            ② 실제 동작 — 상단 `안` 세그먼트로 A~E를 바꿔 가며 실제로 눌러보는 인터랙티브 화면 + 우측 확인 포인트
+ * 화면구성 : ① 실제 동작(기본 진입) — 상단 `안` 세그먼트로 A~E를 바꿔 가며 직접 눌러보는 인터랙티브 화면 + 우측 확인 포인트
+ *            ② 비교 보드 — 안 A~E × 상태 ①②③ + 예약 정보 확인 카드 ④, 비교표, 부록(예약자 불일치 F-1/F-2)
  *
  * 핵심 결정 (why):
  *   [확정·디자인] 대상자 선택은 제품 선택 위 별도 아코디언 행(`무료 백신 대상자`)이고 선택지는
@@ -36,7 +36,8 @@ import React, { useEffect, useMemo, useState } from 'react';
  *   · 안 D 채택 시 시트 닫기·되돌리기 상태 정의 필요.
  *
  * 변경 이력:
- *   v1  2026-09-16 — Claude Design 핸드오프 이식(비교 보드 + 실제 동작 2모드). 신규.
+ *   v1    2026-09-16 — Claude Design 핸드오프 이식(비교 보드 + 실제 동작 2모드). 신규.
+ *   v1.1  2026-09-16 — 진입 기본 모드를 비교 보드 → 실제 동작으로 변경(세화님 지시). 5안 비교는 세그먼트로 이동.
  * └──────────────────────────────────────────────────────
  */
 
@@ -1064,7 +1065,7 @@ const LIVE_INFO: Record<Variant, { title: string; desc: string; checks: string[]
 const VARIANTS: Variant[] = ['A', 'B', 'C', 'D', 'E'];
 
 export default function ApptVaccineTargetPage() {
-  const [mode, setMode] = useState<'board' | 'live'>('board');
+  const [mode, setMode] = useState<'board' | 'live'>('live');
   const [variant, setVariant] = useState<Variant>('C');
   const live = mode === 'live';
   const info = useMemo(() => LIVE_INFO[variant], [variant]);

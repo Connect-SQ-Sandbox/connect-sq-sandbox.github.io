@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : appt-vaccine-target — 독감 무료접종 대상자 선택 UX (유저향 모바일 신청 웹)
  *            `무료 백신 대상자`를 고른 뒤 하위 뎁스(주성분 · 독감백신 종류)를 어떻게 처리할지 5안 비교 + 실제 동작.
- * 상태     : 현행(active)   버전: v1.5   최종수정: 2026-09-16
+ * 상태     : 현행(active)   버전: v1.6   최종수정: 2026-09-16
  * PRD      : 미발행 — Claude Design 핸드오프 `무료접종 대상자 선택 UX-handoff.zip`(2026-09-16) 이식.
  *            원본 캔버스 = `무료접종 대상자 선택 UX.dc.html` + 컴포넌트 `VaccineScreen.dc.html` / `VaccineLive.dc.html`.
  * 짝 화면  : 병원(어드민)향 = 예약 신청 내역 · 독감 무료접종형 진료정보 → out/treatment-create-tree.html?spec=1 의 [T45]
@@ -51,6 +51,8 @@ import React, { useEffect, useMemo, useState } from 'react';
  * 변경 이력:
  *   v1    2026-09-16 — Claude Design 핸드오프 이식(비교 보드 + 실제 동작 2모드). 신규.
  *   v1.1  2026-09-16 — 진입 기본 모드를 비교 보드 → 실제 동작으로 변경(세화님 지시). 5안 비교는 세그먼트로 이동.
+ *   v1.6  2026-09-16 — `예약자 불일치`를 바꿔도 진행 상태(대상자 선택·현재 화면)를 유지하도록 수정(세화님 피드백).
+ *                      초기화되면 같은 지점에서 F안을 갈아 끼우는 비교가 안 된다. 안(A~E) 변경 시에만 리셋.
  *   v1.5  2026-09-16 — F-1~F-4의 **실제 동작 버전** 추가(세화님 지시). 상단 `예약자 불일치` 세그먼트로 안 A~E와 조합해
  *                      눌러본다. 확인 화면에 진료 대상자 섹션 신설(ScreenModel.extra), F-2는 체크 시도 → 배너까지 동작.
  *   v1.4  2026-09-16 — 부록에 F-3(사전 경고형 2장)·F-4(자동 전환형) 추가. 행 아래 인라인 경고 슬롯(warn) 신설.
@@ -643,10 +645,17 @@ function LiveScreen({ variant, mismatch }: { variant: Variant; mismatch: Mismatc
   /** F-2에서 `예약자와 동일해요`를 눌러본 적이 있는가 */
   const [tried, setTried] = useState(false);
 
+  // 안(A~E)을 바꿀 때만 흐름을 처음부터 다시 태운다.
   useEffect(() => {
     setS(initialState(variant));
     setTried(false);
-  }, [variant, mismatch]);
+  }, [variant]);
+
+  // 불일치 처리(F-1~F-4)는 같은 화면·같은 선택 상태에서 갈아 끼워야 비교가 되므로 진행 상태를 건드리지 않는다.
+  // F-2의 `눌러봤음`만 초기화한다.
+  useEffect(() => {
+    setTried(false);
+  }, [mismatch]);
 
   const free = !!s.target && s.target !== 'none';
   const isConfirm = s.screen === 'confirm';
@@ -1402,7 +1411,7 @@ export default function ApptVaccineTargetPage() {
             <span className="avt-tname">{info.title}</span>
           </div>
           <div className="avt-row" style={{ gap: 40 }}>
-            <LiveScreen key={variant + mismatch} variant={variant} mismatch={mismatch} />
+            <LiveScreen key={variant} variant={variant} mismatch={mismatch} />
             <div className="avt-side">
               <div className="avt-card">
                 <div className="avt-card-title">이 안이 실제로 하는 일</div>

@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : appt-vaccine-target — 독감 무료접종 대상자 선택 UX (유저향 모바일 신청 웹)
  *            `무료 백신 대상자`를 고른 뒤 하위 뎁스(주성분 · 독감백신 종류)를 어떻게 처리할지 5안 비교 + 실제 동작.
- * 상태     : 현행(active)   버전: v2.0   최종수정: 2026-09-16
+ * 상태     : 현행(active)   버전: v2.1   최종수정: 2026-09-16
  * PRD      : 미발행 — Claude Design 핸드오프 `무료접종 대상자 선택 UX-handoff.zip`(2026-09-16) 이식.
  *            원본 캔버스 = `무료접종 대상자 선택 UX.dc.html` + 컴포넌트 `VaccineScreen.dc.html` / `VaccineLive.dc.html`.
  * 짝 화면  : 병원(어드민)향 = 예약 신청 내역 · 독감 무료접종형 진료정보 → out/treatment-create-tree.html?spec=1 의 [T45]
@@ -13,9 +13,11 @@ import React, { useEffect, useMemo, useState } from 'react';
  * 관련 CSS : apptVaccineTarget.css (캔버스 크롬만. 모바일 프레임 내부는 원본대로 인라인 스타일)
  * 기술제약 : react-only · plain CSS · mock · 네트워크 0
  *
- * 화면구성 : ① 실제 동작(기본 진입) — 상단 `안` 세그먼트로 A~E를, `진료 대상자` 세그먼트로 F-1~F-4를 바꿔 가며
- *               직접 눌러보는 인터랙티브 화면 + 우측 확인 포인트
- *            ② 비교 보드 — 안 A~E × 상태 ①②③ + 예약 정보 확인 카드 ④, 비교표, 부록(진료 대상자 처리 F-1~F-4)
+ * 화면구성 : 최상단 `이슈` 축으로 결정 2건을 갈라 놓는다 — 한 화면에 변수 1개만 둔다.
+ *            이슈 ① 하위 뎁스 처리 — 안 A~E. 실제 동작은 `안` 세그먼트 / 비교 보드는 1a~1e + 1f 비교표.
+ *            이슈 ② 진료 대상자 — F-1~F-4. 실제 동작은 `처리` 세그먼트(안은 A 고정) /
+ *                     비교 보드는 2a 대조 방식 참고(F-1·F-2) · 2b F-3 · 2c F-4 · 2d 비교표.
+ *            각 이슈 안에서 `비교 보드 / 실제 동작`(기본 진입) 2모드는 그대로.
  *
  * 핵심 결정 (why):
  *   [확정·디자인] 대상자 선택은 제품 선택 위 별도 아코디언 행(`무료 백신 대상자`)이고 선택지는
@@ -31,6 +33,10 @@ import React, { useEffect, useMemo, useState } from 'react';
  *                화면에 보이는 letter는 `LETTER` 맵에서만 나온다. 순위가 또 바뀌면 그 맵과 라벨 문자열만 고치면 된다.
  *   [보류]       채택안은 아직 미정(추천 순위 ≠ 확정). 다만 진입 기본값은 추천 1순위인 **안 A(하위 뎁스 접기)**로 둔다
  *                (2026-09-16 세화님 지시). 열자마자 A가 선택돼 있을 뿐, 확정 채택안이라는 뜻은 아니다.
+ *   [확정·세화님] 결정 2건을 **이슈 축으로 분리**(2026-09-16) — 하위 뎁스 처리와 진료 대상자 처리는 서로 독립인데
+ *                두 세그먼트가 한 줄에 같이 있어 25조합이 되고, 라벨 체계(A~E / F-1~F-4)도 한 축처럼 읽혔다.
+ *                최상단 `이슈` 세그먼트로 갈라 화면당 변수를 1개로 줄이고, ②도 부록에서 동등한 이슈로 승격(비교표 신설).
+ *                이슈 ②에서는 안을 추천 1순위 A로 고정한다 — ②의 결정은 안과 무관하다.
  *   [확정·세화님] 진료 대상자 처리의 **프레이밍 전환**(2026-09-16) — 어린이·영유아는 부모가 자녀를 대신 예약하는 것이
  *                기본 케이스다. 생년월일 불일치를 오류로 다루는 F-1·F-2 방식은 정상 케이스를 막힌 동작으로 만든다.
  *                F-3·F-4는 대조·경고 배너를 전부 버리고 **본인/대리 여부를 중립적으로 먼저 묻는다**. 고른 값은 그대로 신뢰.
@@ -52,6 +58,8 @@ import React, { useEffect, useMemo, useState } from 'react';
  * 변경 이력:
  *   v1    2026-09-16 — Claude Design 핸드오프 이식(비교 보드 + 실제 동작 2모드). 신규.
  *   v1.1  2026-09-16 — 진입 기본 모드를 비교 보드 → 실제 동작으로 변경(세화님 지시). 5안 비교는 세그먼트로 이동.
+ *   v2.1  2026-09-16 — 최상단 `이슈` 축 신설(① 하위 뎁스 / ② 진료 대상자). 섞여 있던 두 결정을 갈라 화면당 변수 1개로.
+ *                      ②를 부록 1g → 2a~2d로 승격하고 비교표를 새로 만듦.
  *   v2.0  2026-09-16 — F-3·F-4를 **본인/대리를 묻는 방식**으로 다시 그림(세화님 지시). 생년월일 대조·경고 배너 폐기.
  *                      F-3 = 대상자 선택 화면 통합형(G-1, 2장) · F-4 = 신청서 섹션 재설계형(G-2, 2장). 실제 동작도 같이 교체.
  *                      세그먼트 이름 `예약자 불일치` → `진료 대상자`. RowData.warn 슬롯 제거.
@@ -1503,23 +1511,140 @@ const MISMATCH_INFO: Record<Exclude<MismatchMode, 'off'>, { title: string; desc:
   }
 };
 
-/* ============================ 페이지 ============================ */
-
 /** 추천 순위대로 나열한다(= 표시 이름 A~E 순). */
 const VARIANTS: Variant[] = ['collapse', 'readonly', 'disabled', 'presplit', 'asis'];
 
+/* ---- ② 진료 대상자 · 비교표 ---- */
+
+type BookerCell = { tone?: Tone; v: string; tail?: string };
+
+const BOOKER_HEADS = ['안', '질문·판정 시점', '정상 대리 예약을 오류로 취급', '생년월일 대조 의존', '선택 화면 길이', '구현량'];
+
+const BOOKER_ROWS: { name: string; cells: BookerCell[]; memo: string }[] = [
+  {
+    name: 'F-1 · 체크 비활성',
+    cells: [
+      { v: '신청서 · 시스템이 판정' },
+      { tone: 'hi', v: '그렇다' },
+      { tone: 'hi', v: '상' },
+      { tone: 'lo', v: '영향 없음' },
+      { tone: 'lo', v: '하', tail: ' · disabled 상태만' }
+    ],
+    memo: '[대조 방식] 잘못 고를 여지가 없다. 단 — 부모가 자녀를 예약하는 정상 케이스에서 체크가 막혀 있고, 왜 막혔는지는 배너를 읽어야 안다.'
+  },
+  {
+    name: 'F-2 · 체크 후 해제',
+    cells: [
+      { v: '신청서 · 시스템이 판정' },
+      { tone: 'hi', v: '그렇다' },
+      { tone: 'hi', v: '상' },
+      { tone: 'lo', v: '영향 없음' },
+      { tone: 'mid', v: '중', tail: ' · 시도 처리 필요' }
+    ],
+    memo: '[대조 방식] 누를 수는 있어 답답함이 적다. 단 — 눌렀는데 풀리는 동작이라 정상 예약을 오히려 더 오작동처럼 느끼게 한다.'
+  },
+  {
+    name: 'F-3 · 선택 화면 통합',
+    cells: [
+      { v: '대상자 선택 화면 · 유저가 답' },
+      { tone: 'lo', v: '아니다' },
+      { tone: 'lo', v: '없음' },
+      { tone: 'mid', v: '질문 1블록 추가' },
+      { tone: 'mid', v: '중', tail: ' · 앞 화면 질문 + 분기' }
+    ],
+    memo: '장 — 신청서에 닿기 전에 분기가 끝나 신청서가 가장 단순해진다. 단 — 모든 무료접종 대상자가 질문을 한 번 더 받고, 선택 화면이 길어진다.'
+  },
+  {
+    name: 'F-4 · 신청서 섹션 재설계',
+    cells: [
+      { v: '신청서 · 유저가 답' },
+      { tone: 'lo', v: '아니다' },
+      { tone: 'lo', v: '없음' },
+      { tone: 'lo', v: '영향 없음' },
+      { tone: 'mid', v: '중', tail: ' · 섹션 재설계 + 프리셋' }
+    ],
+    memo: '장 — 물어보는 자리가 정보를 입력하는 자리와 같아 자연스럽고, 어린이 프리셋으로 탭도 줄어든다. 단 — 프리셋이 틀린 케이스에서는 유저가 되돌려야 한다.'
+  }
+];
+
+function BookerCompareBoard() {
+  return (
+    <div className="avt-cmp">
+      {BOOKER_HEADS.map((h) => (
+        <div key={h} className="avt-h">
+          {h}
+        </div>
+      ))}
+      {BOOKER_ROWS.map((row) => (
+        <React.Fragment key={row.name}>
+          <div className="avt-n">{row.name}</div>
+          {row.cells.map((c, i) => (
+            <div key={i}>
+              {c.tone ? <span className={'avt-' + c.tone}>{c.v}</span> : c.v}
+              {c.tail || ''}
+            </div>
+          ))}
+          <div className="avt-memo">{row.memo}</div>
+        </React.Fragment>
+      ))}
+    </div>
+  );
+}
+
+/* ============================ 페이지 ============================ */
+
+/** 이 프로토타입이 담은 결정 2건. 서로 독립이라 화면당 하나만 보여 준다. */
+type Issue = 'depth' | 'booker';
+
+const ISSUES: { key: Issue; label: string; tid: string; title: string; boardNote: string; liveNote: string }[] = [
+  {
+    key: 'depth',
+    label: '① 하위 뎁스 처리',
+    tid: '1',
+    title: '하위 뎁스(주성분·독감백신 종류) 처리 5안 · 상태별 비교 (A~E = 추천순)',
+    boardNote: '안 A~E(추천순) × 상태 ①②③ + 예약 정보 확인 카드',
+    liveNote: '화면 안을 직접 눌러 동작을 확인하세요'
+  },
+  {
+    key: 'booker',
+    label: '② 진료 대상자',
+    tid: '2',
+    title: '진료 대상자 처리 4안 · 본인/대리를 언제 · 어떻게 물을 것인가',
+    boardNote: 'F-1·F-2(대조 방식) / F-3·F-4(질문 방식) + 비교표',
+    liveNote: '안은 추천 1순위 A로 고정했습니다 — 이 결정은 안과 무관합니다'
+  }
+];
+
 export default function ApptVaccineTargetPage() {
+  const [issue, setIssue] = useState<Issue>('depth');
   const [mode, setMode] = useState<'board' | 'live'>('live');
   const [variant, setVariant] = useState<Variant>('collapse');
   const [mismatch, setMismatch] = useState<MismatchMode>('off');
+
   const live = mode === 'live';
-  const info = useMemo(() => LIVE_INFO[variant], [variant]);
-  const mismatchInfo = mismatch === 'off' ? null : MISMATCH_INFO[mismatch];
+  const depth = issue === 'depth';
+  const meta = ISSUES.find((i) => i.key === issue)!;
+
+  // 이슈 ②를 볼 때는 안을 추천 1순위로 고정하고, 이슈 ①에서는 진료 대상자 처리를 끈다.
+  // 화면당 변수 1개 — 두 축을 동시에 돌리면 무엇을 결정하는 자리인지 흐려진다.
+  const effVariant: Variant = depth ? variant : 'collapse';
+  const effMismatch: MismatchMode = depth ? 'off' : mismatch;
+
+  const info = LIVE_INFO[effVariant];
+  const mismatchInfo = effMismatch === 'off' ? null : MISMATCH_INFO[effMismatch];
 
   return (
     <div className="avt-root bb">
       <div className="avt-bar">
         <span className="avt-bar-title">독감 무료접종 대상자 선택 UX</span>
+        <div className="avt-seg">
+          {ISSUES.map((i) => (
+            <button key={i.key} type="button" className={'avt-seg-item' + (i.key === issue ? ' is-on' : '')} onClick={() => setIssue(i.key)}>
+              {i.label}
+            </button>
+          ))}
+        </div>
+        <span style={{ width: 1, height: 22, background: '#EEF0F3' }} />
         <div className="avt-seg">
           <button type="button" className={'avt-seg-item' + (live ? '' : ' is-on')} onClick={() => setMode('board')}>
             비교 보드
@@ -1528,7 +1653,7 @@ export default function ApptVaccineTargetPage() {
             실제 동작
           </button>
         </div>
-        {live ? (
+        {live && depth ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span className="avt-seg-label">안</span>
             <div className="avt-seg">
@@ -1540,9 +1665,9 @@ export default function ApptVaccineTargetPage() {
             </div>
           </div>
         ) : null}
-        {live ? (
+        {live && !depth ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span className="avt-seg-label">진료 대상자</span>
+            <span className="avt-seg-label">처리</span>
             <div className="avt-seg">
               {MISMATCH_MODES.map((m) => (
                 <button key={m} type="button" className={'avt-seg-item' + (m === mismatch ? ' is-on' : '')} onClick={() => setMismatch(m)}>
@@ -1553,138 +1678,190 @@ export default function ApptVaccineTargetPage() {
           </div>
         ) : null}
         <span className="avt-spacer" />
-        <span className="avt-bar-note">
-          {live ? '화면 안을 직접 눌러 동작을 확인하세요' : '안 A~E(추천순) × 상태 ①②③ + 예약 정보 확인 카드'}
-        </span>
+        <span className="avt-bar-note">{live ? meta.liveNote : meta.boardNote}</span>
       </div>
 
       {live ? (
         <section className="avt-turn">
           <div className="avt-thd">
             <span className="avt-tid">실제 동작</span>
-            <span className="avt-tname">{info.title}</span>
+            <span className="avt-tname">{depth ? info.title : mismatchInfo ? mismatchInfo.title : '끔 · 예약자 본인이 접종받는 일반 케이스'}</span>
           </div>
           <div className="avt-row" style={{ gap: 40 }}>
-            <LiveScreen key={variant} variant={variant} mismatch={mismatch} />
+            <LiveScreen key={issue + effVariant} variant={effVariant} mismatch={effMismatch} />
             <div className="avt-side">
-              <div className="avt-card">
-                <div className="avt-card-title">이 안이 실제로 하는 일</div>
-                <div className="avt-card-body">{info.desc}</div>
-              </div>
-              <div className="avt-card">
-                <div className="avt-card-title">확인해볼 동작</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {info.checks.map((c) => (
-                    <div key={c} className="avt-check">
-                      <span>·</span>
-                      <span>{c}</span>
+              {depth ? (
+                <>
+                  <div className="avt-card">
+                    <div className="avt-card-title">이 안이 실제로 하는 일</div>
+                    <div className="avt-card-body">{info.desc}</div>
+                  </div>
+                  <div className="avt-card">
+                    <div className="avt-card-title">확인해볼 동작</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {info.checks.map((c) => (
+                        <div key={c} className="avt-check">
+                          <span>·</span>
+                          <span>{c}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
-              {mismatchInfo ? (
-                <div className="avt-card" style={{ borderColor: '#D6E4FF' }}>
-                  <div className="avt-card-title">{mismatchInfo.title}</div>
-                  <div className="avt-card-body" style={{ marginBottom: 10 }}>{mismatchInfo.desc}</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {mismatchInfo.checks.map((c) => (
-                      <div key={c} className="avt-check">
-                        <span>·</span>
-                        <span>{c}</span>
-                      </div>
-                    ))}
+                  </div>
+                </>
+              ) : mismatchInfo ? (
+                <>
+                  <div className="avt-card">
+                    <div className="avt-card-title">이 안이 실제로 하는 일</div>
+                    <div className="avt-card-body">{mismatchInfo.desc}</div>
+                  </div>
+                  <div className="avt-card">
+                    <div className="avt-card-title">확인해볼 동작</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {mismatchInfo.checks.map((c) => (
+                        <div key={c} className="avt-check">
+                          <span>·</span>
+                          <span>{c}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="avt-card">
+                  <div className="avt-card-title">지금 보고 있는 것</div>
+                  <div className="avt-card-body">
+                    예약자 본인이 접종받는 일반 케이스입니다. 신청서의 `진료 대상자`는 `예약자와 동일해요`가 체크된 채이고 입력 폼이 없습니다. 상단 `처리` 세그먼트를
+                    F-1~F-4로 바꿔 이 상태와 비교하세요.
                   </div>
                 </div>
-              ) : null}
+              )}
               <div className="avt-hint">
                 대상 여부 판정·서류·인증 UI는 없습니다. 유저 자기 선언과 고지 문구로만 처리하고, 제품과 금액은 병원 상담 후 결정됩니다.
-                {mismatch === 'off'
-                  ? ' 예약자 본인이 아닌 사람의 접종을 신청하는 경우는 상단 `진료 대상자` 세그먼트에서 F-1~F-4로 바꿔 볼 수 있습니다.'
-                  : mismatch === 'F1' || mismatch === 'F2'
+                {depth
+                  ? ' 접종받는 사람이 예약자 본인이 아닌 경우는 상단 이슈를 ②로 바꿔 보세요.'
+                  : effMismatch === 'F1' || effMismatch === 'F2'
                     ? ' F-1·F-2는 예약자(만 ' + BOOKER_AGE + '세) 생년월일과 대조해 불일치를 오류로 다루는 방식입니다.'
-                    : ' F-3·F-4는 대조를 하지 않습니다 — 어린이는 부모가 대신 예약하는 것이 기본 케이스라, 오류가 아니라 질문으로 다룹니다.'}
+                    : effMismatch === 'off'
+                      ? ''
+                      : ' F-3·F-4는 대조를 하지 않습니다 — 어린이는 부모가 대신 예약하는 것이 기본 케이스라, 오류가 아니라 질문으로 다룹니다.'}
               </div>
             </div>
           </div>
           <p className="avt-next">
-            안을 바꾸려면 상단 `안` 세그먼트를, 예약자 불일치 처리를 보려면 그 옆 `예약자 불일치` 세그먼트를 누르세요(F-1~F-4는 `어린이`·`어르신`에서 발동).
-            상태를 되돌리려면 화면 아래 `초기화` 또는 좌측 상단 ←.
+            {depth
+              ? '안을 바꾸려면 상단 `안` 세그먼트를 누르세요. 상태를 되돌리려면 화면 아래 `초기화` 또는 좌측 상단 ←.'
+              : '처리를 바꿔도 진행 상태는 유지됩니다 — 같은 지점에서 F-1~F-4를 갈아 끼우며 비교하세요. `어린이`를 고르고 `다음`까지 가보면 차이가 가장 잘 보입니다.'}
           </p>
         </section>
       ) : (
         <section className="avt-turn">
           <div className="avt-thd">
-            <span className="avt-tid">1</span>
-            <span className="avt-tname">하위 뎁스(주성분·독감백신 종류) 처리 5안 · 상태별 비교 (A~E = 추천순)</span>
+            <span className="avt-tid">{meta.tid}</span>
+            <span className="avt-tname">{meta.title}</span>
           </div>
-          <div className="avt-opts">
-            {OPTIONS.map((opt) => (
-              <div key={opt.id} className="avt-opt" id={opt.id}>
+
+          {depth ? (
+            <div className="avt-opts">
+              {OPTIONS.map((opt) => (
+                <div key={opt.id} className="avt-opt" id={opt.id}>
+                  <div className="avt-olabel">
+                    <span className="avt-oid">{opt.id}</span>
+                    <b>{opt.title}</b>
+                    <span>{opt.desc}</span>
+                  </div>
+                  <div className="avt-row">
+                    {opt.frames.map((f) => (
+                      <StaticScreen key={f.label} variant={opt.variant} step={f.step} label={f.label} note={f.note} />
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+              <div className="avt-opt" id="1f">
                 <div className="avt-olabel">
-                  <span className="avt-oid">{opt.id}</span>
-                  <b>{opt.title}</b>
-                  <span>{opt.desc}</span>
+                  <span className="avt-oid">1f</span>
+                  <b>비교표</b>
+                </div>
+                <CompareBoard />
+              </div>
+            </div>
+          ) : (
+            <div className="avt-opts">
+              <div className="avt-opt" id="2a">
+                <div className="avt-olabel">
+                  <span className="avt-oid">2a</span>
+                  <b>참고 · 대조 방식 2안 (폐기 예정)</b>
+                  <span>
+                    예약자 생년월일과 대조해 <b>불일치를 오류로</b> 다루던 방식. 어린이·영유아는 부모가 자녀를 대신 예약하는 것이 기본 케이스라 이 프레이밍 자체가
+                    틀렸다는 판단이다. 비교 기준선으로만 남겨 둔다.
+                  </span>
                 </div>
                 <div className="avt-row">
-                  {opt.frames.map((f) => (
-                    <StaticScreen key={f.label} variant={opt.variant} step={f.step} label={f.label} note={f.note} />
-                  ))}
+                  <MismatchFrame
+                    badge="F-1"
+                    caption="[대조] 체크박스 비활성 + 배너 상시 노출"
+                    checkbox="disabled"
+                    banner={MISMATCH_BANNER}
+                    note="체크 자체를 막아 잘못된 선택이 일어나지 않지만, 정상적인 대리 예약이 막힌 동작으로 보인다."
+                  />
+                  <MismatchFrame
+                    badge="F-2"
+                    caption="[대조] 체크는 유지 · 시도 시 배너 후 해제"
+                    checkbox="empty"
+                    banner={MISMATCH_BANNER}
+                    note="체크는 눌리지만 즉시 해제되고 같은 배너가 뜬다. 눌렀는데 풀리는 동작이라 오작동처럼 읽힐 수 있다."
+                  />
                 </div>
               </div>
-            ))}
 
-            <div className="avt-opt" id="1f">
-              <div className="avt-olabel">
-                <span className="avt-oid">1f</span>
-                <b>비교 보드</b>
+              <div className="avt-opt" id="2b">
+                <div className="avt-olabel">
+                  <span className="avt-oid">2b</span>
+                  <b>F-3 · 대상자 선택 화면 통합형</b>
+                  <span>카테고리를 고른 직후 같은 화면에서 본인/대리를 묻는다. 신청서에 닿기 전에 분기가 끝나고, 생년월일 대조·경고는 없다.</span>
+                </div>
+                <div className="avt-row">
+                  <WhomQuestionFrame />
+                  <PlainTargetFrame />
+                </div>
               </div>
-              <CompareBoard />
-            </div>
 
-            <div className="avt-opt" id="1g">
-              <div className="avt-olabel">
-                <span className="avt-oid">1g</span>
-                <b>부록 · 진료 대상자 처리</b>
-                <span>
-                  `어린이`를 골랐을 때 예약자 본인과 접종 대상이 다른 경우. F-1·F-2는 예약자 생년월일과 대조해 <b>불일치를 오류로</b> 다뤘는데, 어린이·영유아는
-                  부모가 자녀를 대신 예약하는 것이 오히려 기본 케이스라 그 프레이밍 자체가 틀렸다. F-3·F-4는 대조·경고를 버리고{' '}
-                  <b>본인/대리 여부를 중립적으로 먼저 묻는</b> 방향이다.
-                </span>
+              <div className="avt-opt" id="2c">
+                <div className="avt-olabel">
+                  <span className="avt-oid">2c</span>
+                  <b>F-4 · 신청서 섹션 재설계형</b>
+                  <span>신청서의 `진료 대상자` 섹션을 체크박스 대신 본인/대리 2지선다로 바꾼다. 어린이는 `다른 분`이 기본값이고 수정할 수 있다.</span>
+                </div>
+                <div className="avt-row">
+                  <WhomSectionFrame
+                    badge="F-4-①"
+                    caption="어린이는 `다른 분`이 기본값 · 폼이 함께 열림"
+                    value="other"
+                    note="체크박스 대신 2지선다를 기본 질문으로 둔다. 고르면 바로 아래 입력 폼이 열린다."
+                  />
+                  <WhomSectionFrame
+                    badge="F-4-②"
+                    caption="같은 섹션에서 `예약자 본인`으로 바꾼 상태"
+                    value="self"
+                    note="프리셋이 틀렸을 때 한 번에 되돌릴 수 있다. 이 질문이 곧 검증을 대체하므로 대조·에러 배너는 없다."
+                  />
+                </div>
               </div>
-              <div className="avt-row">
-                <MismatchFrame
-                  badge="F-1"
-                  caption="[대조 방식] 체크박스 비활성 + 배너 상시 노출"
-                  checkbox="disabled"
-                  banner={MISMATCH_BANNER}
-                  note="체크 자체를 막아 잘못된 선택이 일어나지 않지만, 왜 못 누르는지 배너를 읽어야 안다. 대리 예약을 오류로 취급하는 것이 이 방식의 한계."
-                />
-                <MismatchFrame
-                  badge="F-2"
-                  caption="[대조 방식] 체크는 유지 · 시도 시 배너 후 해제"
-                  checkbox="empty"
-                  banner={MISMATCH_BANNER}
-                  note="체크는 눌리지만 즉시 해제되고 같은 배너가 뜬다. 역시 정상적인 대리 예약을 막힌 동작으로 경험하게 된다."
-                />
-                <WhomQuestionFrame />
-                <PlainTargetFrame />
-                <WhomSectionFrame
-                  badge="F-4-①"
-                  caption="신청서 섹션 재설계 · 어린이는 `다른 분`이 기본값"
-                  value="other"
-                  note="체크박스 대신 2지선다를 기본 질문으로 둔다. 어린이·영유아는 `다른 분`으로 프리셋하되 수정할 수 있고, 고르면 바로 아래 입력 폼이 열린다."
-                />
-                <WhomSectionFrame
-                  badge="F-4-②"
-                  caption="같은 섹션에서 `예약자 본인`으로 바꾼 상태"
-                  value="self"
-                  note="프리셋이 틀렸을 때 유저가 한 번에 되돌릴 수 있다. 이 질문이 곧 검증을 대체하므로 생년월일 대조·에러 배너는 없다."
-                />
+
+              <div className="avt-opt" id="2d">
+                <div className="avt-olabel">
+                  <span className="avt-oid">2d</span>
+                  <b>비교표</b>
+                </div>
+                <BookerCompareBoard />
               </div>
             </div>
-          </div>
+          )}
+
           <p className="avt-next">
-            다음 단계로 좋은 것 · "안 C와 안 B를 합쳐서 주성분만 읽기 전용, 종류는 비활성으로" · "안 A의 요약 카드 카피 대안 3개" · "안 D 시트를 닫았을 때의 상태 정의"
+            {depth
+              ? '다음 단계로 좋은 것 · "안 C와 안 B를 합쳐서 주성분만 읽기 전용, 종류는 비활성으로" · "안 A의 요약 카드 카피 대안 3개" · "안 D 시트를 닫았을 때의 상태 정의"'
+              : '다음 단계로 좋은 것 · "F-3의 질문을 선택으로 바꾸면 어떻게 되는지" · "F-4 프리셋을 어린이 외 카테고리로 넓힐지" · "두 안을 합쳐 선택 화면에서 묻고 신청서에서 수정하게 하는 안"'}
           </p>
         </section>
       )}

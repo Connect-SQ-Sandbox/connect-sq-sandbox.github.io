@@ -32,7 +32,6 @@ import {
   FiInfo,
   FiLogOut,
   FiMapPin,
-  FiNavigation,
   FiPhone,
   FiSearch,
   FiStar,
@@ -49,6 +48,7 @@ type Screen = 'login' | 'link' | 'hospital' | 'application' | 'success' | 'histo
 type OperationState = 'open' | 'ready' | 'closed' | 'dayOff' | 'unknown';
 type TreatmentSelection = { level: 'middle' | 'item'; major: string; middle: string; item?: string } | null;
 type BookingSummary = { patient: string; purpose: string; schedule: string };
+type RegionSelection = { city: string; district: string; neighborhood: string };
 
 type Hospital = {
   id: string;
@@ -73,6 +73,7 @@ type Hospital = {
   phone: string;
   description: string;
   marker: { left: number; top: number };
+  region: RegionSelection;
 };
 
 type HistoryRecord = {
@@ -84,6 +85,38 @@ type HistoryRecord = {
   schedule: string;
   state: '신청 완료' | '예약 취소' | '진료 완료';
 };
+
+const DEFAULT_REGION: RegionSelection = { city: '서울', district: '마포구', neighborhood: '전체' };
+
+const REGION_TREE: Record<string, Record<string, string[]>> = {
+  서울: {
+    마포구: ['전체', '망원동', '합정동', '서교동', '연남동', '성산동'],
+    강남구: ['전체', '역삼동', '논현동', '대치동', '삼성동'],
+    서초구: ['전체', '서초동', '방배동', '반포동', '양재동'],
+    송파구: ['전체', '잠실동', '문정동', '가락동', '송파동'],
+    영등포구: ['전체', '여의도동', '영등포동', '당산동', '문래동']
+  },
+  경기: {
+    성남시: ['전체', '분당동', '정자동', '서현동', '판교동'],
+    수원시: ['전체', '인계동', '영통동', '매탄동'],
+    고양시: ['전체', '백석동', '화정동', '주엽동']
+  },
+  인천: {
+    남동구: ['전체', '구월동', '간석동', '논현동'],
+    연수구: ['전체', '송도동', '연수동', '옥련동']
+  },
+  부산: {
+    해운대구: ['전체', '우동', '중동', '좌동'],
+    부산진구: ['전체', '부전동', '전포동', '양정동']
+  }
+};
+
+const DEPARTMENTS = [
+  '진료과 전체', '소아청소년과', '치과', '내과', '이비인후과', '피부과', '산부인과', '안과', '정신의학과',
+  '성형외과', '정형외과', '한의과', '비뇨기과', '가정의학과', '신경외과', '외과', '흉부외과', '마취통증과',
+  '영상의학과', '신경과', '재활의학과', '예방의학과', '직업환경의학과', '응급의학과', '핵의학과', '결핵과',
+  '진단검사의학과', '병리과', '방사선종양학과'
+];
 
 const TREATMENT_TREE = [
   {
@@ -147,7 +180,8 @@ const HOSPITALS: Hospital[] = [
     availableSlots: ['09:30', '10:00', '10:30', '11:00', '14:00', '15:30'],
     phone: '02-0000-1001',
     description: '내과 진료와 건강검진, 예방접종을 운영하는 샘플 의료기관입니다.',
-    marker: { left: 43, top: 43 }
+    marker: { left: 43, top: 43 },
+    region: { city: '서울', district: '마포구', neighborhood: '성산동' }
   },
   {
     id: 'sample-02',
@@ -171,7 +205,8 @@ const HOSPITALS: Hospital[] = [
     availableSlots: ['10:00', '11:30', '14:00', '16:00'],
     phone: '02-0000-1002',
     description: '가족 단위의 일반 진료와 예방접종을 제공하는 샘플 의료기관입니다.',
-    marker: { left: 62, top: 31 }
+    marker: { left: 62, top: 31 },
+    region: { city: '서울', district: '마포구', neighborhood: '망원동' }
   },
   {
     id: 'sample-03',
@@ -195,7 +230,8 @@ const HOSPITALS: Hospital[] = [
     availableSlots: [],
     phone: '02-0000-1003',
     description: '일반 치과 진료를 제공하는 샘플 의료기관입니다.',
-    marker: { left: 31, top: 67 }
+    marker: { left: 31, top: 67 },
+    region: { city: '서울', district: '마포구', neighborhood: '망원동' }
   },
   {
     id: 'sample-04',
@@ -219,7 +255,8 @@ const HOSPITALS: Hospital[] = [
     availableSlots: [],
     phone: '02-0000-1004',
     description: '이비인후과 일반 진료를 운영하는 샘플 의료기관입니다.',
-    marker: { left: 73, top: 59 }
+    marker: { left: 73, top: 59 },
+    region: { city: '서울', district: '마포구', neighborhood: '연남동' }
   },
   {
     id: 'sample-05',
@@ -243,7 +280,8 @@ const HOSPITALS: Hospital[] = [
     availableSlots: ['09:30', '10:30', '14:30'],
     phone: '02-0000-1005',
     description: '피부 질환 중심으로 진료하는 샘플 의료기관입니다.',
-    marker: { left: 52, top: 73 }
+    marker: { left: 52, top: 73 },
+    region: { city: '서울', district: '마포구', neighborhood: '연남동' }
   },
   {
     id: 'sample-06',
@@ -267,7 +305,8 @@ const HOSPITALS: Hospital[] = [
     availableSlots: [],
     phone: '02-0000-1006',
     description: '운영시간 확인이 필요한 샘플 의료기관입니다.',
-    marker: { left: 82, top: 42 }
+    marker: { left: 82, top: 42 },
+    region: { city: '서울', district: '마포구', neighborhood: '망원동' }
   }
 ];
 
@@ -531,7 +570,7 @@ function MapPanel({
       <div className="adot-map-tools">
         <button type="button" aria-label="확대" onClick={() => setZoom((value) => Math.min(1.24, value + 0.08))}>+</button>
         <button type="button" aria-label="축소" onClick={() => setZoom((value) => Math.max(0.92, value - 0.08))}>−</button>
-        <button type="button" aria-label="현재 위치" onClick={() => setZoom(1)}><FiCrosshair /></button>
+        <button type="button" aria-label="지도 보기 초기화" onClick={() => setZoom(1)}><FiCrosshair /></button>
       </div>
       <div className="adot-map-note"><FiInfo /> 가상 병원 데이터로 구성된 검토용 화면입니다.</div>
       {selectedHospital && (
@@ -572,6 +611,137 @@ function MapPanel({
   );
 }
 
+function regionLabel(selection: RegionSelection) {
+  return [selection.city, selection.district, selection.neighborhood === '전체' ? '' : selection.neighborhood].filter(Boolean).join(' ');
+}
+
+function RegionPicker({
+  selection,
+  onSelect,
+  onClose
+}: {
+  selection: RegionSelection;
+  onSelect: (selection: RegionSelection) => void;
+  onClose: () => void;
+}) {
+  const [city, setCity] = useState(selection.city);
+  const [expandedDistrict, setExpandedDistrict] = useState(
+    selection.district === '전체' ? Object.keys(REGION_TREE[selection.city])[0] : selection.district
+  );
+  const districts = REGION_TREE[city];
+
+  const choose = (next: RegionSelection) => {
+    onSelect(next);
+    onClose();
+  };
+
+  return (
+    <div className="adot-dialog-backdrop" role="presentation" onMouseDown={onClose}>
+      <section className="adot-dialog adot-region-dialog" role="dialog" aria-modal="true" aria-labelledby="region-dialog-title" onMouseDown={(event) => event.stopPropagation()}>
+        <header className="adot-dialog-head">
+          <div>
+            <span>상담 대상 지역</span>
+            <h2 id="region-dialog-title">지역을 선택해 주세요</h2>
+          </div>
+          <button type="button" aria-label="지역 선택 닫기" onClick={onClose}><FiX /></button>
+        </header>
+        <div className="adot-region-body">
+          <nav className="adot-region-cities" aria-label="시·도 선택">
+            {Object.keys(REGION_TREE).map((item) => (
+              <button
+                key={item}
+                className={city === item ? 'selected' : ''}
+                type="button"
+                onClick={() => {
+                  setCity(item);
+                  setExpandedDistrict(Object.keys(REGION_TREE[item])[0]);
+                }}
+              >
+                {item}
+              </button>
+            ))}
+          </nav>
+          <div className="adot-region-options">
+            <button
+              className={`adot-region-all ${selection.city === city && selection.district === '전체' ? 'selected' : ''}`}
+              type="button"
+              onClick={() => choose({ city, district: '전체', neighborhood: '전체' })}
+            >
+              <span>{city} 전체</span>
+              {selection.city === city && selection.district === '전체' && <FiCheck />}
+            </button>
+            {Object.entries(districts).map(([district, neighborhoods]) => {
+              const expanded = expandedDistrict === district;
+              const districtSelected = selection.city === city && selection.district === district;
+              return (
+                <div className="adot-region-district" key={district}>
+                  <button className={districtSelected ? 'selected' : ''} type="button" onClick={() => setExpandedDistrict(district)}>
+                    <span>{district}</span>{expanded ? <FiChevronUp /> : <FiChevronDown />}
+                  </button>
+                  {expanded && (
+                    <div className="adot-neighborhoods">
+                      {neighborhoods.map((neighborhood) => {
+                        const selected = districtSelected && selection.neighborhood === neighborhood;
+                        return (
+                          <button
+                            key={neighborhood}
+                            className={selected ? 'selected' : ''}
+                            type="button"
+                            onClick={() => choose({ city, district, neighborhood })}
+                          >
+                            <span>{neighborhood === '전체' ? `${district} 전체` : neighborhood}</span>
+                            {selected && <FiCheck />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function DepartmentPicker({
+  selection,
+  onSelect,
+  onClose
+}: {
+  selection: string;
+  onSelect: (selection: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="adot-dialog-backdrop" role="presentation" onMouseDown={onClose}>
+      <section className="adot-dialog adot-department-dialog" role="dialog" aria-modal="true" aria-labelledby="department-dialog-title" onMouseDown={(event) => event.stopPropagation()}>
+        <header className="adot-dialog-head">
+          <div>
+            <span>진료과 선택</span>
+            <h2 id="department-dialog-title">어떤 병원을 찾고 계신가요?</h2>
+          </div>
+          <button type="button" aria-label="진료과 선택 닫기" onClick={onClose}><FiX /></button>
+        </header>
+        <div className="adot-department-grid">
+          {DEPARTMENTS.map((item) => (
+            <button
+              key={item}
+              className={selection === item ? 'selected' : ''}
+              type="button"
+              onClick={() => { onSelect(item); onClose(); }}
+            >
+              {item}{selection === item && <FiCheck />}
+            </button>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function LinkScreen({
   selectedHospital,
   setSelectedHospital,
@@ -586,6 +756,7 @@ function LinkScreen({
   const [query, setQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
   const [locationOpen, setLocationOpen] = useState(false);
+  const [region, setRegion] = useState<RegionSelection>(DEFAULT_REGION);
   const [department, setDepartment] = useState('진료과 전체');
   const [departmentOpen, setDepartmentOpen] = useState(false);
   const [treatmentOpen, setTreatmentOpen] = useState(false);
@@ -619,6 +790,9 @@ function LinkScreen({
       const unifiedTags = [...hospital.managedTags, ...hospital.treatmentItems];
       const directText = [hospital.name, hospital.department, hospital.address, ...unifiedTags].join(' ').toLowerCase();
       const queryMatched = !normalized || directText.includes(normalized) || expandedQueryItems.some((item) => unifiedTags.includes(item));
+      const regionMatched = (region.city === '전체' || hospital.region.city === region.city)
+        && (region.district === '전체' || hospital.region.district === region.district)
+        && (region.neighborhood === '전체' || hospital.region.neighborhood === region.neighborhood);
       const departmentMatched = department === '진료과 전체' || hospital.department === department;
       let treatmentMatched = true;
       if (treatment?.level === 'item') {
@@ -629,6 +803,7 @@ function LinkScreen({
       }
       const isOpen = hospital.operationState === 'open';
       return queryMatched
+        && regionMatched
         && departmentMatched
         && treatmentMatched
         && (!openOnly || isOpen)
@@ -637,7 +812,7 @@ function LinkScreen({
         && (!holidayOnly || hospital.holiday)
         && (!femaleOnly || hospital.femaleDoctor);
     });
-  }, [query, department, treatment, openOnly, bookableOnly, nightOnly, holidayOnly, femaleOnly]);
+  }, [query, region, department, treatment, openOnly, bookableOnly, nightOnly, holidayOnly, femaleOnly]);
   const displayedSelectedHospital = selectedHospital && result.some((hospital) => hospital.id === selectedHospital.id)
     ? selectedHospital
     : null;
@@ -651,6 +826,7 @@ function LinkScreen({
 
   const clearAll = () => {
     setQuery('');
+    setRegion(DEFAULT_REGION);
     setDepartment('진료과 전체');
     setTreatment(null);
     setOpenOnly(false);
@@ -661,7 +837,10 @@ function LinkScreen({
     setSelectedHospital(null);
   };
 
-  const hasFilter = Boolean(query || treatment || department !== '진료과 전체' || openOnly || bookableOnly || nightOnly || holidayOnly || femaleOnly);
+  const regionChanged = region.city !== DEFAULT_REGION.city
+    || region.district !== DEFAULT_REGION.district
+    || region.neighborhood !== DEFAULT_REGION.neighborhood;
+  const hasFilter = Boolean(query || regionChanged || treatment || department !== '진료과 전체' || openOnly || bookableOnly || nightOnly || holidayOnly || femaleOnly);
 
   return (
     <main className="adot-link-screen">
@@ -680,45 +859,49 @@ function LinkScreen({
             {query && <button type="button" aria-label="검색어 지우기" onClick={() => { setQuery(''); setTreatment(null); }}><FiX /></button>}
             {searchFocused && <SearchSuggestion query={query} onSelect={selectTreatment} />}
           </div>
-          <div className="adot-location-wrap">
-            <button className="adot-location-button" aria-expanded={locationOpen} type="button" onClick={() => setLocationOpen((value) => !value)}>
-              <FiMapPin />서울 마포구 망원동<FiChevronDown />
-            </button>
-            {locationOpen && (
-              <div className="adot-location-menu">
-                <strong>탐색 기준 위치</strong>
-                <p>주소를 기준으로 가까운 병원을 찾습니다.</p>
-                <button type="button" onClick={() => setLocationOpen(false)}><FiNavigation /> 현재 위치로 다시 찾기</button>
-              </div>
-            )}
-          </div>
         </div>
-        <div className="adot-filter-line">
+        <div className="adot-preset-line">
+          <button
+            className="adot-preset-button"
+            aria-expanded={locationOpen}
+            type="button"
+            onClick={() => {
+              setLocationOpen(true);
+              setDepartmentOpen(false);
+              setTreatmentOpen(false);
+              setSearchFocused(false);
+            }}
+          >
+            <FiMapPin /><span>{regionLabel(region)}</span><FiChevronDown />
+          </button>
+          <button
+            className={department !== '진료과 전체' ? 'adot-preset-button active' : 'adot-preset-button'}
+            aria-expanded={departmentOpen}
+            type="button"
+            onClick={() => {
+              setDepartmentOpen(true);
+              setLocationOpen(false);
+              setTreatmentOpen(false);
+              setSearchFocused(false);
+            }}
+          >
+            <span>{department}</span><FiChevronDown />
+          </button>
           <div className="adot-filter-wrap">
-            <button aria-expanded={departmentOpen} className={department !== '진료과 전체' ? 'adot-filter active' : 'adot-filter'} type="button" onClick={() => setDepartmentOpen((value) => !value)}>
-              {department}<FiChevronDown />
-            </button>
-            {departmentOpen && (
-              <div className="adot-department-menu">
-                {['진료과 전체', '내과', '가정의학과', '피부과', '이비인후과', '치과'].map((item) => (
-                  <button key={item} className={department === item ? 'selected' : ''} type="button" onClick={() => { setDepartment(item); setDepartmentOpen(false); setSelectedHospital(null); }}>
-                    {item}{department === item && <FiCheck />}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="adot-filter-wrap">
-            <button aria-expanded={treatmentOpen} className={treatment ? 'adot-filter active' : 'adot-filter'} type="button" onClick={() => setTreatmentOpen((value) => !value)}>
+            <button aria-expanded={treatmentOpen} className={treatment ? 'adot-filter adot-treatment-preset active' : 'adot-filter adot-treatment-preset'} type="button" onClick={() => { setTreatmentOpen((value) => !value); setLocationOpen(false); setDepartmentOpen(false); setSearchFocused(false); }}>
               {selectionLabel(treatment)}{treatmentOpen ? <FiChevronUp /> : <FiChevronDown />}
             </button>
             {treatmentOpen && <TreatmentPicker selection={treatment} onSelect={selectTreatment} onClose={() => setTreatmentOpen(false)} />}
           </div>
-          <button aria-pressed={openOnly} className={openOnly ? 'adot-filter active' : 'adot-filter'} type="button" onClick={() => setOpenOnly((value) => !value)}><span className="adot-filter-dot" />진료중</button>
-          <button aria-pressed={bookableOnly} className={bookableOnly ? 'adot-filter active' : 'adot-filter'} type="button" onClick={() => setBookableOnly((value) => !value)}><span className="adot-filter-dot" />굿닥 예약 가능</button>
-          <button aria-pressed={nightOnly} className={nightOnly ? 'adot-filter active' : 'adot-filter'} type="button" onClick={() => setNightOnly((value) => !value)}><span className="adot-filter-dot" />야간</button>
-          <button aria-pressed={holidayOnly} className={holidayOnly ? 'adot-filter active' : 'adot-filter'} type="button" onClick={() => setHolidayOnly((value) => !value)}><span className="adot-filter-dot" />휴일</button>
-          <button aria-pressed={femaleOnly} className={femaleOnly ? 'adot-filter active' : 'adot-filter'} type="button" onClick={() => setFemaleOnly((value) => !value)}><span className="adot-filter-dot" />여의사</button>
+        </div>
+        {locationOpen && <RegionPicker selection={region} onSelect={(next) => { setRegion(next); setSelectedHospital(null); }} onClose={() => setLocationOpen(false)} />}
+        {departmentOpen && <DepartmentPicker selection={department} onSelect={(next) => { setDepartment(next); setSelectedHospital(null); }} onClose={() => setDepartmentOpen(false)} />}
+        <div className="adot-filter-line">
+          <button aria-pressed={openOnly} className={openOnly ? 'adot-filter active' : 'adot-filter'} type="button" onClick={() => setOpenOnly((value) => !value)}>{openOnly && <FiCheck />}진료중</button>
+          <button aria-pressed={bookableOnly} className={bookableOnly ? 'adot-filter active' : 'adot-filter'} type="button" onClick={() => setBookableOnly((value) => !value)}>{bookableOnly && <FiCheck />}굿닥 예약 가능</button>
+          <button aria-pressed={nightOnly} className={nightOnly ? 'adot-filter active' : 'adot-filter'} type="button" onClick={() => setNightOnly((value) => !value)}>{nightOnly && <FiCheck />}야간</button>
+          <button aria-pressed={holidayOnly} className={holidayOnly ? 'adot-filter active' : 'adot-filter'} type="button" onClick={() => setHolidayOnly((value) => !value)}>{holidayOnly && <FiCheck />}휴일</button>
+          <button aria-pressed={femaleOnly} className={femaleOnly ? 'adot-filter active' : 'adot-filter'} type="button" onClick={() => setFemaleOnly((value) => !value)}>{femaleOnly && <FiCheck />}여의사</button>
           {hasFilter && <button className="adot-reset" type="button" onClick={clearAll}>초기화</button>}
         </div>
       </section>

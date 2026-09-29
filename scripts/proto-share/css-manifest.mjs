@@ -22,7 +22,8 @@ export const SCREEN_CSS = {
   'kakao-booking-skin-confirm': ['styles/kakaoBookingSkinConfirm.css'],
   'goodoc-webview': ['styles/goodocWebview.css'],
   'goodoc-webview-item': ['styles/goodocWebviewItem.css'],
-  'kakao-link': ['styles/connectKakaoLink.css']
+  'kakao-link': ['styles/connectKakaoLink.css'],
+  'application-unified': ['styles/applicationUnified.css']
 };
 
 /**

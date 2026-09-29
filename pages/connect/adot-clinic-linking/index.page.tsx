@@ -21,6 +21,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  FiActivity,
   FiArrowLeft,
   FiCalendar,
   FiCheck,
@@ -30,9 +31,11 @@ import {
   FiClock,
   FiCrosshair,
   FiInfo,
+  FiGrid,
   FiLogOut,
   FiMapPin,
   FiPhone,
+  FiPlusSquare,
   FiSearch,
   FiStar,
   FiUser,
@@ -49,6 +52,12 @@ type OperationState = 'open' | 'ready' | 'closed' | 'dayOff' | 'unknown';
 type TreatmentSelection = { level: 'middle' | 'item'; major: string; middle: string; item?: string } | null;
 type BookingSummary = { patient: string; purpose: string; schedule: string };
 type RegionSelection = { city: string; district: string; neighborhood: string };
+
+type SearchSuggestionItem =
+  | { kind: 'region'; label: string; description: string; searchText: string; selection: RegionSelection }
+  | { kind: 'department'; label: string; description: string; searchText: string; department: string }
+  | { kind: 'treatment'; label: string; description: string; searchText: string; treatment: Exclude<TreatmentSelection, null> | null }
+  | { kind: 'hospital'; label: string; description: string; searchText: string; hospital: Hospital };
 
 type Hospital = {
   id: string;
@@ -201,7 +210,7 @@ const HOSPITALS: Hospital[] = [
     holiday: true,
     femaleDoctor: true,
     managedTags: ['예방접종', '만성질환', '건강검진'],
-    treatmentItems: ['가다실 9가', '싱그릭스', '직장인 건강검진'],
+    treatmentItems: ['가다실 9가', '서바릭스 2가', '싱그릭스', '직장인 건강검진'],
     availableSlots: ['10:00', '11:30', '14:00', '16:00'],
     phone: '02-0000-1002',
     description: '가족 단위의 일반 진료와 예방접종을 제공하는 샘플 의료기관입니다.',
@@ -316,9 +325,115 @@ const HISTORY: HistoryRecord[] = [
   { id: 'LINK-260928-0031', createdAt: '2026.09.28 09:21', patient: '박○○', hospitalId: 'sample-04', purpose: '비염 진료', schedule: '2026.09.29 09:30', state: '예약 취소' }
 ];
 
-const ALL_ITEMS = TREATMENT_TREE.flatMap((major) =>
-  major.groups.flatMap((group) => group.items.map((item) => ({ major: major.major, middle: group.middle, item })))
+const REGION_ORIGIN_NAMES: Record<string, string> = {
+  서울: '서울특별시',
+  경기: '경기도',
+  인천: '인천광역시',
+  부산: '부산광역시'
+};
+
+const REGION_SUGGESTIONS: SearchSuggestionItem[] = Object.entries(REGION_TREE).flatMap(([city, districts]) => [
+  {
+    kind: 'region' as const,
+    label: city,
+    description: REGION_ORIGIN_NAMES[city] || city,
+    searchText: `${city} ${REGION_ORIGIN_NAMES[city] || ''}`,
+    selection: { city, district: '전체', neighborhood: '전체' }
+  },
+  ...Object.entries(districts).flatMap(([district, neighborhoods]) => [
+    {
+      kind: 'region' as const,
+      label: district,
+      description: `${city} ${district}`,
+      searchText: `${city} ${district}`,
+      selection: { city, district, neighborhood: '전체' }
+    },
+    ...neighborhoods.filter((neighborhood) => neighborhood !== '전체').map((neighborhood) => ({
+      kind: 'region' as const,
+      label: neighborhood,
+      description: `${city} ${district}`,
+      searchText: `${city} ${district} ${neighborhood}`,
+      selection: { city, district, neighborhood }
+    }))
+  ])
+]);
+
+const DEPARTMENT_SUGGESTIONS: SearchSuggestionItem[] = DEPARTMENTS
+  .filter((department) => department !== '진료과 전체')
+  .map((department) => ({
+    kind: 'department' as const,
+    label: department,
+    description: '진료과',
+    searchText: department,
+    department
+  }));
+
+const standardTreatmentSuggestions: SearchSuggestionItem[] = TREATMENT_TREE.flatMap((major) =>
+  major.groups.flatMap((group) => [
+    {
+      kind: 'treatment' as const,
+      label: group.middle,
+      description: `${major.major} · 중분류`,
+      searchText: `${major.major} ${group.middle} ${group.items.join(' ')}`,
+      treatment: { level: 'middle' as const, major: major.major, middle: group.middle }
+    },
+    ...group.items.map((item) => ({
+      kind: 'treatment' as const,
+      label: item,
+      description: `${major.major} · ${group.middle}`,
+      searchText: `${major.major} ${group.middle} ${item}`,
+      treatment: { level: 'item' as const, major: major.major, middle: group.middle, item }
+    }))
+  ])
 );
+
+const standardTreatmentLabels = new Set(standardTreatmentSuggestions.map((suggestion) => suggestion.label));
+const managedTagSuggestions: SearchSuggestionItem[] = Array.from(new Set(HOSPITALS.flatMap((hospital) => hospital.managedTags)))
+  .filter((label) => !standardTreatmentLabels.has(label))
+  .map((label) => ({
+    kind: 'treatment' as const,
+    label,
+    description: '진료 키워드',
+    searchText: label,
+    treatment: null
+  }));
+
+const TREATMENT_SUGGESTIONS = [...standardTreatmentSuggestions, ...managedTagSuggestions];
+const HOSPITAL_SUGGESTIONS: SearchSuggestionItem[] = HOSPITALS.map((hospital) => ({
+  kind: 'hospital' as const,
+  label: hospital.name,
+  description: hospital.address,
+  searchText: hospital.name,
+  hospital
+}));
+
+function normalizeSearchText(value: string) {
+  return value.trim().toLocaleLowerCase('ko-KR').replace(/\s+/g, ' ');
+}
+
+function textMatchScore(suggestion: SearchSuggestionItem, rawQuery: string) {
+  const query = normalizeSearchText(rawQuery);
+  const label = normalizeSearchText(suggestion.label);
+  const searchText = normalizeSearchText(suggestion.searchText);
+  if (!query) return Number.POSITIVE_INFINITY;
+  if (label === query) return 0;
+  if (label.startsWith(query)) return 10 + (label.length - query.length) / 100;
+  if (searchText.split(' ').some((token) => token.startsWith(query))) return 20 + label.length / 100;
+  const containedAt = searchText.indexOf(query);
+  if (containedAt >= 0) return 30 + containedAt / 100 + label.length / 1000;
+  return Number.POSITIVE_INFINITY;
+}
+
+function rankedSuggestions(candidates: SearchSuggestionItem[], query: string, limit: number) {
+  return candidates
+    .map((candidate, originalIndex) => ({ candidate, originalIndex, score: textMatchScore(candidate, query) }))
+    .filter(({ score }) => Number.isFinite(score))
+    .sort((left, right) => left.score - right.score
+      || left.candidate.label.length - right.candidate.label.length
+      || left.originalIndex - right.originalIndex)
+    .slice(0, limit)
+    .map(({ candidate }) => candidate);
+}
 
 function isBookable(hospital: Hospital) {
   return hospital.enableAppointment || hospital.treatmentAppointment;
@@ -381,51 +496,53 @@ function SearchSuggestion({
   onSelect
 }: {
   query: string;
-  onSelect: (selection: TreatmentSelection, label: string) => void;
+  onSelect: (suggestion: SearchSuggestionItem) => void;
 }) {
-  const normalized = query.trim().toLowerCase();
+  const normalized = normalizeSearchText(query);
   if (!normalized) return null;
 
-  const middleMatches = TREATMENT_TREE.flatMap((major) =>
-    major.groups
-      .filter((group) => group.middle.toLowerCase().includes(normalized) || group.items.some((item) => item.toLowerCase().includes(normalized)))
-      .map((group) => ({ major: major.major, middle: group.middle }))
-  ).slice(0, 2);
-  const matchedMiddleNames = new Set(middleMatches.map((entry) => entry.middle));
-  const itemMatches = ALL_ITEMS
-    .filter((entry) => entry.item.toLowerCase().includes(normalized) || matchedMiddleNames.has(entry.middle))
-    .slice(0, 4);
+  const groups = [
+    { kind: 'region' as const, title: '지역', icon: <FiMapPin />, items: rankedSuggestions(REGION_SUGGESTIONS, query, 5) },
+    { kind: 'department' as const, title: '진료과', icon: <FiGrid />, items: rankedSuggestions(DEPARTMENT_SUGGESTIONS, query, 4) },
+    { kind: 'treatment' as const, title: '진료항목', icon: <FiActivity />, items: rankedSuggestions(TREATMENT_SUGGESTIONS, query, 6) },
+    { kind: 'hospital' as const, title: '병원', icon: <FiPlusSquare />, items: rankedSuggestions(HOSPITAL_SUGGESTIONS, query, 6) }
+  ].filter((group) => group.items.length > 0);
 
-  if (middleMatches.length === 0 && itemMatches.length === 0) return null;
+  const highlight = (text: string) => {
+    const start = normalizeSearchText(text).indexOf(normalized);
+    if (start < 0) return text;
+    return <>{text.slice(0, start)}<mark>{text.slice(start, start + query.trim().length)}</mark>{text.slice(start + query.trim().length)}</>;
+  };
 
   return (
     <div className="adot-search-suggest" role="listbox" aria-label="검색어 추천">
-      <strong className="adot-suggest-title">진료항목</strong>
-      {middleMatches.map((entry) => (
-        <button
-          key={`middle-${entry.middle}`}
-          type="button"
-          onClick={() => onSelect({ level: 'middle', major: entry.major, middle: entry.middle }, entry.middle)}
-        >
-          <span className="adot-suggest-icon"><FiSearch /></span>
-          <span className="adot-suggest-main">{entry.middle}</span>
-          <span className="adot-level-badge">중분류</span>
-          <small>하위 진료항목을 1개 이상 제공하는 병원</small>
-        </button>
-      ))}
-      {itemMatches.map((entry) => (
-        <button
-          key={`item-${entry.item}`}
-          type="button"
-          onClick={() => onSelect({ level: 'item', major: entry.major, middle: entry.middle, item: entry.item }, entry.item)}
-        >
-          <span className="adot-suggest-icon"><FiSearch /></span>
-          <span className="adot-suggest-main">{entry.item}</span>
-          <span className="adot-level-badge subtle">소분류</span>
-          <small>{entry.major} <FiChevronRight /> {entry.middle}</small>
-        </button>
-      ))}
-      <p>중분류를 선택하면 하위 진료항목을 하나라도 제공하는 병원을 찾습니다.</p>
+      {groups.length > 0 ? groups.map((group) => (
+        <section className="adot-suggest-group" key={group.kind} aria-label={`${group.title} 검색 결과`}>
+          <strong className="adot-suggest-title">{group.title}</strong>
+          {group.items.map((suggestion) => (
+            <button
+              key={`${suggestion.kind}-${suggestion.label}-${suggestion.description}`}
+              type="button"
+              role="option"
+              aria-selected="false"
+              onClick={() => onSelect(suggestion)}
+            >
+              <span className={`adot-suggest-icon is-${group.kind}`}>{group.icon}</span>
+              <span className="adot-suggest-copy">
+                <span className="adot-suggest-main">{highlight(suggestion.label)}</span>
+                <small>{suggestion.description}</small>
+              </span>
+            </button>
+          ))}
+        </section>
+      )) : (
+        <div className="adot-suggest-empty">
+          <FiSearch />
+          <strong>일치하는 검색어가 없습니다.</strong>
+          <small>지역, 진료과, 진료항목 또는 병원명을 다시 확인해 주세요.</small>
+        </div>
+      )}
+      <p className="adot-suggest-policy">지역 → 진료과 → 진료항목 → 병원 순으로 표시되며, 각 영역 안에서는 일치도가 높은 항목이 먼저 노출됩니다.</p>
     </div>
   );
 }
@@ -612,7 +729,11 @@ function MapPanel({
 }
 
 function regionLabel(selection: RegionSelection) {
-  return [selection.city, selection.district, selection.neighborhood === '전체' ? '' : selection.neighborhood].filter(Boolean).join(' ');
+  return [
+    selection.city,
+    selection.district === '전체' ? '' : selection.district,
+    selection.neighborhood === '전체' ? '' : selection.neighborhood
+  ].filter(Boolean).join(' ');
 }
 
 function RegionPicker({
@@ -824,6 +945,27 @@ function LinkScreen({
     setSelectedHospital(null);
   };
 
+  const selectSearchSuggestion = (suggestion: SearchSuggestionItem) => {
+    setQuery(suggestion.label);
+    setSearchFocused(false);
+    if (suggestion.kind === 'region') {
+      setRegion(suggestion.selection);
+      setSelectedHospital(null);
+      return;
+    }
+    if (suggestion.kind === 'department') {
+      setDepartment(suggestion.department);
+      setSelectedHospital(null);
+      return;
+    }
+    if (suggestion.kind === 'treatment') {
+      setTreatment(suggestion.treatment);
+      setSelectedHospital(null);
+      return;
+    }
+    setSelectedHospital(suggestion.hospital);
+  };
+
   const clearAll = () => {
     setQuery('');
     setRegion(DEFAULT_REGION);
@@ -857,7 +999,7 @@ function LinkScreen({
               aria-expanded={searchFocused && Boolean(query)}
             />
             {query && <button type="button" aria-label="검색어 지우기" onClick={() => { setQuery(''); setTreatment(null); }}><FiX /></button>}
-            {searchFocused && <SearchSuggestion query={query} onSelect={selectTreatment} />}
+            {searchFocused && <SearchSuggestion query={query} onSelect={selectSearchSuggestion} />}
           </div>
         </div>
         <div className="adot-preset-line">

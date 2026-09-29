@@ -937,14 +937,12 @@
 .adot-map-tiles {
   position: absolute;
   inset: -2%;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(2, 1fr);
   transform-origin: center;
   transition: transform 180ms ease;
 }
 
-.adot-map-tiles img {
+.adot-map-image {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;

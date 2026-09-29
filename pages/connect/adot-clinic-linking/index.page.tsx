@@ -43,14 +43,7 @@ import hospital1 from '../../../assets/adot-clinic-linking/hospital-1.jpg';
 import hospital2 from '../../../assets/adot-clinic-linking/hospital-2.jpg';
 import hospital3 from '../../../assets/adot-clinic-linking/hospital-3.jpg';
 import hospital4 from '../../../assets/adot-clinic-linking/hospital-4.jpg';
-import mapR1C1 from '../../../assets/adot-clinic-linking/map-r1-c1.png';
-import mapR1C2 from '../../../assets/adot-clinic-linking/map-r1-c2.png';
-import mapR1C3 from '../../../assets/adot-clinic-linking/map-r1-c3.png';
-import mapR1C4 from '../../../assets/adot-clinic-linking/map-r1-c4.png';
-import mapR2C1 from '../../../assets/adot-clinic-linking/map-r2-c1.png';
-import mapR2C2 from '../../../assets/adot-clinic-linking/map-r2-c2.png';
-import mapR2C3 from '../../../assets/adot-clinic-linking/map-r2-c3.png';
-import mapR2C4 from '../../../assets/adot-clinic-linking/map-r2-c4.png';
+import mapComposite from '../../../assets/adot-clinic-linking/map-composite.png';
 
 type Screen = 'login' | 'link' | 'hospital' | 'application' | 'success' | 'history' | 'history-detail' | 'profile';
 type OperationState = 'open' | 'ready' | 'closed' | 'dayOff' | 'unknown';
@@ -91,8 +84,6 @@ type HistoryRecord = {
   schedule: string;
   state: '신청 완료' | '예약 취소' | '진료 완료';
 };
-
-const MAP_TILES = [mapR1C1, mapR1C2, mapR1C3, mapR1C4, mapR2C1, mapR2C2, mapR2C3, mapR2C4];
 
 const TREATMENT_TREE = [
   {
@@ -522,7 +513,7 @@ function MapPanel({
   return (
     <section className="adot-map" aria-label="병원 지도">
       <div className="adot-map-tiles" style={{ transform: `scale(${zoom})` }}>
-        {MAP_TILES.map((tile, index) => <img src={tile} alt="" key={tile} aria-hidden="true" className={`tile-${index + 1}`} />)}
+        <img className="adot-map-image" src={mapComposite} alt="" aria-hidden="true" />
       </div>
       <div className="adot-map-shade" />
       {hospitals.map((hospital, index) => (

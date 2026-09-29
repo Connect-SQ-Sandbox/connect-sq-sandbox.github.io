@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : application-unified — 통합 신청서 (420 예약 · 420 미리접수 · 진료항목 예약)
- * 상태      : 현행 · v0.3 · 최종수정 2026-09-29
+ * 상태      : 현행 · v0.9 · 최종수정 2026-09-29
  * PRD       : GAS-1 (Draft) 기반, PO 협의 2026-09-29 반영. PO 체험판 application-standard와 별개 페이지.
  *             내부 검토 메모는 사내 문서에 둔다(공개 저장소라 링크 미기재).
  * 배포URL   : https://connect-sq-sandbox.github.io/out/application-unified.html
@@ -21,10 +21,19 @@
  *  - [확정·PO협의] 약관: 병원 설정 약관만, 필수/선택 구분.
  *  - [확정·PO협의] CTA 항상 고정·활성. 누르면 첫 미입력 섹션으로 앵커 스크롤.
  *  - [확정·세화] 예약 희망일은 바텀시트에서 선택(캘린더 → 시간 칩 → '선택 완료'로 반영, 닫으면 미반영).
+ *  - [확정·세화] 내원 목적은 칩이 아니라 선택 필드 → 바텀시트 라디오 목록(항목명이 길고 개수가 많을 수 있음). 고르면 바로 닫힘.
+ *  - [유지·자체] 목적 없이 예약 희망일을 누르면 목적 시트를 바로 열고(시트 안 안내), 목적을 고르면 날짜 시트로 이어진다.
+ *  - [확정·세화] 진료항목 가격옵션도 선택 필드 → 바텀시트로 통일(앞단 선택값이 채워진 상태로 진입, 변경 가능).
+ *  - [확정·세화] 가격옵션은 복수 선택(As-is TreatmentItemOptionModal: 체크박스, 0개면 '옵션을 선택해 주세요' 스낵바).
+ *    필드에 옵션별 금액 + 예상 결제 금액(As-is getTotalPaymentText: 할인가>정가, 상담형 섞이면 'N원~', 전부 상담이면 '상담 후 결정').
+ *    시트는 초안 선택 후 'N개 선택 완료'로 반영, 닫으면 미반영.
+ *  - [유지·자체] As-is 대비 차이: ①As-is는 체크 즉시 반영·버튼 '예약'(상세→신청 진입용), 체험판은 신청서 안 변경 시트라 초안+확정.
+ *    ②금액을 행 오른쪽 칸에 둠(As-is는 제목 아래). ③0개일 때 스낵바 대신 버튼 비활성(토스트가 옵션을 가려서).
  *  - [유지·자체] 예약은 날짜 선택 후 시간 칩까지 선택(As-is 420 예약·진료항목과 동일).
  *  - [유지·자체] 대상자 변경 시 prefill 주소는 새 대상자 기준으로 다시 채우거나 비움. 직접 입력한 주소는 유지.
  *  - [유지·자체] 미리접수만 최대 5명 동시접수(체크박스, 6번째 선택 시 토스트). 예약·진료항목은 1명.
  *    근거: 사내 데이터상 동시접수 사용이 무시할 수 없는 규모(수치는 내부 문서).
+ *  - [유지·자체] 내원 목적 미사용 진료실은 목적 필드를 숨기고, 예약 희망일을 바로 열 수 있다(체험 패널에서 1진료실 사용/미사용 전환).
  *  - [유지·자체] 진료실을 바꾸면 내원목적·일정 초기화, 목적을 바꿔 선택 날짜가 불가해지면 일정 초기화.
  *
  * 보류·TODO (PO 확인 대기)
@@ -35,6 +44,12 @@
  *
  * 변경 이력
  *  - v0.1 (2026-09-29) 최초 작성.
+ *  - v0.9 (2026-09-29) 가격옵션 복수 선택(체크박스·합계), 할인·상담형 옵션 예시.
+ *  - v0.8 (2026-09-29) 체험 패널에 '1진료실 · 내원 목적 사용/미사용' 추가. 전환은 1진료실 선택 중일 때만 초기화, 날짜 시트도 닫음. 결과 화면에 원장명.
+ *  - v0.7 (2026-09-29) 날짜 필드 경유로 목적을 고르면 날짜 시트로 이어짐, '먼저 선택' 안내는 그 경로에서만.
+ *  - v0.6 (2026-09-29) 가격옵션도 바텀시트로 통일, 긴 옵션명 예시 추가.
+ *  - v0.5 (2026-09-29) 내원 목적을 바텀시트로 변경, 목적 9개 예시.
+ *  - v0.4 (2026-09-29) 내원 목적 선택을 칩 → 라디오 목록으로 변경, 긴 목적명 예시 추가.
  *  - v0.3 (2026-09-29) 2차 QA: 날짜 선택 시 시간 영역 자동 스크롤, 시트 위 토스트 하단 배치, 오류 토스트 red,
  *    연락처 010·생년월일 실재 날짜 검사, 서비스 전환 시 토스트 제거, 등록주소 '있음' 복귀 시 재prefill.
  *  - v0.2 (2026-09-29) 예약 희망일 바텀시트화. proto-qa 지적 반영: 주소 prefill 누수, 토스트 위치·줄바꿈,
@@ -53,17 +68,31 @@ const HOLIDAYS = ['2026-10-03', '2026-10-09'];
 const DOW = ['일', '월', '화', '수', '목', '금', '토'];
 
 const ROOMS = [
-  { id: 'r1', name: '1진료실', doctor: '이다온 원장', purposes: ['일반 진료', '예방접종', '영유아검진'] },
+  { id: 'r1', name: '1진료실', doctor: '이다온 원장', purposes: ['일반 진료', '재진 (이전 진료 이어서)', '예방접종', '영유아검진', '만성질환 정기 처방 (고혈압·당뇨 약 처방 및 혈액검사 결과 상담)', '국가건강검진', '수액·주사', '진단서·소견서 발급', '비대면 진료 후 내원'] },
   { id: 'r2', name: '2진료실', doctor: '박지안 원장', purposes: [] as string[] }
 ];
 const ITEM = {
   name: '가다실 9가',
   desc: '자궁경부암 예방 백신',
   options: [
-    { id: 'o1', label: '1회 접종', price: '220,000원' },
-    { id: 'o2', label: '3회 패키지', price: '600,000원' }
-  ]
+    { id: 'o1', label: '1회 접종', caption: '', type: 'fixed', origin: 220000, sale: null },
+    { id: 'o2', label: '3회 패키지', caption: '6개월 안에 3회 접종', type: 'discount', origin: 660000, sale: 600000 },
+    { id: 'o3', label: '2회차 접종 (타 병원에서 1회차 접종 완료한 경우)', caption: '', type: 'fixed', origin: 220000, sale: null },
+    { id: 'o4', label: '접종 전 항체 검사', caption: '검사 결과에 따라 비용이 달라져요', type: 'consult', origin: null, sale: null }
+  ] as PriceOpt[]
 };
+type PriceOpt = { id: string; label: string; caption: string; type: 'fixed' | 'discount' | 'consult'; origin: number | null; sale: number | null };
+const won = (n: number) => `${n.toLocaleString('ko-KR')}원`;
+/** As-is utils/treatmentItemPrice.ts: 할인가 > 정가, 상담형·금액 없음은 null */
+const amountOf = (o: PriceOpt) => (o.type === 'discount' && o.sale ? o.sale : o.type === 'fixed' && o.origin ? o.origin : null);
+const priceText = (o: PriceOpt) => { const a = amountOf(o); return a == null ? '상담 후 결정' : won(a); };
+/** As-is getTotalPaymentText: 전부 상담 → '상담 후 결정', 상담 섞임 → 'N원~' */
+function totalText(list: PriceOpt[]) {
+  const amounts = list.map(amountOf);
+  if (amounts.every(a => a == null)) return '상담 후 결정';
+  const sum = amounts.reduce<number>((t, a) => t + (a ?? 0), 0);
+  return amounts.some(a => a == null) ? `${won(sum)}~` : won(sum);
+}
 const ME = { name: '김하늘', phone: '010-1234-5678', birth: '1991.04.12' };
 const SAVED_ADDR = '서울시 강남구 테헤란로 123';
 
@@ -181,15 +210,18 @@ export default function Page() {
   const [savedAddr, setSavedAddr] = useState<'yes' | 'no'>('yes');
   const [termsMode, setTermsMode] = useState<'both' | 'required' | 'none'>('both');
   const [lookupMode, setLookupMode] = useState<'ok' | 'fail'>('ok');
+  const [purposeSetting, setPurposeSetting] = useState<'on' | 'off'>('on');
 
   // 신청서 상태
   const [roomId, setRoomId] = useState('r1');
   const [purpose, setPurpose] = useState('');
-  const [optionId, setOptionId] = useState('o1');
+  const [optionIds, setOptionIds] = useState<string[]>(['o1']);
+  const [optionDraft, setOptionDraft] = useState<string[]>([]);
   const [date, setDate] = useState<Date | null>(null);
   const [time, setTime] = useState('');
   const [dateDraft, setDateDraft] = useState<Date | null>(null);
   const [timeDraft, setTimeDraft] = useState('');
+  const [purposeFromDate, setPurposeFromDate] = useState(false);
   const [people, setPeople] = useState<Person[]>(FAMILY);
   const [picked, setPicked] = useState<string[]>([]);
   const [draft, setDraft] = useState<string[]>([]);
@@ -198,7 +230,7 @@ export default function Page() {
   const [addr, setAddr] = useState({ base: '', detail: '' });
   const [addrPrefilled, setAddrPrefilled] = useState(false);
   const [agree, setAgree] = useState<Record<string, boolean>>({});
-  const [sheet, setSheet] = useState<'' | 'room' | 'patient' | 'date'>('');
+  const [sheet, setSheet] = useState<'' | 'room' | 'patient' | 'date' | 'purpose' | 'option'>('');
   const [lookup, setLookup] = useState<'idle' | 'loading' | 'done' | 'fail'>('idle');
   const [errors, setErrors] = useState<string[]>([]);
   const [toast, setToast] = useState('');
@@ -213,11 +245,12 @@ export default function Page() {
   const lookupModeRef = useRef(lookupMode);
   lookupModeRef.current = lookupMode;
 
-  const room = ROOMS.find(r => r.id === roomId)!;
+  const rooms = ROOMS.map(r => (r.id === 'r1' && purposeSetting === 'off' ? { ...r, purposes: [] as string[] } : r));
+  const room = rooms.find(r => r.id === roomId)!;
   const isRoom = service !== 'treatment';
   const multi = service === 'receipt';
   const usesPurpose = isRoom && room.purposes.length > 0;
-  const option = ITEM.options.find(o => o.id === optionId)!;
+  const selectedOptions = ITEM.options.filter(o => optionIds.includes(o.id));
   const terms = termsMode === 'none' ? [] : [
     { id: 't1', label: '개인정보 수집·이용 동의', req: true },
     ...(termsMode === 'both' ? [{ id: 't2', label: '병원 소식 수신 동의', req: false }] : [])
@@ -226,7 +259,7 @@ export default function Page() {
   const personLabel = service === 'receipt' ? '접수자 정보' : '예약자 정보';
 
   function resetForm(s = service) {
-    setRoomId('r1'); setPurpose(''); setOptionId('o1'); setDate(null); setTime(''); setDateDraft(null); setTimeDraft('');
+    setRoomId('r1'); setPurpose(''); setOptionIds(['o1']); setDate(null); setTime(''); setDateDraft(null); setTimeDraft('');
     setPeople(FAMILY); setPicked([]); setDraft([]); setWho(''); setOther({ name: '', phone: '', birth: '', gender: '' });
     setAddr({ base: '', detail: '' }); setAddrPrefilled(false); setAgree({}); setSheet(''); setLookup('idle'); clearTimeout(lookupTimer.current);
     setErrors([]); setDone(false); setToast('');
@@ -269,7 +302,7 @@ export default function Page() {
   }
   // 예약 희망일 바텀시트: 시트 안에서 날짜·시간을 고르고 '선택 완료'로 반영
   function openCalendar() {
-    if (usesPurpose && !purpose) { setErrors(e => Array.from(new Set([...e, 'service']))); jump('service'); showToast('내원 목적을 먼저 선택해 주세요', 'error'); return; }
+    if (usesPurpose && !purpose) { setErrors(e => Array.from(new Set([...e, 'service']))); jump('service'); setPurposeFromDate(true); setSheet('purpose'); return; }
     setDateDraft(date); setTimeDraft(time); setSheet('date');
   }
   function applyDate() {
@@ -318,13 +351,13 @@ export default function Page() {
   // 검증
   const missing = useMemo(() => {
     const m: string[] = [];
-    if (isRoom ? usesPurpose && !purpose : !optionId) m.push('service');
+    if (isRoom ? usesPurpose && !purpose : optionIds.length === 0) m.push('service');
     if (service !== 'receipt' && (!date || !time)) m.push('date');
     if (isRoom ? picked.length === 0 : !who || (who === 'other' && Object.values(otherInvalid).some(Boolean))) m.push('patient');
     if (addrMode === 'required' && !addr.base) m.push('addr');
     if (terms.some(t => t.req && !agree[t.id])) m.push('terms');
     return m;
-  }, [isRoom, usesPurpose, purpose, optionId, service, date, time, picked, who, other, addrMode, addr, terms, agree]);
+  }, [isRoom, usesPurpose, purpose, optionIds, service, date, time, picked, who, other, addrMode, addr, terms, agree]);
 
   function jump(k: string) {
     const el = secRefs.current[k];
@@ -371,9 +404,12 @@ export default function Page() {
         {usesPurpose && (
           <>
             <div className="au-sub">내원 목적 <span className="req">필수</span></div>
-            <div className="au-chips">
-              {room.purposes.map(p => <button type="button" key={p} className={`au-chip ${purpose === p ? 'on' : ''}`} onClick={() => pickPurpose(p)}>{p}</button>)}
-            </div>
+            <button type="button" className={`au-pick ${sheet === 'purpose' ? 'open' : ''} ${err('service') ? 'err' : ''}`} onClick={() => { setPurposeFromDate(false); setSheet('purpose'); }} aria-haspopup="dialog">
+              <div className="au-pick-body">
+                {purpose ? <div className="au-pick-title au-wrap">{purpose}</div> : <div className="au-pick-ph">내원 목적을 선택해 주세요</div>}
+              </div>
+              {purpose ? <span className="gd-btn primaryLinkText">변경</span> : <Right />}
+            </button>
             {service !== 'receipt' && <div className="au-help">내원 목적에 따라 예약할 수 있는 날짜가 달라요.</div>}
             {err('service') && <div className="au-err">내원 목적을 선택해 주세요.</div>}
           </>
@@ -381,15 +417,16 @@ export default function Page() {
         {!isRoom && (
           <>
             <div className="au-sub">가격 옵션 <span className="req">필수</span></div>
-            <div className="au-person-list">
-              {ITEM.options.map(o => (
-                <button type="button" key={o.id} className={`au-opt ${optionId === o.id ? 'on' : ''}`} onClick={() => { setOptionId(o.id); clearErr('service'); }}>
-                  <span className={`gd-radio ${optionId === o.id ? 'on' : ''}`} />
-                  <span className="au-opt-body"><span className="au-opt-name">{o.label}</span></span>
-                  <strong>{o.price}</strong>
-                </button>
-              ))}
-            </div>
+            <button type="button" className={`au-pick au-pick-top ${sheet === 'option' ? 'open' : ''}`} onClick={() => { setOptionDraft(optionIds); setSheet('option'); }} aria-haspopup="dialog">
+              <div className="au-pick-body">
+                {selectedOptions.map(o => (
+                  <div key={o.id} className="au-price-row"><span className="au-wrap">{o.label}</span><span className="au-price-val"><strong>{priceText(o)}</strong>{o.type === 'discount' && o.origin && amountOf(o) != null && <s>{won(o.origin)}</s>}</span></div>
+                ))}
+                <div className="au-price-total"><span>예상 결제 금액</span><strong>{totalText(selectedOptions)}</strong></div>
+              </div>
+              <span className="gd-btn primaryLinkText">변경</span>
+            </button>
+            <div className="au-help">여러 옵션을 함께 선택할 수 있어요. 실제 결제 금액은 병원에서 달라질 수 있어요.</div>
           </>
         )}
       </section>
@@ -407,7 +444,7 @@ export default function Page() {
               <div className="au-pick-body">
                 {date ? <div className="au-pick-title">{fmt(date)} · {time}</div> : <div className="au-pick-ph">날짜와 시간을 선택해 주세요</div>}
                 {usesPurpose && !purpose && <div className="au-pick-sub">내원 목적을 먼저 선택해 주세요</div>}
-                {date && usesPurpose && <div className="au-pick-sub">{purpose} 기준</div>}
+                {date && usesPurpose && <div className="au-pick-sub">선택한 내원 목적 기준</div>}
               </div>
               {date ? <span className="gd-btn primaryLinkText">변경</span> : <Right />}
             </button>
@@ -513,7 +550,8 @@ export default function Page() {
       <p>{service === 'receipt' ? '도착한 순서대로 진료해요. 병원 대기 현황을 확인해 주세요.' : '아직 확정 전이에요. 병원이 확인하면 알려드릴게요.'}</p>
       <dl>
         <div><dt>병원</dt><dd>굿닥가족의원</dd></div>
-        <div><dt>{isRoom ? '진료실' : '진료항목'}</dt><dd>{isRoom ? `${room.name}${purpose ? ` · ${purpose}` : ''}` : `${ITEM.name} · ${option.label}`}</dd></div>
+        <div><dt>{isRoom ? '진료실' : '진료항목'}</dt><dd>{isRoom ? `${room.name} · ${room.doctor}${purpose ? ` · ${purpose}` : ''}` : `${ITEM.name} · ${selectedOptions.map(o => o.label).join(', ')}`}</dd></div>
+        {!isRoom && <div><dt>예상 금액</dt><dd>{totalText(selectedOptions)}</dd></div>}
         <div><dt>일정</dt><dd>{service === 'receipt' ? `오늘 · ${fmt(TODAY)}` : `${date && fmt(date)} ${time}`}</dd></div>
         <div><dt>{service === 'receipt' ? '접수자' : '예약자'}</dt><dd>{isRoom ? pickedPeople.map(p => p.name).join(', ') : whoName}</dd></div>
       </dl>
@@ -571,12 +609,65 @@ export default function Page() {
     </div>
   );
 
+  const optionSheet = (
+    <div className="au-dim" onClick={e => { if (e.target === e.currentTarget) setSheet(''); }}>
+      <div className="au-sheet" role="dialog" aria-modal="true" aria-label="가격 옵션 선택">
+        <div className="au-sheet-head"><h3>옵션 선택</h3><button type="button" aria-label="닫기" onClick={() => setSheet('')}>×</button></div>
+        <div className="au-sheet-body">
+          <div role="group" aria-label="가격 옵션">
+            {ITEM.options.map(o => {
+              const on = optionDraft.includes(o.id);
+              return (
+                <button type="button" key={o.id} role="checkbox" aria-checked={on} className={`au-opt ${on ? 'on' : ''}`}
+                  onClick={() => setOptionDraft(d => (on ? d.filter(x => x !== o.id) : [...d, o.id]))}>
+                  <span className={`gd-check ${on ? 'on' : ''}`} />
+                  <span className="au-opt-body">
+                    <span className="au-opt-name">{o.label}</span>
+                    {o.caption && <span className="au-opt-sub">{o.caption}</span>}
+                  </span>
+                  <span className="au-opt-price">
+                    <strong>{priceText(o)}</strong>
+                    {o.type === 'discount' && o.origin && amountOf(o) != null && <s>{won(o.origin)}</s>}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div className="au-sheet-foot">
+          <button type="button" className="gd-btn lg primarySolid" disabled={!optionDraft.length} onClick={() => {
+            setOptionIds(ITEM.options.filter(o => optionDraft.includes(o.id)).map(o => o.id)); clearErr('service'); setSheet('');
+          }}>{optionDraft.length ? `${optionDraft.length}개 선택 완료` : '옵션을 선택해 주세요'}</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const purposeSheet = (
+    <div className="au-dim" onClick={e => { if (e.target === e.currentTarget) setSheet(''); }}>
+      <div className="au-sheet" role="dialog" aria-modal="true" aria-label="내원 목적 선택">
+        <div className="au-sheet-head"><h3>내원 목적</h3><button type="button" aria-label="닫기" onClick={() => setSheet('')}>×</button></div>
+        <div className="au-sheet-body" style={{ paddingBottom: 28 }}>
+          {service !== 'receipt' && <div className="au-help" style={{ margin: '0 0 12px' }}>{purposeFromDate ? '예약 희망일을 고르기 전에 내원 목적을 먼저 선택해 주세요. ' : ''}내원 목적에 따라 예약할 수 있는 날짜가 달라요.</div>}
+          <div role="radiogroup" aria-label="내원 목적">
+            {room.purposes.map(p => (
+              <button type="button" key={p} role="radio" aria-checked={purpose === p} className={`au-opt ${purpose === p ? 'on' : ''}`} onClick={() => { pickPurpose(p); if (purposeFromDate && service !== 'receipt') { setPurposeFromDate(false); setDateDraft(null); setTimeDraft(''); setSheet('date'); } else setSheet(''); }}>
+                <span className="au-opt-body"><span className="au-opt-name">{p}</span></span>
+                <span className={`gd-radio ${purpose === p ? 'on' : ''}`} />
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const dateSheet = (
     <div className="au-dim" onClick={e => { if (e.target === e.currentTarget) setSheet(''); }}>
       <div className="au-sheet" role="dialog" aria-modal="true" aria-label="예약 희망일 선택">
         <div className="au-sheet-head"><h3>예약 희망일</h3><button type="button" aria-label="닫기" onClick={() => setSheet('')}>×</button></div>
         <div className="au-sheet-body">
-          {usesPurpose && <div className="au-help" style={{ margin: '0 0 4px' }}>{purpose} 기준으로 예약할 수 있는 날짜만 선택할 수 있어요.</div>}
+          {usesPurpose && <div className="au-help" style={{ margin: '0 0 4px' }}>선택한 내원 목적으로 예약할 수 있는 날짜만 고를 수 있어요.</div>}
           <Calendar value={dateDraft} enabled={d => isAvailable(d, service, roomId, purpose)} onPick={d => { setDateDraft(d); setTimeDraft(''); setTimeout(() => { const el = timesRef.current; const box = el?.closest('.au-sheet-body') as HTMLElement | null; if (el && box) box.scrollTo({ top: el.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop - 8 }); }, 60); }} />
           {dateDraft ? (
             <div className="au-times" ref={timesRef}>
@@ -610,11 +701,11 @@ export default function Page() {
       <div className="au-sheet" role="dialog" aria-modal="true" aria-label="진료실 선택">
         <div className="au-sheet-head"><h3>진료실 선택</h3><button type="button" aria-label="닫기" onClick={() => setSheet('')}>×</button></div>
         <div className="au-sheet-body" style={{ paddingBottom: 28 }}>
-          {ROOMS.map(r => (
+          {rooms.map(r => (
             <button type="button" key={r.id} className={`au-opt ${roomId === r.id ? 'on' : ''}`} onClick={() => pickRoom(r.id)}>
               <span className="au-opt-body">
                 <span className="au-opt-name">{r.name} · {r.doctor}</span>
-                <span className="au-opt-sub">{r.purposes.length ? `내원 목적: ${r.purposes.join(', ')}` : '내원 목적 없음'}</span>
+                <span className="au-opt-sub">{r.purposes.length ? `내원 목적 ${r.purposes.length}개` : '내원 목적 없음'}</span>
               </span>
               <span className={`gd-radio ${roomId === r.id ? 'on' : ''}`} />
             </button>
@@ -636,9 +727,10 @@ export default function Page() {
             <div className="au-ctl-group"><span>병원 설정 · 주소</span><Seg value={addrMode} onChange={v => { setAddrMode(v); clearErr('addr'); }} items={[['required', '필수'], ['optional', '선택'], ['none', '미사용']]} /></div>
             <div className="au-ctl-group"><span>등록된 주소</span><Seg value={savedAddr} onChange={setSavedAddr} items={[['yes', '있음'], ['no', '없음']]} /></div>
             <div className="au-ctl-group"><span>병원 설정 · 약관</span><Seg value={termsMode} onChange={v => { setTermsMode(v); setAgree({}); clearErr('terms'); }} items={[['both', '필수+선택'], ['required', '필수만'], ['none', '없음']]} /></div>
+            {isRoom && <div className="au-ctl-group"><span>1진료실 · 내원 목적</span><Seg value={purposeSetting} onChange={v => { setPurposeSetting(v); if (roomId === 'r1') { setPurpose(''); setDate(null); setTime(''); clearErr('service'); if (sheet === 'purpose' || sheet === 'date') setSheet(''); } }} items={[['on', '사용 (9개)'], ['off', '미사용']]} /></div>}
             {isRoom && <div className="au-ctl-group"><span>병원 기록 조회</span><Seg value={lookupMode} onChange={v => { setLookupMode(v); lookupModeRef.current = v; if (sheet === 'patient') runLookup(); else { clearTimeout(lookupTimer.current); setLookup('idle'); } }} items={[['ok', '성공'], ['fail', '실패']]} /></div>}
           </div>
-          <p className="au-ctl-note">서비스를 바꾸면 신청서가 초기화됩니다. 1진료실은 내원 목적이 있고(영유아검진은 화·목만), 2진료실은 목적이 없습니다(평일만).</p>
+          <p className="au-ctl-note">서비스를 바꾸면 신청서가 초기화됩니다. 1진료실은 내원 목적을 사용/미사용으로 바꿀 수 있습니다(영유아검진은 화·목만, 미사용이면 월~토). 2진료실은 항상 목적이 없습니다(평일만).</p>
         </aside>
 
         <div className="au-phone">
@@ -659,6 +751,8 @@ export default function Page() {
           {sheet === 'patient' && patientSheet}
           {sheet === 'room' && roomSheet}
           {sheet === 'date' && dateSheet}
+          {sheet === 'purpose' && purposeSheet}
+          {sheet === 'option' && optionSheet}
           {toast && <div className={`gd-toast ${toastKind} ${sheet ? 'over-sheet' : ''}`} role="status">{toast}</div>}
         </div>
       </main>

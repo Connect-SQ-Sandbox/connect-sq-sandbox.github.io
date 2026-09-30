@@ -416,3 +416,9 @@
 .rs-sheet-dim { position:absolute; inset:0; z-index:45; background:rgba(22,28,45,.7); display:flex; flex-direction:column; justify-content:flex-end; align-items:stretch; }
 .rs-sheet { width:100%; background:#fff; border-radius:16px 16px 0 0; }
 .rs-sheet-btns { display:flex; gap:8px; padding:16px 20px; }
+
+.rs-sheet-rc { max-height:88%; display:flex; flex-direction:column; }
+.rs-sheet-scroll { overflow-y:auto; min-height:0; }
+.rs-sheet-rc .rs-head { padding-bottom:24px; }
+.rs-rc-list { padding:0 20px 8px; border-top:1px solid var(--g20); }
+.rs-sheet-dim .rs-alert-dim { z-index:60; }

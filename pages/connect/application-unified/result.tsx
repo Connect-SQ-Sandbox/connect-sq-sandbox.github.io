@@ -119,6 +119,53 @@ export function ReceiptComplete(props: {
   );
 }
 
+/* ---------- [제안] 420 미리접수 결과 바텀시트 ----------
+ * 예약·진료항목 결과 시트와 같은 컨테이너(닫을 수 없는 시트, 로딩 → 결과를 같은 자리에서 전환).
+ * 신청서가 시트 뒤에 남아 있으므로 '접수 정보' 3행은 빼고 결과 헤더 + 진료 대상 + CTA만 둔다.
+ * 요청실패 '다시 접수하기'는 시트를 닫고 신청서에 머문다(페이지형은 이전 화면으로 돌아감). */
+export function ReceiptResultSheet(props: {
+  patients: ReceiptPatientResult[];
+  onHistory: (tab: '진행중' | '이전') => void; onRetry: () => void;
+}) {
+  const [alert, setAlert] = useState<Alert | null>(null);
+  const { patients } = props;
+  const loading = patients.some(p => p.status === 'pending');
+  const allOk = !loading && patients.every(p => p.status === 'success');
+  const head = loading ? { icon: 'progress' as const, title: '접수 결과를 확인하고 있어요', sub: '아래의 접수 결과를 반드시 확인해 주세요' }
+    : allOk ? { icon: 'complete' as const, title: '접수가 완료되었어요', sub: '접수 내역에서 대기 번호를 확인해 주세요' }
+      : { icon: 'cancel' as const, title: '실패한 접수가 있어요', sub: '접수 내역에서 실패 사유를 확인해 주세요' };
+  function onFailTap(p: ReceiptPatientResult) {
+    const retry = [{ label: '닫기', style: 'tonal-gray' as const, onClick: () => setAlert(null) }, { label: '다시 접수하기', style: 'filled' as const, onClick: () => { setAlert(null); props.onRetry(); } }];
+    if (p.reason === 'ExamClosed') setAlert({ title: '선택한 진료실의\n접수가 마감되었어요', body: '운영시간 마감 및 병원 사정으로\n진료실 운영이 종료되었어요.', buttons: retry });
+    else if (p.reason === 'OverCapacity') setAlert({ title: '최대 인원이 초과되어\n접수가 마감되었어요', body: '진료 가능한 최대 인원이 초과되어\n나중에 다시 시도해 주세요.', buttons: retry });
+    else setAlert({ title: '접수에 실패했어요', body: '잠시 후 다시 시도해 주세요.', buttons: [{ label: '확인', style: 'filled', onClick: () => setAlert(null) }] });
+  }
+  return (
+    <div className="rs-sheet-dim">
+      <div className="rs-sheet rs-sheet-rc" role="dialog" aria-modal="true" aria-label="접수 결과">
+        <div className="rs-sheet-scroll">
+          <Header icon={head.icon} title={head.title} sub={head.sub} />
+          <div className="rs-rc-list">
+            {patients.map(p => (
+              <div key={p.id} className="rs-patient">
+                <span className="rs-patient-l"><IcProfile color={hashColor(p.name)} /><span className="t-b1-600 g90 hd-ellipsis" style={{ maxWidth: 180 }}>{p.name}</span></span>
+                {p.status === 'pending' && <span className="rs-mini-spin" aria-label="확인 중" />}
+                {p.status === 'success' && <span className="rs-st ok">접수완료</span>}
+                {p.status === 'failure' && <span className="rs-st fail">접수실패</span>}
+                {p.status === 'requestFail' && <button type="button" className="rs-st req" onClick={() => onFailTap(p)}>요청실패</button>}
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* 결과 전환 때 시트가 튀지 않도록 안내문 자리를 미리 확보 */}
+        <p className="rs-cta-note" style={{ visibility: !loading && !allOk ? 'visible' : 'hidden' }} aria-hidden={loading || allOk}>요청이 실패한 경우 진료 내역에 남지 않아요</p>
+        <div className="rs-sheet-btns"><button type="button" className="hd-btn filled" disabled={loading} onClick={() => props.onHistory(patients.some(p => p.status === 'success') ? '진행중' : '이전')}>접수 결과 확인하기</button></div>
+      </div>
+      {alert && <AlertView a={alert} />}
+    </div>
+  );
+}
+
 /* ---------- 420 예약 · 진료항목 예약 결과 시트 ---------- */
 export function RequestResultSheet(props: {
   kind: 'appt' | 'treatment'; state: ApptResult | TiResult; dateText: string;

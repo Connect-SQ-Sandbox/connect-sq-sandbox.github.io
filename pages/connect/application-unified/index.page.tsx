@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : application-unified — 병원 상세(As-is) → 진료실 선택(As-is) → 통합 신청서(420 예약 · 420 미리접수 · 진료항목 예약)
- * 상태      : 현행 · v0.12 · 최종수정 2026-09-29
+ * 상태      : 현행 · v0.13 · 최종수정 2026-09-29
  * PRD       : GAS-1 (Draft) 기반, PO 협의 2026-09-29 반영. PO 체험판 application-standard와 별개 페이지.
  *             내부 검토 메모는 사내 문서에 둔다(공개 저장소라 링크 미기재).
  * 배포URL   : https://connect-sq-sandbox.github.io/out/application-unified.html
@@ -16,6 +16,8 @@
  *    생략: 로그인·본인인증·신분증 게이트, 진료항목 상세 화면, 지도·리뷰 목록·공유 시트(자리표시).
  *  - [확정·세화] 결과는 현재 앱과 동일(result.tsx): 미리접수=ReceiptCompleteScreen(환자별 결과·접수 정보·'접수 결과 확인하기'),
  *    420 예약·진료항목=닫을 수 없는 결과 시트(확정/요청/마감/실패 분기, 버튼 동작 앱과 동일). 결과 아이콘 Lottie는 CSS 도형으로 대체.
+ *  - [확정·세화] 미리접수 결과도 바텀시트로 통일(기본값). 근거: 세 서비스 모두 '로딩을 보여준 컨테이너가 결과까지' 보여주는 구조로 맞춤,
+ *    실패 시 신청서 입력 유지. 시트에는 결과 헤더 + 진료 대상 + CTA만(접수 정보 3행 제외). 비교용으로 전체 페이지(현재 앱) 전환 유지.
  *  - [확정·PO협의] 섹션 순서: ①진료실/진료항목(+내원목적 1뎁스 | 가격옵션) ②예약 희망일 ③예약자 정보 ④주소 ⑤약관동의 ⑥고정 CTA.
  *  - [확정·PO협의] 내원목적은 진료실에 목적이 설정된 경우만 노출. 목적에 따라 예약 가능 날짜가 달라짐.
  *  - [확정·PO협의] 가격옵션은 앞단에서 골라 왔지만 신청서에서 변경 가능.
@@ -50,6 +52,7 @@
  *
  * 변경 이력
  *  - v0.1 (2026-09-29) 최초 작성.
+ *  - v0.13 (2026-09-30) 미리접수 결과 바텀시트안(기본) 추가, 패널에서 페이지(현재 앱)와 전환.
  *  - v0.12 (2026-09-29) 접수·예약 결과를 현재 앱 기준으로 교체(체험 패널 '신청 결과'로 분기 선택).
  *  - v0.11 (2026-09-29) 병원 상세·진료실 선택 화면(As-is) 추가, 진료항목 5종, 체험 패널에 상세 조건.
  *  - v0.10 (2026-09-29) 진료항목 예약자 기본값 본인(등록 주소 있으면 주소도 prefill).
@@ -67,7 +70,7 @@
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { HospitalDetail, ServiceSelect, CtaScenario, OpState, ReviewState, ServiceMode } from './detail';
-import { ReceiptComplete, RequestResultSheet, ApptResult, TiResult, ReceiptPatientResult } from './result';
+import { ReceiptComplete, ReceiptResultSheet, RequestResultSheet, ApptResult, TiResult, ReceiptPatientResult } from './result';
 
 type Service = 'appt' | 'receipt' | 'treatment';
 type Mode3 = 'required' | 'optional' | 'none';
@@ -277,6 +280,7 @@ export default function Page() {
   const [tiResult, setTiResult] = useState<TiResult>('successRequest');
   const [resultLive, setResultLive] = useState<string>('loading');
   const [rcPending, setRcPending] = useState(false);
+  const [rcForm, setRcForm] = useState<'sheet' | 'page'>('sheet'); // [제안] 미리접수 결과 형태
   const resultTimer = useRef<any>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -432,7 +436,8 @@ export default function Page() {
     clearTimeout(resultTimer.current);
     if (service === 'receipt') {
       // As-is: 확인 → ReceiptComplete 화면으로 이동 후 환자별 결과가 순차 도착
-      setDone(true); setRcPending(true);
+      setRcPending(true);
+      if (rcForm === 'page') setDone(true); else setSheet('result');
       resultTimer.current = setTimeout(() => setRcPending(false), 1400);
     } else {
       // As-is: 요청과 동시에 결과 시트를 로딩으로 연다
@@ -815,7 +820,9 @@ export default function Page() {
             <div className="au-ctl-group"><span>바로 열기</span><Seg value={stage === 'form' ? service : ('' as any)} onChange={v => startForm(v, { from: 'direct' })} items={[['appt', '420 예약'], ['receipt', '420 미리접수'], ['treatment', '진료항목']]} /></div>
             <div className="au-ctl-group"><span>신청 결과 ({service === 'receipt' ? '미리접수' : service === 'appt' ? '420 예약' : '진료항목'})</span>
               {service === 'receipt' ? (
-                <Seg value={rcResult} onChange={setRcResult} items={[['success', '전원 성공'], ['partial', '일부 실패(2명+)'], ['fail', '전원 실패']]} />
+                <><Seg value={rcResult} onChange={setRcResult} items={[['success', '전원 성공'], ['partial', '일부 실패'], ['fail', '전원 실패']]} />
+                <div className="au-ctl-note" style={{ margin: '4px 0 0' }}>일부 실패는 2명 이상 선택했을 때 섞여서 보여요.</div>
+                <div style={{ marginTop: 6 }}><Seg value={rcForm} onChange={setRcForm} items={[['sheet', '바텀시트 (제안)'], ['page', '전체 페이지 (현재 앱)']]} /></div></>
               ) : service === 'appt' ? (
                 <select className="au-select" value={apptResult} onChange={e => setApptResult(e.target.value as ApptResult)}>
                   <option value="success">예약 확정</option><option value="successRequest">예약 요청 (병원 확인 대기)</option>
@@ -873,7 +880,10 @@ export default function Page() {
           {sheet === 'date' && dateSheet}
           {sheet === 'purpose' && purposeSheet}
           {sheet === 'option' && optionSheet}
-          {sheet === 'result' && (
+          {sheet === 'result' && service === 'receipt' && (
+            <ReceiptResultSheet patients={receiptResults} onHistory={t => goHistory(`진료내역 · ${t} 탭으로 이동해요 (생략)`)} onRetry={() => setSheet('')} />
+          )}
+          {sheet === 'result' && service !== 'receipt' && (
             <RequestResultSheet kind={service === 'treatment' ? 'treatment' : 'appt'} state={resultLive as any} dateText={resultDate}
               onHistory={() => goHistory(service === 'appt' ? '진료내역 · 진행중 탭 → 예약 상세로 이동해요 (생략)' : '진료내역 · 진행중 탭 → 진료항목 예약 상세로 이동해요 (생략)')}
               onStop={() => { setSheet(''); setStage(service === 'appt' ? 'detail' : formFrom === 'service' ? 'service' : 'detail'); }}

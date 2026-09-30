@@ -854,6 +854,11 @@ a {
 
 .au-ctl-sub { font-size:11px; font-weight:500; color:var(--gray-60); margin-left:6px; flex:1; }
 
+/* 콘텐츠가 적을 때 마지막 섹션이 CTA까지 흰색으로 채워지도록 */
+.au-scroll { display:flex; flex-direction:column; padding-bottom:0; }
+.au-scroll > * { flex-shrink:0; }
+.au-scroll > .au-sec:last-of-type { flex-grow:1; margin-bottom:0; padding-bottom:136px; }
+
 </style>
 <div id="root"></div>
 <script>

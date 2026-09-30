@@ -1779,6 +1779,43 @@
   font-size: 13px;
 }
 
+.adot-lookup-consent {
+  margin-top: 20px;
+  padding: 15px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  border: 1px solid #acd0ff;
+  border-radius: 10px;
+  background: #f2f7ff;
+  cursor: pointer;
+}
+
+.adot-lookup-consent input {
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  flex: none;
+  accent-color: var(--adot-blue);
+}
+
+.adot-lookup-consent > span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.adot-lookup-consent b {
+  color: var(--adot-title);
+  font-size: 13px;
+}
+
+.adot-lookup-consent small {
+  color: var(--adot-secondary);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
 .adot-patient-fields {
   margin-top: 20px;
   display: grid;

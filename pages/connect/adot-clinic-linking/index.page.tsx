@@ -1151,6 +1151,7 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
   const [birthDate, setBirthDate] = useState('1991-05-23');
   const [gender, setGender] = useState<'female' | 'male'>('female');
   const [phone, setPhone] = useState('010-1234-5678');
+  const [lookupConsent, setLookupConsent] = useState(() => patientPreview === 'new' || patientPreview === 'waiting' || patientPreview === 'verified');
   const [patientStatus, setPatientStatus] = useState<'idle' | 'searching' | 'new' | 'waiting' | 'verified'>(() => {
     if (patientPreview === 'new' || patientPreview === 'waiting' || patientPreview === 'verified') return patientPreview;
     return 'idle';
@@ -1173,7 +1174,7 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
   };
 
   const lookupPatient = () => {
-    if (!patientName.trim() || !birthDate || !phone.trim()) return;
+    if (!lookupConsent || !patientName.trim() || !birthDate || !phone.trim()) return;
     setPatientStatus('searching');
     window.setTimeout(() => setPatientStatus('new'), 850);
   };
@@ -1233,6 +1234,13 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
       }}>
         <section>
           <div className="adot-form-title"><b>1</b><div><h2>환자 정보 확인</h2><p>먼저 기본정보로 병원의 기존 환자인지 조회합니다.</p></div></div>
+          <label className="adot-lookup-consent">
+            <input type="checkbox" checked={lookupConsent} onChange={(event) => {
+              setLookupConsent(event.target.checked);
+              if (!event.target.checked) resetPatientLookup();
+            }} />
+            <span><b>필수 · 고객의 정보 이용 동의를 확인했습니다.</b><small>이름·생년월일·성별·휴대전화번호를 병원 환자 조회에 사용하는 것에 대해 고객에게 안내하고 동의 여부를 확인합니다.</small></span>
+          </label>
           <div className="adot-patient-fields">
             <label><span>이름</span><input value={patientName} onChange={(event) => { setPatientName(event.target.value); resetPatientLookup(); }} placeholder="이름 입력" /></label>
             <label><span>생년월일</span><input type="date" value={birthDate} onChange={(event) => { setBirthDate(event.target.value); resetPatientLookup(); }} /></label>
@@ -1245,7 +1253,7 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
             </fieldset>
             <label><span>휴대전화번호</span><input inputMode="tel" value={phone} onChange={(event) => { setPhone(event.target.value); resetPatientLookup(); }} placeholder="010-0000-0000" /></label>
           </div>
-          <button className="adot-patient-lookup" type="button" disabled={patientStatus === 'searching' || !patientName.trim() || !birthDate || !phone.trim()} onClick={lookupPatient}>
+          <button className="adot-patient-lookup" type="button" disabled={!lookupConsent || patientStatus === 'searching' || !patientName.trim() || !birthDate || !phone.trim()} onClick={lookupPatient}>
             {patientStatus === 'searching' ? <><FiRefreshCw className="spinning" /> 환자 정보를 조회하고 있습니다</> : <><FiSearch /> 환자 조회하기</>}
           </button>
 

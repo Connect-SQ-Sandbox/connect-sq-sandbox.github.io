@@ -53,12 +53,13 @@
  *  - [보류] 동시접수 시 내원목적을 사람별로 받을지(As-is는 사람별). 현재는 신청 단위 1개.
  *  - [보류] 동시접수 시 주소를 사람별로 받을지. 현재는 첫 번째 대상자 기준 1개.
  *  - [보류] 예약에서 대상자 선택 후 해당 시간이 불가해지는 경우(서버 환자 중복 필터) 처리 문구.
- *  - [확정·세화] 병원 접수 이력(차트 조회)으로 가족 연결은 미성년(만 19세 미만)만 가능. 성인 후보는 비활성 + 사유 표시.
+ *  - [확정·세화] 병원 접수 이력(차트 조회)으로 굿닥 가족 등록은 미성년(만 19세 미만)만 가능. 차트 조회된 성인은 가족 등록 없이
+ *    이번 신청의 대상자로만 선택 가능(가족 목록에 저장되지 않음).
  *  - [보류] 차트에서만 조회된 사람(가족 미등록) 연결 시 본인확인·관계확인 절차.
  *
  * 변경 이력
  *  - v0.1 (2026-09-29) 최초 작성.
- *  - v0.17 (2026-09-30) 병원 기록 가족 연결을 미성년만 허용(성인 후보 예시 추가).
+ *  - v0.17 (2026-09-30) 병원 기록 가족 연결은 미성년만, 성인은 이번 신청에만 선택(성인 후보 예시 추가).
  *  - v0.16 (2026-09-30) 체험 패널에서 신청과 무관한 조건(오늘 운영·리뷰) 제거, 정보 성격별 카드 5개로 분리.
  *  - v0.15 (2026-09-30) 체험 패널을 병원 운영 설정 / 환자 정보로 재그룹, 환자별 약관 동의 이력(As-is viewedConsentIds) 반영.
  *  - v0.14 (2026-09-30) 병원 기록 조회 실패 안내 제거(일반 병원은 조용히 1회 재시도 후 가족 목록 그대로), '병원 성격: 재진만 접수' 분기 추가.
@@ -84,7 +85,7 @@ import { ReceiptComplete, ReceiptResultSheet, RequestResultSheet, ApptResult, Ti
 
 type Service = 'appt' | 'receipt' | 'treatment';
 type Mode3 = 'required' | 'optional' | 'none';
-type Person = { id: string; name: string; relation: string; birth: string; address?: string; chart?: boolean; family: boolean };
+type Person = { id: string; name: string; relation: string; birth: string; address?: string; chart?: boolean; family: boolean; oneOff?: boolean };
 
 const TODAY = new Date(2026, 8, 29); // 2026-09-29 (화)
 const NOW_MIN = 14 * 60; // 체험 기준 현재 시각 14:00
@@ -241,7 +242,7 @@ const CHART_ONLY: Person[] = [
   { id: 'c1', name: '김겨울', relation: '병원 기록', birth: '2024.12.30', chart: true, family: false },
   { id: 'c2', name: '김민준', relation: '병원 기록', birth: '1988.05.20', chart: true, family: false }
 ];
-/** 만 19세 미만(미성년) 여부 — 병원 접수 이력으로 가족 연결은 미성년 자녀만 가능 */
+/** 만 19세 미만(미성년) 여부 — 병원 접수 이력으로 굿닥 가족 등록은 미성년만 가능. 성인은 등록 없이 이번 신청의 대상자로만 선택 가능 */
 function isMinor(birth: string) {
   const [y, m, d] = birth.split('.').map(Number);
   let age = TODAY.getFullYear() - y;
@@ -423,6 +424,17 @@ export default function Page() {
   function applyPatients(ids: string[]) {
     setPicked(ids); setSheet(''); if (ids.length) clearErr('patient');
     prefillFrom(people.find(p => p.id === ids[0]) || null);
+  }
+  function pickChartAdult(p: Person) {
+    const one = { ...p, family: false, chart: true, oneOff: true, relation: '성인' };
+    if (!people.some(x => x.id === p.id)) setPeople(ps => [...ps, one]);
+    if (multi) {
+      setDraft(d => {
+        if (d.includes(p.id)) return d.filter(x => x !== p.id);
+        if (d.length >= 5) { showToast('최대 5명까지 선택할 수 있어요', 'error'); return d; }
+        return [...d, p.id];
+      });
+    } else { setPicked([p.id]); setSheet(''); clearErr('patient'); prefillFrom(one); }
   }
   function linkChart(p: Person) {
     if (multi && draft.length >= 5) { showToast('최대 5명까지 선택할 수 있어요', 'error'); return; }
@@ -716,19 +728,20 @@ export default function Page() {
             );
           })}
           <button type="button" className="gd-btn sm secondaryOutline" style={{ width: '100%', marginTop: 8 }} onClick={() => showToast('가족 추가 화면으로 이동해요 (체험)')}>+ 가족 추가</button>
-          {lookup === 'done' && CHART_ONLY.filter(c => !people.some(p => p.id === c.id)).length > 0 && (
+          {lookup === 'done' && CHART_ONLY.filter(c => !people.some(p => p.id === c.id && p.family)).length > 0 && (
             <>
               <h4>이 병원에 기록이 있어요</h4>
-              <div className="au-help" style={{ margin: '-4px 0 8px' }}>굿닥 가족으로 등록되지 않은 분이에요. 미성년 자녀만 가족으로 연결해 선택할 수 있어요.</div>
-              {CHART_ONLY.filter(c => !people.some(p => p.id === c.id)).map(p => {
+              <div className="au-help" style={{ margin: '-4px 0 8px' }}>굿닥 가족으로 등록되지 않은 분이에요. 미성년은 가족으로 연결할 수 있고, 성인은 가족 등록 없이 이번 신청에만 선택할 수 있어요.</div>
+              {CHART_ONLY.filter(c => !people.some(p => p.id === c.id && p.family)).map(p => {
                 const minor = isMinor(p.birth);
+                const on = minor ? false : multi ? draft.includes(p.id) : picked.includes(p.id);
                 return (
-                  <button type="button" key={p.id} className="au-opt" disabled={!minor} onClick={() => linkChart(p)}>
+                  <button type="button" key={p.id} className={`au-opt ${on ? 'on' : ''}`} onClick={() => (minor ? linkChart(p) : pickChartAdult(p))}>
                     <span className="au-opt-body">
-                      <span className="au-opt-name">{p.name}<span className={`gd-tag ${minor ? 'blue' : 'gray'}`}>{minor ? '미성년 · 가족 미등록' : '성인'}</span></span>
-                      <span className="au-opt-sub">{minor ? p.birth : `${p.birth} · 성인은 병원 기록으로 연결할 수 없어요. 본인 계정으로 신청해 주세요.`}</span>
+                      <span className="au-opt-name">{p.name}<span className={`gd-tag ${minor ? 'blue' : 'gray'}`}>{minor ? '미성년 · 가족 미등록' : '성인 · 가족 등록 불가'}</span></span>
+                      <span className="au-opt-sub">{minor ? p.birth : `${p.birth} · 이번 신청에만 선택돼요`}</span>
                     </span>
-                    {minor && <span className="gd-btn primaryLinkText">연결</span>}
+                    {minor ? <span className="gd-btn primaryLinkText">연결</span> : <span className={multi ? `gd-check ${on ? 'on' : ''}` : `gd-radio ${on ? 'on' : ''}`} />}
                   </button>
                 );
               })}

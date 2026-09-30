@@ -1921,6 +1921,30 @@
   line-height: 1.65;
 }
 
+.adot-four-code {
+  min-height: 48px;
+  margin-top: 14px;
+  padding: 9px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  border: 1px solid rgba(176, 188, 207, 0.55);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.adot-four-code span {
+  color: var(--adot-muted);
+  font-size: 11px;
+}
+
+.adot-four-code strong {
+  color: var(--adot-title);
+  font-size: 13px;
+  letter-spacing: 0.01em;
+}
+
 .adot-patient-status > button.secondary {
   border-color: var(--adot-border);
   background: #fff;

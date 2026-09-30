@@ -1161,6 +1161,10 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
   const [agreed, setAgreed] = useState(false);
   const patientVerified = patientStatus === 'verified';
   const maskedPatientName = `${patientName.slice(0, 1) || '고'}○○`;
+  const phoneDigits = phone.replace(/\D/g, '');
+  const maskedPhone = phoneDigits.length >= 7 ? `${phoneDigits.slice(0, 3)}-****-${phoneDigits.slice(-4)}` : '010-****-****';
+  const maskedBirthDate = birthDate ? `${birthDate.slice(0, 4)}-**-**` : '****-**-**';
+  const maskedFourCode = `${maskedPatientName} · ${maskedBirthDate} · ${gender === 'female' ? '여성' : '남성'} · ${maskedPhone}`;
 
   const resetPatientLookup = () => {
     setPatientStatus('idle');
@@ -1224,7 +1228,7 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
           <form className="adot-application" onSubmit={(event) => {
         event.preventDefault();
         if (patientVerified && agreed && schedule) {
-          onComplete({ patient: `본인 · ${maskedPatientName}`, purpose, schedule: `2026.10.01 ${schedule}` });
+          onComplete({ patient: maskedFourCode, purpose, schedule: `2026.10.01 ${schedule}` });
         }
       }}>
         <section>
@@ -1247,7 +1251,8 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
 
           {patientStatus === 'new' && (
             <div className="adot-patient-status new" role="status">
-              <div className="adot-status-heading"><FiUser /><div><span>조회 결과</span><strong>처음 방문하는 환자입니다.</strong></div></div>
+              <div className="adot-status-heading"><FiUser /><div><span>조회 결과</span><strong>일치하는 4코드가 없습니다.</strong></div></div>
+              <div className="adot-four-code"><span>조회 4코드</span><strong>{maskedFourCode}</strong></div>
               <p>예약 신청을 위해 고객이 직접 주민등록번호 뒷자리 7자리와 필수 동의를 입력해야 합니다. 상담사 화면에는 번호가 표시되지 않습니다.</p>
               <button type="button" onClick={sendVerificationLink}><FiSend /> 고객 확인 링크 발송</button>
             </div>
@@ -1256,6 +1261,7 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
           {patientStatus === 'waiting' && (
             <div className="adot-patient-status waiting" role="status" aria-live="polite">
               <div className="adot-status-heading"><FiRefreshCw className="spinning" /><div><span>고객 확인 요청 발송 완료</span><strong>고객 입력을 기다리고 있습니다.</strong></div></div>
+              <div className="adot-four-code"><span>조회 4코드</span><strong>{maskedFourCode}</strong></div>
               <p>알림톡 발송에 실패하면 문자로 자동 대체 발송합니다. 고객은 링크에서 주민등록번호 뒷자리만 입력합니다.</p>
               <div className="adot-polling-line"><span><i /> 2초마다 자동으로 상태 확인 중</span><small>{pollCount + 1}회 확인</small></div>
               <button className="secondary" type="button" onClick={pollVerification}><FiRefreshCw /> 지금 다시 확인</button>
@@ -1265,6 +1271,7 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
           {patientStatus === 'verified' && (
             <div className="adot-patient-status verified" role="status">
               <div className="adot-status-heading"><FiCheck /><div><span>고객 확인 완료</span><strong>예약 신청을 계속할 수 있습니다.</strong></div></div>
+              <div className="adot-four-code"><span>확인된 4코드</span><strong>{maskedFourCode}</strong></div>
               <p>주민등록번호 뒷자리와 필수 동의가 안전하게 저장되었습니다. 상담사에게 원문 정보는 노출되지 않습니다.</p>
             </div>
           )}
@@ -1295,7 +1302,7 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
         <section className={!patientVerified ? 'adot-form-section-locked' : ''} aria-disabled={!patientVerified}>
           <div className="adot-form-title"><b>4</b><div><h2>신청 내용 확인</h2><p>신청 직전 최신 예약 가능 여부를 다시 확인합니다.</p></div></div>
           <dl className="adot-summary-list">
-            <div><dt>환자</dt><dd>{patientVerified ? `본인 · ${maskedPatientName}` : '환자 확인 필요'}</dd></div>
+            <div><dt>4코드</dt><dd>{patientVerified ? maskedFourCode : '환자 확인 필요'}</dd></div>
             <div><dt>진료 목적</dt><dd>{purpose}</dd></div>
             <div><dt>예약 일시</dt><dd>{schedule ? `2026.10.01 ${schedule}` : '선택 가능한 시간 없음'}</dd></div>
           </dl>
@@ -1334,7 +1341,7 @@ function SuccessPanel({ hospital, summary, onHistory, onClose }: { hospital: Hos
             <dl>
               <div><dt>병원</dt><dd>{hospital.name}</dd></div>
               <div><dt>신청 번호</dt><dd>LINK-260930-0153</dd></div>
-              <div><dt>환자</dt><dd>{summary.patient}</dd></div>
+              <div><dt>4코드</dt><dd>{summary.patient}</dd></div>
               <div><dt>진료 목적</dt><dd>{summary.purpose}</dd></div>
               <div><dt>예약 일시</dt><dd>{summary.schedule}</dd></div>
             </dl>
@@ -1462,7 +1469,7 @@ export default function AdotClinicLinkingPage() {
   });
   const [selectedHospital, setSelectedHospital] = useState<Hospital | null>(HOSPITALS[0]);
   const [selectedRecord, setSelectedRecord] = useState<HistoryRecord>(HISTORY[0]);
-  const [bookingSummary, setBookingSummary] = useState<BookingSummary>({ patient: '본인 · 김○○', purpose: '일반 진료', schedule: '2026.10.01 10:30' });
+  const [bookingSummary, setBookingSummary] = useState<BookingSummary>({ patient: '김○○ · 1991-**-** · 여성 · 010-****-5678', purpose: '일반 진료', schedule: '2026.10.01 10:30' });
 
   const navigate = (next: Screen) => {
     setConnectionOverlay(null);

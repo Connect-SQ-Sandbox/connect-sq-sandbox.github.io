@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : application-unified — 병원 상세(As-is) → 진료실 선택(As-is) → 통합 신청서(420 예약 · 420 미리접수 · 진료항목 예약)
- * 상태      : 현행 · v0.16 · 최종수정 2026-09-29
+ * 상태      : 현행 · v0.17 · 최종수정 2026-09-29
  * PRD       : GAS-1 (Draft) 기반, PO 협의 2026-09-29 반영. PO 체험판 application-standard와 별개 페이지.
  *             내부 검토 메모는 사내 문서에 둔다(공개 저장소라 링크 미기재).
  * 배포URL   : https://connect-sq-sandbox.github.io/out/application-unified.html
@@ -53,10 +53,12 @@
  *  - [보류] 동시접수 시 내원목적을 사람별로 받을지(As-is는 사람별). 현재는 신청 단위 1개.
  *  - [보류] 동시접수 시 주소를 사람별로 받을지. 현재는 첫 번째 대상자 기준 1개.
  *  - [보류] 예약에서 대상자 선택 후 해당 시간이 불가해지는 경우(서버 환자 중복 필터) 처리 문구.
+ *  - [확정·세화] 병원 접수 이력(차트 조회)으로 가족 연결은 미성년(만 19세 미만)만 가능. 성인 후보는 비활성 + 사유 표시.
  *  - [보류] 차트에서만 조회된 사람(가족 미등록) 연결 시 본인확인·관계확인 절차.
  *
  * 변경 이력
  *  - v0.1 (2026-09-29) 최초 작성.
+ *  - v0.17 (2026-09-30) 병원 기록 가족 연결을 미성년만 허용(성인 후보 예시 추가).
  *  - v0.16 (2026-09-30) 체험 패널에서 신청과 무관한 조건(오늘 운영·리뷰) 제거, 정보 성격별 카드 5개로 분리.
  *  - v0.15 (2026-09-30) 체험 패널을 병원 운영 설정 / 환자 정보로 재그룹, 환자별 약관 동의 이력(As-is viewedConsentIds) 반영.
  *  - v0.14 (2026-09-30) 병원 기록 조회 실패 안내 제거(일반 병원은 조용히 1회 재시도 후 가족 목록 그대로), '병원 성격: 재진만 접수' 분기 추가.
@@ -235,7 +237,17 @@ const FAMILY: Person[] = [
   { id: 'f3', name: '김여름', relation: '자녀', birth: '2021.07.08', family: true },
   { id: 'f4', name: '김가을', relation: '자녀', birth: '2023.10.21', family: true }
 ];
-const CHART_ONLY: Person[] = [{ id: 'c1', name: '김겨울', relation: '병원 기록', birth: '2024.12.30', chart: true, family: false }];
+const CHART_ONLY: Person[] = [
+  { id: 'c1', name: '김겨울', relation: '병원 기록', birth: '2024.12.30', chart: true, family: false },
+  { id: 'c2', name: '김민준', relation: '병원 기록', birth: '1988.05.20', chart: true, family: false }
+];
+/** 만 19세 미만(미성년) 여부 — 병원 접수 이력으로 가족 연결은 미성년 자녀만 가능 */
+function isMinor(birth: string) {
+  const [y, m, d] = birth.split('.').map(Number);
+  let age = TODAY.getFullYear() - y;
+  if (TODAY.getMonth() + 1 < m || (TODAY.getMonth() + 1 === m && TODAY.getDate() < d)) age--;
+  return age < 19;
+}
 
 export default function Page() {
   // 체험 조건
@@ -707,13 +719,19 @@ export default function Page() {
           {lookup === 'done' && CHART_ONLY.filter(c => !people.some(p => p.id === c.id)).length > 0 && (
             <>
               <h4>이 병원에 기록이 있어요</h4>
-              <div className="au-help" style={{ margin: '-4px 0 8px' }}>굿닥 가족으로 등록되지 않은 분이에요. 가족으로 연결한 뒤 선택할 수 있어요.</div>
-              {CHART_ONLY.filter(c => !people.some(p => p.id === c.id)).map(p => (
-                <button type="button" key={p.id} className="au-opt" onClick={() => linkChart(p)}>
-                  <span className="au-opt-body"><span className="au-opt-name">{p.name}<span className="gd-tag blue">가족 미등록</span></span><span className="au-opt-sub">{p.birth}</span></span>
-                  <span className="gd-btn primaryLinkText">연결</span>
-                </button>
-              ))}
+              <div className="au-help" style={{ margin: '-4px 0 8px' }}>굿닥 가족으로 등록되지 않은 분이에요. 미성년 자녀만 가족으로 연결해 선택할 수 있어요.</div>
+              {CHART_ONLY.filter(c => !people.some(p => p.id === c.id)).map(p => {
+                const minor = isMinor(p.birth);
+                return (
+                  <button type="button" key={p.id} className="au-opt" disabled={!minor} onClick={() => linkChart(p)}>
+                    <span className="au-opt-body">
+                      <span className="au-opt-name">{p.name}<span className={`gd-tag ${minor ? 'blue' : 'gray'}`}>{minor ? '미성년 · 가족 미등록' : '성인'}</span></span>
+                      <span className="au-opt-sub">{minor ? p.birth : `${p.birth} · 성인은 병원 기록으로 연결할 수 없어요. 본인 계정으로 신청해 주세요.`}</span>
+                    </span>
+                    {minor && <span className="gd-btn primaryLinkText">연결</span>}
+                  </button>
+                );
+              })}
             </>
           )}
         </div>

@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : application-unified — 병원 상세(As-is) → 진료실 선택(As-is) → 통합 신청서(420 예약 · 420 미리접수 · 진료항목 예약)
- * 상태      : 현행 · v0.15 · 최종수정 2026-09-29
+ * 상태      : 현행 · v0.16 · 최종수정 2026-09-29
  * PRD       : GAS-1 (Draft) 기반, PO 협의 2026-09-29 반영. PO 체험판 application-standard와 별개 페이지.
  *             내부 검토 메모는 사내 문서에 둔다(공개 저장소라 링크 미기재).
  * 배포URL   : https://connect-sq-sandbox.github.io/out/application-unified.html
@@ -57,6 +57,7 @@
  *
  * 변경 이력
  *  - v0.1 (2026-09-29) 최초 작성.
+ *  - v0.16 (2026-09-30) 체험 패널에서 신청과 무관한 조건(오늘 운영·리뷰) 제거, 정보 성격별 카드 5개로 분리.
  *  - v0.15 (2026-09-30) 체험 패널을 병원 운영 설정 / 환자 정보로 재그룹, 환자별 약관 동의 이력(As-is viewedConsentIds) 반영.
  *  - v0.14 (2026-09-30) 병원 기록 조회 실패 안내 제거(일반 병원은 조용히 1회 재시도 후 가족 목록 그대로), '병원 성격: 재진만 접수' 분기 추가.
  *  - v0.13 (2026-09-30) 미리접수 결과 바텀시트안(기본) 추가, 패널에서 페이지(현재 앱)와 전환.
@@ -847,7 +848,12 @@ export default function Page() {
           <h1>진료 신청<br />병원 상세 → 통합 신청서</h1>
           <p className="lead">병원 상세·진료실 선택은 현재 앱(production)과 같게, 신청서는 통합안입니다. 가상 데이터이며 실제로 신청되지 않습니다. 기준일 2026-09-29(화) 14:00.</p>
           <div className="au-ctl">
-            <div className="au-ctl-title">병원 상세 <button type="button" className="gd-btn xs secondaryOutline" onClick={restartAll}>처음부터</button></div>
+            <div className="au-ctl-head"><strong>시작 화면</strong><span>어디서부터 체험할지</span></div>
+            <div className="au-ctl-group"><span>병원 상세부터</span><button type="button" className="gd-btn sm secondaryOutline" style={{ width: '100%' }} onClick={restartAll}>처음부터 시작</button></div>
+            <div className="au-ctl-group"><span>신청서 바로 열기</span><Seg value={stage === 'form' ? service : ('' as any)} onChange={v => startForm(v, { from: 'direct' })} items={[['appt', '420 예약'], ['receipt', '420 미리접수'], ['treatment', '진료항목']]} /></div>
+          </div>
+          <div className="au-ctl">
+            <div className="au-ctl-head"><strong>병원 서비스 상태</strong><span>병원 상세 하단 버튼·진입 경로에 영향</span></div>
             <div className="au-ctl-group"><span>하단 버튼 상태</span>
               <select className="au-select" value={ctaScenario} onChange={e => setCtaScenario(e.target.value as CtaScenario)}>
                 <option value="both">미리접수 + 예약</option><option value="receipt">미리접수만 (진료항목 사용 시 예약도 노출)</option><option value="appt">예약만</option>
@@ -855,10 +861,23 @@ export default function Page() {
                 <option value="apptClosed">예약 · 슬롯 마감</option><option value="bridgeOff">브릿지 미연결</option><option value="none">미리접수·예약 모두 미운영 (진료항목 미사용 시 전화문의)</option><option value="tablet">태블릿 접수만 (전화문의)</option>
               </select></div>
             <div className="au-ctl-group"><span>진료항목 예약</span><Seg value={tiOn ? 'on' : 'off'} onChange={v => setTiOn(v === 'on')} items={[['on', '사용'], ['off', '미사용']]} /></div>
-            <div className="au-ctl-group"><span>오늘 운영</span><Seg value={opState} onChange={setOpState} items={[['open', '진료중'], ['off', '휴진'], ['ended', '진료종료']]} /></div>
-            <div className="au-ctl-group"><span>리뷰</span><Seg value={reviewState} onChange={setReviewState} items={[['show', '공개'], ['zero', '0건'], ['hidden', '비공개']]} /></div>
-            <div className="au-ctl-title" style={{ marginTop: 6 }}>신청서</div>
-            <div className="au-ctl-group"><span>바로 열기</span><Seg value={stage === 'form' ? service : ('' as any)} onChange={v => startForm(v, { from: 'direct' })} items={[['appt', '420 예약'], ['receipt', '420 미리접수'], ['treatment', '진료항목']]} /></div>
+          </div>
+          <div className="au-ctl">
+            <div className="au-ctl-head"><strong>병원 운영 설정</strong><span>병원이 커넥트에서 켜고 끄는 값 · 신청서 구성에 영향</span></div>
+            <div className="au-ctl-group"><span>주소 받기</span><Seg value={addrMode} onChange={v => { setAddrMode(v); clearErr('addr'); }} items={[['required', '필수'], ['optional', '선택'], ['none', '미사용']]} /></div>
+            <div className="au-ctl-group"><span>약관</span><Seg value={termsMode} onChange={v => { setTermsMode(v); setAgree({}); clearErr('terms'); }} items={[['both', '필수+선택'], ['required', '필수만'], ['none', '없음']]} /></div>
+            {isRoom && <div className="au-ctl-group"><span>1진료실 · 내원 목적</span><Seg value={purposeSetting} onChange={v => { setPurposeSetting(v); if (roomId === 'r1') { setPurpose(''); setDate(null); setTime(''); clearErr('service'); if (sheet === 'purpose' || sheet === 'date') setSheet(''); } }} items={[['on', '사용 (9개)'], ['off', '미사용']]} /></div>}
+            {isRoom && <div className="au-ctl-group"><span>접수 대상</span><Seg value={revisitOnly ? 'revisit' : 'all'} onChange={v => { setRevisitOnly(v === 'revisit'); setPicked([]); setDraft([]); clearErr('patient'); }} items={[['all', '초진·재진 모두'], ['revisit', '재진만']]} /></div>}
+          </div>
+          <div className="au-ctl">
+            <div className="au-ctl-head"><strong>환자 정보</strong><span>계정·병원 기록에 따라 달라지는 값</span></div>
+            <div className="au-ctl-group"><span>등록된 주소</span><Seg value={savedAddr} onChange={setSavedAddr} items={[['yes', '있음'], ['no', '없음']]} /></div>
+            {isRoom && <div className="au-ctl-group"><span>병원 기록 조회</span><Seg value={lookupMode} onChange={v => { setLookupMode(v); lookupModeRef.current = v; if (sheet === 'patient') runLookup(); else { clearTimeout(lookupTimer.current); setLookup('idle'); if (revisitGate) { setPicked([]); setDraft([]); } } }} items={[['ok', '성공'], ['fail', '실패']]} /></div>}
+            {isRoom && <div className="au-ctl-group"><span>이 병원 약관 동의 이력</span><Seg value={consentHistory} onChange={setConsentHistory} items={[['none', '없음'], ['agreed', '이전에 동의함']]} />
+              <div className="au-ctl-note" style={{ margin: '4px 0 0' }}>병원 기록이 확인된 분(김하늘·김봄·연결한 가족)에게만 적용돼요.</div></div>}
+          </div>
+          <div className="au-ctl">
+            <div className="au-ctl-head"><strong>신청 결과</strong><span>서버 응답 가정 · 제출 후 결과 화면</span></div>
             <div className="au-ctl-group"><span>신청 결과 ({service === 'receipt' ? '미리접수' : service === 'appt' ? '420 예약' : '진료항목'})</span>
               {service === 'receipt' ? (
                 <><Seg value={rcResult} onChange={setRcResult} items={[['success', '전원 성공'], ['partial', '일부 실패'], ['fail', '전원 실패']]} />
@@ -875,20 +894,8 @@ export default function Page() {
                   <option value="notExistedSlots">선택 시간 예약 불가</option><option value="notExistedItem">진료항목 제공 중단</option><option value="failure">기타 실패</option>
                 </select>
               )}</div>
-
-            <div className="au-ctl-title" style={{ marginTop: 6 }}>병원 운영 설정 <span className="au-ctl-sub">병원이 커넥트에서 켜고 끄는 값</span></div>
-            <div className="au-ctl-group"><span>주소 받기</span><Seg value={addrMode} onChange={v => { setAddrMode(v); clearErr('addr'); }} items={[['required', '필수'], ['optional', '선택'], ['none', '미사용']]} /></div>
-            <div className="au-ctl-group"><span>약관</span><Seg value={termsMode} onChange={v => { setTermsMode(v); setAgree({}); clearErr('terms'); }} items={[['both', '필수+선택'], ['required', '필수만'], ['none', '없음']]} /></div>
-            {isRoom && <div className="au-ctl-group"><span>1진료실 · 내원 목적</span><Seg value={purposeSetting} onChange={v => { setPurposeSetting(v); if (roomId === 'r1') { setPurpose(''); setDate(null); setTime(''); clearErr('service'); if (sheet === 'purpose' || sheet === 'date') setSheet(''); } }} items={[['on', '사용 (9개)'], ['off', '미사용']]} /></div>}
-            {isRoom && <div className="au-ctl-group"><span>접수 대상</span><Seg value={revisitOnly ? 'revisit' : 'all'} onChange={v => { setRevisitOnly(v === 'revisit'); setPicked([]); setDraft([]); clearErr('patient'); }} items={[['all', '초진·재진 모두'], ['revisit', '재진만']]} /></div>}
-
-            <div className="au-ctl-title" style={{ marginTop: 6 }}>환자 정보 <span className="au-ctl-sub">계정·병원 기록에 따라 달라지는 값</span></div>
-            <div className="au-ctl-group"><span>등록된 주소</span><Seg value={savedAddr} onChange={setSavedAddr} items={[['yes', '있음'], ['no', '없음']]} /></div>
-            {isRoom && <div className="au-ctl-group"><span>병원 기록 조회</span><Seg value={lookupMode} onChange={v => { setLookupMode(v); lookupModeRef.current = v; if (sheet === 'patient') runLookup(); else { clearTimeout(lookupTimer.current); setLookup('idle'); if (revisitGate) { setPicked([]); setDraft([]); } } }} items={[['ok', '성공'], ['fail', '실패']]} /></div>}
-            {isRoom && <div className="au-ctl-group"><span>이 병원 약관 동의 이력</span><Seg value={consentHistory} onChange={setConsentHistory} items={[['none', '없음'], ['agreed', '이전에 동의함']]} />
-              <div className="au-ctl-note" style={{ margin: '4px 0 0' }}>병원 기록이 확인된 분(김하늘·김봄·연결한 가족)에게만 적용돼요.</div></div>}
           </div>
-          <p className="au-ctl-note">서비스를 바꾸면 신청서가 초기화됩니다. 1진료실은 내원 목적을 사용/미사용으로 바꿀 수 있습니다(영유아검진은 화·목만, 미사용이면 월~토). 2진료실은 항상 목적이 없습니다(평일만).</p>
+          <p className="au-ctl-note">서비스를 바꾸면 신청서가 초기화됩니다. 1진료실은 내원 목적을 사용/미사용으로 바꿀 수 있습니다(영유아검진은 화·목만, 미사용이면 월~토). 2진료실은 항상 목적이 없습니다(평일만). 병원 운영 상태(진료중·휴진)와 리뷰는 신청에 영향이 없어 조건에서 뺐습니다.</p>
         </aside>
 
         <div className="au-phone">

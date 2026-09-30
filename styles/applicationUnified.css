@@ -115,6 +115,10 @@
 .au-panel h1 { font-size:22px; line-height:1.35; font-weight:700; margin:0 0 8px; }
 .au-panel p.lead { font-size:13px; color:var(--gray-70); margin:0 0 20px; }
 .au-ctl { background:#fff; border:1px solid var(--gray-30); border-radius:8px; padding:16px; display:flex; flex-direction:column; gap:14px; }
+.au-ctl + .au-ctl { margin-top:12px; }
+.au-ctl-head { display:flex; flex-direction:column; gap:2px; padding-bottom:10px; border-bottom:1px solid var(--gray-20); }
+.au-ctl-head strong { font-size:14px; font-weight:700; color:var(--gray-100); }
+.au-ctl-head span { font-size:11px; color:var(--gray-60); }
 .au-ctl-group > span { display:block; font-size:12px; font-weight:700; color:var(--gray-70); margin-bottom:6px; }
 .au-ctl .gd-segment button { padding:6px 4px; font-size:12px; }
 .au-ctl-note { font-size:12px; color:var(--gray-60); margin-top:12px; }
@@ -228,6 +232,11 @@
 .au-done dt { width:72px; flex:none; color:var(--gray-60); }
 .au-done dd { margin:0; color:var(--gray-90); font-weight:500; }
 
+/* 패널이 길어도 폰 프레임을 함께 보도록: 데스크톱은 패널 자체 스크롤 + 폰 고정 */
+@media (min-width: 801px) {
+  .au-panel { max-height:calc(100vh - 64px); overflow-y:auto; padding-right:6px; }
+  .au-phone { position:sticky; top:32px; }
+}
 @media (max-width: 800px) {
   .au-lab { flex-direction:column; align-items:center; padding:16px; gap:16px; }
   .au-panel { position:static; width:100%; max-width:390px; }

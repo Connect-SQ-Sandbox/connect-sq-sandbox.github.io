@@ -7,14 +7,16 @@
  * 관련 CSS : styles/adotClinicLinking.css
  * 기술제약 : react-only · plain CSS · mock data · 네트워크 0
  *
- * 화면구성 : ① 로그인 ② 병원 탐색(목록·지도) ③ 병원 상세
- *            ④ 진료 신청서 ⑤ 연결 이력·상세 ⑥ 상담사 정보
+ * 화면구성 : ① 로그인 ② 병원 탐색(목록·지도) ③ 병원 정보 모달
+ *            ④ 진료 신청·결과 우측 패널 ⑤ 연결 이력·상세 ⑥ 상담사 정보
  *
  * 핵심 결정:
  *   [협의안] 예약 가능한 병원에만 `굿닥 예약` 배지를 표시한다.
  *   [현행참고] 운영 상태 다음 문구는 다음 예약이 아닌 병원 운영시간을 뜻한다.
  *   [협의안] managedTags와 진료항목 태그를 하나의 검색 경험으로 제공한다.
  *   [협의안] 목록 행 선택 시 지도 포커스·정보 카드가 열리고, 그 안에서 신청을 시작한다.
+ *   [확정] 병원 정보는 큰 모달로 열고 닫아도 지도·검색 맥락을 유지한다.
+ *   [확정] 신청서와 결과는 지도 위 우측 패널로 열며, 진행 중 패널을 닫으면 해당 신청 세션을 취소한다.
  *   [제외] 실제 환자·병원 고객 데이터, 실제 신청/저장, 외부 네트워크 호출
  * └──────────────────────────────────────────────────────
  */
@@ -47,7 +49,8 @@ import hospital3 from '../../../assets/adot-clinic-linking/hospital-3.jpg';
 import hospital4 from '../../../assets/adot-clinic-linking/hospital-4.jpg';
 import mapComposite from '../../../assets/adot-clinic-linking/map-composite.png';
 
-type Screen = 'login' | 'link' | 'hospital' | 'application' | 'success' | 'history' | 'history-detail' | 'profile';
+type Screen = 'login' | 'link' | 'history' | 'history-detail' | 'profile';
+type ConnectionOverlay = 'hospital-detail' | 'application' | 'success' | null;
 type OperationState = 'open' | 'ready' | 'closed' | 'dayOff' | 'unknown';
 type TreatmentSelection = { level: 'middle' | 'item'; major: string; middle: string; item?: string } | null;
 type BookingSummary = { patient: string; purpose: string; schedule: string };
@@ -1082,20 +1085,26 @@ function LinkScreen({
   );
 }
 
-function BreadcrumbBack({ label, onBack }: { label: string; onBack: () => void }) {
-  return <button className="adot-back" type="button" onClick={onBack}><FiArrowLeft />{label}</button>;
-}
+function HospitalDetailModal({ hospital, onClose, onApply }: { hospital: Hospital; onClose: () => void; onApply: () => void }) {
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => event.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
 
-function HospitalDetail({ hospital, onBack, onApply }: { hospital: Hospital; onBack: () => void; onApply: () => void }) {
   return (
-    <main className="adot-subpage">
-      <BreadcrumbBack label="병원 탐색으로 돌아가기" onBack={onBack} />
-      <div className="adot-detail-grid">
+    <div className="adot-overlay-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      <section className="adot-hospital-modal" role="dialog" aria-modal="true" aria-labelledby="hospital-detail-title">
+        <header className="adot-overlay-header">
+          <div><span>병원 정보</span><strong>지도와 검색 조건은 그대로 유지됩니다.</strong></div>
+          <button type="button" onClick={onClose} aria-label="병원 정보 닫기"><FiX /></button>
+        </header>
+        <div className="adot-detail-grid">
         <section className="adot-hospital-hero">
           <img src={hospital.image} alt="샘플 병원 내부" />
           <div>
             <div className="adot-title-with-badge">
-              <h1>{hospital.name}</h1>
+              <h1 id="hospital-detail-title">{hospital.name}</h1>
               {isBookable(hospital) && <em className="adot-booking-badge">굿닥 예약</em>}
             </div>
             <p>{hospital.department} · {hospital.address}</p>
@@ -1128,32 +1137,43 @@ function HospitalDetail({ hospital, onBack, onApply }: { hospital: Hospital; onB
             {Array.from(new Set([...hospital.managedTags, ...hospital.treatmentItems])).map((tag) => <span key={tag}>{tag}</span>)}
           </div>
         </section>
-      </div>
-    </main>
+        </div>
+      </section>
+    </div>
   );
 }
 
-function ApplicationScreen({ hospital, onBack, onComplete }: { hospital: Hospital; onBack: () => void; onComplete: (summary: BookingSummary) => void }) {
+function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospital; onCancel: () => void; onComplete: (summary: BookingSummary) => void }) {
   const [patientType, setPatientType] = useState<'self' | 'child'>('self');
   const [purpose, setPurpose] = useState(hospital.treatmentItems[0] || '일반 진료');
   const [schedule, setSchedule] = useState(hospital.availableSlots[0] || '');
   const [agreed, setAgreed] = useState(false);
 
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => event.key === 'Escape' && onCancel();
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [onCancel]);
+
   return (
-    <main className="adot-subpage narrow">
-      <BreadcrumbBack label="병원 정보로 돌아가기" onBack={onBack} />
-      <div className="adot-application-head">
-        <span>진료 신청</span>
-        <h1>{hospital.name}</h1>
-        <p>상담 중 확인한 내용을 순서대로 입력해 주세요.</p>
-      </div>
-      <ol className="adot-stepper" aria-label="신청 단계">
+    <div className="adot-panel-layer" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onCancel()}>
+      <aside className="adot-side-panel" role="dialog" aria-modal="true" aria-labelledby="application-panel-title">
+        <header className="adot-overlay-header sticky">
+          <div><span>진료 신청</span><strong id="application-panel-title">{hospital.name}</strong></div>
+          <button type="button" onClick={onCancel} aria-label="진료 신청 취소하고 닫기"><FiX /></button>
+        </header>
+        <div className="adot-panel-scroll">
+          <div className="adot-application-head">
+            <h1>진료 신청서</h1>
+            <p>상담 중 확인한 내용을 순서대로 입력해 주세요.</p>
+          </div>
+          <ol className="adot-stepper" aria-label="신청 단계">
         <li className="active"><b>1</b><span>환자</span></li>
         <li className="active"><b>2</b><span>진료 목적</span></li>
         <li className="active"><b>3</b><span>예약 일시</span></li>
         <li><b>4</b><span>확인</span></li>
-      </ol>
-      <form className="adot-application" onSubmit={(event) => {
+          </ol>
+          <form className="adot-application" onSubmit={(event) => {
         event.preventDefault();
         if (agreed && schedule) {
           onComplete({ patient: patientType === 'self' ? '본인 · 김○○' : '자녀 · 김○○', purpose, schedule: `2026.10.01 ${schedule}` });
@@ -1199,27 +1219,45 @@ function ApplicationScreen({ hospital, onBack, onComplete }: { hospital: Hospita
             <span><b>필수 안내를 확인했습니다.</b> 이 화면은 검토용이며 실제 환자 정보나 예약은 전송되지 않습니다.</span>
           </label>
         </section>
-        <button className="adot-submit" type="submit" disabled={!agreed || !schedule}>진료 신청 완료</button>
-      </form>
-    </main>
+            <button className="adot-submit" type="submit" disabled={!agreed || !schedule}>진료 신청 완료</button>
+          </form>
+        </div>
+      </aside>
+    </div>
   );
 }
 
-function SuccessScreen({ hospital, summary, onHistory, onHome }: { hospital: Hospital; summary: BookingSummary; onHistory: () => void; onHome: () => void }) {
+function SuccessPanel({ hospital, summary, onHistory, onClose }: { hospital: Hospital; summary: BookingSummary; onHistory: () => void; onClose: () => void }) {
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => event.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
+
   return (
-    <main className="adot-success">
-      <div className="adot-success-icon"><FiCheck /></div>
-      <h1>진료 신청이 완료되었습니다.</h1>
-      <p>검토용 프로토타입으로 실제 예약은 생성되지 않았습니다.</p>
-      <dl>
-        <div><dt>병원</dt><dd>{hospital.name}</dd></div>
-        <div><dt>신청 번호</dt><dd>LINK-260930-0153</dd></div>
-        <div><dt>환자</dt><dd>{summary.patient}</dd></div>
-        <div><dt>진료 목적</dt><dd>{summary.purpose}</dd></div>
-        <div><dt>예약 일시</dt><dd>{summary.schedule}</dd></div>
-      </dl>
-      <div><button className="secondary" type="button" onClick={onHome}>새 진료 연결</button><button className="adot-primary" type="button" onClick={onHistory}>연결 이력 확인</button></div>
-    </main>
+    <div className="adot-panel-layer result" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      <aside className="adot-side-panel" role="dialog" aria-modal="true" aria-labelledby="success-panel-title">
+        <header className="adot-overlay-header sticky">
+          <div><span>신청 결과</span><strong>{hospital.name}</strong></div>
+          <button type="button" onClick={onClose} aria-label="신청 결과 닫기"><FiX /></button>
+        </header>
+        <div className="adot-panel-scroll result-body">
+          <main className="adot-success">
+            <div className="adot-success-icon"><FiCheck /></div>
+            <h1 id="success-panel-title">진료 신청이 완료되었습니다.</h1>
+            <p>검토용 프로토타입으로 실제 예약은 생성되지 않았습니다.</p>
+            <dl>
+              <div><dt>병원</dt><dd>{hospital.name}</dd></div>
+              <div><dt>신청 번호</dt><dd>LINK-260930-0153</dd></div>
+              <div><dt>환자</dt><dd>{summary.patient}</dd></div>
+              <div><dt>진료 목적</dt><dd>{summary.purpose}</dd></div>
+              <div><dt>예약 일시</dt><dd>{summary.schedule}</dd></div>
+            </dl>
+            <div><button className="secondary" type="button" onClick={onClose}>새 진료 연결</button><button className="adot-primary" type="button" onClick={onHistory}>연결 이력 확인</button></div>
+          </main>
+        </div>
+      </aside>
+    </div>
   );
 }
 
@@ -1331,13 +1369,25 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
 
 export default function AdotClinicLinkingPage() {
   const [screen, setScreen] = useState<Screen>('link');
+  const [connectionOverlay, setConnectionOverlay] = useState<ConnectionOverlay>(() => {
+    const preview = new URLSearchParams(window.location.search).get('view');
+    if (preview === 'hospital') return 'hospital-detail';
+    if (preview === 'application' || preview === 'success') return preview;
+    return null;
+  });
   const [selectedHospital, setSelectedHospital] = useState<Hospital | null>(HOSPITALS[0]);
   const [selectedRecord, setSelectedRecord] = useState<HistoryRecord>(HISTORY[0]);
   const [bookingSummary, setBookingSummary] = useState<BookingSummary>({ patient: '본인 · 김○○', purpose: '일반 진료', schedule: '2026.10.01 10:30' });
 
   const navigate = (next: Screen) => {
+    setConnectionOverlay(null);
     setScreen(next);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelApplication = () => {
+    const confirmed = window.confirm('진료 신청을 취소할까요?\n입력한 내용은 저장되지 않으며, 병원 탐색 화면은 그대로 유지됩니다.');
+    if (confirmed) setConnectionOverlay(null);
   };
 
   if (screen === 'login') return <div className="adot-app"><LoginScreen onLogin={() => navigate('link')} /></div>;
@@ -1349,13 +1399,19 @@ export default function AdotClinicLinkingPage() {
         <LinkScreen
           selectedHospital={selectedHospital}
           setSelectedHospital={setSelectedHospital}
-          onApply={(hospital) => { setSelectedHospital(hospital); navigate('application'); }}
-          onDetail={(hospital) => { setSelectedHospital(hospital); navigate('hospital'); }}
+          onApply={(hospital) => { setSelectedHospital(hospital); setConnectionOverlay('application'); }}
+          onDetail={(hospital) => { setSelectedHospital(hospital); setConnectionOverlay('hospital-detail'); }}
         />
       )}
-      {screen === 'hospital' && selectedHospital && <HospitalDetail hospital={selectedHospital} onBack={() => navigate('link')} onApply={() => navigate('application')} />}
-      {screen === 'application' && selectedHospital && <ApplicationScreen hospital={selectedHospital} onBack={() => navigate('hospital')} onComplete={(summary) => { setBookingSummary(summary); navigate('success'); }} />}
-      {screen === 'success' && selectedHospital && <SuccessScreen hospital={selectedHospital} summary={bookingSummary} onHistory={() => navigate('history')} onHome={() => navigate('link')} />}
+      {screen === 'link' && connectionOverlay === 'hospital-detail' && selectedHospital && (
+        <HospitalDetailModal hospital={selectedHospital} onClose={() => setConnectionOverlay(null)} onApply={() => setConnectionOverlay('application')} />
+      )}
+      {screen === 'link' && connectionOverlay === 'application' && selectedHospital && (
+        <ApplicationPanel hospital={selectedHospital} onCancel={cancelApplication} onComplete={(summary) => { setBookingSummary(summary); setConnectionOverlay('success'); }} />
+      )}
+      {screen === 'link' && connectionOverlay === 'success' && selectedHospital && (
+        <SuccessPanel hospital={selectedHospital} summary={bookingSummary} onHistory={() => navigate('history')} onClose={() => setConnectionOverlay(null)} />
+      )}
       {screen === 'history' && <HistoryScreen onDetail={(record) => { setSelectedRecord(record); navigate('history-detail'); }} />}
       {screen === 'history-detail' && <HistoryDetail record={selectedRecord} onBack={() => navigate('history')} />}
       {screen === 'profile' && <ProfileScreen />}

@@ -1259,7 +1259,7 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
 
           {patientStatus === 'new' && (
             <div className="adot-patient-status new" role="status">
-              <div className="adot-status-heading"><FiUser /><div><span>조회 결과</span><strong>일치하는 4코드가 없습니다.</strong></div></div>
+              <div className="adot-status-heading"><FiUser /><div><span>조회 결과</span><strong>환자 기록이 조회되지 않습니다.</strong></div></div>
               <div className="adot-four-code"><span>조회 4코드</span><strong>{maskedFourCode}</strong></div>
               <p>예약 신청을 위해 고객이 직접 주민등록번호 뒷자리 7자리와 필수 동의를 입력해야 합니다. 상담사 화면에는 번호가 표시되지 않습니다.</p>
               <button type="button" onClick={sendVerificationLink}><FiSend /> 고객 확인 링크 발송</button>

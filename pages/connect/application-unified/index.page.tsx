@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : application-unified — 병원 상세(As-is) → 진료실 선택(As-is) → 통합 신청서(420 예약 · 420 미리접수 · 진료항목 예약)
- * 상태      : 현행 · v0.13 · 최종수정 2026-09-29
+ * 상태      : 현행 · v0.15 · 최종수정 2026-09-29
  * PRD       : GAS-1 (Draft) 기반, PO 협의 2026-09-29 반영. PO 체험판 application-standard와 별개 페이지.
  *             내부 검토 메모는 사내 문서에 둔다(공개 저장소라 링크 미기재).
  * 배포URL   : https://connect-sq-sandbox.github.io/out/application-unified.html
@@ -16,6 +16,9 @@
  *    생략: 로그인·본인인증·신분증 게이트, 진료항목 상세 화면, 지도·리뷰 목록·공유 시트(자리표시).
  *  - [확정·세화] 결과는 현재 앱과 동일(result.tsx): 미리접수=ReceiptCompleteScreen(환자별 결과·접수 정보·'접수 결과 확인하기'),
  *    420 예약·진료항목=닫을 수 없는 결과 시트(확정/요청/마감/실패 분기, 버튼 동작 앱과 동일). 결과 아이콘 Lottie는 CSS 도형으로 대체.
+ *  - [확정·세화] 병원 기록 조회 실패는 일반 병원에서 알리지 않는다(가족 목록으로 그대로 신청). 차트 확인 필수 병원은 없음.
+ *  - [유지·자체] 재진만 접수 병원: 시트 상단 '재진 환자만 진료 가능한 병원이에요'(As-is 카피), 조회 완료 전·기록 없는 사람은 선택 불가,
+ *    조회 실패 시에만 '다시 확인' 노출, 제출 시 재검증. 진료항목 예약은 조회가 없어 해당 없음.
  *  - [확정·세화] 미리접수 결과도 바텀시트로 통일(기본값). 근거: 세 서비스 모두 '로딩을 보여준 컨테이너가 결과까지' 보여주는 구조로 맞춤,
  *    실패 시 신청서 입력 유지. 시트에는 결과 헤더 + 진료 대상 + CTA만(접수 정보 3행 제외). 비교용으로 전체 페이지(현재 앱) 전환 유지.
  *  - [확정·PO협의] 섹션 순서: ①진료실/진료항목(+내원목적 1뎁스 | 가격옵션) ②예약 희망일 ③예약자 정보 ④주소 ⑤약관동의 ⑥고정 CTA.
@@ -27,6 +30,8 @@
  *  - [확정·세화] 진료항목 예약자는 '본인'이 기본 선택(As-is sameAsBooker=true와 동일). 진료실은 최초 비어 있음.
  *  - [확정·PO협의] 주소: 병원 설정에 따라 필수/선택/미노출, 등록 주소 있으면 prefill.
  *  - [확정·PO협의] 약관: 병원 설정 약관만, 필수/선택 구분.
+ *  - [확정·As-is] 선택한 전원이 이전에 동의한 약관은 다시 받지 않음(차트 조회 응답 viewedConsentIds 기준, useAppointmentSelectPatient.ts:405-448).
+ *    [유지·자체] 이때 섹션을 숨기지 않고 '이미 동의했어요' + 동의 완료 목록으로 보여줌(As-is는 동의 시트 자체를 생략). 진료항목은 조회가 없어 해당 없음.
  *  - [확정·PO협의] CTA 항상 고정·활성. 누르면 첫 미입력 섹션으로 앵커 스크롤.
  *  - [확정·세화] 예약 희망일은 바텀시트에서 선택(캘린더 → 시간 칩 → '선택 완료'로 반영, 닫으면 미반영).
  *  - [확정·세화] 내원 목적은 칩이 아니라 선택 필드 → 바텀시트 라디오 목록(항목명이 길고 개수가 많을 수 있음). 고르면 바로 닫힘.
@@ -52,6 +57,8 @@
  *
  * 변경 이력
  *  - v0.1 (2026-09-29) 최초 작성.
+ *  - v0.15 (2026-09-30) 체험 패널을 병원 운영 설정 / 환자 정보로 재그룹, 환자별 약관 동의 이력(As-is viewedConsentIds) 반영.
+ *  - v0.14 (2026-09-30) 병원 기록 조회 실패 안내 제거(일반 병원은 조용히 1회 재시도 후 가족 목록 그대로), '병원 성격: 재진만 접수' 분기 추가.
  *  - v0.13 (2026-09-30) 미리접수 결과 바텀시트안(기본) 추가, 패널에서 페이지(현재 앱)와 전환.
  *  - v0.12 (2026-09-29) 접수·예약 결과를 현재 앱 기준으로 교체(체험 패널 '신청 결과'로 분기 선택).
  *  - v0.11 (2026-09-29) 병원 상세·진료실 선택 화면(As-is) 추가, 진료항목 5종, 체험 패널에 상세 조건.
@@ -236,6 +243,8 @@ export default function Page() {
   const [savedAddr, setSavedAddr] = useState<'yes' | 'no'>('yes');
   const [termsMode, setTermsMode] = useState<'both' | 'required' | 'none'>('both');
   const [lookupMode, setLookupMode] = useState<'ok' | 'fail'>('ok');
+  const [consentHistory, setConsentHistory] = useState<'none' | 'agreed'>('none'); // 환자: 이 병원 약관 동의 이력
+  const [revisitOnly, setRevisitOnly] = useState(false); // 병원 성격: 재진 환자만 접수(As-is '재진 환자만 진료 가능한 병원이에요')
   const [purposeSetting, setPurposeSetting] = useState<'on' | 'off'>('on');
   // 병원 상세 체험 조건
   const [stage, setStage] = useState<'detail' | 'service' | 'form'>('detail');
@@ -372,14 +381,23 @@ export default function Page() {
   }
 
   // 환자 조회 (420 환자조회 참고: 목록 진입 시 조회). 타이머는 실행 시점의 조건값을 읽는다.
+  // 실패해도 사용자에게 알리지 않고 한 번 자동 재시도. 일반 병원은 실패 시 가족 목록만 그대로 쓴다.
   function runLookup() {
     setLookup('loading');
     clearTimeout(lookupTimer.current);
-    lookupTimer.current = setTimeout(() => setLookup(lookupModeRef.current === 'ok' ? 'done' : 'fail'), 900);
+    lookupTimer.current = setTimeout(() => {
+      if (lookupModeRef.current === 'ok') { setLookup('done'); return; }
+      lookupTimer.current = setTimeout(() => setLookup(lookupModeRef.current === 'ok' ? 'done' : 'fail'), 900);
+    }, 900);
   }
+  const isMatched = (p: Person) => lookup === 'done' && (p.id === 'me' || p.id === 'f2' || !!p.chart);
+  const revisitGate = isRoom && revisitOnly;
+  const termsAgreedBefore = consentHistory === 'agreed' && isRoom && picked.length > 0 && picked.every(id => { const p = people.find(x => x.id === id); return !!p && isMatched(p); });
+  /* As-is(useAppointmentSelectPatient.ts:405-448, ReceiptConfirmScreen.tsx:88): 차트 조회 응답의 환자별 동의 이력(viewedConsentIds)으로
+     선택한 전원이 공통으로 이미 동의한 약관은 다시 받지 않는다. 기록이 없거나 조회 실패·브릿지 미연결이면 전부 다시 받는다. */
   function openPatients() {
     setDraft(picked); setSheet('patient');
-    if (lookup === 'idle' || lookup === 'fail') runLookup();
+    if (lookup === 'idle') runLookup(); // 실패 후 다시 열 때는 조용히 가족 목록만(재진만 병원은 '다시 확인' 버튼으로 재조회)
   }
   function toggleDraft(id: string) {
     if (!multi) { applyPatients([id]); return; }
@@ -417,9 +435,9 @@ export default function Page() {
     if (service !== 'receipt' && (!date || !time)) m.push('date');
     if (isRoom ? picked.length === 0 : !who || (who === 'other' && Object.values(otherInvalid).some(Boolean))) m.push('patient');
     if (addrMode === 'required' && !addr.base) m.push('addr');
-    if (terms.some(t => t.req && !agree[t.id])) m.push('terms');
+    if (!termsAgreedBefore && terms.some(t => t.req && !agree[t.id])) m.push('terms');
     return m;
-  }, [isRoom, usesPurpose, purpose, optionIds, service, date, time, picked, who, other, addrMode, addr, terms, agree]);
+  }, [termsAgreedBefore, isRoom, usesPurpose, purpose, optionIds, service, date, time, picked, who, other, addrMode, addr, terms, agree]);
 
   function jump(k: string) {
     const el = secRefs.current[k];
@@ -427,6 +445,11 @@ export default function Page() {
     if (el && sc) sc.scrollTo({ top: el.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - 8, behavior: 'smooth' });
   }
   function submit() {
+    if (revisitGate && picked.length && !pickedPeople.every(isMatched)) {
+      setPicked([]); setErrors(e => Array.from(new Set([...e, 'patient']))); jump('patient');
+      showToast('재진 환자만 신청할 수 있어요. 진료받을 분을 다시 선택해 주세요', 'error');
+      return;
+    }
     if (missing.length) {
       setErrors(missing);
       jump(missing[0]);
@@ -562,6 +585,7 @@ export default function Page() {
             {multi && pickedPeople.length > 1 && (
               <div className="au-chips" style={{ marginTop: 10 }}>{pickedPeople.map(p => <span key={p.id} className="au-person-tag">{p.name}</span>)}</div>
             )}
+            {revisitGate && <div className="au-help" style={{ color: 'var(--blue-60)' }}>재진 환자만 진료 가능한 병원이에요</div>}
             {multi && <div className="au-help">가족과 함께 최대 5명까지 접수할 수 있어요. 접수는 사람마다 따로 진행돼요.</div>}
             {err('patient') && <div className="au-err">진료받을 분을 선택해 주세요.</div>}
           </>
@@ -613,6 +637,17 @@ export default function Page() {
       {terms.length > 0 && (
         <section ref={el => (secRefs.current.terms = el)} className={`au-sec ${err('terms') ? 'err' : ''}`}>
           <div className="au-sec-head"><h2>약관 동의</h2></div>
+          {termsAgreedBefore ? (
+            <>
+              <div className="gd-banner basic">진료받을 분 모두 이 병원 약관에 이미 동의했어요. 다시 동의하지 않아도 돼요.</div>
+              {terms.map(t => (
+                <div key={t.id} className="au-term">
+                  <span className="chk" style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, fontSize: 14 }}><span className={`gd-tag ${t.req ? 'green' : 'gray'}`}>{t.req ? '동의 완료' : '이전에 확인'}</span><span>{t.label}</span></span>
+                  <button type="button" className="view" onClick={() => showToast('병원이 등록한 약관 원문을 보여줘요 (체험)')}>보기</button>
+                </div>
+              ))}
+            </>
+          ) : (<>
           <button type="button" className="au-terms-all" onClick={() => {
             const all = terms.every(t => agree[t.id]);
             setAgree(Object.fromEntries(terms.map(t => [t.id, !all]))); if (!all) clearErr('terms');
@@ -629,7 +664,11 @@ export default function Page() {
               <button type="button" className="view" onClick={() => showToast('병원이 등록한 약관 원문을 보여줘요 (체험)')}>보기</button>
             </div>
           ))}
+          {consentHistory === 'agreed' && isRoom && picked.length > 0 && (lookup === 'fail'
+            ? <div className="au-help">병원 기록을 확인하지 못해 약관 동의를 다시 받아요.</div>
+            : pickedPeople.some(p => !isMatched(p)) && <div className="au-help">병원 기록이 없는 분이 포함되어 약관 동의를 다시 받아요.</div>)}
           {err('terms') && <div className="au-err">필수 약관에 동의해 주세요.</div>}
+          </>)}
         </section>
       )}
     </>
@@ -640,22 +679,24 @@ export default function Page() {
       <div className="au-sheet" role="dialog" aria-modal="true" aria-label="진료받을 분 선택">
         <div className="au-sheet-head"><h3>진료받을 분</h3><button type="button" aria-label="닫기" onClick={() => setSheet('')}>×</button></div>
         <div className="au-sheet-body">
-          {lookup === 'loading' && <div className="au-loading"><span className="au-spin" />병원 기록을 확인하고 있어요. 가족 목록은 먼저 선택할 수 있어요.</div>}
-          {lookup === 'fail' && (
-            <div className="gd-banner negative" style={{ justifyContent: 'space-between' }}>
-              <span>병원 기록을 불러오지 못했어요. 가족 목록으로 신청할 수 있어요.</span>
-              <button type="button" className="gd-btn primaryLinkText" onClick={runLookup}>다시 시도</button>
+          {revisitGate && <div className="gd-banner info" style={{ marginBottom: 8 }}>재진 환자만 진료 가능한 병원이에요</div>}
+          {lookup === 'loading' && <div className="au-loading"><span className="au-spin" />{revisitGate ? '병원 기록을 확인하고 있어요. 확인이 끝나면 선택할 수 있어요.' : '병원 기록을 확인하고 있어요. 가족 목록은 먼저 선택할 수 있어요.'}</div>}
+          {revisitGate && lookup === 'fail' && (
+            <div className="gd-banner basic" style={{ justifyContent: 'space-between' }}>
+              <span>병원 기록을 확인하지 못해 지금은 선택할 수 없어요.</span>
+              <button type="button" className="gd-btn primaryLinkText" onClick={runLookup}>다시 확인</button>
             </div>
           )}
           <h4>내 가족 {multi && <span className="opt" style={{ fontWeight: 500, color: 'var(--gray-60)' }}>{draft.length}/5명 선택</span>}</h4>
           {people.filter(p => p.family).map(p => {
             const on = multi ? draft.includes(p.id) : picked.includes(p.id);
-            const matched = lookup === 'done' && (p.id === 'me' || p.id === 'f2' || p.chart);
+            const matched = isMatched(p);
+            const blocked = revisitGate && !matched;
             return (
-              <button type="button" key={p.id} className={`au-opt ${on ? 'on' : ''}`} onClick={() => toggleDraft(p.id)}>
+              <button type="button" key={p.id} className={`au-opt ${on ? 'on' : ''}`} disabled={blocked} onClick={() => toggleDraft(p.id)}>
                 <span className="au-opt-body">
                   <span className="au-opt-name">{p.name}<span className="gd-tag gray">{p.relation}</span>{matched && <span className="gd-tag green">병원 기록 있음</span>}</span>
-                  <span className="au-opt-sub">{p.birth}</span>
+                  <span className="au-opt-sub">{blocked && lookup === 'done' ? '이 병원 진료 기록이 없어 신청할 수 없어요' : p.birth}</span>
                 </span>
                 <span className={multi ? `gd-check ${on ? 'on' : ''}` : `gd-radio ${on ? 'on' : ''}`} />
               </button>
@@ -834,11 +875,18 @@ export default function Page() {
                   <option value="notExistedSlots">선택 시간 예약 불가</option><option value="notExistedItem">진료항목 제공 중단</option><option value="failure">기타 실패</option>
                 </select>
               )}</div>
-            <div className="au-ctl-group"><span>병원 설정 · 주소</span><Seg value={addrMode} onChange={v => { setAddrMode(v); clearErr('addr'); }} items={[['required', '필수'], ['optional', '선택'], ['none', '미사용']]} /></div>
-            <div className="au-ctl-group"><span>등록된 주소</span><Seg value={savedAddr} onChange={setSavedAddr} items={[['yes', '있음'], ['no', '없음']]} /></div>
-            <div className="au-ctl-group"><span>병원 설정 · 약관</span><Seg value={termsMode} onChange={v => { setTermsMode(v); setAgree({}); clearErr('terms'); }} items={[['both', '필수+선택'], ['required', '필수만'], ['none', '없음']]} /></div>
+
+            <div className="au-ctl-title" style={{ marginTop: 6 }}>병원 운영 설정 <span className="au-ctl-sub">병원이 커넥트에서 켜고 끄는 값</span></div>
+            <div className="au-ctl-group"><span>주소 받기</span><Seg value={addrMode} onChange={v => { setAddrMode(v); clearErr('addr'); }} items={[['required', '필수'], ['optional', '선택'], ['none', '미사용']]} /></div>
+            <div className="au-ctl-group"><span>약관</span><Seg value={termsMode} onChange={v => { setTermsMode(v); setAgree({}); clearErr('terms'); }} items={[['both', '필수+선택'], ['required', '필수만'], ['none', '없음']]} /></div>
             {isRoom && <div className="au-ctl-group"><span>1진료실 · 내원 목적</span><Seg value={purposeSetting} onChange={v => { setPurposeSetting(v); if (roomId === 'r1') { setPurpose(''); setDate(null); setTime(''); clearErr('service'); if (sheet === 'purpose' || sheet === 'date') setSheet(''); } }} items={[['on', '사용 (9개)'], ['off', '미사용']]} /></div>}
-            {isRoom && <div className="au-ctl-group"><span>병원 기록 조회</span><Seg value={lookupMode} onChange={v => { setLookupMode(v); lookupModeRef.current = v; if (sheet === 'patient') runLookup(); else { clearTimeout(lookupTimer.current); setLookup('idle'); } }} items={[['ok', '성공'], ['fail', '실패']]} /></div>}
+            {isRoom && <div className="au-ctl-group"><span>접수 대상</span><Seg value={revisitOnly ? 'revisit' : 'all'} onChange={v => { setRevisitOnly(v === 'revisit'); setPicked([]); setDraft([]); clearErr('patient'); }} items={[['all', '초진·재진 모두'], ['revisit', '재진만']]} /></div>}
+
+            <div className="au-ctl-title" style={{ marginTop: 6 }}>환자 정보 <span className="au-ctl-sub">계정·병원 기록에 따라 달라지는 값</span></div>
+            <div className="au-ctl-group"><span>등록된 주소</span><Seg value={savedAddr} onChange={setSavedAddr} items={[['yes', '있음'], ['no', '없음']]} /></div>
+            {isRoom && <div className="au-ctl-group"><span>병원 기록 조회</span><Seg value={lookupMode} onChange={v => { setLookupMode(v); lookupModeRef.current = v; if (sheet === 'patient') runLookup(); else { clearTimeout(lookupTimer.current); setLookup('idle'); if (revisitGate) { setPicked([]); setDraft([]); } } }} items={[['ok', '성공'], ['fail', '실패']]} /></div>}
+            {isRoom && <div className="au-ctl-group"><span>이 병원 약관 동의 이력</span><Seg value={consentHistory} onChange={setConsentHistory} items={[['none', '없음'], ['agreed', '이전에 동의함']]} />
+              <div className="au-ctl-note" style={{ margin: '4px 0 0' }}>병원 기록이 확인된 분(김하늘·김봄·연결한 가족)에게만 적용돼요.</div></div>}
           </div>
           <p className="au-ctl-note">서비스를 바꾸면 신청서가 초기화됩니다. 1진료실은 내원 목적을 사용/미사용으로 바꿀 수 있습니다(영유아검진은 화·목만, 미사용이면 월~토). 2진료실은 항상 목적이 없습니다(평일만).</p>
         </aside>

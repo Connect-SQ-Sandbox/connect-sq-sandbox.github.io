@@ -28,6 +28,7 @@ import {
   FiCalendar,
   FiCheck,
   FiChevronDown,
+  FiChevronLeft,
   FiChevronRight,
   FiChevronUp,
   FiClock,
@@ -55,7 +56,7 @@ type Screen = 'login' | 'link' | 'history' | 'history-detail' | 'profile';
 type ConnectionOverlay = 'hospital-detail' | 'application' | 'success' | null;
 type OperationState = 'open' | 'ready' | 'closed' | 'dayOff' | 'unknown';
 type TreatmentSelection = { level: 'middle' | 'item'; major: string; middle: string; item?: string } | null;
-type BookingSummary = { patient: string; purpose: string; schedule: string };
+type BookingSummary = { patient: string; room: string; purpose: string; schedule: string };
 type RegionSelection = { city: string; district: string; neighborhood: string };
 
 type SearchSuggestionItem =
@@ -1157,10 +1158,24 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
     return 'idle';
   });
   const [pollCount, setPollCount] = useState(0);
-  const [purpose, setPurpose] = useState(hospital.treatmentItems[0] || '일반 진료');
+  const examRooms = [
+    { id: 'room-1', name: `${hospital.department} 1진료실`, doctor: `${hospital.department} · 김굿닥 원장`, description: '감기·소화기·건강검진 예약', available: true },
+    { id: 'room-2', name: `${hospital.department} 2진료실`, doctor: `${hospital.department} · 이샘플 원장`, description: '일반 진료 및 만성질환 상담', available: true },
+    { id: 'room-3', name: `${hospital.department} 3진료실`, doctor: `${hospital.department} · 박건강 원장`, description: '오늘 예약 마감', available: false }
+  ];
+  const visitPurposes = ['감기·몸살', '소화기 증상', '건강검진 상담', '기타 진료'];
+  const availableDates = [1, 2, 5, 6, 7, 8, 12, 13, 14, 15, 19, 20, 21, 22, 26, 27, 28, 29];
+  const [examRoomId, setExamRoomId] = useState(examRooms[0].id);
+  const [purpose, setPurpose] = useState(visitPurposes[0]);
+  const [selectedDay, setSelectedDay] = useState(1);
+  const [appointmentMode, setAppointmentMode] = useState<'time' | 'arrival'>('time');
   const [schedule, setSchedule] = useState(hospital.availableSlots[0] || '');
   const [agreed, setAgreed] = useState(false);
   const patientVerified = patientStatus === 'verified';
+  const selectedRoom = examRooms.find((room) => room.id === examRoomId) || examRooms[0];
+  const formattedSchedule = appointmentMode === 'arrival'
+    ? `2026.10.${String(selectedDay).padStart(2, '0')} 선착순 예약`
+    : `2026.10.${String(selectedDay).padStart(2, '0')} ${schedule}`;
   const maskedPatientName = `${patientName.slice(0, 1) || '고'}○○`;
   const phoneDigits = phone.replace(/\D/g, '');
   const maskedPhone = phoneDigits.length >= 7 ? `${phoneDigits.slice(0, 3)}-****-${phoneDigits.slice(-4)}` : '010-****-****';
@@ -1228,8 +1243,8 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
           </ol>
           <form className="adot-application" onSubmit={(event) => {
         event.preventDefault();
-        if (patientVerified && agreed && schedule) {
-          onComplete({ patient: maskedFourCode, purpose, schedule: `2026.10.01 ${schedule}` });
+        if (patientVerified && agreed && (appointmentMode === 'arrival' || schedule)) {
+          onComplete({ patient: maskedFourCode, room: selectedRoom.name, purpose, schedule: formattedSchedule });
         }
       }}>
         <section>
@@ -1285,24 +1300,66 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
           )}
         </section>
         <section className={!patientVerified ? 'adot-form-section-locked' : ''} aria-disabled={!patientVerified}>
-          <div className="adot-form-title"><b>2</b><div><h2>진료 목적</h2><p>병원에서 제공하는 항목 중 하나를 선택합니다.</p></div></div>
+          <div className="adot-form-title"><b>2</b><div><h2>진료실·내원 목적</h2><p>병원이 예약용으로 운영하는 진료실과 내원 목적을 순서대로 선택합니다.</p></div></div>
           {!patientVerified && <p className="adot-lock-note">환자 확인을 완료하면 선택할 수 있습니다.</p>}
+          <div className="adot-booking-subtitle"><strong>진료실을 선택해 주세요</strong><span>예약 가능 진료실 {examRooms.filter((room) => room.available).length}개</span></div>
+          <div className="adot-room-list">
+            {examRooms.map((room) => (
+              <button
+                className={examRoomId === room.id ? 'selected' : ''}
+                disabled={!patientVerified || !room.available}
+                type="button"
+                key={room.id}
+                onClick={() => setExamRoomId(room.id)}
+              >
+                <span className="adot-room-radio" aria-hidden="true" />
+                <span><strong>{room.name}</strong><small>{room.doctor}</small><em>{room.description}</em></span>
+                {!room.available && <b>마감</b>}
+              </button>
+            ))}
+          </div>
+          <div className="adot-booking-subtitle purpose"><strong>내원 목적을 선택해 주세요</strong><span>1개 선택</span></div>
           <div className="adot-chip-grid">
-            {hospital.treatmentItems.map((item) => (
+            {visitPurposes.map((item) => (
               <button className={purpose === item ? 'selected' : ''} disabled={!patientVerified} type="button" key={item} onClick={() => setPurpose(item)}>{item}</button>
             ))}
           </div>
+          <p className="adot-booking-helper"><FiInfo /> 위 항목은 병원이 해당 진료실에 설정한 예약용 내원 목적입니다. 검색에 사용한 비급여 진료정보와는 별개입니다.</p>
         </section>
         <section className={!patientVerified ? 'adot-form-section-locked' : ''} aria-disabled={!patientVerified}>
           <div className="adot-form-title"><b>3</b><div><h2>예약 일시</h2><p>조회 시점의 예약 가능 일시입니다.</p></div></div>
           {!patientVerified && <p className="adot-lock-note">환자 확인을 완료하면 예약 시간을 선택할 수 있습니다.</p>}
           {hospital.availableSlots.length > 0 ? <>
-            <div className="adot-date-line"><FiCalendar /><strong>10월 1일 (목)</strong><span>예약 가능</span></div>
-            <div className="adot-time-grid">
-              {hospital.availableSlots.map((time) => (
-                <button className={schedule === time ? 'selected' : ''} disabled={!patientVerified} type="button" key={time} onClick={() => setSchedule(time)}>{time}</button>
-              ))}
+            <div className="adot-calendar">
+              <div className="adot-calendar-head"><button type="button" disabled aria-label="이전 달"><FiChevronLeft /></button><strong>2026년 10월</strong><button type="button" disabled aria-label="다음 달"><FiChevronRight /></button></div>
+              <div className="adot-calendar-week"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+              <div className="adot-calendar-days">
+                {Array.from({ length: 4 }).map((_, index) => <span key={`empty-${index}`} />)}
+                {Array.from({ length: 31 }).map((_, index) => {
+                  const day = index + 1;
+                  const available = availableDates.includes(day);
+                  return <button className={selectedDay === day ? 'selected' : ''} disabled={!patientVerified || !available} type="button" key={day} onClick={() => setSelectedDay(day)}>{day}</button>;
+                })}
+              </div>
+              <div className="adot-calendar-legend"><span><i />예약 가능</span><span><i className="selected" />선택일</span></div>
             </div>
+            <div className="adot-selected-date"><FiCalendar /><div><small>선택한 날짜</small><strong>10월 {selectedDay}일 ({['일', '월', '화', '수', '목', '금', '토'][new Date(2026, 9, selectedDay).getDay()]})</strong></div><span>예약 가능</span></div>
+            <div className="adot-booking-mode" role="group" aria-label="예약 방식">
+              <button className={appointmentMode === 'time' ? 'selected' : ''} disabled={!patientVerified} type="button" onClick={() => setAppointmentMode('time')}>시간 예약</button>
+              <button className={appointmentMode === 'arrival' ? 'selected' : ''} disabled={!patientVerified} type="button" onClick={() => setAppointmentMode('arrival')}>선착순 예약</button>
+            </div>
+            {appointmentMode === 'time' ? <div className="adot-slot-groups">
+              <div><strong>오전</strong><div className="adot-time-grid">
+                {['09:30', '10:00', '10:30', '11:00', '11:30'].map((time) => (
+                  <button className={schedule === time ? 'selected' : ''} disabled={!patientVerified || time === '11:30'} type="button" key={time} onClick={() => setSchedule(time)}>{time}{time === '11:30' && <small>마감</small>}</button>
+                ))}
+              </div></div>
+              <div><strong>오후</strong><div className="adot-time-grid">
+                {['14:00', '14:30', '15:00', '15:30', '16:30'].map((time) => (
+                  <button className={schedule === time ? 'selected' : ''} disabled={!patientVerified || time === '16:30'} type="button" key={time} onClick={() => setSchedule(time)}>{time}{time === '16:30' && <small>마감</small>}</button>
+                ))}
+              </div></div>
+            </div> : <div className="adot-arrival-note"><FiClock /><div><strong>도착 순서대로 진료합니다.</strong><p>선택한 날짜의 운영시간 안에 방문하도록 고객에게 안내해 주세요. 실제 대기시간은 병원 상황에 따라 달라질 수 있습니다.</p></div></div>}
           </> : (
             <div className="adot-no-slot"><FiCalendar /><div><strong>현재 선택 가능한 예약 시간이 없습니다.</strong><p>예약 설정과 실제 잔여 시간은 다를 수 있습니다. 다른 병원을 선택해 주세요.</p></div></div>
           )}
@@ -1311,15 +1368,16 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
           <div className="adot-form-title"><b>4</b><div><h2>신청 내용 확인</h2><p>신청 직전 최신 예약 가능 여부를 다시 확인합니다.</p></div></div>
           <dl className="adot-summary-list">
             <div><dt>4코드</dt><dd>{patientVerified ? maskedFourCode : '환자 확인 필요'}</dd></div>
+            <div><dt>진료실</dt><dd>{selectedRoom.name}</dd></div>
             <div><dt>진료 목적</dt><dd>{purpose}</dd></div>
-            <div><dt>예약 일시</dt><dd>{schedule ? `2026.10.01 ${schedule}` : '선택 가능한 시간 없음'}</dd></div>
+            <div><dt>예약 일시</dt><dd>{appointmentMode === 'arrival' || schedule ? formattedSchedule : '선택 가능한 시간 없음'}</dd></div>
           </dl>
           <label className="adot-consent">
             <input type="checkbox" disabled={!patientVerified} checked={agreed} onChange={(event) => setAgreed(event.target.checked)} />
             <span><b>필수 안내를 확인했습니다.</b> 이 화면은 검토용이며 실제 환자 정보나 예약은 전송되지 않습니다.</span>
           </label>
         </section>
-            <button className="adot-submit" type="submit" disabled={!patientVerified || !agreed || !schedule}>진료 신청 완료</button>
+            <button className="adot-submit" type="submit" disabled={!patientVerified || !agreed || (appointmentMode === 'time' && !schedule)}>진료 신청 완료</button>
           </form>
         </div>
       </aside>
@@ -1350,6 +1408,7 @@ function SuccessPanel({ hospital, summary, onHistory, onClose }: { hospital: Hos
               <div><dt>병원</dt><dd>{hospital.name}</dd></div>
               <div><dt>신청 번호</dt><dd>LINK-260930-0153</dd></div>
               <div><dt>4코드</dt><dd>{summary.patient}</dd></div>
+              <div><dt>진료실</dt><dd>{summary.room}</dd></div>
               <div><dt>진료 목적</dt><dd>{summary.purpose}</dd></div>
               <div><dt>예약 일시</dt><dd>{summary.schedule}</dd></div>
             </dl>
@@ -1477,7 +1536,7 @@ export default function AdotClinicLinkingPage() {
   });
   const [selectedHospital, setSelectedHospital] = useState<Hospital | null>(HOSPITALS[0]);
   const [selectedRecord, setSelectedRecord] = useState<HistoryRecord>(HISTORY[0]);
-  const [bookingSummary, setBookingSummary] = useState<BookingSummary>({ patient: '김○○ · 1991-**-** · 여성 · 010-****-5678', purpose: '일반 진료', schedule: '2026.10.01 10:30' });
+  const [bookingSummary, setBookingSummary] = useState<BookingSummary>({ patient: '김○○ · 1991-**-** · 여성 · 010-****-5678', room: '내과 1진료실', purpose: '감기·몸살', schedule: '2026.10.01 10:30' });
 
   const navigate = (next: Screen) => {
     setConnectionOverlay(null);

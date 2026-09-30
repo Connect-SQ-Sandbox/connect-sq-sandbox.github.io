@@ -2112,6 +2112,354 @@
   font-weight: 700;
 }
 
+.adot-booking-subtitle {
+  margin-top: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.adot-booking-subtitle.purpose {
+  margin-top: 26px;
+  padding-top: 24px;
+  border-top: 1px solid var(--adot-border);
+}
+
+.adot-booking-subtitle strong {
+  color: var(--adot-title);
+  font-size: 14px;
+}
+
+.adot-booking-subtitle span {
+  color: var(--adot-muted);
+  font-size: 12px;
+}
+
+.adot-room-list {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.adot-room-list > button {
+  width: 100%;
+  min-height: 92px;
+  padding: 15px;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+  border: 1px solid var(--adot-border);
+  border-radius: 11px;
+  background: #fff;
+  color: var(--adot-title);
+  text-align: left;
+}
+
+.adot-room-list > button.selected {
+  border: 2px solid var(--adot-blue);
+  background: var(--adot-blue-soft);
+}
+
+.adot-room-list > button:disabled {
+  background: #f6f7f9;
+  color: var(--adot-muted);
+  cursor: not-allowed;
+}
+
+.adot-room-radio {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  border: 1px solid #aeb7c5;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.adot-room-list > button.selected .adot-room-radio {
+  border: 5px solid var(--adot-blue);
+}
+
+.adot-room-list > button > span:nth-child(2) {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.adot-room-list strong {
+  font-size: 14px;
+}
+
+.adot-room-list small,
+.adot-room-list em {
+  color: var(--adot-muted);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.45;
+}
+
+.adot-room-list em {
+  color: var(--adot-secondary);
+}
+
+.adot-room-list > button > b {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #e9ebef;
+  color: var(--adot-muted);
+  font-size: 11px;
+}
+
+.adot-booking-helper {
+  margin-top: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  color: var(--adot-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.adot-booking-helper svg {
+  margin-top: 2px;
+  flex: none;
+}
+
+.adot-calendar {
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid var(--adot-border);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.adot-calendar-head {
+  display: grid;
+  grid-template-columns: 36px 1fr 36px;
+  align-items: center;
+  text-align: center;
+}
+
+.adot-calendar-head button {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--adot-muted);
+}
+
+.adot-calendar-head strong {
+  color: var(--adot-title);
+  font-size: 15px;
+}
+
+.adot-calendar-week,
+.adot-calendar-days {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+}
+
+.adot-calendar-week span {
+  color: var(--adot-muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+.adot-calendar-week span:first-child {
+  color: #e45454;
+}
+
+.adot-calendar-days button,
+.adot-calendar-days > span {
+  min-width: 0;
+  aspect-ratio: 1;
+}
+
+.adot-calendar-days button {
+  border: 0;
+  border-radius: 50%;
+  background: #edf5ff;
+  color: var(--adot-blue-strong);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.adot-calendar-days button:disabled {
+  background: transparent;
+  color: #c0c5ce;
+  cursor: not-allowed;
+}
+
+.adot-calendar-days button.selected {
+  background: var(--adot-blue);
+  color: #fff;
+}
+
+.adot-calendar-legend {
+  margin-top: 14px;
+  padding-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 14px;
+  border-top: 1px solid var(--adot-border);
+  color: var(--adot-muted);
+  font-size: 11px;
+}
+
+.adot-calendar-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.adot-calendar-legend i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #edf5ff;
+}
+
+.adot-calendar-legend i.selected {
+  background: var(--adot-blue);
+}
+
+.adot-selected-date {
+  min-height: 60px;
+  margin-top: 14px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 10px;
+  background: var(--adot-soft);
+}
+
+.adot-selected-date > svg {
+  color: var(--adot-blue);
+}
+
+.adot-selected-date > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.adot-selected-date small {
+  color: var(--adot-muted);
+  font-size: 11px;
+}
+
+.adot-selected-date strong {
+  color: var(--adot-title);
+  font-size: 14px;
+}
+
+.adot-selected-date > span {
+  margin-left: auto;
+  color: var(--adot-green);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.adot-booking-mode {
+  margin-top: 18px;
+  padding: 4px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  border-radius: 10px;
+  background: #eef0f4;
+}
+
+.adot-booking-mode button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--adot-secondary);
+  font-weight: 650;
+}
+
+.adot-booking-mode button.selected {
+  background: #fff;
+  color: var(--adot-blue-strong);
+  box-shadow: 0 1px 5px rgba(20, 35, 66, 0.1);
+}
+
+.adot-slot-groups {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.adot-slot-groups > div > strong {
+  color: var(--adot-title);
+  font-size: 13px;
+}
+
+.adot-slot-groups .adot-time-grid {
+  margin-top: 9px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.adot-slot-groups .adot-time-grid button {
+  min-width: 0;
+  padding: 8px 5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.adot-slot-groups .adot-time-grid button:disabled {
+  background: #f5f6f8;
+  color: #aeb4bf;
+  text-decoration: line-through;
+}
+
+.adot-slot-groups .adot-time-grid small {
+  font-size: 9px;
+  text-decoration: none;
+}
+
+.adot-arrival-note {
+  margin-top: 18px;
+  padding: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  border: 1px solid #acd0ff;
+  border-radius: 10px;
+  background: #f2f7ff;
+}
+
+.adot-arrival-note > svg {
+  margin-top: 2px;
+  flex: none;
+  color: var(--adot-blue);
+}
+
+.adot-arrival-note strong {
+  color: var(--adot-title);
+  font-size: 13px;
+}
+
+.adot-arrival-note p {
+  margin-top: 4px;
+  color: var(--adot-secondary);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
 .adot-date-line {
   min-height: 52px;
   margin-top: 20px;

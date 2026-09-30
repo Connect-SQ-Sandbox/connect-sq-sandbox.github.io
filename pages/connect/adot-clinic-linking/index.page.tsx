@@ -38,7 +38,9 @@ import {
   FiMapPin,
   FiPhone,
   FiPlusSquare,
+  FiRefreshCw,
   FiSearch,
+  FiSend,
   FiStar,
   FiUser,
   FiX
@@ -1144,16 +1146,62 @@ function HospitalDetailModal({ hospital, onClose, onApply }: { hospital: Hospita
 }
 
 function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospital; onCancel: () => void; onComplete: (summary: BookingSummary) => void }) {
-  const [patientType, setPatientType] = useState<'self' | 'child'>('self');
+  const patientPreview = new URLSearchParams(window.location.search).get('patient');
+  const [patientName, setPatientName] = useState('김굿닥');
+  const [birthDate, setBirthDate] = useState('1991-05-23');
+  const [gender, setGender] = useState<'female' | 'male'>('female');
+  const [phone, setPhone] = useState('010-1234-5678');
+  const [patientStatus, setPatientStatus] = useState<'idle' | 'searching' | 'new' | 'waiting' | 'verified'>(() => {
+    if (patientPreview === 'new' || patientPreview === 'waiting' || patientPreview === 'verified') return patientPreview;
+    return 'idle';
+  });
+  const [pollCount, setPollCount] = useState(0);
   const [purpose, setPurpose] = useState(hospital.treatmentItems[0] || '일반 진료');
   const [schedule, setSchedule] = useState(hospital.availableSlots[0] || '');
   const [agreed, setAgreed] = useState(false);
+  const patientVerified = patientStatus === 'verified';
+  const maskedPatientName = `${patientName.slice(0, 1) || '고'}○○`;
+
+  const resetPatientLookup = () => {
+    setPatientStatus('idle');
+    setPollCount(0);
+    setAgreed(false);
+  };
+
+  const lookupPatient = () => {
+    if (!patientName.trim() || !birthDate || !phone.trim()) return;
+    setPatientStatus('searching');
+    window.setTimeout(() => setPatientStatus('new'), 850);
+  };
+
+  const sendVerificationLink = () => {
+    setPollCount(0);
+    setPatientStatus('waiting');
+  };
+
+  const pollVerification = () => setPollCount((current) => {
+    const next = current + 1;
+    if (next >= 3) setPatientStatus('verified');
+    return next;
+  });
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => event.key === 'Escape' && onCancel();
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [onCancel]);
+
+  useEffect(() => {
+    if (patientStatus !== 'waiting') return undefined;
+    const timer = window.setInterval(() => {
+      setPollCount((current) => {
+        const next = current + 1;
+        if (next >= 3) setPatientStatus('verified');
+        return next;
+      });
+    }, 1800);
+    return () => window.clearInterval(timer);
+  }, [patientStatus]);
 
   return (
     <div className="adot-panel-layer" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onCancel()}>
@@ -1168,58 +1216,95 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
             <p>상담 중 확인한 내용을 순서대로 입력해 주세요.</p>
           </div>
           <ol className="adot-stepper" aria-label="신청 단계">
-        <li className="active"><b>1</b><span>환자</span></li>
-        <li className="active"><b>2</b><span>진료 목적</span></li>
-        <li className="active"><b>3</b><span>예약 일시</span></li>
-        <li><b>4</b><span>확인</span></li>
+        <li className="active"><b>1</b><span>환자 확인</span></li>
+        <li className={patientVerified ? 'active' : ''}><b>2</b><span>진료 목적</span></li>
+        <li className={patientVerified ? 'active' : ''}><b>3</b><span>예약 일시</span></li>
+        <li className={patientVerified && agreed ? 'active' : ''}><b>4</b><span>최종 확인</span></li>
           </ol>
           <form className="adot-application" onSubmit={(event) => {
         event.preventDefault();
-        if (agreed && schedule) {
-          onComplete({ patient: patientType === 'self' ? '본인 · 김○○' : '자녀 · 김○○', purpose, schedule: `2026.10.01 ${schedule}` });
+        if (patientVerified && agreed && schedule) {
+          onComplete({ patient: `본인 · ${maskedPatientName}`, purpose, schedule: `2026.10.01 ${schedule}` });
         }
       }}>
         <section>
-          <div className="adot-form-title"><b>1</b><div><h2>환자 선택</h2><p>예약할 환자를 확인합니다.</p></div></div>
-          <div className="adot-choice-grid two">
-            <button className={patientType === 'self' ? 'selected' : ''} type="button" onClick={() => setPatientType('self')}><FiUser /><strong>본인</strong><span>김○○ · 010-****-1234</span></button>
-            <button className={patientType === 'child' ? 'selected' : ''} type="button" onClick={() => setPatientType('child')}><FiUser /><strong>자녀</strong><span>김○○ · 만 10세</span></button>
+          <div className="adot-form-title"><b>1</b><div><h2>환자 정보 확인</h2><p>먼저 기본정보로 병원의 기존 환자인지 조회합니다.</p></div></div>
+          <div className="adot-patient-fields">
+            <label><span>이름</span><input value={patientName} onChange={(event) => { setPatientName(event.target.value); resetPatientLookup(); }} placeholder="이름 입력" /></label>
+            <label><span>생년월일</span><input type="date" value={birthDate} onChange={(event) => { setBirthDate(event.target.value); resetPatientLookup(); }} /></label>
+            <fieldset>
+              <legend>성별</legend>
+              <div className="adot-gender-options">
+                <button className={gender === 'female' ? 'selected' : ''} type="button" onClick={() => { setGender('female'); resetPatientLookup(); }}>여성</button>
+                <button className={gender === 'male' ? 'selected' : ''} type="button" onClick={() => { setGender('male'); resetPatientLookup(); }}>남성</button>
+              </div>
+            </fieldset>
+            <label><span>휴대전화번호</span><input inputMode="tel" value={phone} onChange={(event) => { setPhone(event.target.value); resetPatientLookup(); }} placeholder="010-0000-0000" /></label>
           </div>
+          <button className="adot-patient-lookup" type="button" disabled={patientStatus === 'searching' || !patientName.trim() || !birthDate || !phone.trim()} onClick={lookupPatient}>
+            {patientStatus === 'searching' ? <><FiRefreshCw className="spinning" /> 환자 정보를 조회하고 있습니다</> : <><FiSearch /> 환자 조회하기</>}
+          </button>
+
+          {patientStatus === 'new' && (
+            <div className="adot-patient-status new" role="status">
+              <div className="adot-status-heading"><FiUser /><div><span>조회 결과</span><strong>처음 방문하는 환자입니다.</strong></div></div>
+              <p>예약 신청을 위해 고객이 직접 주민등록번호 뒷자리 7자리와 필수 동의를 입력해야 합니다. 상담사 화면에는 번호가 표시되지 않습니다.</p>
+              <button type="button" onClick={sendVerificationLink}><FiSend /> 고객 확인 링크 발송</button>
+            </div>
+          )}
+
+          {patientStatus === 'waiting' && (
+            <div className="adot-patient-status waiting" role="status" aria-live="polite">
+              <div className="adot-status-heading"><FiRefreshCw className="spinning" /><div><span>고객 확인 요청 발송 완료</span><strong>고객 입력을 기다리고 있습니다.</strong></div></div>
+              <p>알림톡 발송에 실패하면 문자로 자동 대체 발송합니다. 고객은 링크에서 주민등록번호 뒷자리만 입력합니다.</p>
+              <div className="adot-polling-line"><span><i /> 2초마다 자동으로 상태 확인 중</span><small>{pollCount + 1}회 확인</small></div>
+              <button className="secondary" type="button" onClick={pollVerification}><FiRefreshCw /> 지금 다시 확인</button>
+            </div>
+          )}
+
+          {patientStatus === 'verified' && (
+            <div className="adot-patient-status verified" role="status">
+              <div className="adot-status-heading"><FiCheck /><div><span>고객 확인 완료</span><strong>예약 신청을 계속할 수 있습니다.</strong></div></div>
+              <p>주민등록번호 뒷자리와 필수 동의가 안전하게 저장되었습니다. 상담사에게 원문 정보는 노출되지 않습니다.</p>
+            </div>
+          )}
         </section>
-        <section>
+        <section className={!patientVerified ? 'adot-form-section-locked' : ''} aria-disabled={!patientVerified}>
           <div className="adot-form-title"><b>2</b><div><h2>진료 목적</h2><p>병원에서 제공하는 항목 중 하나를 선택합니다.</p></div></div>
+          {!patientVerified && <p className="adot-lock-note">환자 확인을 완료하면 선택할 수 있습니다.</p>}
           <div className="adot-chip-grid">
             {hospital.treatmentItems.map((item) => (
-              <button className={purpose === item ? 'selected' : ''} type="button" key={item} onClick={() => setPurpose(item)}>{item}</button>
+              <button className={purpose === item ? 'selected' : ''} disabled={!patientVerified} type="button" key={item} onClick={() => setPurpose(item)}>{item}</button>
             ))}
           </div>
         </section>
-        <section>
+        <section className={!patientVerified ? 'adot-form-section-locked' : ''} aria-disabled={!patientVerified}>
           <div className="adot-form-title"><b>3</b><div><h2>예약 일시</h2><p>조회 시점의 예약 가능 일시입니다.</p></div></div>
+          {!patientVerified && <p className="adot-lock-note">환자 확인을 완료하면 예약 시간을 선택할 수 있습니다.</p>}
           {hospital.availableSlots.length > 0 ? <>
             <div className="adot-date-line"><FiCalendar /><strong>10월 1일 (목)</strong><span>예약 가능</span></div>
             <div className="adot-time-grid">
               {hospital.availableSlots.map((time) => (
-                <button className={schedule === time ? 'selected' : ''} type="button" key={time} onClick={() => setSchedule(time)}>{time}</button>
+                <button className={schedule === time ? 'selected' : ''} disabled={!patientVerified} type="button" key={time} onClick={() => setSchedule(time)}>{time}</button>
               ))}
             </div>
           </> : (
             <div className="adot-no-slot"><FiCalendar /><div><strong>현재 선택 가능한 예약 시간이 없습니다.</strong><p>예약 설정과 실제 잔여 시간은 다를 수 있습니다. 다른 병원을 선택해 주세요.</p></div></div>
           )}
         </section>
-        <section>
+        <section className={!patientVerified ? 'adot-form-section-locked' : ''} aria-disabled={!patientVerified}>
           <div className="adot-form-title"><b>4</b><div><h2>신청 내용 확인</h2><p>신청 직전 최신 예약 가능 여부를 다시 확인합니다.</p></div></div>
           <dl className="adot-summary-list">
-            <div><dt>환자</dt><dd>{patientType === 'self' ? '본인 · 김○○' : '자녀 · 김○○'}</dd></div>
+            <div><dt>환자</dt><dd>{patientVerified ? `본인 · ${maskedPatientName}` : '환자 확인 필요'}</dd></div>
             <div><dt>진료 목적</dt><dd>{purpose}</dd></div>
             <div><dt>예약 일시</dt><dd>{schedule ? `2026.10.01 ${schedule}` : '선택 가능한 시간 없음'}</dd></div>
           </dl>
           <label className="adot-consent">
-            <input type="checkbox" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} />
+            <input type="checkbox" disabled={!patientVerified} checked={agreed} onChange={(event) => setAgreed(event.target.checked)} />
             <span><b>필수 안내를 확인했습니다.</b> 이 화면은 검토용이며 실제 환자 정보나 예약은 전송되지 않습니다.</span>
           </label>
         </section>
-            <button className="adot-submit" type="submit" disabled={!agreed || !schedule}>진료 신청 완료</button>
+            <button className="adot-submit" type="submit" disabled={!patientVerified || !agreed || !schedule}>진료 신청 완료</button>
           </form>
         </div>
       </aside>

@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KT114 고객 확인 메시지·웹 시안</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Noto Sans KR", sans-serif; color: #111827; }
+    body { background: #eef2f7; }
+    button, input { font: inherit; }
+    .stage { min-height: 100vh; padding: 40px; display: grid; place-items: center; }
+    .label { position: fixed; z-index: 10; top: 22px; left: 24px; padding: 8px 12px; border: 1px solid #dbe2ec; border-radius: 999px; background: rgba(255,255,255,.96); color: #526074; font-size: 13px; font-weight: 700; }
+    .phone { width: 420px; min-height: 820px; overflow: hidden; border: 10px solid #1c2330; border-radius: 42px; background: #fff; box-shadow: 0 28px 80px rgba(20,32,55,.24); }
+    .phone-top { height: 34px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: #fff; font-size: 12px; font-weight: 750; }
+    .phone-top .notch { width: 92px; height: 20px; border-radius: 999px; background: #111827; }
+    .app-head { height: 58px; padding: 0 18px; display: grid; grid-template-columns: 32px 1fr 32px; align-items: center; border-bottom: 1px solid rgba(0,0,0,.08); text-align: center; }
+    .app-head strong { font-size: 16px; }
+    .app-head span { color: #354052; font-size: 22px; }
+    .kakao-screen { min-height: 718px; background: #b8c8d3; }
+    .chat-date { width: max-content; margin: 14px auto; padding: 5px 11px; border-radius: 999px; background: rgba(75,93,108,.28); color: #fff; font-size: 11px; }
+    .chat-row { padding: 4px 18px; display: grid; grid-template-columns: 42px 1fr; gap: 10px; align-items: start; }
+    .brand-avatar { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 14px; background: #0877f9; color: #fff; font-size: 12px; font-weight: 850; }
+    .sender { margin: 0 0 7px; font-size: 12px; font-weight: 700; }
+    .alim-card { overflow: hidden; border-radius: 5px 14px 14px 14px; background: #fff; box-shadow: 0 2px 4px rgba(20,30,40,.08); }
+    .alim-brand { padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #edf0f4; }
+    .alim-brand strong { color: #0877f9; font-size: 18px; letter-spacing: -.04em; }
+    .alim-brand span { color: #778397; font-size: 11px; }
+    .alim-body { padding: 18px 16px 15px; }
+    .alim-body h1 { margin: 0; font-size: 18px; line-height: 1.35; letter-spacing: -.03em; }
+    .alim-body > p { margin: 10px 0 16px; color: #556174; font-size: 13px; line-height: 1.55; }
+    .info-box { padding: 12px; border-radius: 10px; background: #f5f7fa; }
+    .info-box dl { margin: 0; }
+    .info-box div { padding: 4px 0; display: grid; grid-template-columns: 80px 1fr; gap: 8px; font-size: 12px; }
+    .info-box dt { color: #7a8698; }
+    .info-box dd { margin: 0; color: #273245; font-weight: 650; }
+    .privacy-note { margin: 13px 0 0 !important; color: #68758a !important; font-size: 11px !important; }
+    .alim-button { width: calc(100% - 28px); height: 46px; margin: 0 14px 10px; border: 0; border-radius: 7px; background: #f4f4f4; color: #1f2937; font-weight: 750; }
+    .alim-expiry { padding: 0 14px 14px; display: block; color: #8a95a5; font-size: 10px; text-align: center; }
+    .chat-time { margin-top: 5px; color: #647386; font-size: 10px; text-align: right; }
+    .sms-screen { min-height: 718px; background: #fff; }
+    .contact { height: 92px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border-bottom: 1px solid #eceff3; }
+    .contact i { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #e8eff8; color: #4f6280; font-style: normal; font-weight: 800; }
+    .contact strong { font-size: 12px; }
+    .sms-date { margin: 18px 0 12px; color: #8993a2; font-size: 11px; text-align: center; }
+    .sms-row { padding: 0 18px; display: flex; align-items: flex-end; gap: 7px; }
+    .sms-bubble { max-width: 306px; padding: 15px; border-radius: 16px 16px 16px 5px; background: #edf0f4; color: #263142; font-size: 13px; line-height: 1.6; white-space: pre-line; }
+    .sms-bubble strong { display: block; margin-bottom: 7px; font-size: 14px; }
+    .sms-link { margin-top: 9px; display: block; color: #0672eb; font-weight: 700; text-decoration: underline; }
+    .sms-time { color: #8b95a4; font-size: 10px; }
+    .sms-input { height: 58px; margin: 270px 12px 0; padding: 7px 8px 7px 14px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #dfe4eb; border-radius: 24px; color: #a0a8b5; font-size: 13px; }
+    .sms-input b { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; background: #1683f8; color: #fff; }
+    .web-stage { padding: 28px; background: #f4f7fb; }
+    .web-phone { min-height: 900px; }
+    .web-screen { min-height: 798px; background: #f7f8fb; }
+    .web-head { height: 62px; padding: 0 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e5e9f0; background: #fff; }
+    .web-head strong { color: #0877f9; font-size: 20px; letter-spacing: -.04em; }
+    .web-head span { color: #667386; font-size: 12px; }
+    .web-body { padding: 24px 18px 28px; }
+    .web-body > span { color: #0877f9; font-size: 12px; font-weight: 750; }
+    .web-body h1 { margin: 7px 0 8px; font-size: 24px; letter-spacing: -.045em; }
+    .web-body > p { margin: 0 0 18px; color: #68758a; font-size: 13px; line-height: 1.55; }
+    .web-card { margin-top: 12px; padding: 17px; border: 1px solid #e0e5ed; border-radius: 14px; background: #fff; }
+    .web-card h2 { margin: 0 0 14px; font-size: 15px; }
+    .readonly-row { min-height: 38px; display: grid; grid-template-columns: 92px 1fr; align-items: center; border-bottom: 1px solid #f0f2f6; font-size: 12px; }
+    .readonly-row:last-child { border-bottom: 0; }
+    .readonly-row span { color: #7a8698; }
+    .readonly-row strong { color: #273245; text-align: right; }
+    .rrn-label { display: flex; align-items: center; justify-content: space-between; color: #313c4f; font-size: 13px; font-weight: 750; }
+    .rrn-label em { color: #0877f9; font-size: 11px; font-style: normal; }
+    .rrn-input { margin-top: 10px; display: grid; grid-template-columns: 1fr 18px 1fr; align-items: center; gap: 8px; }
+    .rrn-input input { width: 100%; height: 48px; padding: 0 12px; border: 1px solid #d8dee8; border-radius: 9px; background: #f7f8fa; color: #5b677a; font-weight: 700; }
+    .rrn-input input:last-child { background: #fff; color: #111827; letter-spacing: .17em; }
+    .consent { margin-top: 12px; padding: 13px; display: grid; grid-template-columns: 20px 1fr; gap: 9px; border: 1px solid #c8daf4; border-radius: 10px; background: #f3f7fd; }
+    .consent input { width: 18px; height: 18px; margin: 1px 0 0; accent-color: #0877f9; }
+    .consent strong { display: block; font-size: 12px; }
+    .consent small { display: block; margin-top: 4px; color: #69768a; font-size: 10px; line-height: 1.45; }
+    .legal-note { margin: 11px 0 0; color: #8993a2; font-size: 10px; line-height: 1.5; }
+    .submit { width: 100%; height: 52px; margin-top: 14px; border: 0; border-radius: 10px; background: #0877f9; color: #fff; font-size: 15px; font-weight: 800; }
+    .secure { margin-top: 10px; color: #7d8898; font-size: 10px; text-align: center; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <span class="label">KT114 × 굿닥 · 협의용 고객 화면 예시</span>
+  <main class="stage" id="kakao">
+    <section class="phone">
+      <div class="phone-top"><span>오후 2:18</span><i class="notch"></i><span>5G ◼︎</span></div>
+      <div class="kakao-screen">
+        <header class="app-head"><span>‹</span><strong>굿닥</strong><span>⌕</span></header>
+        <div class="chat-date">2026년 10월 1일 목요일</div>
+        <div class="chat-row">
+          <div class="brand-avatar">굿닥</div>
+          <div>
+            <p class="sender">굿닥</p>
+            <article class="alim-card">
+              <div class="alim-brand"><strong>굿닥</strong><span>진료 연결</span></div>
+              <div class="alim-body">
+                <h1>진료 예약을 위한<br />고객 확인이 필요합니다.</h1>
+                <p>KT114 상담 중 선택한 예약 내용을 확인하고, 필요한 정보를 직접 입력해 주세요.</p>
+                <div class="info-box"><dl>
+                  <div><dt>환자</dt><dd>김○○</dd></div>
+                  <div><dt>병원</dt><dd>굿닥샘플내과의원</dd></div>
+                  <div><dt>진료실</dt><dd>내과 1진료실</dd></div>
+                  <div><dt>내원 목적</dt><dd>감기·몸살</dd></div>
+                  <div><dt>희망 일시</dt><dd>10월 1일 10:30</dd></div>
+                </dl></div>
+                <p class="privacy-note">민감정보는 상담사에게 공개되지 않으며 예약 전달 목적으로만 처리됩니다.</p>
+              </div>
+              <button class="alim-button">고객 정보 확인하기</button>
+              <span class="alim-expiry">보안을 위해 링크는 발송 후 30분간 유효합니다.</span>
+            </article>
+            <div class="chat-time">오후 2:18</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <main class="stage hidden" id="sms">
+    <section class="phone">
+      <div class="phone-top"><span>오후 2:18</span><i class="notch"></i><span>5G ◼︎</span></div>
+      <div class="sms-screen">
+        <header class="app-head"><span>‹</span><strong>메시지</strong><span>ⓘ</span></header>
+        <div class="contact"><i>굿</i><strong>굿닥 진료 연결</strong></div>
+        <div class="sms-date">오늘 오후 2:18</div>
+        <div class="sms-row">
+          <div class="sms-bubble"><strong>[굿닥] 고객 확인 요청</strong>KT114 상담 중 선택한 진료 예약을 위해 고객 확인이 필요합니다.
+
+환자: 김○○
+병원: 굿닥샘플내과의원
+진료실: 내과 1진료실
+희망 일시: 10월 1일 10:30
+
+아래 링크에서 예약 내용 확인 후 필요한 정보를 직접 입력해 주세요.
+<span class="sms-link">https://goodoc.kr/c/KT8Q2L</span>
+링크 유효시간: 발송 후 30분</div>
+          <span class="sms-time">오후 2:18</span>
+        </div>
+        <div class="sms-input">문자 메시지 <b>↑</b></div>
+      </div>
+    </section>
+  </main>
+
+  <main class="stage web-stage hidden" id="form">
+    <section class="phone web-phone">
+      <div class="phone-top"><span>오후 2:19</span><i class="notch"></i><span>5G ◼︎</span></div>
+      <div class="web-screen">
+        <header class="web-head"><strong>굿닥</strong><span>안전한 고객 확인</span></header>
+        <div class="web-body">
+          <span>KT114 진료 연결</span>
+          <h1>예약 정보를 확인해 주세요.</h1>
+          <p>상담 중 선택한 내용입니다. 변경이 필요하면 KT114 상담사에게 말씀해 주세요.</p>
+          <section class="web-card">
+            <h2>예약 정보</h2>
+            <div class="readonly-row"><span>병원</span><strong>굿닥샘플내과의원</strong></div>
+            <div class="readonly-row"><span>진료실</span><strong>내과 1진료실</strong></div>
+            <div class="readonly-row"><span>내원 목적</span><strong>감기·몸살</strong></div>
+            <div class="readonly-row"><span>희망 일시</span><strong>2026.10.01 10:30</strong></div>
+          </section>
+          <section class="web-card">
+            <h2>환자 정보</h2>
+            <div class="readonly-row"><span>이름</span><strong>김○○</strong></div>
+            <div class="readonly-row"><span>생년월일·성별</span><strong>1991-**-** · 여성</strong></div>
+            <div class="readonly-row"><span>휴대전화</span><strong>010-****-5678</strong></div>
+          </section>
+          <section class="web-card">
+            <label class="rrn-label">주민등록번호 뒷자리 <em>고객 직접 입력</em></label>
+            <div class="rrn-input"><input value="910523" readonly aria-label="생년월일" /><span>-</span><input value="●●●●●●●" readonly aria-label="주민등록번호 뒷자리" /></div>
+            <label class="consent"><input type="checkbox" checked readonly /><span><strong>필수 정보 처리 및 병원 전달에 동의합니다.</strong><small>예약 신청을 위해 입력 정보를 임시 처리하여 선택한 병원에 전달합니다.</small></span></label>
+            <p class="legal-note">협의용 예시 문구입니다. 처리 주체·항목·보유기간과 동의 방식은 양사 법률 검토 후 확정합니다.</p>
+          </section>
+          <button class="submit">입력 완료하기</button>
+          <p class="secure">입력 완료 후에도 상담사가 최종 신청해야 병원에 예약 요청이 전달됩니다.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script>
+    const view = new URLSearchParams(location.search).get('view') || 'kakao';
+    // Legacy screenshot entry: the React sandbox is now the visual source of truth.
+    location.replace('../../out/adot-clinic-linking.html?view=customer-' + (['kakao', 'sms', 'form'].includes(view) ? view : 'form'));
+    ['kakao', 'sms', 'form'].forEach((id) => document.getElementById(id).classList.toggle('hidden', id !== view));
+  </script>
+</body>
+</html>

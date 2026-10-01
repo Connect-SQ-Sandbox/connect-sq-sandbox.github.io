@@ -95,3 +95,11 @@
 P0/P1/P2 결함 없음. 개발 협의용 프로토타입으로 검토 가능하다. 실제 API 연결, 인증, 환자정보 처리 및 배포는 본 시안 범위에 포함하지 않는다.
 
 final result: passed
+# 2026-10-01 회의 결과 반영 — KTP-1 v2
+
+- planned preview · canonical PRD Draft. Production 구현/법무 승인 아님.
+- Chrome CDP 21개 상호작용 확인 통과, Runtime 예외 0.
+- 동의 전 조회 차단·복수/timeout 처리·고객 입력 없는 폴링 미완료·재전송 폐기·최종 신청·신청내역 상태 일치·닫기 확인/재진입 초기화를 확인.
+- 최신 화면: `qa/adot-clinic-linking/17~24*.png`, 결과 `meeting-v2-checks.json`.
+- 외부 참조 0, 정책 요약 KTP-1 planned 검증 통과.
+- 실제 메시지/저장/차트/앱 연결은 없음. 고객 폼에 실제 주민번호를 입력하지 않도록 명시.

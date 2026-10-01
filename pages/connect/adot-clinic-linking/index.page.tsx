@@ -1,8 +1,8 @@
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
- * 이름     : A.Dot 상담사용 병원 탐색·진료 연결
- * 상태     : 개발 협의용 시안   버전: v1   최종수정: 2026-09-30
- * PRD      : Draft · 2026-09-29 개정 · 3-문제·해결/1-PRD/0-Draft/2026-09-16-에이닷-병원탐색-진료실예약-연동-PRD.md
+ * 이름     : KT114 상담사용 병원 탐색·진료 연결
+ * 상태     : 개발 협의용 시안   버전: v2   최종수정: 2026-10-01
+ * PRD ID   : KTP-1 · Draft · public-safe planned preview
  * 배포URL  : https://connect-sq-sandbox.github.io/out/adot-clinic-linking.html
  * 관련 CSS : styles/adotClinicLinking.css
  * 기술제약 : react-only · plain CSS · mock data · 네트워크 0
@@ -21,7 +21,8 @@
  * └──────────────────────────────────────────────────────
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { CustomerPreview, type CustomerView, type BookingState, type CustomerSnapshot } from './customer-preview';
 import {
   FiActivity,
   FiArrowLeft,
@@ -98,7 +99,7 @@ type HistoryRecord = {
   hospitalId: string;
   purpose: string;
   schedule: string;
-  state: '신청 완료' | '예약 취소' | '진료 완료';
+  state: BookingState;
 };
 
 const DEFAULT_REGION: RegionSelection = { city: '서울', district: '마포구', neighborhood: '전체' };
@@ -326,9 +327,9 @@ const HOSPITALS: Hospital[] = [
 ];
 
 const HISTORY: HistoryRecord[] = [
-  { id: 'LINK-260930-0142', createdAt: '2026.09.30 11:42', patient: '김○○', hospitalId: 'sample-01', purpose: '일반 진료', schedule: '2026.10.01 10:30', state: '신청 완료' },
-  { id: 'LINK-260929-0087', createdAt: '2026.09.29 16:08', patient: '이○○', hospitalId: 'sample-02', purpose: '가다실 9가', schedule: '2026.10.02 14:00', state: '진료 완료' },
-  { id: 'LINK-260928-0031', createdAt: '2026.09.28 09:21', patient: '박○○', hospitalId: 'sample-04', purpose: '비염 진료', schedule: '2026.09.29 09:30', state: '예약 취소' }
+  { id: 'LINK-260930-0142', createdAt: '2026.09.30 11:42', patient: '김○○', hospitalId: 'sample-01', purpose: '일반 진료', schedule: '2026.10.01 10:30', state: '예약 확정' },
+  { id: 'LINK-260929-0087', createdAt: '2026.09.29 16:08', patient: '이○○', hospitalId: 'sample-02', purpose: '진료 상담', schedule: '2026.10.02 14:00', state: '진료 완료' },
+  { id: 'LINK-260928-0031', createdAt: '2026.09.28 09:21', patient: '박○○', hospitalId: 'sample-04', purpose: '비염 진료', schedule: '2026.09.29 09:30', state: '병원 취소' }
 ];
 
 const REGION_ORIGIN_NAMES: Record<string, string> = {
@@ -484,7 +485,7 @@ function TopNavigation({
           aria-expanded={profileOpen}
           onClick={() => setProfileOpen((value) => !value)}
         >
-          상담사 김○○ {profileOpen ? <FiChevronUp /> : <FiChevronDown />}
+          상담사 agent-01 {profileOpen ? <FiChevronUp /> : <FiChevronDown />}
         </button>
         {profileOpen && (
           <div className="adot-account-menu">
@@ -644,6 +645,7 @@ function HospitalRow({ hospital, selected, onSelect }: { hospital: Hospital; sel
           {isBookable(hospital) && <em className="adot-booking-badge">굿닥 예약</em>}
         </span>
         <span className="adot-row-meta">{hospital.department}<i />{hospital.address}</span>
+        <span className="kt-hospital-phone"><FiPhone />{hospital.phone}</span>
         <span className="adot-row-operation">
           <b>{hospital.distance}</b><i />
           <em className={operationClass(hospital.operationState)}>{hospital.operationLabel}</em>
@@ -695,7 +697,7 @@ function MapPanel({
         <button type="button" aria-label="축소" onClick={() => setZoom((value) => Math.max(0.92, value - 0.08))}>−</button>
         <button type="button" aria-label="지도 보기 초기화" onClick={() => setZoom(1)}><FiCrosshair /></button>
       </div>
-      <div className="adot-map-note"><FiInfo /> 가상 병원 데이터로 구성된 검토용 화면입니다.</div>
+      <div className="adot-map-note"><FiInfo /> 가상 병원 · 지도는 개발 산정에 따라 1차 제공 범위에서 제외될 수 있습니다.</div>
       {selectedHospital && (
         <article
           className="adot-map-card"
@@ -714,6 +716,7 @@ function MapPanel({
               </div>
               <p>{selectedHospital.department}</p>
               <p>{selectedHospital.address}</p>
+              <p className="kt-hospital-phone"><FiPhone />{selectedHospital.phone}</p>
               <div className="adot-card-operation">
                 <b>{selectedHospital.distance}</b><i />
                 <em className={operationClass(selectedHospital.operationState)}>{selectedHospital.operationLabel}</em>
@@ -1158,6 +1161,17 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
     return 'idle';
   });
   const [pollCount, setPollCount] = useState(0);
+  const [linkGeneration, setLinkGeneration] = useState(patientPreview === 'waiting' || patientPreview === 'verified' ? 1 : 0);
+  const [customerView, setCustomerView] = useState<CustomerView | null>(null);
+  const [customerGeneration, setCustomerGeneration] = useState(0);
+  const [lookupDemo, setLookupDemo] = useState('new');
+  const [lookupIssue, setLookupIssue] = useState('');
+  const [resendNotice, setResendNotice] = useState('');
+  const [snapshot, setSnapshot] = useState<CustomerSnapshot | null>(null);
+  const completedGeneration = useRef<number | null>(null);
+  const lookupTimer = useRef<number>();
+  const currentGeneration = useRef(linkGeneration);
+  const [returningPatient, setReturningPatient] = useState(patientPreview === 'verified');
   const examRooms = [
     { id: 'room-1', name: `${hospital.department} 1진료실`, doctor: `${hospital.department} · 김굿닥 원장`, description: '감기·소화기·건강검진 예약', available: true },
     { id: 'room-2', name: `${hospital.department} 2진료실`, doctor: `${hospital.department} · 이샘플 원장`, description: '일반 진료 및 만성질환 상담', available: true },
@@ -1172,6 +1186,8 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
   const [schedule, setSchedule] = useState(hospital.availableSlots[0] || '');
   const [agreed, setAgreed] = useState(false);
   const patientVerified = patientStatus === 'verified';
+  const selectionReady = ['new', 'waiting', 'verified'].includes(patientStatus);
+  const selectionLocked = patientStatus === 'waiting' || (patientVerified && !returningPatient);
   const selectedRoom = examRooms.find((room) => room.id === examRoomId) || examRooms[0];
   const formattedSchedule = appointmentMode === 'arrival'
     ? `2026.10.${String(selectedDay).padStart(2, '0')} 선착순 예약`
@@ -1183,27 +1199,52 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
   const maskedFourCode = `${maskedPatientName} · ${maskedBirthDate} · ${gender === 'female' ? '여성' : '남성'} · ${maskedPhone}`;
 
   const resetPatientLookup = () => {
+    window.clearTimeout(lookupTimer.current);
+    const next = currentGeneration.current + 1;
+    currentGeneration.current = next;
+    setLinkGeneration(next);
+    completedGeneration.current = null;
+    setSnapshot(null);
     setPatientStatus('idle');
+    setLookupIssue('');
+    setReturningPatient(false);
     setPollCount(0);
     setAgreed(false);
   };
 
   const lookupPatient = () => {
     if (!lookupConsent || !patientName.trim() || !birthDate || !phone.trim()) return;
+    resetPatientLookup();
     setPatientStatus('searching');
-    window.setTimeout(() => setPatientStatus('new'), 850);
+    lookupTimer.current = window.setTimeout(() => {
+      if (lookupDemo === 'ambiguous' || lookupDemo === 'timeout') {
+        setLookupIssue(lookupDemo === 'ambiguous' ? '일치 후보가 여러 건입니다. 추가 확인이 필요하며 신환으로 처리하지 않습니다.' : '병원 환자 조회가 지연되고 있습니다. 재조회하거나 다른 병원을 안내해 주세요. 신환으로 처리하지 않습니다.');
+        setPatientStatus('idle');
+      } else {
+        setReturningPatient(lookupDemo === 'returning');
+        setPatientStatus(lookupDemo === 'returning' ? 'verified' : 'new');
+      }
+    }, 850);
   };
 
-  const sendVerificationLink = () => {
+  const sendVerificationLink = (resend = false) => {
+    if (resend && !window.confirm('고객 확인 링크를 다시 보낼까요? 이전 링크와 입력 내용은 즉시 폐기되며 고객이 다시 입력해야 합니다.')) return;
+    const next = currentGeneration.current + 1;
+    currentGeneration.current = next;
+    setLinkGeneration(next);
+    completedGeneration.current = null;
+    setAgreed(false);
+    setSnapshot({ hospital: hospital.name, patient: maskedFourCode, room: selectedRoom.name, purpose, schedule: formattedSchedule });
     setPollCount(0);
     setPatientStatus('waiting');
+    setResendNotice(resend ? '이전 링크와 고객 입력 내용을 폐기했습니다. 새 링크로 다시 입력해 주세요.' : '');
   };
 
-  const pollVerification = () => setPollCount((current) => {
-    const next = current + 1;
-    if (next >= 3) setPatientStatus('verified');
-    return next;
-  });
+  const pollVerification = () => {
+    setPollCount((current) => current + 1);
+    if (completedGeneration.current === currentGeneration.current) setPatientStatus('verified');
+  };
+  const openCustomer = (view: CustomerView, generation = linkGeneration) => { setCustomerGeneration(generation); setCustomerView(view); };
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => event.key === 'Escape' && onCancel();
@@ -1213,15 +1254,10 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
 
   useEffect(() => {
     if (patientStatus !== 'waiting') return undefined;
-    const timer = window.setInterval(() => {
-      setPollCount((current) => {
-        const next = current + 1;
-        if (next >= 3) setPatientStatus('verified');
-        return next;
-      });
-    }, 1800);
+    const timer = window.setInterval(pollVerification, 2000);
     return () => window.clearInterval(timer);
-  }, [patientStatus]);
+  }, [patientStatus, linkGeneration]);
+  useEffect(() => () => { window.clearTimeout(lookupTimer.current); completedGeneration.current = null; }, []);
 
   return (
     <div className="adot-panel-layer" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onCancel()}>
@@ -1254,7 +1290,7 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
               setLookupConsent(event.target.checked);
               if (!event.target.checked) resetPatientLookup();
             }} />
-            <span><b>필수 · 고객의 정보 이용 동의를 확인했습니다.</b><small>이름·생년월일·성별·휴대전화번호를 병원 환자 조회에 사용하는 것에 대해 고객에게 안내하고 동의 여부를 확인합니다.</small></span>
+            <span><b>필수 · 고객의 정보 처리·병원 제공 동의를 확인했습니다.</b><small>이름·생년월일·성별·휴대전화번호의 수집·이용 및 병원 환자 조회를 위한 제3자 제공을 고객에게 안내하고 동의 여부를 확인합니다. 안내 문구·증적은 법률 검토 후 확정합니다.</small></span>
           </label>
           <div className="adot-patient-fields">
             <label><span>이름</span><input value={patientName} onChange={(event) => { setPatientName(event.target.value); resetPatientLookup(); }} placeholder="이름 입력" /></label>
@@ -1277,7 +1313,7 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
               <div className="adot-status-heading"><FiUser /><div><span>조회 결과</span><strong>환자 기록이 조회되지 않습니다.</strong></div></div>
               <div className="adot-four-code"><span>조회 4코드</span><strong>{maskedFourCode}</strong></div>
               <p>예약 신청을 위해 고객이 직접 주민등록번호 뒷자리 7자리와 필수 동의를 입력해야 합니다. 상담사 화면에는 번호가 표시되지 않습니다.</p>
-              <button type="button" onClick={sendVerificationLink}><FiSend /> 고객 확인 링크 발송</button>
+              <p>아래에서 진료실·내원 목적·일시를 선택한 뒤 고객 확인 링크를 발송해 주세요.</p>
             </div>
           )}
 
@@ -1288,6 +1324,7 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
               <p>알림톡 발송에 실패하면 문자로 자동 대체 발송합니다. 고객은 링크에서 주민등록번호 뒷자리만 입력합니다.</p>
               <div className="adot-polling-line"><span><i /> 2초마다 자동으로 상태 확인 중</span><small>{pollCount + 1}회 확인</small></div>
               <button className="secondary" type="button" onClick={pollVerification}><FiRefreshCw /> 지금 다시 확인</button>
+              <div className="kt-preview-actions"><button type="button" onClick={() => openCustomer('kakao')}>알림톡 시안</button><button type="button" onClick={() => openCustomer('sms')}>문자 시안</button><button type="button" onClick={() => openCustomer('form')}>고객 입력 화면 체험</button></div>
             </div>
           )}
 
@@ -1295,19 +1332,24 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
             <div className="adot-patient-status verified" role="status">
               <div className="adot-status-heading"><FiCheck /><div><span>고객 확인 완료</span><strong>예약 신청을 계속할 수 있습니다.</strong></div></div>
               <div className="adot-four-code"><span>확인된 4코드</span><strong>{maskedFourCode}</strong></div>
-              <p>주민등록번호 뒷자리와 필수 동의가 안전하게 저장되었습니다. 상담사에게 원문 정보는 노출되지 않습니다.</p>
+              <p>{returningPatient ? '기존 환자 정보가 일치하는 가상 결과입니다. 필요한 추가 동의·정보는 병원 조건에 따라 확인합니다.' : '고객 입력 완료 상태를 확인했습니다. 아직 병원에 전송하지 않았으며 상담사에게 원문은 노출되지 않습니다.'}</p>
             </div>
           )}
+          {lookupIssue && <p className="kt-status-warning" role="alert">{lookupIssue}</p>}
+          <label className="kt-demo-control">가상 조회 결과 선택<select aria-label="가상 조회 결과" value={lookupDemo} onChange={(event) => { setLookupDemo(event.target.value); resetPatientLookup(); }}><option value="new">환자 기록 없음</option><option value="returning">기존 환자 일치</option><option value="ambiguous">여러 후보 · 확인 필요</option><option value="timeout">조회 시간 초과</option></select></label>
+          {resendNotice && <p className="kt-status-warning" role="status">{resendNotice}</p>}
+          {(patientStatus === 'waiting' || (patientVerified && !returningPatient)) && <div className="kt-resend"><button type="button" onClick={() => sendVerificationLink(true)}>고객 요청에 따라 링크 재전송</button><small>오입력·오류 시 이전 링크와 입력 즉시 폐기 · 1차 제외 가능</small>{resendNotice && <button type="button" onClick={() => openCustomer('form', linkGeneration - 1)}>폐기된 이전 링크 확인</button>}</div>}
         </section>
-        <section className={!patientVerified ? 'adot-form-section-locked' : ''} aria-disabled={!patientVerified}>
+        <section className={!selectionReady ? 'adot-form-section-locked' : ''} aria-disabled={!selectionReady}>
           <div className="adot-form-title"><b>2</b><div><h2>진료실·내원 목적</h2><p>병원이 예약용으로 운영하는 진료실과 내원 목적을 순서대로 선택합니다.</p></div></div>
-          {!patientVerified && <p className="adot-lock-note">환자 확인을 완료하면 선택할 수 있습니다.</p>}
+          {!selectionReady && <p className="adot-lock-note">환자 조회 후 선택할 수 있습니다.</p>}
+          {selectionLocked && <p className="adot-lock-note">고객에게 발송한 내용과 같도록 선택이 고정됩니다. 변경 시 신청 패널을 닫고 다시 시작해 주세요.</p>}
           <div className="adot-booking-subtitle"><strong>진료실을 선택해 주세요</strong><span>예약 가능 진료실 {examRooms.filter((room) => room.available).length}개</span></div>
           <div className="adot-room-list">
             {examRooms.map((room) => (
               <button
                 className={examRoomId === room.id ? 'selected' : ''}
-                disabled={!patientVerified || !room.available}
+                disabled={!selectionReady || selectionLocked || !room.available}
                 type="button"
                 key={room.id}
                 onClick={() => setExamRoomId(room.id)}
@@ -1321,14 +1363,14 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
           <div className="adot-booking-subtitle purpose"><strong>내원 목적을 선택해 주세요</strong><span>1개 선택</span></div>
           <div className="adot-chip-grid">
             {visitPurposes.map((item) => (
-              <button className={purpose === item ? 'selected' : ''} disabled={!patientVerified} type="button" key={item} onClick={() => setPurpose(item)}>{item}</button>
+              <button className={purpose === item ? 'selected' : ''} disabled={!selectionReady || selectionLocked} type="button" key={item} onClick={() => { setPurpose(item); setAgreed(false); }}>{item}</button>
             ))}
           </div>
           <p className="adot-booking-helper"><FiInfo /> 위 항목은 병원이 해당 진료실에 설정한 예약용 내원 목적입니다. 검색에 사용한 비급여 진료정보와는 별개입니다.</p>
         </section>
-        <section className={!patientVerified ? 'adot-form-section-locked' : ''} aria-disabled={!patientVerified}>
+        <section className={!selectionReady ? 'adot-form-section-locked' : ''} aria-disabled={!selectionReady}>
           <div className="adot-form-title"><b>3</b><div><h2>예약 일시</h2><p>조회 시점의 예약 가능 일시입니다.</p></div></div>
-          {!patientVerified && <p className="adot-lock-note">환자 확인을 완료하면 예약 시간을 선택할 수 있습니다.</p>}
+          {!selectionReady && <p className="adot-lock-note">환자 조회 후 예약 시간을 선택할 수 있습니다.</p>}
           {hospital.availableSlots.length > 0 ? <>
             <div className="adot-calendar">
               <div className="adot-calendar-head"><button type="button" disabled aria-label="이전 달"><FiChevronLeft /></button><strong>2026년 10월</strong><button type="button" disabled aria-label="다음 달"><FiChevronRight /></button></div>
@@ -1338,25 +1380,25 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
                 {Array.from({ length: 31 }).map((_, index) => {
                   const day = index + 1;
                   const available = availableDates.includes(day);
-                  return <button className={selectedDay === day ? 'selected' : ''} disabled={!patientVerified || !available} type="button" key={day} onClick={() => setSelectedDay(day)}>{day}</button>;
+                  return <button className={selectedDay === day ? 'selected' : ''} disabled={!selectionReady || selectionLocked || !available} type="button" key={day} onClick={() => { setSelectedDay(day); setAgreed(false); }}>{day}</button>;
                 })}
               </div>
               <div className="adot-calendar-legend"><span><i />예약 가능</span><span><i className="selected" />선택일</span></div>
             </div>
             <div className="adot-selected-date"><FiCalendar /><div><small>선택한 날짜</small><strong>10월 {selectedDay}일 ({['일', '월', '화', '수', '목', '금', '토'][new Date(2026, 9, selectedDay).getDay()]})</strong></div><span>예약 가능</span></div>
             <div className="adot-booking-mode" role="group" aria-label="예약 방식">
-              <button className={appointmentMode === 'time' ? 'selected' : ''} disabled={!patientVerified} type="button" onClick={() => setAppointmentMode('time')}>시간 예약</button>
-              <button className={appointmentMode === 'arrival' ? 'selected' : ''} disabled={!patientVerified} type="button" onClick={() => setAppointmentMode('arrival')}>선착순 예약</button>
+              <button className={appointmentMode === 'time' ? 'selected' : ''} disabled={!selectionReady || selectionLocked} type="button" onClick={() => { setAppointmentMode('time'); setAgreed(false); }}>시간 예약</button>
+              <button className={appointmentMode === 'arrival' ? 'selected' : ''} disabled={!selectionReady || selectionLocked} type="button" onClick={() => { setAppointmentMode('arrival'); setAgreed(false); }}>선착순 예약</button>
             </div>
             {appointmentMode === 'time' ? <div className="adot-slot-groups">
               <div><strong>오전</strong><div className="adot-time-grid">
                 {['09:30', '10:00', '10:30', '11:00', '11:30'].map((time) => (
-                  <button className={schedule === time ? 'selected' : ''} disabled={!patientVerified || time === '11:30'} type="button" key={time} onClick={() => setSchedule(time)}>{time}{time === '11:30' && <small>마감</small>}</button>
+                  <button className={schedule === time ? 'selected' : ''} disabled={!selectionReady || selectionLocked || time === '11:30'} type="button" key={time} onClick={() => { setSchedule(time); setAgreed(false); }}>{time}{time === '11:30' && <small>마감</small>}</button>
                 ))}
               </div></div>
               <div><strong>오후</strong><div className="adot-time-grid">
                 {['14:00', '14:30', '15:00', '15:30', '16:30'].map((time) => (
-                  <button className={schedule === time ? 'selected' : ''} disabled={!patientVerified || time === '16:30'} type="button" key={time} onClick={() => setSchedule(time)}>{time}{time === '16:30' && <small>마감</small>}</button>
+                  <button className={schedule === time ? 'selected' : ''} disabled={!selectionReady || selectionLocked || time === '16:30'} type="button" key={time} onClick={() => { setSchedule(time); setAgreed(false); }}>{time}{time === '16:30' && <small>마감</small>}</button>
                 ))}
               </div></div>
             </div> : <div className="adot-arrival-note"><FiClock /><div><strong>도착 순서대로 진료합니다.</strong><p>선택한 날짜의 운영시간 안에 방문하도록 고객에게 안내해 주세요. 실제 대기시간은 병원 상황에 따라 달라질 수 있습니다.</p></div></div>}
@@ -1366,6 +1408,7 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
         </section>
         <section className={!patientVerified ? 'adot-form-section-locked' : ''} aria-disabled={!patientVerified}>
           <div className="adot-form-title"><b>4</b><div><h2>신청 내용 확인</h2><p>신청 직전 최신 예약 가능 여부를 다시 확인합니다.</p></div></div>
+          {patientStatus === 'new' && <div className="kt-send-link"><p>선택한 내용을 고객에게 확인받습니다. 입력 완료 후에도 상담사가 최종 신청해야 합니다.</p><button type="button" disabled={appointmentMode === 'time' && !schedule} onClick={() => sendVerificationLink()}><FiSend /> 고객 확인 링크 발송</button></div>}
           <dl className="adot-summary-list">
             <div><dt>4코드</dt><dd>{patientVerified ? maskedFourCode : '환자 확인 필요'}</dd></div>
             <div><dt>진료실</dt><dd>{selectedRoom.name}</dd></div>
@@ -1377,15 +1420,17 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
             <span><b>필수 안내를 확인했습니다.</b> 이 화면은 검토용이며 실제 환자 정보나 예약은 전송되지 않습니다.</span>
           </label>
         </section>
-            <button className="adot-submit" type="submit" disabled={!patientVerified || !agreed || (appointmentMode === 'time' && !schedule)}>진료 신청 완료</button>
+            <button className="adot-submit" type="submit" disabled={!patientVerified || !agreed || (appointmentMode === 'time' && !schedule)}>최종 진료 신청</button>
           </form>
         </div>
       </aside>
+      {customerView && <CustomerPreview view={customerView} snapshot={snapshot || { hospital: hospital.name, patient: maskedFourCode, room: selectedRoom.name, purpose, schedule: formattedSchedule }} generation={customerGeneration} currentGeneration={linkGeneration} consumed={completedGeneration.current === customerGeneration} onClose={() => setCustomerView(null)} onComplete={(generation) => { if (generation === currentGeneration.current) completedGeneration.current = generation; }} />}
     </div>
   );
 }
 
-function SuccessPanel({ hospital, summary, onHistory, onClose }: { hospital: Hospital; summary: BookingSummary; onHistory: () => void; onClose: () => void }) {
+function SuccessPanel({ hospital, summary, state, onState, onHistory, onClose }: { hospital: Hospital; summary: BookingSummary; state: BookingState; onState: (state: BookingState) => void; onHistory: () => void; onClose: () => void }) {
+  const [notificationOpen, setNotificationOpen] = useState(false);
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => event.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKeyDown);
@@ -1402,11 +1447,14 @@ function SuccessPanel({ hospital, summary, onHistory, onClose }: { hospital: Hos
         <div className="adot-panel-scroll result-body">
           <main className="adot-success">
             <div className="adot-success-icon"><FiCheck /></div>
-            <h1 id="success-panel-title">진료 신청이 완료되었습니다.</h1>
+            <h1 id="success-panel-title">{state === '처리 중' ? '신청을 전달했습니다. 병원 응답을 기다립니다.' : state === '예약 확정' ? '예약이 확정되었습니다.' : state === '병원 취소' ? '병원에서 예약을 취소했습니다.' : state === '고객 취소' ? '고객이 예약을 취소했습니다.' : '진료 완료가 확인되었습니다.'}</h1>
             <p>검토용 프로토타입으로 실제 예약은 생성되지 않았습니다.</p>
+            <div className="kt-status-warning">상태: {state} · 신청 전달과 예약 확정은 다릅니다.</div>
+            <label className="kt-demo-control">병원 상태 수신 체험<select aria-label="가상 예약 상태" value={state} onChange={(event) => onState(event.target.value as BookingState)}><option>처리 중</option><option>예약 확정</option><option>병원 취소</option><option>진료 완료</option><option>고객 취소</option></select></label>
+            <div className="kt-notification-policy"><strong>굿닥 상태 알림</strong><p>예약 확정 · 병원 취소 · 실제 진료 완료 시 알림톡, 실패 시 문자 대체. 리마인더는 발송하지 않습니다.</p>{['예약 확정', '병원 취소', '진료 완료'].includes(state) && <button type="button" onClick={() => setNotificationOpen(true)}>고객 알림·앱 연결 시안 보기</button>}</div>
             <dl>
               <div><dt>병원</dt><dd>{hospital.name}</dd></div>
-              <div><dt>신청 번호</dt><dd>LINK-260930-0153</dd></div>
+              <div><dt>신청 번호</dt><dd>LINK-261001-0153</dd></div>
               <div><dt>4코드</dt><dd>{summary.patient}</dd></div>
               <div><dt>진료실</dt><dd>{summary.room}</dd></div>
               <div><dt>진료 목적</dt><dd>{summary.purpose}</dd></div>
@@ -1416,15 +1464,16 @@ function SuccessPanel({ hospital, summary, onHistory, onClose }: { hospital: Hos
           </main>
         </div>
       </aside>
+      {notificationOpen && <CustomerPreview view="notification" state={state} snapshot={{ hospital: hospital.name, ...summary }} onClose={() => setNotificationOpen(false)} onCustomerCancel={() => onState('고객 취소')} />}
     </div>
   );
 }
 
-function HistoryScreen({ onDetail }: { onDetail: (record: HistoryRecord) => void }) {
+function HistoryScreen({ records, onDetail }: { records: HistoryRecord[]; onDetail: (record: HistoryRecord) => void }) {
   const [query, setQuery] = useState('');
   const [state, setState] = useState('전체 상태');
   const [period, setPeriod] = useState('최근 30일');
-  const filtered = HISTORY.filter((record) => {
+  const filtered = records.filter((record) => {
     const hospital = HOSPITALS.find((item) => item.id === record.hospitalId);
     const matches = [record.id, record.patient, record.purpose, hospital?.name || ''].join(' ').toLowerCase().includes(query.toLowerCase());
     const periodMatched = period !== '오늘' || record.createdAt.startsWith('2026.09.30');
@@ -1437,7 +1486,7 @@ function HistoryScreen({ onDetail }: { onDetail: (record: HistoryRecord) => void
         <div><FiSearch /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="신청번호, 환자, 병원명 검색" /></div>
         <select aria-label="기간" value={period} onChange={(event) => setPeriod(event.target.value)}><option>최근 30일</option><option>최근 7일</option><option>오늘</option></select>
         <select aria-label="상태" value={state} onChange={(event) => setState(event.target.value)}>
-          <option>전체 상태</option><option>신청 완료</option><option>진료 완료</option><option>예약 취소</option>
+          <option>전체 상태</option><option>처리 중</option><option>예약 확정</option><option>병원 취소</option><option>고객 취소</option><option>진료 완료</option>
         </select>
       </section>
       <section className="adot-history-table">
@@ -1480,7 +1529,7 @@ function HistoryDetail({ record, onBack }: { record: HistoryRecord; onBack: () =
         <h2>처리 흐름</h2>
         <ol className="adot-timeline">
           <li className="done"><b><FiCheck /></b><div><strong>상담사가 신청을 완료했습니다.</strong><span>{record.createdAt}</span></div></li>
-          <li className={record.state === '신청 완료' ? '' : 'done'}><b>{record.state === '신청 완료' ? '2' : <FiCheck />}</b><div><strong>{record.state === '예약 취소' ? '병원에서 예약을 취소했습니다.' : record.state === '진료 완료' ? '병원에서 진료 완료로 처리했습니다.' : '병원 처리 결과를 기다리고 있습니다.'}</strong><span>상태는 병원 운영 과정에 따라 갱신됩니다.</span></div></li>
+          <li className={record.state === '처리 중' ? '' : 'done'}><b>{record.state === '처리 중' ? '2' : <FiCheck />}</b><div><strong>{record.state === '병원 취소' ? '병원에서 예약을 취소했습니다.' : record.state === '고객 취소' ? '고객이 앱에서 예약을 취소했습니다.' : record.state === '진료 완료' ? '병원에서 진료 완료에 준하는 처리가 확인되었습니다.' : record.state === '예약 확정' ? '병원 응답으로 예약 확정을 확인했습니다.' : '병원 처리 결과를 기다리고 있습니다.'}</strong><span>상담사 신청내역과 고객에게 안내하는 상태를 동일하게 유지합니다.</span></div></li>
         </ol>
       </section>
     </main>
@@ -1490,12 +1539,12 @@ function HistoryDetail({ record, onBack }: { record: HistoryRecord; onBack: () =
 function ProfileScreen() {
   return (
     <main className="adot-subpage narrow">
-      <div className="adot-profile-head"><span className="adot-avatar">김</span><div><span>상담사 정보</span><h1>김○○</h1><p>에이닷 진료 연결 운영 계정</p></div></div>
+      <div className="adot-profile-head"><span className="adot-avatar">01</span><div><span>발급 계정</span><h1>agent-01</h1><p>KT114 진료 연결 지원 도구</p></div></div>
       <section className="adot-record-card">
         <h2>계정 정보</h2>
         <dl>
-          <div><dt>상담사 ID</dt><dd>agent-demo-021</dd></div>
-          <div><dt>소속</dt><dd>SKT 에이닷 상담 운영</dd></div>
+          <div><dt>상담사 ID</dt><dd>agent-01</dd></div>
+          <div><dt>계정 방식</dt><dd>신원 확인·보안 방식은 협의 후 확정</dd></div>
           <div><dt>권한</dt><dd>병원 탐색 · 진료 신청 · 연결 이력 조회</dd></div>
         </dl>
       </section>
@@ -1517,7 +1566,7 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
       <section className="adot-login-card">
         <h2>상담사 로그인</h2>
         <p>발급받은 상담사 계정으로 로그인해 주세요.</p>
-        <label>상담사 ID<input defaultValue="agent-demo-021" /></label>
+        <label>상담사 ID<input defaultValue="agent-01" /></label>
         <label>비밀번호<input type="password" defaultValue="prototype" /></label>
         <button type="button" onClick={onLogin}>로그인</button>
         <small>검토용 화면으로 입력 정보는 저장되지 않습니다.</small>
@@ -1527,7 +1576,8 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
 }
 
 export default function AdotClinicLinkingPage() {
-  const [screen, setScreen] = useState<Screen>('link');
+  const preview = new URLSearchParams(window.location.search);
+  const [screen, setScreen] = useState<Screen>(preview.get('view') === 'login' ? 'login' : preview.get('view') === 'history' ? 'history' : 'link');
   const [connectionOverlay, setConnectionOverlay] = useState<ConnectionOverlay>(() => {
     const preview = new URLSearchParams(window.location.search).get('view');
     if (preview === 'hospital') return 'hospital-detail';
@@ -1537,17 +1587,31 @@ export default function AdotClinicLinkingPage() {
   const [selectedHospital, setSelectedHospital] = useState<Hospital | null>(HOSPITALS[0]);
   const [selectedRecord, setSelectedRecord] = useState<HistoryRecord>(HISTORY[0]);
   const [bookingSummary, setBookingSummary] = useState<BookingSummary>({ patient: '김○○ · 1991-**-** · 여성 · 010-****-5678', room: '내과 1진료실', purpose: '감기·몸살', schedule: '2026.10.01 10:30' });
+  const [bookingState, setBookingState] = useState<BookingState>('처리 중');
+  const [records, setRecords] = useState<HistoryRecord[]>(HISTORY);
+  const updateBookingState = (state: BookingState) => {
+    setBookingState(state);
+    setRecords((current) => current.map((record) => record.id === 'LINK-261001-0153' ? { ...record, state } : record));
+  };
 
   const navigate = (next: Screen) => {
+    if (connectionOverlay === 'application' && !window.confirm('입력 중인 신청을 닫을까요? 입력 내용과 고객 확인 링크가 폐기됩니다.')) return;
     setConnectionOverlay(null);
     setScreen(next);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const cancelApplication = () => {
-    const confirmed = window.confirm('진료 신청을 취소할까요?\n입력한 내용은 저장되지 않으며, 병원 탐색 화면은 그대로 유지됩니다.');
+    const confirmed = window.confirm('진행 중인 진료 신청을 닫을까요?\n입력 내용과 고객 확인 링크는 폐기되며 병원 탐색 화면은 유지됩니다. 이미 최종 신청한 예약을 취소하는 것은 아닙니다.');
     if (confirmed) setConnectionOverlay(null);
   };
+
+  const customerPreview = preview.get('view');
+  if (customerPreview?.startsWith('customer-') || customerPreview === 'notification') {
+    const view = customerPreview === 'notification' ? 'notification' : customerPreview.replace('customer-', '') as CustomerView;
+    const states: Record<string, BookingState> = { confirmed: '예약 확정', canceled: '병원 취소', completed: '진료 완료' };
+    return <CustomerPreview view={['kakao', 'sms', 'form', 'notification'].includes(view) ? view : 'form'} standalone state={states[preview.get('status') || 'confirmed']} snapshot={{ hospital: HOSPITALS[0].name, ...bookingSummary }} onClose={() => { window.location.search = ''; }} />;
+  }
 
   if (screen === 'login') return <div className="adot-app"><LoginScreen onLogin={() => navigate('link')} /></div>;
 
@@ -1566,12 +1630,12 @@ export default function AdotClinicLinkingPage() {
         <HospitalDetailModal hospital={selectedHospital} onClose={() => setConnectionOverlay(null)} onApply={() => setConnectionOverlay('application')} />
       )}
       {screen === 'link' && connectionOverlay === 'application' && selectedHospital && (
-        <ApplicationPanel hospital={selectedHospital} onCancel={cancelApplication} onComplete={(summary) => { setBookingSummary(summary); setConnectionOverlay('success'); }} />
+        <ApplicationPanel hospital={selectedHospital} onCancel={cancelApplication} onComplete={(summary) => { setBookingSummary(summary); setBookingState('처리 중'); setRecords((current) => [{ id: 'LINK-261001-0153', createdAt: '2026.10.01 14:18', hospitalId: selectedHospital.id, ...summary, state: '처리 중' }, ...current.filter((record) => record.id !== 'LINK-261001-0153')]); setConnectionOverlay('success'); }} />
       )}
       {screen === 'link' && connectionOverlay === 'success' && selectedHospital && (
-        <SuccessPanel hospital={selectedHospital} summary={bookingSummary} onHistory={() => navigate('history')} onClose={() => setConnectionOverlay(null)} />
+        <SuccessPanel hospital={selectedHospital} summary={bookingSummary} state={bookingState} onState={updateBookingState} onHistory={() => navigate('history')} onClose={() => setConnectionOverlay(null)} />
       )}
-      {screen === 'history' && <HistoryScreen onDetail={(record) => { setSelectedRecord(record); navigate('history-detail'); }} />}
+      {screen === 'history' && <HistoryScreen records={records} onDetail={(record) => { setSelectedRecord(record); navigate('history-detail'); }} />}
       {screen === 'history-detail' && <HistoryDetail record={selectedRecord} onBack={() => navigate('history')} />}
       {screen === 'profile' && <ProfileScreen />}
     </div>

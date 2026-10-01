@@ -1,0 +1,89 @@
+{
+  "checks": [
+    {
+      "name": "phone visible in list and map",
+      "passed": true
+    },
+    {
+      "name": "lookup requires consent",
+      "passed": true
+    },
+    {
+      "name": "no patient record copy",
+      "passed": true
+    },
+    {
+      "name": "polling cannot auto-complete without customer",
+      "passed": true
+    },
+    {
+      "name": "input precedes readonly appointment",
+      "passed": true
+    },
+    {
+      "name": "consent required",
+      "passed": true
+    },
+    {
+      "name": "customer complete not booking",
+      "passed": true
+    },
+    {
+      "name": "poll observes completed input",
+      "passed": true
+    },
+    {
+      "name": "sensitive raw not shown to agent",
+      "passed": true
+    },
+    {
+      "name": "resend resets verified and final submit",
+      "passed": true
+    },
+    {
+      "name": "old link revoked",
+      "passed": true
+    },
+    {
+      "name": "new link no previous input",
+      "passed": true
+    },
+    {
+      "name": "submission is processing not confirmed",
+      "passed": true
+    },
+    {
+      "name": "customer cancellation route",
+      "passed": true
+    },
+    {
+      "name": "history same state as result",
+      "passed": true
+    },
+    {
+      "name": "closing canceled keeps session",
+      "passed": true
+    },
+    {
+      "name": "close destroys panel keeps map",
+      "passed": true
+    },
+    {
+      "name": "reopen clean draft",
+      "passed": true
+    },
+    {
+      "name": "ambiguous not treated as new",
+      "passed": true
+    },
+    {
+      "name": "timeout not treated as new",
+      "passed": true
+    },
+    {
+      "name": "no runtime exceptions",
+      "passed": true
+    }
+  ],
+  "errors": []
+}

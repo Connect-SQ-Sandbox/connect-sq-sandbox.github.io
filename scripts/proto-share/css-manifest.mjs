@@ -26,7 +26,8 @@ export const SCREEN_CSS = {
   'goodoc-webview-item': ['styles/goodocWebviewItem.css'],
   'kakao-link': ['styles/connectKakaoLink.css'],
   'application-unified': ['styles/applicationUnified.css'],
-  'adot-clinic-linking': ['styles/adotClinicLinking.css']
+  'adot-clinic-linking': ['styles/adotClinicLinking.css'],
+  'tablet-patient-select': ['styles/tabletPatientSelect.css']
 };
 
 /**

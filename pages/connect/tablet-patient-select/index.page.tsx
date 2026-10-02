@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : tablet-patient-select — 태블릿 접수 '환자 조회 → 1. 환자 선택' · 새 환자 등록 오탭 UX 개선 체험판
- * 상태      : 검토용 초안 · v0.4 · 최종수정 2026-10-02
+ * 상태      : 검토용 초안 · v0.5 · 최종수정 2026-10-02
  * PRD       : 없음(VOC 기반). 병원 VOC: 조회된 본인 카드가 떠도 환자가 '새 환자 등록'을 눌러 정보를 처음부터 다시 입력(고령 재진 환자 중심, 하루 3명).
  *             사내 논의 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/tablet-patient-select.html
@@ -11,14 +11,14 @@
  * 에셋      : assets/tablet-patient-select/banner.png (피그마 하단 배너 래스터 원본 977×228). BI 심볼·워터마크는 goodoc-design 정본 logo_symbol.svg path.
  * 기술제약  : 샌드박스 빌드는 emotion/styled 금지 → plain CSS. 외부 요청 0. 가상 데이터·메모리 상태만.
  * 화면구성  : 상단 제목 바 + 좌측 패널(시안 As-is/A/B/C 선택 + 바뀐 것 · 조회 시나리오 · 행동 기록 · 접힌 직접 조합) + 1920×1200 태블릿 프레임
- *             (대기화면 키패드 → 조회 중 → 환자 선택 | 새 환자 등록 직행 → 다음/등록 자리표시 · 확인 시트)
+ *             (대기화면 키패드 → 조회 중 → 환자 선택 → 다음/등록 자리표시 · 확인 시트)
  *
  * 핵심 결정(why)
  *  - [확정·세화] As-is 화면은 피그마 POC_대기화면_환자조회·POC_대상선택을 값 그대로 재현한다(탑바 140, 카드 760×748, radius 36, CTA 144 등).
  *  - [확정·세화] 초기 환자 조회 시퀀스(대기화면 → 조회 중 → 결과)부터 체험한다.
  *  - [확정·세화] 키패드는 실제 번호 입력을 구현하지 않는다. 아무 키나 누르면 시나리오의 번호가 자동으로 채워지고 조회 중 모션 뒤 결과로 넘어간다.
- *  - [확정·세화] 조회 결과가 없으면 환자 선택 화면 없이 새 환자 등록으로 바로 이동한다. 환자 선택 화면의 '0명' 케이스는 없다.
- *    [유지·자체] 그 동선을 보여 주기 위해 조회 시나리오에 '없음 → 등록 직행'을 둔다(환자 선택 화면 옵션이 아니라 조회 결과 시나리오).
+ *  - [확정·세화] 조회 결과 없음은 체험판 범위 밖(v0.5에서 '없음 → 등록 직행' 시나리오 제거). 환자 선택 화면의 '0명' 케이스도 없다.
+ *    실제 동작 참고: 결과가 없으면 환자 선택 없이 새 환자 등록으로 바로 간다.
  *  - [확정·세화] 시안은 좌측 패널 맨 위에서 As-is / A안 / B안 / C안 중 하나만 고른다(v0.4에서 상단 바에서 좌측으로 이동, 상단 바는 현재 시안 이름만 표시). 이 선택이 화면을 정하는 유일한 진입점이고, 좌측은 "이 안에서 As-is 대비 바뀐 것"을 읽기 전용으로 보여 준다.
  *    개별 변수 토글은 접힌 '직접 조합(고급)'에 두고, 건드리면 상단이 '사용자 조합'으로 바뀐다. (이전 v0.2의 토글+프리셋 조합 구조가 어렵다는 피드백)
  *  - [확정·세화] A안 = 조회 결과 1명이면 선택된 상태로 진입(변수 ①만). B안 = ① + ② 하단 링크 + ③ 배제 조건형 카피. C안 = ⑤ 확인 시트만.
@@ -38,9 +38,9 @@
  *  - [보류] 같은 주민번호로 새 환자 등록을 진행할 때 차트 측 중복 생성 여부(막히는지, 중복이 쌓이는지).
  *  - [보류] 자동 선택 시 전화번호 조회로 가족 여러 명이 나오는 병원의 비중(2명 이상이면 자동 선택이 안 걸림).
  *  - [보류] 주민등록번호 조회 경로는 미포함(대기화면 피그마가 휴대전화번호 입력만 있음).
- *  - [보류] 조회 결과 없이 등록 화면으로 직행했을 때 As-is 탑바 표기(현재는 '1. 환자 선택' 활성 그대로).
  *
  * 변경 이력
+ *  - v0.5 (2026-10-02) 조회 시나리오에서 '없음 → 등록 직행' 제거(세화님 요청). 결과 없음 분기 코드 정리.
  *  - v0.4 (2026-10-02) 시안 선택을 상단 바에서 좌측 패널 첫 카드로 합침(바뀐 것 목록과 한 카드). 상단 바는 제목 + 현재 시안 이름.
  *  - v0.3 (2026-10-02) proto-qa 3차 반영: 휠 끝에서 페이지 스크롤 허용, 심볼 viewBox 18.57 상단 정렬(워터마크 698), 스피너 외경 79·7/8 호, 시안 재클릭 무시, 상단 바 61px·줄바꿈 억제.
  *    시안 선택을 As-is/A/B/C 단일 진입점으로 재구성(좌측은 바뀐 것 읽기 전용, 토글은 접힌 고급 영역). 키패드는 아무 키 → 자동 채움 → 조회 중 → 결과.
@@ -66,7 +66,6 @@ type Patient = {
 };
 
 const KNOWN_PHONE = '01099240288';
-const UNKNOWN_PHONE = '01012345678';
 const PATIENTS: Patient[] = [
   { id: 'p1', name: '김세화', gender: '여', age: 34, birth: '1991. 06. 29', phone: '010-9924-0288', lastVisit: '2025년 1월 28일' },
   { id: 'p2', name: '김도윤', gender: '남', age: 7, birth: '2019. 03. 12', phone: '010-9924-0288', lastVisit: '2025년 9월 3일' }
@@ -76,7 +75,7 @@ const HOSPITAL_NAME = '베스트굿닥병원';
 /* ---------- 체험 조건 ---------- */
 type Placement = 'card' | 'link' | 'bar';
 type CopyMode = 'asis' | 'exclusive';
-type Lookup = 'one' | 'two' | 'none';
+type Lookup = 'one' | 'two';
 type Start = 'home' | 'select';
 
 type Variables = {
@@ -399,10 +398,10 @@ function nowLabel() {
 }
 
 function Tablet({ vars, scenario, onLog, resetKey }: { vars: Variables; scenario: Scenario; onLog: (msg: string) => void; resetKey: number }) {
-  const results = useMemo(() => (scenario.lookup === 'none' ? [] : PATIENTS.slice(0, scenario.lookup === 'one' ? 1 : 2)), [scenario.lookup]);
-  const phone = scenario.lookup === 'none' ? UNKNOWN_PHONE : KNOWN_PHONE;
+  const results = useMemo(() => PATIENTS.slice(0, scenario.lookup === 'one' ? 1 : 2), [scenario.lookup]);
+  const phone = KNOWN_PHONE;
   const initialSelected = vars.autoSelect && results.length === 1 ? results[0].id : null;
-  const startScreen: Screen = scenario.start === 'select' ? (results.length === 0 ? 'register' : 'select') : 'home';
+  const startScreen: Screen = scenario.start === 'select' ? 'select' : 'home';
 
   const [screen, setScreen] = useState<Screen>(startScreen);
   const [digits, setDigits] = useState(scenario.start === 'select' ? phone : '');
@@ -466,7 +465,7 @@ function Tablet({ vars, scenario, onLog, resetKey }: { vars: Variables; scenario
   // 키패드: 아무 키나 누르면 시나리오 번호가 자동으로 채워지고 조회로 넘어간다
   const onKey = () => {
     if (loading || timers.current.length > 0) return;
-    onLog(`키패드 탭 → 번호 자동 입력 (${scenario.lookup === 'none' ? '미등록 번호' : '등록된 번호'})`);
+    onLog('키패드 탭 → 번호 자동 입력');
     for (let i = 1; i <= 11; i += 1) {
       timers.current.push(window.setTimeout(() => setDigits(phone.slice(0, i)), 70 * i));
     }
@@ -480,14 +479,9 @@ function Tablet({ vars, scenario, onLog, resetKey }: { vars: Variables; scenario
       window.setTimeout(() => {
         timers.current = [];
         setLoading(false);
-        if (results.length > 0) {
-          setSelected(initialSelected);
-          setScreen('select');
-          onLog(`조회 결과 ${results.length}명 → 환자 선택${initialSelected ? ' (자동 선택 상태)' : ''}`);
-        } else {
-          setScreen('register');
-          onLog('조회 결과 없음 → 새 환자 등록으로 바로 이동');
-        }
+        setSelected(initialSelected);
+        setScreen('select');
+        onLog(`조회 결과 ${results.length}명 → 환자 선택${initialSelected ? ' (자동 선택 상태)' : ''}`);
       }, 70 * 11 + 200 + 1400)
     );
   };
@@ -509,7 +503,7 @@ function Tablet({ vars, scenario, onLog, resetKey }: { vars: Variables; scenario
   };
 
   const tapNew = (via: string) => {
-    if (vars.intercept && results.length > 0) {
+    if (vars.intercept) {
       setSheet(true);
       onLog(`${via} 탭 → 확인 시트 노출`);
       return;
@@ -546,17 +540,12 @@ function Tablet({ vars, scenario, onLog, resetKey }: { vars: Variables; scenario
   }
 
   if (screen === 'register') {
-    const viaMiss = results.length === 0;
     return (
       <div className="tps-screen">
         <Topbar active={0} onHome={() => home()} />
         <div className="tps-placeholder">
-          <div className="tps-ph-title">{viaMiss ? '새 환자 등록' : copy.title}</div>
-          <div className="tps-ph-desc">
-            {viaMiss
-              ? '입력하신 번호로 조회된 진료 기록이 없어 환자 선택 없이 바로 등록으로 왔습니다. 이름 · 주민등록번호 · 전화번호 입력 폼이 이어집니다(현행 폼은 재현하지 않음).'
-              : '이름 · 주민등록번호 · 전화번호 입력 폼이 이어집니다(현행 폼은 재현하지 않음). 조회된 환자가 있는데 이 화면까지 왔다면 VOC와 같은 오탭입니다.'}
-          </div>
+          <div className="tps-ph-title">{copy.title}</div>
+          <div className="tps-ph-desc">이름 · 주민등록번호 · 전화번호 입력 폼이 이어집니다(현행 폼은 재현하지 않음). 조회된 환자가 있는데 이 화면까지 왔다면 VOC와 같은 오탭입니다.</div>
           <button type="button" className="tps-btn tps-btn-secondary" onClick={() => home("'처음으로 돌아가기'")}>
             처음으로 돌아가기
           </button>
@@ -751,7 +740,7 @@ function App() {
       <div className="tps-bar">
         <div className="tps-bar-title">
           <strong>태블릿 접수 · 환자 조회 → 환자 선택</strong>
-          <span>‘새 환자 등록’ 오탭 UX 개선 체험판 · 검토용 초안 v0.4</span>
+          <span>‘새 환자 등록’ 오탭 UX 개선 체험판 · 검토용 초안 v0.5</span>
         </div>
         <div className="tps-bar-now">{headTitle}</div>
       </div>
@@ -793,13 +782,12 @@ function App() {
                 onChange={(v) => setScn('start', v)}
               />
             </Field>
-            <Field label="조회 결과" hint="전화번호 조회는 가족이 함께 나올 수 있어 2명 케이스를 둡니다. 결과가 없으면 환자 선택 화면 없이 새 환자 등록으로 바로 갑니다.">
+            <Field label="조회 결과" hint="전화번호 조회는 가족이 함께 나올 수 있어 2명 케이스를 둡니다.">
               <Seg<Lookup>
                 value={scenario.lookup}
                 options={[
                   { v: 'one', label: '1명(본인)' },
-                  { v: 'two', label: '2명(본인+가족)' },
-                  { v: 'none', label: '없음 → 등록 직행' }
+                  { v: 'two', label: '2명(본인+가족)' }
                 ]}
                 onChange={(v) => setScn('lookup', v)}
               />

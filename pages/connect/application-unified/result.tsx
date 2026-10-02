@@ -37,8 +37,8 @@ function Header({ icon, title, sub, date }: { icon: 'progress' | 'complete' | 'c
   );
 }
 
-type Alert = { title: string; body: string; buttons: { label: string; style: 'filled' | 'tonal-gray'; onClick: () => void }[] };
-function AlertView({ a }: { a: Alert }) {
+export type Alert = { title: string; body: string; buttons: { label: string; style: 'filled' | 'tonal-gray'; onClick: () => void }[] };
+export function AlertView({ a }: { a: Alert }) {
   return (
     <div className="rs-alert-dim">
       <div className="rs-alert" role="alertdialog" aria-modal="true">

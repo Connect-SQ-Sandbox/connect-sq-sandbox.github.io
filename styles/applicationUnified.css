@@ -5,18 +5,19 @@
    ============================================================= */
 
 .au-root {
-  --gray-10: #F9FAFB; --gray-15: #F4F6F8; --gray-20: #F2F4F6; --gray-30: #E5E8EB;
-  --gray-40: #D1D6DB; --gray-50: #B0B8C1; --gray-60: #8B95A1; --gray-70: #6B7684;
-  --gray-80: #4E5968; --gray-90: #31353F; --gray-100: #191F28;
-  --blue-30: #B3D5FF; --blue-60: #0073FA; --blue-70: #0061DB; --blue-80: #0050B5;
-  --red-60: #FA4655; --red-70: #EC3847; --green-70: #41D293; --green-80: #1FA972;
-  --orange-60: #F79009;
+  /* 색 토큰 = goodoc-design Foundations 값(피그마 ⚡️최신⚡️ 굿닥 Design Foundations, 2026-10-02 동기화) */
+  --gray-10: #F9F9FB; --gray-15: #F6F7F9; --gray-20: #F2F4F7; --gray-30: #E3E6ED;
+  --gray-40: #CACED8; --gray-50: #A8AEBD; --gray-60: #808799; --gray-70: #5D6474;
+  --gray-80: #434956; --gray-90: #31353F; --gray-100: #16181D;
+  --blue-20: #E5F2FF; --blue-30: #D1E8FF; --blue-60: #0073FA; --blue-70: #066AE5; --blue-80: #115FD4;
+  --red-60: #FA4655; --red-70: #EC3847; --green-70: #24C38C; --green-80: #00B280;
   --alpha-gray-05: rgba(128,135,153,.05); --alpha-gray-10: rgba(128,135,153,.10);
   --alpha-gray-15: rgba(128,135,153,.15); --alpha-gray-20: rgba(128,135,153,.20);
   --alpha-gray-40: rgba(128,135,153,.40);
   --alpha-blue-05: rgba(0,115,250,.05); --alpha-blue-10: rgba(0,115,250,.10);
   --alpha-blue-15: rgba(0,115,250,.15); --alpha-blue-20: rgba(0,115,250,.20);
   --alpha-red-05: rgba(250,70,85,.05); --alpha-red-10: rgba(250,70,85,.10);
+  --alpha-green-20: rgba(37,187,122,.20);
   --alpha-black-50: rgba(0,0,0,.50);
   --shadow-dropdown: 0 2px 8px rgba(17,23,35,.15);
   --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
@@ -57,7 +58,7 @@
   padding:1px 6px; border-radius:4px; font-size:12px; font-weight:500; line-height:18px; }
 .au-root .gd-tag.blue { color:var(--blue-80); background:var(--alpha-blue-10); }
 .au-root .gd-tag.gray { color:var(--gray-80); background:var(--alpha-gray-10); }
-.au-root .gd-tag.green { color:var(--green-80); background:rgba(65,210,147,.16); }
+.au-root .gd-tag.green { color:var(--green-80); background:var(--alpha-green-20); }
 .au-root .gd-tag.red { color:var(--red-70); background:var(--alpha-red-10); }
 
 .au-root .gd-check { width:20px; height:20px; border-radius:4px; border:1.5px solid var(--gray-40); background:#fff;
@@ -132,10 +133,12 @@
 .au-topbar { height:52px; flex:none; display:flex; align-items:center; gap:4px; padding:0 8px; border-bottom:1px solid var(--gray-30); background:#fff; z-index:5; }
 .au-topbar button { width:40px; height:40px; border:none; background:none; cursor:pointer; color:var(--gray-90); display:inline-flex; align-items:center; justify-content:center; }
 .au-topbar strong { font-size:17px; font-weight:700; }
-.au-scroll { flex:1; overflow-y:auto; overscroll-behavior:contain; padding-bottom:112px; background:var(--gray-15); }
+.au-scroll { flex:1; overflow-y:auto; overscroll-behavior:contain; padding-bottom:112px; background:#fff; }
 
-.au-sec { background:#fff; padding:24px 20px; margin-bottom:8px; scroll-margin-top:8px; transition:box-shadow .2s; }
-.au-sec.err { box-shadow:inset 3px 0 0 var(--red-60); }
+.au-sec { background:#fff; padding:24px 20px; scroll-margin-top:8px; }
+/* 섹션 구분 = 앱 라이브러리 mobile/divider height=8 (Gray/20). 화면 배경은 흰색 */
+.au-sec + .au-sec { border-top:8px solid var(--gray-20); }
+.au-sec.err { } /* v0.19: 섹션 빨간 바 제거 — 에러는 필드 테두리·문구로만 */
 .au-sec-head { display:flex; align-items:center; gap:6px; margin-bottom:14px; }
 .au-sec-head h2 { font-size:17px; font-weight:700; margin:0; }
 .au-sec-head .opt { font-size:12px; color:var(--gray-60); font-weight:500; }
@@ -183,7 +186,8 @@
 .au-today span { font-size:13px; color:var(--gray-60); display:block; margin-top:2px; }
 
 .au-person-list { display:flex; flex-direction:column; gap:8px; }
-.au-person-tag { display:inline-flex; align-items:center; height:30px; padding:0 10px; border-radius:15px; background:var(--alpha-blue-10); color:var(--blue-80); font-size:13px; font-weight:600; }
+/* 동시접수 이름 칩 = 앱 라이브러리 mobile/chip Size=Small · State=Selected_Primary_Outlined */
+.au-person-tag { display:inline-flex; align-items:center; height:32px; padding:0 10px; border-radius:999px; border:1px solid var(--blue-60); background:var(--blue-20); color:var(--blue-60); font-size:12px; font-weight:500; line-height:18px; }
 
 .au-field + .au-field { margin-top:12px; }
 .au-field label { display:block; font-size:13px; font-weight:700; color:var(--gray-70); margin-bottom:6px; }
@@ -419,6 +423,7 @@
 .rs-cta { position:absolute; left:0; right:0; bottom:0; background:#fff; z-index:10; }
 .rs-cta-note { margin:0; padding:12px 20px 0; text-align:center; font-size:14px; line-height:21px; color:var(--b60); }
 .rs-cta-btn { padding:12px 20px; display:flex; }
+.au-alert-scope { display:contents; --g20:#F2F4F7; --g60:#808799; --g70:#5D6474; --g100:#16181D; --b60:#0073FA; }
 .rs-alert-dim { position:absolute; inset:0; z-index:50; background:rgba(22,28,45,.7); display:flex; align-items:center; justify-content:center; padding:0 24px; }
 .rs-alert { width:100%; background:#fff; border-radius:12px; padding:20px; text-align:center; }
 .rs-alert h3 { margin:12px 0 16px; font-size:20px; line-height:30px; font-weight:700; color:var(--g100); }
@@ -441,4 +446,4 @@
 /* 콘텐츠가 적을 때 마지막 섹션이 CTA까지 흰색으로 채워지도록 */
 .au-scroll { display:flex; flex-direction:column; padding-bottom:0; }
 .au-scroll > * { flex-shrink:0; }
-.au-scroll > .au-sec:last-of-type { flex-grow:1; margin-bottom:0; padding-bottom:136px; }
+.au-scroll > .au-sec:last-of-type { flex-grow:1; padding-bottom:136px; }

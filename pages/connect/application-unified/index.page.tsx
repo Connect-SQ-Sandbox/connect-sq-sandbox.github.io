@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : application-unified — 병원 상세(As-is) → 진료실 선택(As-is) → 통합 신청서(420 예약 · 420 미리접수 · 진료항목 예약)
- * 상태      : 현행 · v0.18 · 최종수정 2026-10-02
+ * 상태      : 현행 · v0.19 · 최종수정 2026-10-02
  * PRD       : GAS-1 (Draft) 기반, PO 협의 2026-09-29 반영. PO 체험판 application-standard와 별개 페이지.
  *             내부 검토 메모는 사내 문서에 둔다(공개 저장소라 링크 미기재).
  * 배포URL   : https://connect-sq-sandbox.github.io/out/application-unified.html
@@ -62,6 +62,7 @@
  *  - v0.1 (2026-09-29) 최초 작성.
  *  - v0.17 (2026-09-30) 병원 기록 가족 연결은 미성년만, 성인은 이번 신청에만 선택(성인 후보 예시 추가).
  *  - v0.18 (2026-10-02) 토스트를 앱 라이브러리 mobile/SnackBar 디자인으로 교체(none/success/fail, 2줄 제한, 좌우 20). 위치는 앱 스낵바 가이드: 하단 20, 고정 CTA·시트 푸터 위 12.
+ *  - v0.19 (2026-10-02) 색 토큰을 Foundations 값으로 동기화. 섹션 빨간 바 제거(필드 테두리·문구로만 에러 표시). 결과 '다른 시간/날짜 보기' 뒤 마감 슬롯·날짜 재조회 반영. 1명 재동의 문구 교정. 목적 없이 날짜를 누르면 에러 없이 목적 시트로 안내. 예약 일정 선택 후 진료실 변경은 확인 모달. 화면 배경 흰색 + 섹션 구분 mobile/divider(8, Gray/20), 동시접수 이름 칩 mobile/chip(Small·Selected_Primary_Outlined).
  *  - v0.16 (2026-09-30) 체험 패널에서 신청과 무관한 조건(오늘 운영·리뷰) 제거, 정보 성격별 카드 5개로 분리.
  *  - v0.15 (2026-09-30) 체험 패널을 병원 운영 설정 / 환자 정보로 재그룹, 환자별 약관 동의 이력(As-is viewedConsentIds) 반영.
  *  - v0.14 (2026-09-30) 병원 기록 조회 실패 안내 제거(일반 병원은 조용히 1회 재시도 후 가족 목록 그대로), '병원 성격: 재진만 접수' 분기 추가.
@@ -83,7 +84,7 @@
  */
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { HospitalDetail, ServiceSelect, CtaScenario, OpState, ReviewState, ServiceMode } from './detail';
-import { ReceiptComplete, ReceiptResultSheet, RequestResultSheet, ApptResult, TiResult, ReceiptPatientResult } from './result';
+import { ReceiptComplete, ReceiptResultSheet, RequestResultSheet, ApptResult, TiResult, ReceiptPatientResult, AlertView } from './result';
 
 type Service = 'appt' | 'receipt' | 'treatment';
 type Mode3 = 'required' | 'optional' | 'none';
@@ -283,10 +284,13 @@ export default function Page() {
   const [optionIds, setOptionIds] = useState<string[]>(['o1']);
   const [optionDraft, setOptionDraft] = useState<string[]>([]);
   const [date, setDate] = useState<Date | null>(null);
+  // 결과 시트 '다른 시간/날짜 보기' 뒤 슬롯 재조회 결과(As-is 재조회 재현): 마감된 시간·날짜는 선택 불가로 빠진다. 키에 진료실 포함
+  const [soldOut, setSoldOut] = useState<{ slots: string[]; dates: string[] }>({ slots: [], dates: [] });
   const [time, setTime] = useState('');
   const [dateDraft, setDateDraft] = useState<Date | null>(null);
   const [timeDraft, setTimeDraft] = useState('');
   const [purposeFromDate, setPurposeFromDate] = useState(false);
+  const [roomConfirm, setRoomConfirm] = useState<string | null>(null); // 예약 일정이 있을 때 진료실 변경 확인
   const [people, setPeople] = useState<Person[]>(FAMILY);
   const [picked, setPicked] = useState<string[]>([]);
   const [draft, setDraft] = useState<string[]>([]);
@@ -336,11 +340,11 @@ export default function Page() {
   const personLabel = service === 'receipt' ? '접수자 정보' : '예약자 정보';
 
   function resetForm(s = service) {
-    setRoomId('r1'); setPurpose(''); setOptionIds(['o1']); setDate(null); setTime(''); setDateDraft(null); setTimeDraft('');
+    setRoomId('r1'); setPurpose(''); setOptionIds(['o1']); setDate(null); setTime(''); setDateDraft(null); setTimeDraft(''); setSoldOut({ slots: [], dates: [] });
     setPeople(FAMILY); setPicked([]); setDraft([]); setWho(s === 'treatment' ? 'self' : ''); setOther({ name: '', phone: '', birth: '', gender: '' });
     const selfAddr = s === 'treatment' && savedAddr === 'yes' && addrMode !== 'none';
     setAddr(selfAddr ? { base: SAVED_ADDR, detail: '101동 1001호' } : { base: '', detail: '' }); setAddrPrefilled(selfAddr); setAgree({}); setSheet(''); setLookup('idle'); clearTimeout(lookupTimer.current);
-    setErrors([]); setDone(false); setToast(''); setRcPending(false); clearTimeout(resultTimer.current);
+    setErrors([]); setDone(false); setToast(''); setRoomConfirm(null); setRcPending(false); clearTimeout(resultTimer.current);
     scrollRef.current?.scrollTo({ top: 0 });
     void s;
   }
@@ -390,7 +394,12 @@ export default function Page() {
   }, [savedAddr]);
 
   // 진료실 변경
+  // [확정·세화 2026-10-02] 예약에서 날짜·시간을 고른 뒤 진료실을 바꾸면 확인 모달(잃는 게 일정이라). 그 외에는 바로 변경
   function pickRoom(id: string) {
+    if (id !== roomId && service === 'appt' && date) { setSheet(''); setRoomConfirm(id); return; }
+    applyRoom(id);
+  }
+  function applyRoom(id: string) {
     if (id !== roomId) { setRoomId(id); setPurpose(''); setDate(null); setTime(''); }
     setSheet(''); clearErr('service');
   }
@@ -400,7 +409,8 @@ export default function Page() {
   }
   // 예약 희망일 바텀시트: 시트 안에서 날짜·시간을 고르고 '선택 완료'로 반영
   function openCalendar() {
-    if (usesPurpose && !purpose) { setErrors(e => Array.from(new Set([...e, 'service']))); jump('service'); setPurposeFromDate(true); setSheet('purpose'); return; }
+    // [확정·세화 2026-10-02] 내원 목적 먼저 — 제출 전이라 에러 표시 없이 목적 시트로 안내하고, 고르면 날짜 시트로 이어짐
+    if (usesPurpose && !purpose) { setPurposeFromDate(true); setSheet('purpose'); return; }
     setDateDraft(date); setTimeDraft(time); setSheet('date');
   }
   function applyDate() {
@@ -480,7 +490,7 @@ export default function Page() {
   function jump(k: string) {
     const el = secRefs.current[k];
     const sc = scrollRef.current;
-    if (el && sc) sc.scrollTo({ top: el.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - 8, behavior: 'smooth' });
+    if (el && sc) sc.scrollTo({ top: el.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop, behavior: 'smooth' }); // 섹션 위 구분 띠(8)부터 보이게
   }
   function submit() {
     if (revisitGate && picked.length && !pickedPeople.every(isMatched)) {
@@ -511,6 +521,8 @@ export default function Page() {
     const st = resultLive;
     setSheet('');
     if (service !== 'appt') return;
+    if (date && st === 'notExistedSlots' && time) setSoldOut(s => ({ ...s, slots: [...s.slots, `${roomId} ${key(date)} ${time}`] }));
+    if (date && st === 'closedToday') setSoldOut(s => ({ ...s, dates: [...s.dates, `${roomId} ${key(date)}`] }));
     setTime('');
     if (st === 'closedToday' || st === 'failure') setDate(null);
     if (st === 'closedToday') setTimeout(() => jump('date'), 50);
@@ -704,7 +716,7 @@ export default function Page() {
           ))}
           {consentHistory === 'agreed' && isRoom && picked.length > 0 && (lookup === 'fail'
             ? <div className="au-help">병원 기록을 확인하지 못해 약관 동의를 다시 받아요.</div>
-            : pickedPeople.some(p => !isMatched(p)) && <div className="au-help">병원 기록이 없는 분이 포함되어 약관 동의를 다시 받아요.</div>)}
+            : pickedPeople.some(p => !isMatched(p)) && <div className="au-help">{picked.length > 1 ? '병원 기록이 없는 분이 포함되어 약관 동의를 다시 받아요.' : '이 병원 진료 기록이 없어 약관 동의를 다시 받아요.'}</div>)}
           {err('terms') && <div className="au-err">필수 약관에 동의해 주세요.</div>}
           </>)}
         </section>
@@ -817,7 +829,7 @@ export default function Page() {
       <div className="au-sheet" role="dialog" aria-modal="true" aria-label="내원 목적 선택">
         <div className="au-sheet-head"><h3>내원 목적</h3><button type="button" aria-label="닫기" onClick={() => setSheet('')}>×</button></div>
         <div className="au-sheet-body" style={{ paddingBottom: 28 }}>
-          {service !== 'receipt' && <div className="au-help" style={{ margin: '0 0 12px' }}>{purposeFromDate ? '예약 희망일을 고르기 전에 내원 목적을 먼저 선택해 주세요. ' : ''}내원 목적에 따라 예약할 수 있는 날짜가 달라요.</div>}
+          {service !== 'receipt' && <div className="au-help" style={{ margin: '0 0 12px' }}>{purposeFromDate ? <><b>예약 희망일을 고르기 전에 내원 목적을 먼저 선택해 주세요.</b><br /></> : ''}내원 목적에 따라 예약할 수 있는 날짜가 달라요.</div>}
           <div role="radiogroup" aria-label="내원 목적">
             {room.purposes.map(p => (
               <button type="button" key={p} role="radio" aria-checked={purpose === p} className={`au-opt ${purpose === p ? 'on' : ''}`} onClick={() => { pickPurpose(p); if (purposeFromDate && service !== 'receipt') { setPurposeFromDate(false); setDateDraft(null); setTimeDraft(''); setSheet('date'); } else setSheet(''); }}>
@@ -837,7 +849,7 @@ export default function Page() {
         <div className="au-sheet-head"><h3>예약 희망일</h3><button type="button" aria-label="닫기" onClick={() => setSheet('')}>×</button></div>
         <div className="au-sheet-body">
           {usesPurpose && <div className="au-help" style={{ margin: '0 0 4px' }}>선택한 내원 목적으로 예약할 수 있는 날짜만 고를 수 있어요.</div>}
-          <Calendar value={dateDraft} enabled={d => isAvailable(d, service, roomId, purpose)} onPick={d => { setDateDraft(d); setTimeDraft(''); setTimeout(() => { const el = timesRef.current; const box = el?.closest('.au-sheet-body') as HTMLElement | null; if (el && box) box.scrollTo({ top: el.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop - 8 }); }, 60); }} />
+          <Calendar value={dateDraft} enabled={d => isAvailable(d, service, roomId, purpose) && !soldOut.dates.includes(`${roomId} ${key(d)}`)} onPick={d => { setDateDraft(d); setTimeDraft(''); setTimeout(() => { const el = timesRef.current; const box = el?.closest('.au-sheet-body') as HTMLElement | null; if (el && box) box.scrollTo({ top: el.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop - 8 }); }, 60); }} />
           {dateDraft ? (
             <div className="au-times" ref={timesRef}>
               {(['오전', '오후'] as const).map(g => {
@@ -847,7 +859,7 @@ export default function Page() {
                     <h4>{g}</h4>
                     <div className="au-chips">
                       {list.map(s => (
-                        <button type="button" key={s.t} disabled={s.disabled} className={`au-chip ${timeDraft === s.t ? 'on' : ''}`} onClick={() => setTimeDraft(s.t)}>{s.t}</button>
+                        <button type="button" key={s.t} disabled={s.disabled || soldOut.slots.includes(`${roomId} ${key(dateDraft)} ${s.t}`)} className={`au-chip ${timeDraft === s.t ? 'on' : ''}`} onClick={() => setTimeDraft(s.t)}>{s.t}</button>
                       ))}
                     </div>
                   </div>
@@ -988,6 +1000,7 @@ export default function Page() {
               onStop={() => { setSheet(''); setStage(service === 'appt' ? 'detail' : formFrom === 'service' ? 'service' : 'detail'); }}
               onOther={afterResultOther} onConfirm={afterResultOther} onItemGone={() => { setSheet(''); setStage('detail'); }} />
           )}
+          {roomConfirm && <div className="au-alert-scope"><AlertView a={{ title: '진료실을 바꿀까요?', body: `진료실을 바꾸면 선택한 ${purpose ? '내원 목적과 ' : ''}예약 일정이 초기화돼요.`, buttons: [{ label: '취소', style: 'tonal-gray', onClick: () => setRoomConfirm(null) }, { label: '바꾸기', style: 'filled', onClick: () => { applyRoom(roomConfirm); setRoomConfirm(null); } }] }} /></div>}
           {toast && <div className={`gd-toast ${toastKind}`} style={{ bottom: toastBottom }} role="status">{toastKind !== 'information' && <span className="gd-toast-ic" aria-hidden="true" />}<span className="gd-toast-msg">{toast}</span></div>}
         </div>
       </main>

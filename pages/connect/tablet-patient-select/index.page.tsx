@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : tablet-patient-select — 태블릿 접수 '환자 조회 → 1. 환자 선택' · 새 환자 등록 오탭 UX 개선 체험판
- * 상태      : 검토용 초안 · v0.3 · 최종수정 2026-10-02
+ * 상태      : 검토용 초안 · v0.4 · 최종수정 2026-10-02
  * PRD       : 없음(VOC 기반). 병원 VOC: 조회된 본인 카드가 떠도 환자가 '새 환자 등록'을 눌러 정보를 처음부터 다시 입력(고령 재진 환자 중심, 하루 3명).
  *             사내 논의 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/tablet-patient-select.html
@@ -10,7 +10,7 @@
  * 관련 CSS  : styles/tabletPatientSelect.css (피그마 값 그대로 px, 1920×1200 프레임을 transform scale로 축소)
  * 에셋      : assets/tablet-patient-select/banner.png (피그마 하단 배너 래스터 원본 977×228). BI 심볼·워터마크는 goodoc-design 정본 logo_symbol.svg path.
  * 기술제약  : 샌드박스 빌드는 emotion/styled 금지 → plain CSS. 외부 요청 0. 가상 데이터·메모리 상태만.
- * 화면구성  : 상단 시안 선택(As-is/A/B/C) + 좌측 패널(바뀐 것 · 조회 시나리오 · 행동 기록 · 접힌 직접 조합) + 1920×1200 태블릿 프레임
+ * 화면구성  : 상단 제목 바 + 좌측 패널(시안 As-is/A/B/C 선택 + 바뀐 것 · 조회 시나리오 · 행동 기록 · 접힌 직접 조합) + 1920×1200 태블릿 프레임
  *             (대기화면 키패드 → 조회 중 → 환자 선택 | 새 환자 등록 직행 → 다음/등록 자리표시 · 확인 시트)
  *
  * 핵심 결정(why)
@@ -19,7 +19,7 @@
  *  - [확정·세화] 키패드는 실제 번호 입력을 구현하지 않는다. 아무 키나 누르면 시나리오의 번호가 자동으로 채워지고 조회 중 모션 뒤 결과로 넘어간다.
  *  - [확정·세화] 조회 결과가 없으면 환자 선택 화면 없이 새 환자 등록으로 바로 이동한다. 환자 선택 화면의 '0명' 케이스는 없다.
  *    [유지·자체] 그 동선을 보여 주기 위해 조회 시나리오에 '없음 → 등록 직행'을 둔다(환자 선택 화면 옵션이 아니라 조회 결과 시나리오).
- *  - [확정·세화] 시안은 상단에서 As-is / A안 / B안 / C안 중 하나만 고른다. 이 선택이 화면을 정하는 유일한 진입점이고, 좌측은 "이 안에서 As-is 대비 바뀐 것"을 읽기 전용으로 보여 준다.
+ *  - [확정·세화] 시안은 좌측 패널 맨 위에서 As-is / A안 / B안 / C안 중 하나만 고른다(v0.4에서 상단 바에서 좌측으로 이동, 상단 바는 현재 시안 이름만 표시). 이 선택이 화면을 정하는 유일한 진입점이고, 좌측은 "이 안에서 As-is 대비 바뀐 것"을 읽기 전용으로 보여 준다.
  *    개별 변수 토글은 접힌 '직접 조합(고급)'에 두고, 건드리면 상단이 '사용자 조합'으로 바뀐다. (이전 v0.2의 토글+프리셋 조합 구조가 어렵다는 피드백)
  *  - [확정·세화] A안 = 조회 결과 1명이면 선택된 상태로 진입(변수 ①만). B안 = ① + ② 하단 링크 + ③ 배제 조건형 카피. C안 = ⑤ 확인 시트만.
  *  - [유지·자체] 변수 ① 단일 결과 자동 선택: 2명 이상이면 적용하지 않는다(누구인지 골라야 함).
@@ -41,6 +41,7 @@
  *  - [보류] 조회 결과 없이 등록 화면으로 직행했을 때 As-is 탑바 표기(현재는 '1. 환자 선택' 활성 그대로).
  *
  * 변경 이력
+ *  - v0.4 (2026-10-02) 시안 선택을 상단 바에서 좌측 패널 첫 카드로 합침(바뀐 것 목록과 한 카드). 상단 바는 제목 + 현재 시안 이름.
  *  - v0.3 (2026-10-02) proto-qa 3차 반영: 휠 끝에서 페이지 스크롤 허용, 심볼 viewBox 18.57 상단 정렬(워터마크 698), 스피너 외경 79·7/8 호, 시안 재클릭 무시, 상단 바 61px·줄바꿈 억제.
  *    시안 선택을 As-is/A/B/C 단일 진입점으로 재구성(좌측은 바뀐 것 읽기 전용, 토글은 접힌 고급 영역). 키패드는 아무 키 → 자동 채움 → 조회 중 → 결과.
  *    조회 시나리오에 '없음 → 등록 직행'. BI 심볼·워터마크를 정본 logo_symbol path로, 하단 배너는 피그마 래스터 원본으로 교체.
@@ -750,22 +751,24 @@ function App() {
       <div className="tps-bar">
         <div className="tps-bar-title">
           <strong>태블릿 접수 · 환자 조회 → 환자 선택</strong>
-          <span>‘새 환자 등록’ 오탭 UX 개선 체험판 · 검토용 초안 v0.3</span>
+          <span>‘새 환자 등록’ 오탭 UX 개선 체험판 · 검토용 초안 v0.4</span>
         </div>
-        <div className="tps-presets" role="radiogroup" aria-label="시안">
-          {(Object.keys(PRESETS) as PresetKey[]).map((k) => (
-            <button key={k} type="button" role="radio" aria-checked={activePreset === k} className={`tps-preset${activePreset === k ? ' is-on' : ''}`} onClick={() => applyPreset(k)} title={PRESETS[k].title}>
-              {PRESETS[k].label}
-            </button>
-          ))}
-          {!activePreset && <span className="tps-preset-custom">사용자 조합</span>}
-        </div>
+        <div className="tps-bar-now">{headTitle}</div>
       </div>
 
       <div className="tps-body">
         <aside className="tps-panel">
           <section className="tps-panel-card tps-panel-changes">
-            <h3>{headTitle}</h3>
+            <h3>시안</h3>
+            <div className="tps-presets" role="radiogroup" aria-label="시안">
+              {(Object.keys(PRESETS) as PresetKey[]).map((k) => (
+                <button key={k} type="button" role="radio" aria-checked={activePreset === k} className={`tps-preset${activePreset === k ? ' is-on' : ''}`} onClick={() => applyPreset(k)} title={PRESETS[k].title}>
+                  <strong>{PRESETS[k].label}</strong>
+                  <span>{PRESETS[k].title}</span>
+                </button>
+              ))}
+            </div>
+            {!activePreset && <div className="tps-preset-custom">사용자 조합 · 고급 토글로 만든 조합입니다</div>}
             <div className="tps-changes-label">As-is 대비 바뀐 것</div>
             {changes.length === 0 ? (
               <div className="tps-changes-none">{activePreset === 'asis' ? '변경 없음. 현행 태블릿 4.2 화면 그대로입니다.' : '변경 없음.'}</div>

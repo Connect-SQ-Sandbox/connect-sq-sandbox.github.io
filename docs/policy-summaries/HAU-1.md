@@ -1,7 +1,7 @@
 ---
 summary_id: HAU-1-PUBLIC-1
 source_prd_id: HAU-1
-source_version: 0.2-draft
+source_version: 0.5-draft
 source_status: draft
 target_release_at: null
 visibility: public-summary
@@ -15,6 +15,7 @@ publication_status: planned
 미승인 검토용 시안입니다. 실제 병원·환자 데이터, 서버, 차트, 설치 기능은 연결하지 않습니다.
 
 - As-is는 기존 진료항목 예약·관리 메뉴를 재현합니다. To-be는 상단에서 켠 경우만 표시합니다.
+- 바탕화면·작업표시줄·창 버튼으로 Windows 프로그램 외형을 모사합니다. 최소화·닫기 후 커넥트 아이콘으로 업무 화면을 복원할 수 있습니다. 실제 운영체제는 변경하지 않습니다.
 - 통합안에서는 대시보드와 접수·진료실 예약·진료항목 예약을 합친 진료 현황을 확인합니다.
 - 검색·필터·정렬·상세·취소 사유 입력·진료완료·내원확인을 가상 데이터로 체험합니다. 진료항목 예약에는 내원확인을 제공하지 않습니다.
 - 프로그램 환경설정은 트레이에서 엽니다. 기본값은 비연동이며 차트 선택·브릿지 설치·연결 장애·복구는 화면으로만 모사합니다.

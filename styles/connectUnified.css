@@ -13,6 +13,86 @@
 /* receipt-web RequestSection body1_600: 16px / 1.5 */
 .cu-detail-date{font-size:16px;line-height:24px;font-weight:600}
 @media(min-width:1101px){.cu-header.cn-header{padding:48px 64px 32px}.cu-content{padding-left:64px;padding-right:64px}}
-@media(min-width:1500px){.cu-app:not(.maximized){padding:0 5vw}}
 @media(max-width:1100px){.cu-prototype{padding:0 12px}.cu-prototype>div:first-child>span{display:none}.cu-nav.cn-nav{width:210px;min-width:210px}.cu-header.cn-header{padding:32px 28px 24px}.cu-content{padding-left:28px;padding-right:28px}.cu-warning{margin-left:28px;margin-right:28px}.cu-tabs{gap:18px}.cu-tabs button{font-size:13px}.cu-stat{padding:20px}}
 @media(max-width:760px){.cu-prototype{height:auto;min-height:74px;flex-wrap:wrap;gap:8px;padding:10px}.cu-prototype>div:first-child{width:100%}.cu-planned{height:auto;min-height:32px;padding:6px 12px;justify-content:flex-start}.cu-nav.cn-nav{width:172px;min-width:172px}.cu-nav-row{font-size:12px;padding:8px 12px}.cu-hospital{padding:16px 12px}.cu-header.cn-header{padding:24px 20px;flex-wrap:wrap}.cu-header h1{font-size:24px}.cu-header .cn-desc{font-size:12px}.cu-content{padding:0 20px 28px}.cu-body{height:calc(100vh - 180px);min-height:490px}.cu-tabs{overflow:auto;gap:16px}.cu-table-toolbar{flex-wrap:wrap}.cu-filters select{flex:1}.cu-stat-grid{grid-template-columns:1fr}.cu-section-heading{align-items:flex-start;gap:12px}.cu-section-heading>span{font-size:11px}.cu-taskbar>span{display:none}.cu-taskbar{justify-content:flex-end}.cu-modal>header{padding:20px}.cu-modal-body{padding:8px 20px 24px}.cu-modal>footer{padding:14px 20px}.cu-backdrop{padding:14px}.cu-statusbar>span:nth-child(2){display:none}.cu-statusbar>span:first-child{flex:1}.cu-notice-list>button{gap:16px}.cu-notice-list>button>span:last-child{display:none}}
+
+/* Windows desktop mock: OS chrome only; the hospital web UI remains unchanged. */
+.cu-app{height:100vh;height:100dvh;min-height:540px;display:flex;flex-direction:column;overflow:hidden;padding:0}
+.cu-prototype{flex-shrink:0;background:#f4f6fa;border-bottom:1px solid #dce2ec;z-index:5}
+.cu-planned{flex-shrink:0;z-index:5}
+.cu-shell-test{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--g70);white-space:nowrap}
+.cu-desktop{position:relative;flex:1;min-height:0;overflow:hidden;background:#0874d0;font-family:'Segoe UI',Pretendard,'Malgun Gothic',sans-serif}
+.cu-wallpaper{position:absolute;inset:0;overflow:hidden;pointer-events:none;background:radial-gradient(ellipse at 85% 10%,#82dcff 0,transparent 48%),radial-gradient(ellipse at 15% 95%,#092b83 0,transparent 60%),linear-gradient(128deg,#007ce3 3%,#1398ee 42%,#003a9b 100%)}
+.cu-wallpaper>span{position:absolute;width:950px;height:570px;left:30%;top:18%;border:82px solid #60c6f4;border-radius:49% 43% 53% 41%;transform:rotate(-34deg);box-shadow:inset 18px 28px 55px #ffffff5e,inset -32px -28px 50px #003c9d,22px 32px 45px #001b695c;background:transparent}
+.cu-wallpaper>span:nth-child(2){width:760px;height:520px;left:38%;top:29%;border-width:60px;border-color:#187fda;transform:rotate(-26deg);box-shadow:inset 8px 26px 30px #79d6ff9c,inset -30px -24px 40px #004088,16px 24px 35px #001e7870}
+.cu-wallpaper>span:nth-child(3){width:610px;height:430px;left:43%;top:41%;border-width:45px;border-color:#0867c0;transform:rotate(-19deg);box-shadow:inset 12px 30px 35px #70c4fba3,inset -30px -25px 35px #002b76,18px 25px 40px #00296b80}
+.cu-desktop-icons{position:absolute;top:18px;left:12px;display:flex;flex-direction:column;gap:12px;z-index:1}
+.cu-desktop-shortcut{width:84px;min-height:86px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:6px 2px;position:relative;color:white;background:transparent;border:1px solid transparent;border-radius:3px;text-align:center}
+.cu-desktop-shortcut>span:last-of-type{font-size:12px;line-height:16px;letter-spacing:0;text-shadow:0 1px 3px #001b5e,0 1px 1px #001b5e}
+.cu-desktop-shortcut:not(.decorative):hover,.cu-desktop-shortcut:not(.decorative):focus-visible{background:#ffffff20;border-color:#ffffff65}
+.cu-desktop-shortcut small{position:absolute;top:44px;left:16px;background:white;border:1px solid #b6cee9;width:14px;height:14px;font-size:12px;line-height:12px;color:#21599d;text-shadow:none}
+.cu-desktop-pc,.cu-desktop-trash{width:47px;height:45px;display:flex;align-items:center;justify-content:center}
+.cu-desktop-pc svg{font-size:42px;color:#d6f2ff;filter:drop-shadow(0 2px 2px #063d9277)}
+.cu-desktop-trash{background:linear-gradient(100deg,#ffffffdd,#d9edffe0);border:1px solid #b5d6fa;border-radius:5px 5px 10px 10px;box-shadow:0 2px 4px #07458e55;width:33px;height:40px;margin-top:5px}
+.cu-desktop-trash svg{font-size:25px;color:#3587c8}
+.cu-connect-icon{width:44px;height:44px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:linear-gradient(150deg,#fff,#ecf4ff);border:1px solid #b9d6f1;box-shadow:0 2px 5px #003a6f25;flex-shrink:0}
+.cu-connect-icon img{width:36px;height:auto;display:block}
+.cu-desktop .cu-client.cn-screen{position:absolute;inset:26px 28px 78px 112px;width:auto;height:auto;min-height:0;max-width:none;display:flex;flex-direction:column;border:1px solid #bfd0e5;border-radius:9px;box-shadow:0 18px 55px #00245b66,0 3px 9px #00245b45;background:#fff;overflow:hidden;z-index:3}
+.cu-app.maximized .cu-desktop .cu-client{inset:0 0 52px 0;border-radius:0;border:0;box-shadow:none}
+.cu-desktop .cu-titlebar.cn-titlebar{height:40px;flex-shrink:0;background:linear-gradient(100deg,#eff3f9,#f6f8fb);border-bottom:1px solid #dce3ed;align-items:center}
+.cu-desktop .cu-titlebar .cu-brand{font-family:'Segoe UI',Pretendard,'Malgun Gothic',sans-serif;font-size:12px}
+.cu-desktop .cu-window-actions{height:40px}
+.cu-desktop .cu-window-actions .cu-icon{height:40px;width:46px;color:#374452}
+.cu-desktop .cu-window-actions .cu-icon.close:hover{color:white}
+.cu-desktop .cu-client .cu-body{height:auto;min-height:0;flex:1;overflow:hidden;font-family:Pretendard,'Apple SD Gothic Neo','Malgun Gothic',sans-serif}
+.cu-desktop .cu-client .cu-main{overscroll-behavior:contain}
+.cu-desktop .cu-statusbar{flex-shrink:0}
+.cu-desktop-hint{position:absolute;left:50%;bottom:105px;transform:translateX(-50%);display:flex;flex-direction:column;gap:5px;padding:14px 20px;background:#06387d6e;border:1px solid #ffffff28;backdrop-filter:blur(12px);color:white;border-radius:9px;max-width:calc(100% - 40px);font-size:13px;text-align:center;line-height:20px}
+.cu-desktop-hint>span:last-child{font-size:12px;color:#e0eeff}
+.cu-desktop .cu-taskbar{position:absolute;bottom:0;left:0;right:0;height:52px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 16px;background:#e9f2ffed;border-top:1px solid #ffffffb8;box-shadow:0 -1px 8px #00295614;backdrop-filter:blur(22px);color:#263442;font-family:'Segoe UI',Pretendard,'Malgun Gothic',sans-serif;z-index:20}
+.cu-taskbar .cu-taskbar-pc{gap:8px;justify-self:start}
+.cu-taskbar-pc>svg{font-size:21px;color:#557697}
+.cu-taskbar-pc strong{display:block;font-size:12px;font-weight:500;line-height:16px}
+.cu-taskbar-pc>div>span{font-size:10px;color:#60768f;display:block;line-height:14px}
+.cu-taskbar .cu-taskbar-pinned{gap:5px;height:100%;justify-self:center}
+.cu-taskbar .cu-taskbar-button{width:42px;height:42px;display:flex;align-items:center;justify-content:center;border:1px solid transparent;background:transparent;border-radius:5px;position:relative;padding:0;color:#263442}
+.cu-taskbar-button:hover,.cu-taskbar-button.selected{background:#ffffffb8;border-color:#ffffffb8}
+.cu-windows-mark{width:22px;height:22px;display:grid;grid-template-columns:1fr 1fr;gap:2px}
+.cu-windows-mark i{background:linear-gradient(135deg,#168ce9,#0874cd);display:block;border-radius:1px}
+.cu-taskbar .cu-taskbar-search{display:flex;align-items:center;gap:10px;width:180px;height:32px;padding:0 14px;margin:0 7px;border:1px solid #c8d8ec;border-radius:20px;background:#ffffffb3;color:#596b7e;font-size:12px;text-align:left}
+.cu-taskbar-search svg{font-size:17px;color:#526981}
+.cu-taskbar-decoration{display:flex;align-items:center;justify-content:center;width:40px;height:40px}
+.cu-taskbar-decoration svg{font-size:27px;color:#e4ad26;filter:drop-shadow(0 1px 0 #bd8d10)}
+.cu-taskbar .cu-connect-icon{width:31px;height:31px;border-radius:6px;box-shadow:none;border-color:#b8d6f4}
+.cu-taskbar .cu-connect-icon img{width:27px}
+.cu-taskbar .cu-taskbar-connect.active{background:#ffffffb0;border-color:#ffffffb8}
+.cu-taskbar-connect::after{content:'';width:5px;height:3px;background:#758395;position:absolute;bottom:2px;border-radius:3px}
+.cu-taskbar-connect.active::after{width:17px;background:#0073fa}
+.cu-taskbar .cu-system-tray{gap:10px;justify-self:end;height:100%}
+.cu-taskbar .cu-hidden-icons{width:26px;height:32px}
+.cu-taskbar .cu-hidden-icons svg{font-size:15px}
+.cu-taskbar .cu-tray-icon{width:34px;height:36px;padding:0;display:flex;align-items:center;justify-content:center;background:transparent;border:0;border-radius:5px}
+.cu-taskbar .cu-tray-icon:hover,.cu-taskbar .cu-tray-icon.selected{background:#ffffffaa}
+.cu-taskbar .cu-tray-icon .cu-connect-icon{width:25px;height:25px;border-radius:5px;background:#f4f8ff;border:1px solid #c6d9ee}
+.cu-taskbar .cu-tray-icon .cu-connect-icon img{width:21px;height:auto}
+.cu-desktop .cu-taskbar .cu-tray-language{font-size:12px;line-height:18px}
+.cu-taskbar .cu-tray-system{display:flex;gap:9px;align-items:center;line-height:1}
+.cu-taskbar .cu-tray-system svg{font-size:17px}
+.cu-desktop .cu-taskbar .cu-taskbar-clock{font-size:11px;line-height:17px;text-align:right;white-space:nowrap;margin:0 2px 0 4px}
+.cu-taskbar-bell{display:flex;align-items:center}
+.cu-taskbar-bell svg{font-size:17px}
+.cu-taskbar .cu-tray-menu{bottom:60px;right:14px;min-width:224px;background:#f7f9fdf5;border-color:#d7e0ec;border-radius:8px;padding:7px;box-shadow:0 8px 25px #001d5a3d;backdrop-filter:blur(20px)}
+.cu-tray-menu .cu-tray-menu-title{display:flex;align-items:center;gap:9px;padding:9px 10px 12px;border-bottom:1px solid #dce4ef;margin-bottom:4px}
+.cu-tray-menu-title strong{font-weight:600;font-size:12px}
+.cu-tray-menu .cu-tray-menu-title .cu-connect-icon{width:25px;height:25px}
+.cu-start-menu{position:absolute;bottom:64px;left:50%;transform:translateX(-50%);width:510px;max-width:calc(100% - 32px);padding:30px;background:#f6f9fdef;border:1px solid #ffffffb3;backdrop-filter:blur(24px);border-radius:9px;box-shadow:0 12px 45px #00215640;z-index:21;color:#253346}
+.cu-start-search{display:flex;align-items:center;gap:11px;padding:12px 15px;border:1px solid #c9d7e8;border-bottom:2px solid #147fd6;border-radius:18px;background:#ffffffd9;font-size:12px;color:#5d6b7e}
+.cu-start-menu h3{font-size:13px;line-height:18px;margin:27px 8px 18px}
+.cu-start-app{display:flex;flex-direction:column;align-items:center;gap:9px;width:96px;padding:13px 7px 16px;border-radius:5px;font-size:12px;color:#283747;border:0;background:transparent}
+.cu-start-app:hover{background:white}
+.cu-start-footer{display:flex;align-items:center;gap:9px;font-size:12px;line-height:18px;margin:28px -30px -30px;padding:17px 24px;background:#edf2fa;border-top:1px solid #d8e2f0;border-radius:0 0 9px 9px}
+.cu-start-footer>span{font-size:10px;margin-left:auto;color:#6b7c8f}
+@media(max-width:1100px){.cu-shell-test{display:none}.cu-taskbar .cu-taskbar-search{width:120px}.cu-taskbar .cu-system-tray{gap:7px}.cu-desktop .cu-client.cn-screen{inset:22px 18px 74px 104px}}
+@media(max-width:900px){.cu-desktop-icons{flex-direction:row;gap:8px;top:9px;left:12px}.cu-desktop-shortcut{min-height:68px;width:72px;gap:3px}.cu-desktop-shortcut .cu-connect-icon{width:36px;height:36px}.cu-desktop-shortcut .cu-connect-icon img{width:30px}.cu-desktop-pc,.cu-desktop-trash{height:34px;margin-top:0}.cu-desktop-pc svg{font-size:34px}.cu-desktop-trash{width:27px}.cu-desktop-trash svg{font-size:22px}.cu-desktop-shortcut small{top:28px;left:12px}.cu-desktop .cu-client.cn-screen{inset:88px 14px 69px 14px}.cu-taskbar .cu-taskbar-pc{display:none}.cu-desktop .cu-taskbar{grid-template-columns:auto 1fr;padding:0 10px}.cu-taskbar .cu-taskbar-pinned{justify-self:start}.cu-taskbar .cu-tray-language{display:none}.cu-taskbar .cu-tray-system{gap:5px}}
+@media(max-width:760px){.cu-proto-actions{gap:8px}.cu-desktop .cu-titlebar{padding-left:10px}.cu-desktop .cu-window-actions .cu-icon{width:35px}.cu-taskbar .cu-taskbar-search{width:34px;padding:0;justify-content:center;margin:0 3px;border:0;background:transparent}.cu-taskbar-search>span{display:none}.cu-taskbar .cu-taskbar-decoration{display:none}.cu-taskbar .cu-taskbar-pinned{gap:1px}.cu-taskbar .cu-taskbar-button{width:36px}.cu-taskbar .cu-system-tray{gap:5px}.cu-taskbar .cu-tray-system{display:none}.cu-desktop .cu-taskbar .cu-taskbar-clock{font-size:10px}.cu-start-menu{padding:24px}.cu-start-footer{margin:24px -24px -24px;padding:16px}.cu-start-footer>span{max-width:160px}.cu-desktop-hint{width:calc(100% - 40px);bottom:88px}}
+@media(prefers-reduced-motion:reduce){.cu-desktop *{scroll-behavior:auto;transition:none}}

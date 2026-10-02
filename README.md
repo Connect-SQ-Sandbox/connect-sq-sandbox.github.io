@@ -8,6 +8,7 @@
 ## 공유 링크 (GitHub Pages)
 
 - 랜딩: **https://connect-sq-sandbox.github.io/**
+- 커넥트 통합 비교 시뮬레이터(미승인): **https://connect-sq-sandbox.github.io/out/connect-unified.html** — [체험 범위](pages/connect/connect-unified/README.md)
 - 굿닥 데스크 통합 시안(미승인): **https://connect-sq-sandbox.github.io/out/desk-unified.html**
 - 병원 어드민 · 진료 예약 8월 프로토타입(현행): **https://connect-sq-sandbox.github.io/out/admin-nonpay-aug.html**
 - 진료항목·카카오 노출 + 예약 신청 내역(7월 기준선): **https://connect-sq-sandbox.github.io/out/ti-kakao.html**
@@ -18,6 +19,7 @@
 
 | 화면 | 소스 | 산출물 | 설명 |
 |---|---|---|---|
+| **커넥트 통합 시뮬레이터** (HAU-1 · 미승인) | `pages/connect/connect-unified/index.page.tsx` | `out/connect-unified.html` | As-is/To-be 비교, 기존 웹 스타일의 대시보드·통합 진료 현황, 검색·필터·상세·취소·내원확인·완료, 트레이 환경설정. 가상 데이터만 사용. |
 | **굿닥 데스크 통합 시안** (미승인 · 검토용) | `pages/connect/desk-unified/index.page.tsx` | `out/desk-unified.html` | 창 제어 버튼 왼쪽의 프로그램 메뉴·환경 설정, 접수·예약 통합 조회, 차트 장애 중 신청 저장과 복구 확인. 가상 데이터만 사용하며 실제 차트 연결·환자정보 저장은 하지 않음. |
 | **예약 신청 내역 · 독감 무료접종형 진료정보** (React 원본 · 트리판에 병합됨) | `pages/connect/appt-free-vaccine/index.page.tsx` | `out/appt-free-vaccine.html` | 세화님 지시로 **분리 페이지가 아니라 트리판(t4.2 [T45])에 병합**했다. 이 파일은 같은 정책의 React 구현 원본이자 참고용이며 랜딩 카드에서는 내렸다. 정책 내용은 트리판 행과 `?spec=1` 스펙 핀(목록 열 · 상세 카드 · 대상자 행) 참고. |
 | **신청 웹 · 독감 무료접종 대상자 선택 UX** (신규) | `pages/connect/appt-vaccine-target/index.page.tsx` | `out/appt-vaccine-target.html` | 환자 신청 웹에서 **무료 백신 대상자**(임신부·어린이·어르신)로 신청할 때의 **독립된 결정 2건**을 최상단 `이슈` 세그먼트로 갈라 비교한다(화면당 변수 1개). 안은 **이슈당 3개, 총 6개**로 추렸다(2026-09-16). **이슈 ① 하위 뎁스 처리**(안 A~C = 추천순) — 대상자를 고른 뒤 주성분·독감백신 종류를 어떻게 처리할지: A 하위 뎁스 접기 / B 읽기 전용 행 / C 비활성. 상태 ①대상자 선택 전 ②해당 없음 ③어린이 + 예약 정보 확인 카드까지 나란히 놓고 탭 수·허위 선택 인상 위험·레이아웃 흔들림·설명 텍스트 필요량·재사용도 5축 비교표. **이슈 ② 진료 대상자**(F-1~F-3, 안은 A 고정) — 예약자 본인이 아닌 사람의 접종을 언제·어떻게 물을지: F-1 체크박스 비활성은 생년월일을 대조해 **불일치를 오류로** 다루는 방식(비교 기준으로 보존), F-2 대상자 선택 화면 통합형 / F-3 신청서 섹션 재설계형은 대조를 버리고 **본인/대리를 먼저 묻는** 방식(어린이·영유아는 부모의 대리 예약이 기본 케이스). 각 이슈에서 **비교 보드 / 실제 동작**(기본 진입) 2모드. 대상자를 고르면 제품·금액은 `병원 상담 후 결정`·`미정`이 되고 판정·서류·인증 UI 없이 고지 문구로만 처리한다. 내린 안(D 사전 분기 · E 현행 유지 · 구 F-2 체크 후 즉시 해제)은 소스 헤더 변경 이력 v2.4 참고. 병원(어드민) 쪽 짝 화면은 트리판 t4.2 `[T45]`. Claude Design 핸드오프 `무료접종 대상자 선택 UX.dc.html`(2026-09-16)을 React로 이식. **채택안 미정.** |

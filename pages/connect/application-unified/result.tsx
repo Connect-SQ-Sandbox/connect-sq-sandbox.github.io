@@ -63,6 +63,8 @@ export function ReceiptComplete(props: {
     : allOk ? { icon: 'complete' as const, title: '접수가 완료되었어요', sub: '접수 내역에서 대기 번호를 확인해 주세요' }
       : { icon: 'cancel' as const, title: '실패한 접수가 있어요', sub: '접수 내역에서 실패 사유를 확인해 주세요' };
 
+  // 로딩 중 X 알럿이 떠 있는 동안 결과가 오면 알럿을 닫는다('결과 확인 없이' 문구가 결과 위에 남지 않게)
+  React.useEffect(() => { if (!loading && alert?.title === '결과 확인 없이 나가시겠어요?') setAlert(null); }, [loading]);
   function onClose() {
     if (!loading) { props.onHome(); return; }
     setAlert({ title: '결과 확인 없이 나가시겠어요?', body: '접수 요청 후 알림을 받기 전까지는 결과 확인이 어려울 수 있어요.', buttons: [

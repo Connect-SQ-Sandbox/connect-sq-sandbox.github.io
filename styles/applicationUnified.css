@@ -46,8 +46,8 @@
 .au-root .gd-btn.primaryLinkText { height:auto; padding:0; font-weight:600; font-size:13px; color:var(--blue-60); background:transparent; }
 .au-root .gd-btn:disabled.primarySolid { color:var(--alpha-gray-40); background:var(--alpha-gray-05); cursor:not-allowed; }
 
-.au-root .gd-input { width:100%; height:48px; padding:0 16px; font-size:16px; color:var(--gray-90); background:#fff;
-  border:1px solid var(--gray-40); border-radius:8px; outline:none; font-family:inherit; }
+.au-root .gd-input { width:100%; height:56px; padding:0 16px; font-size:16px; color:var(--gray-90); background:#fff;
+  border:1px solid var(--gray-30); border-radius:8px; outline:none; font-family:inherit; } /* 앱 TextFields 박스형: h56 · Gray/30 · focus Gray/100 */
 .au-root .gd-input::placeholder { color:var(--gray-50); }
 .au-root .gd-input:focus { border-color:var(--gray-100); }
 .au-root .gd-input.error { border-color:var(--red-60); }
@@ -146,7 +146,7 @@
 .au-sub { font-size:13px; font-weight:700; color:var(--gray-70); margin:18px 0 8px; display:flex; gap:4px; align-items:center; }
 .au-sub .req { font-size:12px; color:var(--red-60); font-weight:700; }
 .au-seg-err .gd-segment { border-color:var(--red-60); }
-.au-err { margin-top:8px; font-size:12px; color:var(--red-60); }
+.au-err { margin-top:8px; font-size:14px; font-weight:500; line-height:22px; color:var(--red-60); } /* 앱 Input field Error = body2_500 */
 .au-help { margin-top:8px; font-size:12px; color:var(--gray-60); }
 
 .au-pick { width:100%; display:flex; align-items:center; gap:12px; padding:14px 16px; border:1px solid var(--gray-30); border-radius:8px; background:#fff;
@@ -202,7 +202,7 @@
 .au-term button.chk { display:flex; align-items:center; gap:10px; border:none; background:none; cursor:pointer; flex:1; text-align:left; padding:0; font-size:14px; color:var(--gray-90); }
 .au-term .view { border:none; background:none; color:var(--gray-60); font-size:13px; text-decoration:underline; cursor:pointer; }
 
-.au-cta { position:absolute; left:0; right:0; bottom:0; padding:12px 20px 24px; background:#fff; border-top:1px solid var(--gray-30); z-index:10; }
+.au-cta { position:absolute; left:0; right:0; bottom:0; padding:12px 20px 46px; background:#fff; z-index:10; } /* 앱 stickyButton: 위 선 없음, 12/20/12 + 홈 인디케이터 34 */
 .au-cta .gd-btn { width:100%; }
 
 /* ---------- 바텀시트 ---------- */
@@ -212,7 +212,7 @@
 .au-sheet-head h3 { margin:0; font-size:18px; font-weight:700; }
 .au-sheet-head button { border:none; background:none; cursor:pointer; color:var(--gray-60); width:32px; height:32px; font-size:22px; line-height:1; }
 .au-sheet-body { overflow-y:auto; min-height:0; padding:8px 20px 16px; }
-.au-sheet-foot { padding:12px 20px 24px; border-top:1px solid var(--gray-30); }
+.au-sheet-foot { padding:12px 20px 46px; } /* 앱 stickyButton: 위 선 없음, 12/20/12 + 홈 인디케이터 34 */
 .au-sheet-foot .gd-btn { width:100%; }
 .au-sheet h4 { font-size:13px; font-weight:700; color:var(--gray-70); margin:16px 0 8px; display:flex; justify-content:space-between; align-items:center; }
 .au-sheet h4:first-child { margin-top:4px; }
@@ -425,15 +425,15 @@
 .rs-cta-btn { padding:12px 20px; display:flex; }
 .au-alert-scope { display:contents; --g20:#F2F4F7; --g60:#808799; --g70:#5D6474; --g100:#16181D; --b60:#0073FA; }
 .rs-alert-dim { position:absolute; inset:0; z-index:50; background:rgba(22,28,45,.7); display:flex; align-items:center; justify-content:center; padding:0 24px; }
-.rs-alert { width:100%; background:#fff; border-radius:12px; padding:20px; text-align:center; }
-.rs-alert h3 { margin:12px 0 16px; font-size:20px; line-height:30px; font-weight:700; color:var(--g100); }
-.rs-alert p { margin:0 auto; width:90%; font-size:14px; line-height:21px; color:var(--g60); }
+.rs-alert { width:315px; max-width:100%; background:#fff; border-radius:12px; padding:24px 20px 20px; text-align:center; } /* 앱 mobile/modal/alert */
+.rs-alert h3 { margin:0 0 8px; font-size:20px; line-height:30px; font-weight:700; color:var(--g100); }
+.rs-alert p { margin:0; font-size:14px; line-height:22px; color:var(--g60); word-break:keep-all; }
 .rs-alert-btns { display:flex; gap:8px; margin-top:26px; }
 .rs-mbtn { flex:1; height:48px; border-radius:6px; border:none; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
 .rs-mbtn.filled { background:var(--b60); color:#fff; } .rs-mbtn.tonal-gray { background:var(--g20); color:var(--g70); }
 .rs-sheet-dim { position:absolute; inset:0; z-index:45; background:rgba(22,28,45,.7); display:flex; flex-direction:column; justify-content:flex-end; align-items:stretch; }
 .rs-sheet { width:100%; background:#fff; border-radius:16px 16px 0 0; }
-.rs-sheet-btns { display:flex; gap:8px; padding:16px 20px; }
+.rs-sheet-btns { display:flex; gap:8px; padding:12px 20px 46px; }
 
 .rs-sheet-rc { max-height:88%; display:flex; flex-direction:column; }
 .rs-sheet-scroll { overflow-y:auto; min-height:0; }

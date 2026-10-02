@@ -1,10 +1,11 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : application-unified — 병원 상세(As-is) → 진료실 선택(As-is) → 통합 신청서(420 예약 · 420 미리접수 · 진료항목 예약)
- * 상태      : 현행 · v0.17 · 최종수정 2026-09-29
+ * 상태      : 현행 · v0.18 · 최종수정 2026-10-02
  * PRD       : GAS-1 (Draft) 기반, PO 협의 2026-09-29 반영. PO 체험판 application-standard와 별개 페이지.
  *             내부 검토 메모는 사내 문서에 둔다(공개 저장소라 링크 미기재).
  * 배포URL   : https://connect-sq-sandbox.github.io/out/application-unified.html
+ * 피그마    : 사내 파일(링크·노드 매핑은 같은 폴더 figma/link.md, 공개 저장소라 URL 미기재) · 기준선: figma/baseline.md (2026-10-02, 미리접수 신청서만)
  * 관련 CSS  : styles/applicationUnified.css (goodoc-design 토큰·컴포넌트 발췌, plain CSS)
  * 기술제약  : 샌드박스 빌드는 emotion/styled 금지 → plain CSS. 외부 요청 0. 가상 데이터·메모리 상태만.
  * 화면구성  : 좌측 체험 조건 패널 + 390px 폰 프레임(상단바 · 신청서 스크롤 · 하단 고정 CTA · 바텀시트)
@@ -60,6 +61,7 @@
  * 변경 이력
  *  - v0.1 (2026-09-29) 최초 작성.
  *  - v0.17 (2026-09-30) 병원 기록 가족 연결은 미성년만, 성인은 이번 신청에만 선택(성인 후보 예시 추가).
+ *  - v0.18 (2026-10-02) 토스트를 앱 라이브러리 mobile/SnackBar 디자인으로 교체(none/success/fail, 2줄 제한, 좌우 20). 위치는 앱 스낵바 가이드: 하단 20, 고정 CTA·시트 푸터 위 12.
  *  - v0.16 (2026-09-30) 체험 패널에서 신청과 무관한 조건(오늘 운영·리뷰) 제거, 정보 성격별 카드 5개로 분리.
  *  - v0.15 (2026-09-30) 체험 패널을 병원 운영 설정 / 환자 정보로 재그룹, 환자별 약관 동의 이력(As-is viewedConsentIds) 반영.
  *  - v0.14 (2026-09-30) 병원 기록 조회 실패 안내 제거(일반 병원은 조용히 1회 재시도 후 가족 목록 그대로), '병원 성격: 재진만 접수' 분기 추가.
@@ -79,12 +81,14 @@
  *    차트 후보 연결 상한 선검사, 타인 입력 형식 검사, 하위 필수 라벨 색, 조회 경합, DS 값(입력 16px·체크 20px·토스트).
  * ─────────────────────────────────────────────────────────────
  */
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { HospitalDetail, ServiceSelect, CtaScenario, OpState, ReviewState, ServiceMode } from './detail';
 import { ReceiptComplete, ReceiptResultSheet, RequestResultSheet, ApptResult, TiResult, ReceiptPatientResult } from './result';
 
 type Service = 'appt' | 'receipt' | 'treatment';
 type Mode3 = 'required' | 'optional' | 'none';
+// 토스트 = 앱 라이브러리 mobile/SnackBar. information→state=none, success→success(파란 원 체크), error→fail(빨간 배경)
+type ToastKind = 'information' | 'success' | 'error';
 type Person = { id: string; name: string; relation: string; birth: string; address?: string; chart?: boolean; family: boolean; oneOff?: boolean };
 
 const TODAY = new Date(2026, 8, 29); // 2026-09-29 (화)
@@ -295,7 +299,8 @@ export default function Page() {
   const [lookup, setLookup] = useState<'idle' | 'loading' | 'done' | 'fail'>('idle');
   const [errors, setErrors] = useState<string[]>([]);
   const [toast, setToast] = useState('');
-  const [toastKind, setToastKind] = useState<'information' | 'error'>('information');
+  const [toastKind, setToastKind] = useState<ToastKind>('information');
+  const [toastBottom, setToastBottom] = useState(20);
   const [done, setDone] = useState(false);
   // 신청 결과 체험 조건 · 진행 상태
   const [rcResult, setRcResult] = useState<'success' | 'partial' | 'fail'>('success');
@@ -353,7 +358,15 @@ export default function Page() {
     setItemId(id); setOptionDraft([]); setOptionEntry(true); setSheet('option');
   }
 
-  function showToast(msg: string, kind: 'information' | 'error' = 'information') {
+  // 스낵바 위치(앱 가이드): 하단 기준 20 · 하단 고정 버튼(CTA·시트 푸터)이 있으면 그 위 12
+  useLayoutEffect(() => {
+    if (!toast) return;
+    const phone = document.querySelector<HTMLElement>('.au-phone'); if (!phone) return;
+    const visible = (sel: string) => Array.from(phone.querySelectorAll<HTMLElement>(sel)).find(el => el.offsetParent !== null && el.getClientRects().length > 0);
+    const anchor = sheet ? visible('.au-sheet-foot') : (visible('.au-cta') || visible('.hd-cta'));
+    setToastBottom(anchor ? Math.round(phone.getBoundingClientRect().bottom - phone.clientTop - anchor.getBoundingClientRect().top) + 12 : 20);
+  }, [toast, sheet, stage]);
+  function showToast(msg: string, kind: ToastKind = 'information') {
     setToast(msg); setToastKind(kind);
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(''), 2200);
@@ -441,8 +454,8 @@ export default function Page() {
     // [보류] 실제로는 본인확인·관계확인 후 연결. 체험판은 확인 성공을 가정한다.
     const linked = { ...p, family: true, chart: true, relation: '가족' };
     setPeople(ps => [...ps, linked]);
-    if (multi) { setDraft(d => [...d, p.id]); showToast(`${p.name}님을 가족으로 연결하고 선택했어요`); }
-    else { setPicked([p.id]); setSheet(''); clearErr('patient'); prefillFrom(linked); showToast(`${p.name}님을 가족으로 연결했어요`); }
+    if (multi) { setDraft(d => [...d, p.id]); showToast(`${p.name}님을 가족으로 연결하고 선택했어요`, 'success'); }
+    else { setPicked([p.id]); setSheet(''); clearErr('patient'); prefillFrom(linked); showToast(`${p.name}님을 가족으로 연결했어요`, 'success'); }
   }
 
   // 진료항목 타인 입력 형식 검사
@@ -975,7 +988,7 @@ export default function Page() {
               onStop={() => { setSheet(''); setStage(service === 'appt' ? 'detail' : formFrom === 'service' ? 'service' : 'detail'); }}
               onOther={afterResultOther} onConfirm={afterResultOther} onItemGone={() => { setSheet(''); setStage('detail'); }} />
           )}
-          {toast && <div className={`gd-toast ${toastKind} ${sheet ? 'over-sheet' : ''}`} role="status">{toast}</div>}
+          {toast && <div className={`gd-toast ${toastKind}`} style={{ bottom: toastBottom }} role="status">{toastKind !== 'information' && <span className="gd-toast-ic" aria-hidden="true" />}<span className="gd-toast-msg">{toast}</span></div>}
         </div>
       </main>
     </div>

@@ -27,7 +27,8 @@ export const SCREEN_CSS = {
   'kakao-link': ['styles/connectKakaoLink.css'],
   'application-unified': ['styles/applicationUnified.css'],
   'adot-clinic-linking': ['styles/adotClinicLinking.css'],
-  'tablet-patient-select': ['styles/tabletPatientSelect.css']
+  'tablet-patient-select': ['styles/tabletPatientSelect.css'],
+  'desk-web': ['styles/connectUnified.css', 'styles/deskWeb.css']
 };
 
 /**

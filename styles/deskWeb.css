@@ -1,0 +1,199 @@
+/* =============================================================
+   desk-web — 데스크 기능 웹 이관 시안 전용 스타일 (접두사 dw-)
+   기반: connectShell.css + connectUnified.css(cu-*)를 그대로 재사용하고,
+   이 화면에만 필요한 조각(창 무대·트레이·배지·보류 라벨·체험 패널 등)만 추가한다.
+   ============================================================= */
+
+/* ---- 창 무대: Windows 바탕화면 모사 없이 창 + 슬림 작업표시줄만 ---- */
+.dw-stage{position:relative;flex:1;min-height:0;background:#dfe3ea;overflow:hidden}
+.dw-window.cu-client.cn-screen{position:absolute;inset:14px 16px 52px 16px;width:auto;min-height:0;display:flex;flex-direction:column;border:1px solid #c9d3e0;border-radius:8px;box-shadow:0 12px 36px #00245b33,0 2px 6px #00245b22;background:#fff;overflow:hidden;z-index:2}
+.dw-stage.max .dw-window.cu-client.cn-screen{inset:0 0 38px 0;border-radius:0;border:0;box-shadow:none}
+.dw-window .cu-titlebar.cn-titlebar{height:38px;flex-shrink:0;align-items:center;background:linear-gradient(100deg,#eff3f9,#f6f8fb);border-bottom:1px solid #dce3ed}
+.dw-window .cu-window-actions{height:38px}
+.dw-window .cu-window-actions .cu-icon{height:38px;width:44px;color:#374452;position:relative}
+.dw-window .cu-window-actions .cu-icon.close:hover{color:#fff}
+.dw-window .cu-body{height:auto;flex:1;min-height:0;overflow:hidden}
+.dw-window .cu-main{overscroll-behavior:contain}
+.dw-window .cu-statusbar{flex-shrink:0}
+.dw-window .cu-statusbar>span:nth-child(2){flex:1}
+.dw-closed{position:absolute;inset:0 0 38px 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--g70);font-size:13px;text-align:center;padding:16px}
+.dw-closed strong{font-size:16px;color:var(--g100)}
+
+/* ---- 슬림 작업표시줄 + 트레이 ---- */
+.dw-taskbar{position:absolute;left:0;right:0;bottom:0;height:38px;display:flex;align-items:center;justify-content:space-between;padding:0 12px 0 16px;background:#e9f0fa;border-top:1px solid #cfd8e5;font-size:11px;color:#4f6072;z-index:3}
+.dw-tray-area{position:relative;display:flex;align-items:center;gap:12px;height:100%}
+.dw-tray-btn{position:relative;width:34px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:5px;border:0;background:transparent}
+.dw-tray-btn:hover,.dw-tray-btn.selected{background:#ffffffc0}
+.cu-connect-icon.dw-ci{width:24px;height:24px;border-radius:5px;box-shadow:none}
+.cu-connect-icon.dw-ci img{width:20px}
+.dw-closed .cu-connect-icon.dw-ci{width:44px;height:44px;border-radius:9px}
+.dw-closed .cu-connect-icon.dw-ci img{width:36px}
+.dw-clock{font-size:11px;line-height:15px;text-align:right;white-space:nowrap}
+.cu-tray-menu.dw-tray-menu{bottom:42px;right:0;min-width:220px;z-index:40}
+.dw-tray-menu .cu-tray-menu-title{display:flex;align-items:center;gap:9px;padding:8px 10px 10px;border-bottom:1px solid var(--g30);margin-bottom:4px}
+.dw-tray-menu .cu-tray-menu-title strong{font-size:12px}
+
+/* ---- 배지 (99+) ---- */
+.dw-badge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#FA4655;color:#fff;font-size:10px;font-weight:700;line-height:16px;font-style:normal}
+.dw-bell .dw-badge{position:absolute;top:5px;left:22px}
+.dw-badge.nav{margin-left:auto;min-width:20px;height:18px;font-size:11px;border-radius:9px}
+.dw-badge.tray{position:absolute;top:0;right:-2px}
+.dw-badge.inline{margin-left:auto}
+
+/* ---- 보류 라벨·띠 ---- */
+.dw-hold{display:inline-flex;align-items:center;margin-left:6px;padding:1px 6px;border-radius:4px;background:#fff4d8;color:#865f17;font-size:11px;font-weight:600;line-height:16px;white-space:nowrap;vertical-align:middle;letter-spacing:0}
+.cu-header h1 .dw-hold{font-size:13px;line-height:20px;vertical-align:4px}
+.cu-nav-row .dw-hold{font-size:10px;padding:0 4px;margin-left:4px}
+.dw-hold-bar{display:flex;align-items:center;gap:8px;padding:10px 12px;margin-bottom:16px;border:1px dashed #e5c67a;background:#fffbef;border-radius:6px;color:#6f5414;font-size:12px;line-height:18px}
+.dw-hold-bar .dw-hold{margin-left:0}
+.dw-legend{font-size:11px;color:var(--g70);display:flex;align-items:center;gap:2px}
+.dw-head-actions{display:flex;align-items:center;gap:6px}
+.dw-hold-inline .dw-hold{margin:0}
+
+/* ---- 공통 보조 ---- */
+.dw-banner{display:flex;align-items:center}
+.dw-banner .cu-btn{margin-left:auto;color:#915215;font-size:12px;min-height:28px;padding:4px 8px}
+.dw-note{margin:0 0 20px!important}
+.dw-muted{color:var(--g60);font-weight:400;font-size:12px}
+.dw-muted-line{font-size:13px;color:var(--g60)}
+.dw-fail-hint{display:flex;align-items:center;gap:6px;margin-top:16px!important;font-size:12px;color:#865f17;background:#fff8e6;padding:8px 10px;border-radius:6px}
+.dw-fail-hint svg{font-size:14px}
+.cu-error{display:flex;align-items:flex-start;gap:6px;margin-top:16px!important}
+.cu-error svg{font-size:16px;margin-top:2px}
+.dw-warn-note{color:#915215;background:#fff3e3}
+.dw-new{font-style:normal;margin-left:6px;font-size:11px;color:var(--blue);font-weight:600}
+.cu-tag.teal{color:#0b7a83;background:#e1f5f6}
+.dw-date{min-height:40px;font-size:13px}
+
+/* ---- 스켈레톤 ---- */
+.dw-skeleton{border-top:1px solid var(--g30)}
+.dw-skeleton>div{display:grid;grid-template-columns:80px 1.2fr 1fr 1.4fr 1fr;gap:20px;padding:20px 12px;border-bottom:1px solid var(--g30)}
+.dw-skeleton i{display:block;height:14px;border-radius:4px;background:linear-gradient(90deg,var(--g20),#eef0f4,var(--g20));background-size:200% 100%;animation:dw-shimmer 1s linear infinite}
+@keyframes dw-shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+@media(prefers-reduced-motion:reduce){.dw-skeleton i{animation:none}}
+
+/* ---- 진료 현황 테이블 ---- */
+.dw-table th.dw-visit-th,.dw-table td.dw-visit-td{width:56px;text-align:center}
+.dw-visit-td input{width:18px;height:18px;margin:0;cursor:pointer}
+.dw-visit-td input:disabled{cursor:default;opacity:1}
+.dw-table th:last-child{min-width:56px;width:56px}
+.dw-kebab-wrap{position:relative;display:inline-flex}
+.dw-kebab{position:absolute;right:0;top:34px;min-width:132px;padding:6px;background:#fff;border:1px solid var(--g30);border-radius:8px;box-shadow:0 8px 24px #0000001f;z-index:10;display:flex;flex-direction:column}
+.dw-kebab button{text-align:left;padding:9px 10px;border-radius:4px;font-size:13px;color:var(--g90)}
+.dw-kebab button:hover{background:var(--g20)}
+.dw-kebab .danger-text{color:#e14352}
+.dw-chips{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
+.dw-chips small{font-size:11px;color:var(--g60)}
+.dw-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 6px 5px 10px;border-radius:16px;background:#e8f2ff;color:#0061db;font-size:12px;font-weight:500}
+.dw-chip button{display:inline-flex;border-radius:50%;padding:2px;color:#0061db}
+.dw-chip button:hover{background:#d3e6ff}
+.dw-chip svg{font-size:12px}
+
+/* ---- 대시보드 ---- */
+.dw-stat-sub{display:block;font-style:normal;font-size:12px;color:var(--g60);margin-top:4px}
+.dw-empty-card{display:flex;align-items:center;gap:16px;padding:20px 24px;margin-bottom:32px;border:1px solid #b3d5ff;background:#f3f8ff;border-radius:8px}
+.dw-empty-card>svg{font-size:28px;color:var(--blue)}
+.dw-empty-card>div{flex:1}
+.dw-empty-card strong{font-size:15px}
+.dw-empty-card p{font-size:13px;color:var(--g70);margin-top:4px;line-height:20px}
+
+/* ---- 상세 모달 ---- */
+.dw-detail-label-row{display:flex;align-items:center;justify-content:space-between}
+.dw-detail-label-row .cu-btn.quiet{font-size:13px;margin-top:14px;color:var(--blue)}
+.dw-dl{display:grid;grid-template-columns:84px 1fr;gap:10px 16px;margin:0;font-size:14px}
+.dw-dl dt{color:var(--g60);font-size:13px;line-height:22px}
+.dw-dl dd{margin:0;min-width:0;word-break:break-all}
+.dw-dl input,.dw-dl textarea{width:100%}
+.dw-dl textarea{height:80px;resize:vertical;margin-top:0!important}
+.dw-person{gap:48px;flex-wrap:wrap}
+.dw-history{list-style:none;margin:0;padding:0;border:1px solid var(--g30);border-radius:8px}
+.dw-history li{display:grid;grid-template-columns:170px 1fr auto;gap:12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--g30);font-size:13px;color:var(--g90)}
+.dw-history li:last-child{border-bottom:0}
+.dw-auto{background:#f4f6f8;color:#4E5968}
+.dw-detail-actions{display:flex;gap:8px;margin-left:auto}
+.cu-modal>footer .dw-detail-actions{margin-left:auto}
+.cu-modal>footer:has(.dw-detail-actions){justify-content:space-between}
+.cu-btn.dw-danger-line{color:#e14352;border-color:#f3c2c7}
+.cu-btn.dw-danger-line:hover{background:#fff0f1}
+
+/* ---- 폼 ---- */
+.dw-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+.dw-form-grid .cu-form-label{margin-top:16px}
+.dw-span2{grid-column:span 2}
+.dw-req{color:#e14352;font-weight:600}
+.dw-field-err{font-style:normal;font-size:12px;color:#ce3346;font-weight:400}
+.dw-fill{margin-top:12px;font-size:12px!important;color:var(--g70)!important}
+.dw-doctor-row{display:flex;gap:6px;align-items:center}
+.dw-doctor-row input{flex:1}
+.dw-add-doctor{align-self:flex-start;color:var(--blue)!important;font-size:13px!important}
+
+/* ---- 진료실 ---- */
+.dw-room-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.dw-room-card{position:relative;display:flex;flex-direction:column;gap:14px;padding:20px 44px 20px 20px;text-align:left;border:1px solid var(--g30);border-radius:8px;background:#fff;min-height:132px}
+.dw-room-card:hover{border-color:var(--blue)}
+.dw-room-card strong{display:block;font-size:16px;font-weight:600}
+.dw-room-card small{display:block;font-size:12px;color:var(--g60);margin-top:4px}
+.dw-room-card>svg{position:absolute;right:16px;top:22px;color:var(--g60)}
+.dw-room-count{font-style:normal;font-size:12px;color:var(--blue)}
+.dw-svc-tags{display:flex;flex-wrap:wrap;gap:6px}
+.dw-svc{display:inline-flex;font-size:11px;line-height:16px;padding:3px 7px;border-radius:4px;background:var(--g20);color:var(--g60);font-weight:500}
+.dw-svc.on{background:#e6f1ff;color:#0064dd}
+.dw-svc-section{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:18px 0;border-bottom:1px solid var(--g30)}
+.dw-svc-section strong{font-size:15px;margin-right:8px}
+.dw-svc-section p{font-size:13px;color:var(--g60);margin-top:6px}
+
+/* ---- 알림 메시지함 ---- */
+.dw-noti-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px}
+.dw-mini-tabs{flex:1}
+.dw-noti-list{list-style:none;margin:0;padding:0;border-top:1px solid var(--g30)}
+.dw-noti-list button{display:flex;align-items:center;gap:14px;width:100%;padding:16px 12px;border-bottom:1px solid var(--g30);text-align:left;font-size:14px;color:var(--g70)}
+.dw-noti-list button:hover{background:var(--g10)}
+.dw-noti-list button.unread{color:var(--g100);font-weight:500;background:#fafcff}
+.dw-noti-type{flex-shrink:0;width:92px;font-size:11px;padding:3px 0;border-radius:4px;text-align:center;font-weight:600}
+.dw-noti-type.t1{background:#e6f1ff;color:#0064dd}
+.dw-noti-type.t2{background:#e1f5f6;color:#0b7a83}
+.dw-noti-type.t3{background:#f1ecff;color:#6941c6}
+.dw-noti-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dw-noti-at{font-size:12px;color:var(--g60);font-weight:400;white-space:nowrap}
+.dw-dot{width:7px;height:7px;border-radius:50%;background:#FA4655;flex-shrink:0}
+.dw-noti-list svg{color:var(--g60)}
+
+/* ---- 프로그램 환경설정(별도 창 모사) ---- */
+.cu-modal.dw-settings{width:560px;border-top:6px solid #dce3ed}
+.dw-window-note{font-size:12px;color:var(--g60);background:var(--g10);padding:8px 10px;border-radius:6px}
+.dw-key{display:flex;align-items:center;gap:12px;border:1px solid var(--g30);background:var(--g10);border-radius:8px;padding:14px 16px}
+.dw-key>svg{font-size:22px;color:var(--g60)}
+.dw-key>div{flex:1}
+.dw-key strong{font-size:14px}
+.dw-key p{font-size:12px;color:var(--g60);margin-top:3px}
+.dw-pc{font-size:11px;font-weight:500;color:#0061db;background:#e8f2ff;padding:1px 6px;border-radius:4px;margin-left:6px}
+
+@media(max-width:1100px){.dw-legend{display:none}.dw-history li{grid-template-columns:1fr;gap:4px}}
+@media(max-width:760px){.dw-window.cu-client.cn-screen{inset:8px 8px 46px 8px}.dw-taskbar-label{display:none}.dw-form-grid{grid-template-columns:1fr}.dw-span2{grid-column:auto}.dw-noti-type{width:72px}}
+
+/* ---- v0.2: 토스트 톤·체험 설정 위치·기타 QA 반영 ---- */
+.cu-toast.dw-toast-fail{background:#fff0f1;color:#a3202f;border:1px solid #f3c2c7}
+.cu-toast.dw-toast-fail svg{color:#e14352}
+.dw-kebab{z-index:70}
+.dw-bell .dw-badge{top:4px;left:auto;right:3px}
+.dw-block{display:block;margin-top:4px}
+.dw-draft-note{margin-right:auto;align-self:center;font-size:12px;color:var(--g60)}
+.dw-exp-btn{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;border:1px dashed #9aa6b8;border-radius:6px;background:#fff;font-size:12px;font-weight:600;color:var(--g90)}
+.dw-exp-btn svg{font-size:15px;color:#6941c6}
+.dw-exp-btn b{min-width:16px;height:16px;border-radius:8px;background:#6941c6;color:#fff;font-size:10px;line-height:16px;text-align:center;padding:0 4px}
+.dw-exp-btn em{font-style:normal;font-size:10px;font-weight:500;color:#6941c6;background:#f1ecff;padding:1px 5px;border-radius:4px}
+.dw-exp-btn.open{background:#f1ecff;border-style:solid;border-color:#c7b8f5}
+.dw-exp-strip{flex-shrink:0;display:flex;align-items:center;flex-wrap:wrap;gap:6px 18px;padding:8px 24px;background:#f6f3ff;border-bottom:1px dashed #c7b8f5;font-size:12px;color:var(--g90);z-index:5}
+.dw-exp-tag{font-size:11px;font-weight:600;color:#6941c6}
+.dw-exp-item{display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}
+.dw-exp-strip .dw-exp-reset{margin-left:auto;min-height:28px!important;padding:4px 8px!important;font-size:12px!important;width:auto}
+@media(max-width:760px){.dw-exp-btn em{display:none}.dw-exp-strip{padding:8px 12px}}
+
+/* ---- v0.3 ---- */
+.dw-exp-item.locked{opacity:.5;cursor:not-allowed}
+.dw-exp-lock{font-size:11px;color:#865f17;background:#fff4d8;padding:2px 6px;border-radius:4px}
+.dw-exp-note{font-style:normal;font-size:10px;color:#6941c6;background:#fff;border:1px solid #c7b8f5;padding:0 4px;border-radius:4px;margin-left:2px}
+.dw-table th:last-child,.dw-table td:last-child{position:sticky;right:0;background:#fff;z-index:1;box-shadow:-1px 0 0 var(--g30)}
+.dw-table tbody tr:hover td:last-child{background:var(--g10)}
+.cu-header h1:focus{outline:none}
+.cu-header h1:focus-visible{outline:2px solid var(--blue);outline-offset:3px}

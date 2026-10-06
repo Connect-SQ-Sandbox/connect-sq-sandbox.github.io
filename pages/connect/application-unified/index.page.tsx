@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : application-unified — 병원 상세(As-is) → 진료실 선택(As-is) → 통합 신청서(420 예약 · 420 미리접수 · 진료항목 예약)
- * 상태      : 현행 · v0.20 · 최종수정 2026-10-02
+ * 상태      : 현행 · v0.21 · 최종수정 2026-10-06
  * PRD       : GAS-1 (Draft) 기반, PO 협의 2026-09-29 반영. PO 체험판 application-standard와 별개 페이지.
  *             내부 검토 메모는 사내 문서에 둔다(공개 저장소라 링크 미기재).
  * 배포URL   : https://connect-sq-sandbox.github.io/out/application-unified.html
@@ -32,7 +32,8 @@
  *  - [확정·PO협의] 주소: 병원 설정에 따라 필수/선택/미노출, 등록 주소 있으면 prefill.
  *  - [확정·PO협의] 약관: 병원 설정 약관만, 필수/선택 구분.
  *  - [확정·As-is] 선택한 전원이 이전에 동의한 약관은 다시 받지 않음(차트 조회 응답 viewedConsentIds 기준, useAppointmentSelectPatient.ts:405-448).
- *    [유지·자체] 이때 섹션을 숨기지 않고 '이미 동의했어요' + 동의 완료 목록으로 보여줌(As-is는 동의 시트 자체를 생략). 진료항목은 조회가 없어 해당 없음.
+ *    [확정·세화 2026-10-06] 이미 동의한 약관은 노출하지 않고 동의가 필요한 약관만 보여줌(약관별 판단). 전부 동의했으면 약관 섹션 자체를 숨김(As-is 시트 생략과 같음).
+ *    기록 없는 분이 섞이거나 조회 실패면 전부 다시 받음. 진료항목은 조회가 없어 해당 없음.
  *  - [확정·PO협의] CTA 항상 고정·활성. 누르면 첫 미입력 섹션으로 앵커 스크롤.
  *  - [확정·세화] 예약 희망일은 바텀시트에서 선택(캘린더 → 시간 칩 → '선택 완료'로 반영, 닫으면 미반영).
  *  - [확정·세화] 내원 목적은 칩이 아니라 선택 필드 → 바텀시트 라디오 목록(항목명이 길고 개수가 많을 수 있음). 고르면 바로 닫힘.
@@ -63,6 +64,7 @@
  *  - v0.17 (2026-09-30) 병원 기록 가족 연결은 미성년만, 성인은 이번 신청에만 선택(성인 후보 예시 추가).
  *  - v0.18 (2026-10-02) 토스트를 앱 라이브러리 mobile/SnackBar 디자인으로 교체(none/success/fail, 2줄 제한, 좌우 20). 위치는 앱 스낵바 가이드: 하단 20, 고정 CTA·시트 푸터 위 12.
  *  - v0.19 (2026-10-02) 색 토큰을 Foundations 값으로 동기화. 섹션 빨간 바 제거(필드 테두리·문구로만 에러 표시). 결과 '다른 시간/날짜 보기' 뒤 마감 슬롯·날짜 재조회 반영. 1명 재동의 문구 교정. 목적 없이 날짜를 누르면 에러 없이 목적 시트로 안내. 예약 일정 선택 후 진료실 변경은 확인 모달. 화면 배경 흰색 + 섹션 구분 mobile/divider(8, Gray/20), 동시접수 이름 칩 mobile/chip(Small·Selected_Primary_Outlined).
+ *  - v0.21 (2026-10-06) 약관 동의 이력: 약관별로 이미 동의한 약관은 숨기고 남은 약관만 동의받음, 전부 동의 시 섹션 숨김. 체험 패널 이력 = 없음/필수만 동의함/전부 동의함.
  *  - v0.20 (2026-10-02) 피그마 앱 라이브러리 기준: 필드 에러 문구 body2_500(14/22), 시트 하단 버튼 영역 위 선 제거·12/20/12+홈 인디케이터, 알럿 315폭·24/20/20·본문 14/22, 본문 하단 CTA도 같은 규격, 입력창 박스형 h56·Gray/30, 결과 페이지 로딩 중 X 알럿은 결과 도착 시 자동 닫힘.
  *  - v0.16 (2026-09-30) 체험 패널에서 신청과 무관한 조건(오늘 운영·리뷰) 제거, 정보 성격별 카드 5개로 분리.
  *  - v0.15 (2026-09-30) 체험 패널을 병원 운영 설정 / 환자 정보로 재그룹, 환자별 약관 동의 이력(As-is viewedConsentIds) 반영.
@@ -263,7 +265,7 @@ export default function Page() {
   const [savedAddr, setSavedAddr] = useState<'yes' | 'no'>('yes');
   const [termsMode, setTermsMode] = useState<'both' | 'required' | 'none'>('both');
   const [lookupMode, setLookupMode] = useState<'ok' | 'fail'>('ok');
-  const [consentHistory, setConsentHistory] = useState<'none' | 'agreed'>('none'); // 환자: 이 병원 약관 동의 이력
+  const [consentHistory, setConsentHistory] = useState<'none' | 'required' | 'all'>('none'); // 환자: 이 병원 약관 동의 이력(동의한 약관 범위)
   const [revisitOnly, setRevisitOnly] = useState(false); // 병원 성격: 재진 환자만 접수(As-is '재진 환자만 진료 가능한 병원이에요')
   const [purposeSetting, setPurposeSetting] = useState<'on' | 'off'>('on');
   // 병원 상세 체험 조건
@@ -430,7 +432,13 @@ export default function Page() {
   }
   const isMatched = (p: Person) => lookup === 'done' && (p.id === 'me' || p.id === 'f2' || !!p.chart);
   const revisitGate = isRoom && revisitOnly;
-  const termsAgreedBefore = consentHistory === 'agreed' && isRoom && picked.length > 0 && picked.every(id => { const p = people.find(x => x.id === id); return !!p && isMatched(p); });
+  const historyUsable = consentHistory !== 'none' && isRoom && picked.length > 0 && picked.every(id => { const p = people.find(x => x.id === id); return !!p && isMatched(p); });
+  const agreedIds = !historyUsable ? [] : consentHistory === 'all' ? ['t1', 't2'] : ['t1'];
+  const pendingTerms = terms.filter(t => !agreedIds.includes(t.id)); // 동의받아야 하는 약관만
+  const someHidden = pendingTerms.length < terms.length;
+  // 숨겨진(이미 동의한) 약관의 체크 값은 비운다 — 다시 노출될 때 체크된 채로 나타나지 않게
+  const hiddenKey = terms.filter(t => !pendingTerms.includes(t)).map(t => t.id).join(',');
+  useEffect(() => { if (hiddenKey) setAgree(a => { const n = { ...a }; hiddenKey.split(',').forEach(id => delete n[id]); return n; }); }, [hiddenKey]);
   /* As-is(useAppointmentSelectPatient.ts:405-448, ReceiptConfirmScreen.tsx:88): 차트 조회 응답의 환자별 동의 이력(viewedConsentIds)으로
      선택한 전원이 공통으로 이미 동의한 약관은 다시 받지 않는다. 기록이 없거나 조회 실패·브릿지 미연결이면 전부 다시 받는다. */
   function openPatients() {
@@ -484,9 +492,9 @@ export default function Page() {
     if (service !== 'receipt' && (!date || !time)) m.push('date');
     if (isRoom ? picked.length === 0 : !who || (who === 'other' && Object.values(otherInvalid).some(Boolean))) m.push('patient');
     if (addrMode === 'required' && !addr.base) m.push('addr');
-    if (!termsAgreedBefore && terms.some(t => t.req && !agree[t.id])) m.push('terms');
+    if (pendingTerms.some(t => t.req && !agree[t.id])) m.push('terms');
     return m;
-  }, [termsAgreedBefore, isRoom, usesPurpose, purpose, optionIds, service, date, time, picked, who, other, addrMode, addr, terms, agree]);
+  }, [pendingTerms, isRoom, usesPurpose, purpose, optionIds, service, date, time, picked, who, other, addrMode, addr, terms, agree]);
 
   function jump(k: string) {
     const el = secRefs.current[k];
@@ -685,29 +693,18 @@ export default function Page() {
       )}
 
       {/* ⑤ 약관동의 */}
-      {terms.length > 0 && (
+      {pendingTerms.length > 0 && (
         <section ref={el => (secRefs.current.terms = el)} className={`au-sec ${err('terms') ? 'err' : ''}`}>
           <div className="au-sec-head"><h2>약관 동의</h2></div>
-          {termsAgreedBefore ? (
-            <>
-              <div className="gd-banner basic">진료받을 분 모두 이 병원 약관에 이미 동의했어요. 다시 동의하지 않아도 돼요.</div>
-              {terms.map(t => (
-                <div key={t.id} className="au-term">
-                  <span className="chk" style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, fontSize: 14 }}><span className={`gd-tag ${t.req ? 'green' : 'gray'}`}>{t.req ? '동의 완료' : '이전에 확인'}</span><span>{t.label}</span></span>
-                  <button type="button" className="view" onClick={() => showToast('병원이 등록한 약관 원문을 보여줘요 (체험)')}>보기</button>
-                </div>
-              ))}
-            </>
-          ) : (<>
           <button type="button" className="au-terms-all" onClick={() => {
-            const all = terms.every(t => agree[t.id]);
-            setAgree(Object.fromEntries(terms.map(t => [t.id, !all]))); if (!all) clearErr('terms');
+            const all = pendingTerms.every(t => agree[t.id]);
+            setAgree({ ...agree, ...Object.fromEntries(pendingTerms.map(t => [t.id, !all])) }); if (!all) clearErr('terms');
           }}>
-            <span className={`gd-check ${terms.every(t => agree[t.id]) ? 'on' : ''}`} /><strong>전체 동의</strong>
+            <span className={`gd-check ${pendingTerms.every(t => agree[t.id]) ? 'on' : ''}`} /><strong>전체 동의</strong>
           </button>
-          {terms.map(t => (
+          {pendingTerms.map(t => (
             <div key={t.id} className="au-term">
-              <button type="button" className="chk" onClick={() => { const n = { ...agree, [t.id]: !agree[t.id] }; setAgree(n); if (!terms.some(x => x.req && !n[x.id])) clearErr('terms'); }}>
+              <button type="button" className="chk" onClick={() => { const n = { ...agree, [t.id]: !agree[t.id] }; setAgree(n); if (!pendingTerms.some(x => x.req && !n[x.id])) clearErr('terms'); }}>
                 <span className={`gd-check ${agree[t.id] ? 'on' : ''}`} />
                 <span className={`gd-tag ${t.req ? 'blue' : 'gray'}`}>{t.req ? '필수' : '선택'}</span>
                 <span>{t.label}</span>
@@ -715,11 +712,11 @@ export default function Page() {
               <button type="button" className="view" onClick={() => showToast('병원이 등록한 약관 원문을 보여줘요 (체험)')}>보기</button>
             </div>
           ))}
-          {consentHistory === 'agreed' && isRoom && picked.length > 0 && (lookup === 'fail'
+          {someHidden && <div className="au-help">이전에 동의한 약관은 다시 받지 않아요.</div>}
+          {consentHistory !== 'none' && isRoom && picked.length > 0 && (lookup === 'fail'
             ? <div className="au-help">병원 기록을 확인하지 못해 약관 동의를 다시 받아요.</div>
-            : pickedPeople.some(p => !isMatched(p)) && <div className="au-help">{picked.length > 1 ? '병원 기록이 없는 분이 포함되어 약관 동의를 다시 받아요.' : '이 병원 진료 기록이 없어 약관 동의를 다시 받아요.'}</div>)}
+            : lookup === 'done' && pickedPeople.some(p => !isMatched(p)) && <div className="au-help">{picked.length > 1 ? '병원 기록이 없는 분이 포함되어 약관 동의를 다시 받아요.' : '이 병원 진료 기록이 없어 약관 동의를 다시 받아요.'}</div>)}
           {err('terms') && <div className="au-err">필수 약관에 동의해 주세요.</div>}
-          </>)}
         </section>
       )}
     </>
@@ -930,8 +927,8 @@ export default function Page() {
             <div className="au-ctl-head"><strong>환자 정보</strong><span>계정·병원 기록에 따라 달라지는 값</span></div>
             <div className="au-ctl-group"><span>등록된 주소</span><Seg value={savedAddr} onChange={setSavedAddr} items={[['yes', '있음'], ['no', '없음']]} /></div>
             {isRoom && <div className="au-ctl-group"><span>병원 기록 조회</span><Seg value={lookupMode} onChange={v => { setLookupMode(v); lookupModeRef.current = v; if (sheet === 'patient') runLookup(); else { clearTimeout(lookupTimer.current); setLookup('idle'); if (revisitGate) { setPicked([]); setDraft([]); } } }} items={[['ok', '성공'], ['fail', '실패']]} /></div>}
-            {isRoom && <div className="au-ctl-group"><span>이 병원 약관 동의 이력</span><Seg value={consentHistory} onChange={setConsentHistory} items={[['none', '없음'], ['agreed', '이전에 동의함']]} />
-              <div className="au-ctl-note" style={{ margin: '4px 0 0' }}>병원 기록이 확인된 분(김하늘·김봄·연결한 가족)에게만 적용돼요.</div></div>}
+            {isRoom && <div className="au-ctl-group"><span>이 병원 약관 동의 이력</span><Seg value={consentHistory} onChange={setConsentHistory} items={[['none', '없음'], ['required', '필수만 동의함'], ['all', '전부 동의함']]} />
+              <div className="au-ctl-note" style={{ margin: '4px 0 0' }}>병원 기록이 확인된 분(김하늘·김봄·연결한 가족·차트 성인)에게만 적용돼요.</div></div>}
           </div>
           <div className="au-ctl">
             <div className="au-ctl-head"><strong>신청 결과</strong><span>서버 응답 가정 · 제출 후 결과 화면</span></div>

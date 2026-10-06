@@ -1,12 +1,12 @@
 /**
  * desk-web — 진료실 영역(목록·순서·미사용·상세·접수/예약 스케줄)과 진료실 운영 설정.
- * 현행 커넥트 웹뷰(진료실 관리·상세·스케줄·운영 설정) 구조·문구·노출 조건을 옮긴 축약 재현이다.
+ * 현행 커넥트 웹뷰(진료실 설정·상세·스케줄·운영 설정) 구조·문구·노출 조건을 옮긴 축약 재현이다.
  * 결정 태그·변경 이력은 index.page.tsx 헤더에 둔다. 가상 데이터 · 메모리 상태 · 네트워크 0.
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  VscAdd, VscArrowDown, VscArrowUp, VscChevronDown, VscChevronLeft, VscChevronRight, VscChevronUp, VscClose, VscDebugPause,
-  VscDebugStart, VscEdit, VscGripper, VscInfo, VscLayoutPanelLeft, VscTrash, VscWarning, VscCopy, VscCheck, VscGear
+  VscAdd, VscArrowDown, VscArrowUp, VscChevronDown, VscChevronLeft, VscChevronRight, VscClose, VscDebugPause,
+  VscDebugStart, VscEdit, VscGripper, VscInfo, VscExtensions, VscTrash, VscWarning, VscCopy, VscCheck, VscGear, VscVm, VscDeviceMobile, VscCalendar, VscArrowRight
 } from 'react-icons/vsc';
 
 /* ───────── 기준 시각 · 유틸 ───────── */
@@ -103,17 +103,18 @@ export const seedInvalid = (): Invalid[] => [
 ];
 
 /* ───────── 상태 판정 (현행 useRoomStatus 규칙) ───────── */
-type St = 'none' | 'disabled' | 'error' | 'paused' | 'active';
+type St = 'none' | 'disabled' | 'error' | 'paused' | 'active' | 'nochart';
 const futureR = (s: RSlot[]) => s.some(x => x.date > TODAY || (x.date === TODAY && x.end > NOW));
 const futureA = (s: ASlot[]) => s.some(x => x.date > TODAY || (x.date === TODAY && x.time > NOW));
-export const roomState = (r: Room, k: SvcKey, supported: (k: SvcKey) => boolean): St => {
+export const roomState = (r: Room, k: SvcKey, supported: (k: SvcKey) => boolean, chartMissing = false): St => {
   if (!supported(k)) return 'none';
+  if (chartMissing && r[k].accepted) return 'nochart'; // 연동 병원인데 차트에 진료실 없음(figma baseline 참조)
   if (!r[k].accepted) return 'disabled';
   if (k === 'tablet' ? r.tablet.slotUsed && !futureR(r.rSlots.tablet) : k === 'mobile' ? !futureR(r.rSlots.mobile) : !futureA(r.aSlots)) return 'error';
   if (r[k].paused) return 'paused';
   return 'active';
 };
-const ST_LABEL: Record<string, string> = { active: '운영중', error: '운영불가', paused: '임시마감' };
+const ST_LABEL: Record<string, string> = { active: '운영중', error: '운영불가', paused: '임시마감', nochart: '운영불가' };
 
 /* ───────── 공통 props · 저장 흐름 ───────── */
 type ModalT = (p: { title: React.ReactNode; children: React.ReactNode; footer?: React.ReactNode; onClose: () => void; wide?: boolean; busy?: boolean; className?: string }) => JSX.Element;
@@ -122,7 +123,7 @@ export type ChartMode = 'desk' | 'unlinked' | 'linked';
 export const svcSupported = (mode: ChartMode, chartLimited: boolean, k: SvcKey) => mode === 'unlinked' ? k === 'appt' : mode === 'linked' && chartLimited ? k === 'tablet' : true;
 export type Kit = {
   Modal: ModalT; notify: (t: string) => void; fail: (t: string) => void; instant: (apply: () => void, ok: string, what?: string) => boolean;
-  serverDown: boolean; failSim: boolean; linked: boolean; chartLimited: boolean; mode: ChartMode; Pin: (p: { n: number }) => JSX.Element | null;
+  serverDown: boolean; failSim: boolean; linked: boolean; chartLimited: boolean; mode: ChartMode; Pin: (p: { n: number }) => JSX.Element | null; itemOnly?: boolean; chartMissingId?: string; onOpenKakao?: () => void;
 };
 const supportedOf = (kit: Kit) => (k: SvcKey) => svcSupported(kit.mode, kit.chartLimited, k);
 export const CHART_NAME = '연동 차트 예시';
@@ -157,7 +158,7 @@ function SvcTag({ st, k }: { st: St; k?: SvcKey }) {
 }
 
 /* ═════════════ 진료실 영역 ═════════════ */
-export type View = { v: 'list' } | { v: 'order' } | { v: 'unused' } | { v: 'detail'; id: string } | { v: 'rsched'; id: string; type: 'tablet' | 'mobile' } | { v: 'asched'; id: string };
+export type View = { v: 'list' } | { v: 'order' } | { v: 'unused' } | { v: 'detail'; id: string; open?: SvcKey } | { v: 'rsched'; id: string; type: 'tablet' | 'mobile'; ro?: boolean } | { v: 'asched'; id: string; ro?: boolean };
 export function ExamRooms(props: {
   kit: Kit; rooms: Room[]; setRooms: React.Dispatch<React.SetStateAction<Room[]>>; invalid: Invalid[]; setInvalid: React.Dispatch<React.SetStateAction<Invalid[]>>;
   initialView?: View; emptyNode: React.ReactNode; activeIn: (r: Room) => number; banner: React.ReactNode;
@@ -177,34 +178,46 @@ export function ExamRooms(props: {
   const update = (id: string, fn: (r: Room) => Room) => setRooms(old => old.map(r => r.id === id ? fn(r) : r));
   const go = (v: View) => { setView(v); document.querySelector('.cu-main')?.scrollTo?.(0, 0); };
 
-  if (view.v === 'detail' && room) return <Detail kit={kit} room={room} allRooms={rooms} update={update} supported={supported} back={() => go({ v: 'list' })} open={go} Hold={props.Hold} banner={props.banner} onEdit={props.onEdit} onDelete={props.onDelete} activeIn={props.activeIn} />;
-  if (view.v === 'rsched' && room) return <ReceiptSchedule kit={kit} room={room} type={view.type} update={update} back={() => go({ v: 'detail', id: room.id })} banner={props.banner} />;
-  if (view.v === 'asched' && room) return <ApptSchedule kit={kit} room={room} update={update} back={() => go({ v: 'detail', id: room.id })} banner={props.banner} />;
+  if (view.v === 'detail' && room) return <Detail key={room.id + (view.open || '')} initialOpen={view.open} kit={kit} room={room} allRooms={rooms} update={update} supported={supported} back={() => go({ v: 'list' })} open={go} Hold={props.Hold} banner={props.banner} onEdit={props.onEdit} onDelete={props.onDelete} activeIn={props.activeIn} />;
+  if (view.v === 'rsched' && room) return <ReceiptSchedule kit={kit} room={room} type={view.type} ro={!!view.ro} update={update} back={() => go({ v: 'detail', id: room.id })} banner={props.banner} />;
+  if (view.v === 'asched' && room) return <ApptSchedule kit={kit} room={room} ro={!!view.ro} update={update} back={() => go({ v: 'detail', id: room.id })} banner={props.banner} />;
   if (view.v === 'order') return <OrderSetting kit={kit} rooms={sorted} supported={supported} setRooms={setRooms} back={() => go({ v: 'list' })} banner={props.banner} />;
   if (view.v === 'unused') return <Unused kit={kit} invalid={props.invalid} setInvalid={props.setInvalid} back={() => go({ v: 'list' })} banner={props.banner} />;
 
   return <>
-    <header className="cn-header cu-header">
-      <div><h1 className="cn-title" tabIndex={-1}>진료실 관리</h1><p className="cn-desc">진료실별 현장 접수·원격 접수·예약 운영과 스케줄을 관리할 수 있어요.</p></div>
+    {/* figma baseline 참조 */}
+    <header className="cn-header cu-header dw-fig-head">
+      <div><h1 className="cn-title" tabIndex={-1}>진료실 설정</h1></div>
       <div className="dw-head-actions">
-        {kit.linked && <button className="cu-btn quiet" onClick={() => go({ v: 'unused' })}>미사용 설정</button>}
-        <button className="cu-btn quiet" disabled={rooms.length < 2} onClick={() => go({ v: 'order' })}><VscLayoutPanelLeft />순서관리</button>
-        {!kit.linked && <span className="dw-filter-pin"><button className="cu-btn primary" onClick={props.onCreate}><VscAdd />새 진료실</button><kit.Pin n={25} /></span>}
+        {kit.linked && <button className="dw-fig-textbtn" onClick={() => go({ v: 'unused' })}>미사용 설정</button>}
+        <button className="dw-fig-textbtn" disabled={rooms.length < 2} onClick={() => go({ v: 'order' })}><VscExtensions />순서관리</button>
+        {!kit.linked && <span className="dw-filter-pin"><button className="dw-fig-textbtn primary" onClick={props.onCreate}><VscAdd />새 진료실</button><kit.Pin n={25} /></span>}
       </div>
     </header>
     {props.banner}
-    <div className="cu-content">
+    <div className="cu-content dw-fig-content">
+      {kit.linked && kit.itemOnly && <p className="cu-inline-note dw-note"><VscInfo /><span>진료항목 예약만 운영하는 연동 병원이에요. 진료실은 차트 동기화로 표시되고 예약 섹션은 미사용이에요. 현장·원격 접수는 차트 기능 기준으로 운영할 수 있어요.<kit.Pin n={28} /></span></p>}
       {kit.linked && <p className="cu-inline-note dw-note"><VscInfo />연동 차트 병원이에요. 진료실 이름·진료과·의사는 차트에서 관리하고, 운영 설정과 스케줄은 여기서 바꿀 수 있어요.</p>}
-      {rooms.length === 0 ? props.emptyNode : <div className="dw-room-list">{sorted.map(r => <RoomCard key={r.id} r={r} supported={supported} onClick={() => go({ v: 'detail', id: r.id })} extra={props.activeIn(r) > 0 ? `진행 중 예약 ${props.activeIn(r)}건` : ''} />)}</div>}
+      {rooms.length === 0 ? props.emptyNode : <div className="dw-fig-grid">{/* figma baseline 참조 */}{sorted.map(r => <RoomCard key={r.id} grid r={r} supported={supported} chartMissing={kit.linked && kit.chartMissingId === r.id} onClick={() => go({ v: 'detail', id: r.id })} extra={props.activeIn(r) > 0 ? `진행 중 예약 ${props.activeIn(r)}건` : ''} />)}</div>}
     </div>
   </>;
 }
 
-function RoomCard({ r, supported, onClick, extra, right }: { r: Room; supported: (k: SvcKey) => boolean; onClick?: () => void; extra?: string; right?: React.ReactNode }) {
+function RoomCard({ r, supported, onClick, extra, right, grid, chartMissing }: { r: Room; supported: (k: SvcKey) => boolean; onClick?: () => void; extra?: string; right?: React.ReactNode; grid?: boolean; chartMissing?: boolean }) {
   const keys: SvcKey[] = ['tablet', 'mobile', 'appt'];
-  const sts = keys.map(k => [k, roomState(r, k, supported)] as const);
+  const sts = keys.map(k => [k, roomState(r, k, supported, chartMissing)] as const);
   const shown = sts.filter(([, s]) => s !== 'none' && s !== 'disabled');
-  const noneAtAll = keys.every(k => !r[k].accepted);
+  const noneAtAll = shown.length === 0; // 미사용·차트 미지원만 남으면 '운영중인 서비스가 없어요'
+  if (grid) {
+    // figma baseline 참조 — 카드 이름 / 상세 + 점 / 배지 현장·원격·예약
+    const detail = [r.name, r.dept, r.doctors.join(', ')];
+    return <button className="dw-fig-card" onClick={onClick}>
+      <span className="dw-fig-card-data"><strong>{r.alias || r.name}</strong>
+        <span className="dw-fig-detail">{detail.map((t, i) => <React.Fragment key={i}>{i > 0 && <i className="dw-fig-dot" aria-hidden="true" />}<span>{t}</span></React.Fragment>)}</span></span>
+      <span className="dw-fig-status">{noneAtAll ? <span className="dw-fig-badge off">운영중인 서비스가 없어요</span> : shown.map(([k, st]) => <span key={k} className={'dw-fig-badge ' + (st === 'active' ? 'on' : st === 'paused' ? 'stop' : 'err')} title={ST_LABEL[st]}>{SVC_SHORT[k]}</span>)}
+        {extra && <em className="dw-fig-extra">{extra}</em>}</span>
+    </button>;
+  }
   const body = <>
     <div className="dw-rc-main"><strong>{r.alias || r.name}</strong><small>{r.name} ∙ {r.dept} ∙ {r.doctors.join(', ')}</small>
       <div className="dw-svc-tags">{noneAtAll ? <span className="dw-stag off">운영중인 서비스가 없어요</span> : shown.map(([k, s]) => <span key={k} className={'dw-stag ' + s}><i />{SVC_SHORT[k]}</span>)}</div>
@@ -224,7 +237,7 @@ function OrderSetting({ kit, rooms, supported, setRooms, back, banner }: { kit: 
   const { busy, error, run } = useRun(kit);
   const move = (i: number, d: number) => setDraft(() => { const n = [...order]; const j = i + d; if (j < 0 || j >= n.length) return n; [n[i], n[j]] = [n[j], n[i]]; return n; });
   return <>
-    <header className="cn-header cu-header"><div><button className="dw-crumb" onClick={back}><VscChevronLeft />진료실 관리</button><h1 className="cn-title" tabIndex={-1}>진료실 순서 변경</h1><p className="cn-desc">환자에게 보여줄 진료실 순서를 설정할 수 있어요.</p></div></header>
+    <header className="cn-header cu-header"><div><button className="dw-crumb" onClick={back}><VscChevronLeft />진료실 설정</button><h1 className="cn-title" tabIndex={-1}>진료실 순서 변경</h1><p className="cn-desc">환자에게 보여줄 진료실 순서를 설정할 수 있어요.</p></div></header>
     {banner}
     <div className="cu-content">
       <p className="cu-subnote dw-mt0">현행은 드래그로 순서를 바꿔요. 시안에서는 위·아래 버튼으로 대신해요.</p>
@@ -244,7 +257,7 @@ function Unused({ kit, invalid, setInvalid, back, banner }: { kit: Kit; invalid:
   const { busy, error, setError, run } = useRun(kit);
   const M = kit.Modal;
   return <>
-    <header className="cn-header cu-header"><div><button className="dw-crumb" onClick={back}><VscChevronLeft />진료실 관리</button><h1 className="cn-title" tabIndex={-1}>미사용 설정 관리</h1><p className="cn-desc">차트 진료실 정보가 변경되거나 삭제되어 사용할 수 없는 설정이에요.</p></div></header>
+    <header className="cn-header cu-header"><div><button className="dw-crumb" onClick={back}><VscChevronLeft />진료실 설정</button><h1 className="cn-title" tabIndex={-1}>미사용 설정 관리</h1><p className="cn-desc">차트 진료실 정보가 변경되거나 삭제되어 사용할 수 없는 설정이에요.</p></div></header>
     {banner}
     <div className="cu-content">
       {invalid.length === 0 ? <div className="cu-empty"><VscCheck /><strong>미사용 설정이 없어요</strong></div> : <div className="dw-room-list">{invalid.map(u => <div className="dw-room-row static" key={u.id}>
@@ -259,13 +272,15 @@ function Unused({ kit, invalid, setInvalid, back, banner }: { kit: Kit; invalid:
 }
 
 /* ═════════════ 진료실 상세 ═════════════ */
-type DModal = null | { t: 'alias' } | { t: 'enable' | 'disable' | 'guide' | 'blockDisable'; k: SvcKey } | { t: 'purpose'; k: SvcKey; next: string } | { t: 'purposeView'; id: string } | { t: 'schedSwitch'; to: boolean } | { t: 'kakaoBasic' } | { t: 'roomDelete' };
-function Detail({ kit, room: r, allRooms, update, supported, back, open, Hold, banner, onEdit, onDelete, activeIn }: {
-  kit: Kit; room: Room; allRooms: Room[]; update: (id: string, fn: (r: Room) => Room) => void; supported: (k: SvcKey) => boolean; back: () => void; open: (v: View) => void;
+/** 설정 행(figma baseline 참조). 렌더마다 재마운트되지 않게 모듈 레벨 */
+const SetRow = ({ title, desc, children, descStrong }: { title: string; desc: React.ReactNode; children?: React.ReactNode; descStrong?: boolean }) => <div className="dw-fig-setrow"><div><strong>{title}</strong><p className={descStrong ? 'strong' : ''}>{desc}</p></div>{children && <div className="dw-row-ctl">{children}</div>}</div>;
+type DModal = null | { t: 'alias' } | { t: 'enable' | 'disable' | 'guide' | 'blockDisable'; k: SvcKey } | { t: 'purpose'; k: SvcKey; next: string } | { t: 'purposeView'; id: string } | { t: 'schedSwitch'; to: boolean } | { t: 'roomDelete' };
+function Detail({ kit, room: r, allRooms, update, supported, back, open, Hold, banner, onEdit, onDelete, activeIn, initialOpen }: {
+  initialOpen?: SvcKey; kit: Kit; room: Room; allRooms: Room[]; update: (id: string, fn: (r: Room) => Room) => void; supported: (k: SvcKey) => boolean; back: () => void; open: (v: View) => void;
   Hold: (p: { text?: string }) => JSX.Element; banner: React.ReactNode; onEdit: (r: Room) => void; onDelete: (r: Room) => void; activeIn: (r: Room) => number;
 }) {
   const M = kit.Modal;
-  const [openSec, setOpenSec] = useState<Record<SvcKey, boolean>>({ tablet: false, mobile: false, appt: false });
+  const [openSec, setOpenSec] = useState<Record<SvcKey, boolean>>({ tablet: initialOpen === 'tablet', mobile: initialOpen === 'mobile', appt: initialOpen === 'appt' });
   const [modal, setModal] = useState<DModal>(null);
   const [pauseOpen, setPauseOpen] = useState(false);
   const [aliasDraft, setAliasDraft] = useState(''), [guideDraft, setGuideDraft] = useState('');
@@ -282,21 +297,22 @@ function Detail({ kit, room: r, allRooms, update, supported, back, open, Hold, b
     return () => { document.removeEventListener('mousedown', h); document.removeEventListener('keydown', k); };
   }, [pauseOpen, purposeMenu]);
 
+  const apptUntil = () => { const days = Math.max(0, ...r.groups.map(g => g.rangeMode === 'always' ? g.rangeDays : Math.max(0, Math.round((new Date(`${g.endDate}T00:00:00`).getTime() - new Date(`${TODAY}T00:00:00`).getTime()) / 86400000)))); return { none: r.groups.length === 0, date: koDate(addDays(TODAY, days)), sameDay: r.groups.some(g => g.sameDay) }; };
+  const untilText = (pausedSame = false) => { const u = apptUntil(); return u.none ? '예약 일정을 등록해 주세요.' : <><b>{u.date} 까지</b> 예약을 받아요. ({pausedSame && u.sameDay ? '당일 예약 임시 마감' : u.sameDay ? '당일 예약 가능' : '당일 예약 불가'})</>; };
   const subtitle = (k: SvcKey, st: St) => {
     const n = SVC_NAME[k];
+    if (st === 'nochart') return '차트 진료실을 찾을 수 없어요.';
     if (st === 'none') return kit.mode === 'unlinked' ? `사용불가 · 차트 연동 시 사용 가능해요. ${n}${eul(n)} 받으려면 차트가 연결돼 있어야 해요.` : `현재 사용 중인 차트(${CHART_NAME})는 ${n} 기능이 지원되지 않으니, 사용을 원하실 경우 차트사에 문의해 주세요.`;
     if (st === 'disabled') return k === 'tablet' ? '굿닥 태블릿 무인 접수로 업무 효율 개선 효과를 경험해 보세요.' : k === 'mobile' ? '원격 접수로 대기실을 쾌적하게, 효율적으로 관리해 보세요.' : '전화 문의 없는 예약으로 바쁜 업무 환경을 개선해 보세요.';
     if (st === 'error') return `운영 스케줄을 등록하면 ${n}${eul(n)} 받을 수 있어요.`;
-    if (k === 'appt') {
-      const fut = r.aSlots.filter(x => x.date >= TODAY).map(x => x.date).sort();
-      const period = fut.length ? (fut[0] === fut[fut.length - 1] ? `${koDate(fut[0])}${fut[0] === TODAY ? '(오늘)' : ''}에 스케줄을 등록했어요.` : `${koDate(fut[0])}${fut[0] === TODAY ? '(오늘)' : ''}부터 ${koDate(fut[fut.length - 1])}까지 스케줄을 등록했어요.`) : '등록한 운영 스케줄이 없어요.';
-      return <>{period}{st === 'paused' && r.groups.some(g => g.sameDay) ? ' (당일 예약 임시 마감)' : ''}</>;
+    if (k === 'appt') { // figma baseline 참조
+      return untilText(st === 'paused');
     }
     if (st === 'paused') return `오늘 자정까지 ${n}${eul(n)} 받지 않아요.`;
     if (k === 'tablet' && !r.tablet.slotUsed) return '병원 운영시간 동안 현장 접수를 받아요.';
     const today = r.rSlots[k as 'tablet' | 'mobile'].filter(x => x.date === TODAY && !x.stopped).sort((a, b) => a.start.localeCompare(b.start));
     if (!today.length) return `오늘은 ${n}${eul(n)} 받지 않아요.`;
-    return <>오늘 <b>{today[0].start}부터 {today[today.length - 1].end}까지</b> {n}{eul(n)} 받아요.</>;
+    return <><b>오늘 {today[0].start}부터 {today[today.length - 1].end}까지</b> {n}{eul(n)} 받아요.</>;
   };
   const schedSub = (k: SvcKey) => {
     if (k === 'tablet' && !r.tablet.slotUsed) return '병원 운영시간 동안 현장 접수를 받아요.';
@@ -305,62 +321,51 @@ function Detail({ kit, room: r, allRooms, update, supported, back, open, Hold, b
     if (r[k].paused && k !== 'appt') return `오늘 자정까지 ${SVC_NAME[k]}${eul(SVC_NAME[k])} 받지 않아요.`;
     return dates[0] === dates[dates.length - 1] ? `${koDate(dates[0])}에 스케줄을 등록했어요.` : `${koDate(dates[0])}부터 ${koDate(dates[dates.length - 1])}까지 스케줄을 등록했어요.`;
   };
-  const openSched = (k: SvcKey) => open(k === 'appt' ? { v: 'asched', id: r.id } : { v: 'rsched', id: r.id, type: k });
-  const kakaoToggle = (k: 'mobile' | 'appt') => {
-    const on = r[k].kakao; const n = k === 'mobile' ? '원격 접수' : '예약';
-    if (!on && k === 'appt' && r.appt.advanced) { setModal({ t: 'kakaoBasic' }); return; }
-    if (!on && (k === 'mobile' ? !futureR(r.rSlots.mobile) : !futureA(r.aSlots))) { kit.fail(`카카오 예약하기로 ${n}${eul(n)} 받으려면 운영 스케줄이 필요해요`); return; }
-    kit.instant(() => setSvc(k, { kakao: !on }), on ? `${n} 연동을 해지했어요.` : `${n} 연동을 완료했어요.`, on ? '연동 해지' : '연동');
-  };
-
+  const openSched = (k: SvcKey, ro = false) => open(k === 'appt' ? { v: 'asched', id: r.id, ro } : { v: 'rsched', id: r.id, type: k, ro });
+  /** figma baseline 참조 — 프로토 상태 → 운영상태 변형 매핑
+   *  disabled→운영중지 · none→미지원 · active→운영중 · paused→일시중지 · error→운영불가(현장은 운영불가_스케줄없음) · nochart→차트진료실없음
+   *  최초(카드 opacity 0.2)는 대응하는 프로토 상태가 없어 쓰지 않음 */
+  const SVC_ICON: Record<SvcKey, React.ReactNode> = { tablet: <VscVm />, mobile: <VscDeviceMobile />, appt: <VscCalendar /> };
   const section = (k: SvcKey) => {
-    const st = roomState(r, k, supported); const s = r[k]; const n = SVC_NAME[k]; const isOpen = openSec[k] && s.accepted && st !== 'none';
-    return <section className={'dw-sec ' + (st === 'none' ? 'none' : '')} key={k} aria-label={n}>
-      <div className="dw-sec-head">
-        <span className={'dw-sec-ic ' + k} aria-hidden="true">{SVC_SHORT[k][0]}</span>
-        <div className="dw-sec-title"><strong>{n}</strong><p>{subtitle(k, st)}</p></div>
-        <div className="dw-sec-ctl">
-          {st === 'none' ? <>{kit.mode === 'unlinked' && k === 'tablet' && <kit.Pin n={22} />}<button className="cu-btn" disabled>사용불가</button></> : <>
-            {(st === 'active' || st === 'error' || st === 'paused') && <span className={'dw-stag ' + st}><i />{ST_LABEL[st]}</span>}
-            {!s.accepted ? <button className="cu-btn primary" onClick={() => { setError(''); setModal({ t: 'enable', k }); }}>사용하기</button>
-              : <button className="cu-btn quiet" aria-expanded={isOpen} onClick={() => setOpenSec(o => ({ ...o, [k]: !o[k] }))}>설정 {isOpen ? <VscChevronUp /> : <VscChevronDown />}</button>}
-          </>}
+    const st = roomState(r, k, supported, kit.linked && kit.chartMissingId === r.id); const s = r[k]; const n = SVC_NAME[k]; const isOpen = openSec[k] && s.accepted && st !== 'none';
+    const badgeTone = st === 'active' ? 'on' : st === 'paused' ? 'stop' : 'err';
+    const readOnly = st === 'nochart';
+    return <section className={'dw-fig-svc ' + (st === 'none' ? 'none' : '')} key={k} aria-label={n}>
+      <div className="dw-fig-svc-head">
+        <span className="dw-fig-svc-ic" aria-hidden="true">{SVC_ICON[k]}</span>
+        <div className="dw-fig-svc-label"><div><strong>{n}</strong><p>{subtitle(k, st)}</p></div>
+          {s.accepted && st !== 'none' && st !== 'disabled' && <span className={'dw-fig-status-tag ' + badgeTone}><i aria-hidden="true" />{ST_LABEL[st]}</span>}</div>
+        <div className="dw-fig-svc-btns">
+          {st === 'none' ? <>{kit.mode === 'unlinked' && k === 'tablet' && <kit.Pin n={22} />}<button className="dw-fig-btn disabled" disabled>사용불가</button></>
+            : !s.accepted ? <button className="dw-fig-btn primary" onClick={() => { setError(''); setModal({ t: 'enable', k }); }}>사용하기</button>
+            : <button className="dw-fig-btn" aria-expanded={isOpen} onClick={() => setOpenSec(o => ({ ...o, [k]: !o[k] }))}>설정 {isOpen ? <VscClose /> : <VscChevronDown />}</button>}
         </div>
       </div>
-      {isOpen && <div className="dw-sec-body">
-        {st === 'error' && <div className="dw-red-box"><VscWarning />운영 스케줄을 등록해주세요.<button className="dw-link" onClick={() => openSched(k)}>등록하기</button></div>}
-        <div className="dw-sec-row">
-          <div><strong>운영 스케줄</strong><p>{schedSub(k)}</p></div>
-          <div className="dw-row-ctl">
-            {k === 'tablet' && <div className="cu-segment dw-seg" role="group" aria-label="현장 접수 운영 방식"><button className={r.tablet.slotUsed ? 'selected' : ''} aria-pressed={r.tablet.slotUsed} onClick={() => !r.tablet.slotUsed && (setError(''), setModal({ t: 'schedSwitch', to: true }))}>스케줄 운영</button><button className={!r.tablet.slotUsed ? 'selected' : ''} aria-pressed={!r.tablet.slotUsed} onClick={() => r.tablet.slotUsed && (setError(''), setModal({ t: 'schedSwitch', to: false }))}>항시 운영</button></div>}
-            {(k !== 'tablet' || r.tablet.slotUsed) && <button className="cu-btn" onClick={() => openSched(k)}>설정</button>}
+      {isOpen && <div className="dw-fig-svc-body">
+        {st === 'error' && <div className="dw-fig-guide neg"><span><VscWarning />운영 스케줄을 등록해 주세요.</span><button onClick={() => openSched(k)}>등록하기 <VscArrowRight /></button></div>}
+        {k === 'tablet'
+          ? <SetRow title="운영 스케줄" desc={schedSub(k)}>
+              {r.tablet.slotUsed && <button className="dw-fig-btn" onClick={() => openSched(k, readOnly)}>{readOnly ? '보기' : '설정'}</button>}
+              <div className="dw-fig-seg" role="group" aria-label="현장 접수 운영 방식"><button className={r.tablet.slotUsed ? 'sel' : ''} aria-pressed={r.tablet.slotUsed} disabled={readOnly} onClick={() => !r.tablet.slotUsed && (setError(''), setModal({ t: 'schedSwitch', to: true }))}>스케줄 운영</button><button className={!r.tablet.slotUsed ? 'sel' : ''} aria-pressed={!r.tablet.slotUsed} disabled={readOnly} onClick={() => r.tablet.slotUsed && (setError(''), setModal({ t: 'schedSwitch', to: false }))}>항시 운영</button></div>
+            </SetRow>
+          : <SetRow title="운영 스케줄" desc={schedSub(k)}><button className="dw-fig-btn" onClick={() => openSched(k, readOnly)}>{readOnly ? '보기' : '설정'}</button></SetRow>}
+        {k === 'appt' && <SetRow title="예약 가능한 기간" desc={untilText()}><button className="dw-fig-btn" disabled={readOnly} onClick={() => openSched(k)}>설정</button></SetRow>}
+        <SetRow title="진료실 안내 문구" desc={s.guide || '환자들이 진료실에 대해 쉽게 이해할 수 있도록 안내할 수 있어요.'} descStrong={!!s.guide}><button className="dw-fig-btn" disabled={readOnly} onClick={() => { setError(''); setGuideDraft(s.guide); setModal({ t: 'guide', k }); }}>설정</button></SetRow>
+        <SetRow title="내원목적" desc="접수하는 환자의 내원목적을 미리 수집할 수 있어요.">
+          {s.purpose && !readOnly && <label className="dw-check"><input type="checkbox" checked={s.directInput} onChange={() => kit.instant(() => setSvc(k, { directInput: !s.directInput }), `직접 입력 사용을 ${s.directInput ? '껐어요' : '켰어요'}.`)} />직접 입력 사용</label>}
+          <div className="dw-pop-wrap">
+            <button className={'dw-fig-select ' + (readOnly ? 'ro' : '')} disabled={readOnly} data-pop={`purpose-${k}`} aria-haspopup="listbox" aria-expanded={purposeMenu === k} onClick={() => setPurposeMenu(purposeMenu === k ? null : k)}><span>{PURPOSE_GROUPS.find(g => g.id === s.purpose)?.name || '사용안함'}</span><VscChevronDown /></button>
+            {purposeMenu === k && <div className="dw-pop dw-purpose-pop" role="listbox">
+              {[{ id: '', name: '사용 안함', template: false, updated: '' }, ...[...PURPOSE_GROUPS].sort((a, b) => a.name.localeCompare(b.name))].map(g => <div className="dw-pop-item" key={g.id || 'none'}>
+                <label><input type="radio" name={`purpose-${k}`} checked={s.purpose === g.id} onChange={() => { setPurposeMenu(null); if (g.id === s.purpose) return; if (s.purpose) { setError(''); setModal({ t: 'purpose', k, next: g.id }); } else kit.instant(() => setSvc(k, { purpose: g.id }), '내원목적을 설정했어요.'); }} /><span>{g.name}</span>{g.id && <small>{g.template ? '기본양식' : `${g.updated} 수정함`}</small>}</label>
+                {g.id && <button className="dw-link" onClick={() => { setPurposeMenu(null); setModal({ t: 'purposeView', id: g.id }); }}>보기</button>}
+              </div>)}
+              <button className="dw-pop-add" onClick={() => { setPurposeMenu(null); kit.notify('내원목적 양식 편집 화면은 시안에서 생략했어요.'); }}><VscAdd />내원목적 양식 추가</button>
+            </div>}
           </div>
-        </div>
-        <div className="dw-sec-row">
-          <div><strong>진료실 안내 문구</strong><p>{s.guide || '환자들이 진료실에 대해 쉽게 이해할 수 있도록 안내할 수 있어요.'}</p></div>
-          <div className="dw-row-ctl"><button className="cu-btn" onClick={() => { setError(''); setGuideDraft(s.guide); setModal({ t: 'guide', k }); }}>설정</button></div>
-        </div>
-        <div className="dw-sec-row">
-          <div><strong>내원 목적</strong><p>접수하는 환자의 내원목적을 미리 수집할 수 있어요.</p></div>
-          <div className="dw-row-ctl">
-            {s.purpose && <label className="dw-check"><input type="checkbox" checked={s.directInput} onChange={() => kit.instant(() => setSvc(k, { directInput: !s.directInput }), `직접 입력 사용을 ${s.directInput ? '껐어요' : '켰어요'}.`)} />직접 입력 사용</label>}
-            <div className="dw-pop-wrap">
-              <button className="dw-select" data-pop={`purpose-${k}`} aria-haspopup="listbox" aria-expanded={purposeMenu === k} onClick={() => setPurposeMenu(purposeMenu === k ? null : k)}>{PURPOSE_GROUPS.find(g => g.id === s.purpose)?.name || '선택 안함'}<VscChevronDown /></button>
-              {purposeMenu === k && <div className="dw-pop dw-purpose-pop" role="listbox">
-                {[{ id: '', name: '사용 안함', template: false, updated: '' }, ...[...PURPOSE_GROUPS].sort((a, b) => a.name.localeCompare(b.name))].map(g => <div className="dw-pop-item" key={g.id || 'none'}>
-                  <label><input type="radio" name={`purpose-${k}`} checked={s.purpose === g.id} onChange={() => { setPurposeMenu(null); if (g.id === s.purpose) return; if (s.purpose) { setError(''); setModal({ t: 'purpose', k, next: g.id }); } else kit.instant(() => setSvc(k, { purpose: g.id }), '내원목적을 설정했어요.'); }} /><span>{g.name}</span>{g.id && <small>{g.template ? '기본양식' : `${g.updated} 수정함`}</small>}</label>
-                  {g.id && <button className="dw-link" onClick={() => { setPurposeMenu(null); setModal({ t: 'purposeView', id: g.id }); }}>보기</button>}
-                </div>)}
-                <button className="dw-pop-add" onClick={() => { setPurposeMenu(null); kit.notify('내원목적 양식 편집 화면은 시안에서 생략했어요.'); }}><VscAdd />내원목적 양식 추가</button>
-              </div>}
-            </div>
-          </div>
-        </div>
-        {k !== 'tablet' && <div className="dw-sec-row">
-          <div><strong>카카오톡 예약하기 연동</strong><p>카카오 예약하기, 카카오 맵에서 {k === 'mobile' ? '원격 접수를' : '예약을'} 받아요.</p></div>
-          <div className="dw-row-ctl"><span className={'dw-kakao ' + (s.kakao ? 'on' : '')}>{s.kakao ? '연동중' : '미연동'}</span><button className={'cu-toggle ' + (s.kakao ? 'on' : '')} aria-label={`${n} 카카오톡 예약하기 연동`} aria-pressed={s.kakao} onClick={() => kakaoToggle(k as 'mobile' | 'appt')}><span /></button></div>
-        </div>}
-        <div className="dw-sec-foot"><button className="cu-btn dw-danger-line" onClick={() => { setError(''); setModal(k !== 'tablet' && s.kakao ? { t: 'blockDisable', k } : { t: 'disable', k }); }}>{n} 사용중지</button></div>
+        </SetRow>
+        {k !== 'tablet' && <SetRow title="카카오톡 예약하기 연동" desc={`카카오톡 예약하기, 카카오맵에서 ${k === 'mobile' ? '원격 접수를' : '예약을'} 받아요.${s.kakao ? ' · 연동중' : ''}`}><button className="dw-fig-btn" disabled={readOnly} onClick={() => kit.onOpenKakao?.()}>페이지로 이동</button><kit.Pin n={29} /></SetRow>}
+        <div className="dw-fig-actions"><button className="dw-fig-danger" disabled={readOnly} onClick={() => { setError(''); setModal(k !== 'tablet' && s.kakao ? { t: 'blockDisable', k } : { t: 'disable', k }); }}>{n} 사용중지</button></div>
       </div>}
     </section>;
   };
@@ -376,17 +381,18 @@ function Detail({ kit, room: r, allRooms, update, supported, back, open, Hold, b
   const enableTitle = (k: SvcKey) => `${SVC_NAME[k]}${eul(SVC_NAME[k])}`;
 
   return <>
-    <header className="cn-header cu-header">
+    {/* figma baseline 참조 */}
+    <header className="cn-header cu-header dw-fig-head">
       <div>
-        <button className="dw-crumb" onClick={back}><VscChevronLeft />진료실 관리</button>
-        <h1 className="cn-title" tabIndex={-1}><button className="dw-title-btn" onClick={() => { setError(''); setAliasDraft(r.alias); setModal({ t: 'alias' }); }}>{r.alias || r.name}</button></h1>
-        <p className="cn-desc">{r.name} ∙ {r.dept} ∙ {r.doctors.join(', ')}{kit.linked && <span className="dw-chart-badge">차트에서 관리</span>}</p>
+        <h1 className="cn-title" tabIndex={-1}>{r.alias || r.name}</h1>
+        {kit.linked && kit.chartMissingId === r.id && <p className="dw-fig-missing" role="status"><VscWarning />연결한 차트 진료실을 찾을 수 없어요. 설정은 읽기 전용으로 보여요.</p>}
+        <p className="dw-fig-desc"><b>{r.name}</b><i className="dw-fig-dot" aria-hidden="true" /><span>{r.dept}</span><i className="dw-fig-dot" aria-hidden="true" /><span>{r.doctors.join(', ')}</span>{kit.linked && <span className="dw-fig-chip">차트에서 관리</span>}</p>
       </div>
       <div className="dw-head-actions">
-        {!kit.linked && <><kit.Pin n={25} /><button className="cu-btn quiet" onClick={() => onEdit(r)}><VscEdit />정보 수정</button><button className="cu-btn quiet dw-danger-text" onClick={() => onDelete(r)}><VscTrash />삭제</button></>}
-        <button className="cu-btn" onClick={() => { setError(''); setAliasDraft(r.alias); setModal({ t: 'alias' }); }}>이름 변경</button>
+        {!kit.linked && <><kit.Pin n={25} /><button className="dw-fig-btn" onClick={() => onEdit(r)}><VscEdit />정보 수정</button><button className="dw-fig-btn danger" onClick={() => onDelete(r)}><VscTrash />삭제</button></>}
+        <button className="dw-fig-btn" onClick={() => { setError(''); setAliasDraft(r.alias); setModal({ t: 'alias' }); }}>이름 변경</button>
         <div className="dw-pop-wrap">
-          <button className="cu-btn" data-pop="pause" aria-label="임시 진료 마감" aria-expanded={pauseOpen} onClick={() => setPauseOpen(!pauseOpen)}><VscDebugPause /></button>
+          <button className="dw-fig-btn icon" data-pop="pause" aria-label="임시 진료 마감" aria-expanded={pauseOpen} onClick={() => setPauseOpen(!pauseOpen)}><VscDebugPause /></button>
           {pauseOpen && <div className="dw-pop dw-pause-pop" role="dialog" aria-label="임시 진료 마감">
             <strong>임시 진료 마감</strong><p className="dw-pre">{'새로운 진료 요청을 받지 않도록,\n오늘 자정까지 진료 마감 상태로 전환합니다.'}</p>
             {pauseItems.map(([k, l]) => { const off = !supported(k) || !r[k].accepted || (k === 'appt' && !r.appt.todayUsed); return <div className={'dw-pause-item ' + (off ? 'off' : '')} key={k}>
@@ -401,16 +407,24 @@ function Detail({ kit, room: r, allRooms, update, supported, back, open, Hold, b
       </div>
     </header>
     {banner}
-    <div className="cu-content">
-      {kit.linked && <><h2 className="dw-op-sec">차트 정보 <small className="dw-muted">수정 불가</small><kit.Pin n={24} /></h2>
-        <div className="dw-chart-info"><dl><dt>진료실명</dt><dd>{r.name}</dd><dt>진료과</dt><dd>{r.dept}</dd><dt>의사</dt><dd>{r.doctors.join(', ')}</dd></dl>
-          <p>연동 차트에서 관리하는 정보예요. 환자에게 보일 이름은 ‘이름 변경’(별칭)으로 바꿀 수 있어요. 차트 목록에서 빠진 진료실은 <button className="dw-link" onClick={() => open({ v: 'unused' })}>미사용 설정</button>으로 이동해요.</p></div>
-        <h2 className="dw-op-sec">굿닥 운영 설정 <small className="dw-muted">별칭·안내 문구·접수 허용·스케줄·내원 목적·임시 마감</small></h2></>}
-      {kit.mode === 'unlinked' && <p className="cu-inline-note dw-note"><VscInfo />차트를 연동하지 않은 병원이에요. 현장 접수·원격 접수는 차트 연동 시 사용할 수 있고, 예약은 지금 바로 운영할 수 있어요.</p>}
-      {!r.alias && <div className="dw-info-box"><VscInfo />굿닥 서비스에서 환자들에게 안내할 진료실 이름을 설정해 보세요.<button className="dw-link" onClick={() => { setError(''); setAliasDraft(''); setModal({ t: 'alias' }); }}>이름 설정하기</button></div>}
-      {(['tablet', 'mobile', 'appt'] as SvcKey[]).map(section)}
-      <div className="dw-bottom-bar left"><button className="cu-btn" onClick={back}>이전</button><span className="cu-subnote">모든 설정은 바꾸는 즉시 저장돼요.</span></div>
+    <div className="cu-content dw-fig-content dw-fig-page">
+      {kit.linked && <>
+        {/* figma baseline 참조 */}
+        <h2 className="dw-fig-sec">차트 정보 <small>수정 불가</small><kit.Pin n={24} /></h2>
+        <div className="dw-fig-basic">
+          <div><span>진료실 이름</span><strong>{r.alias || r.name}</strong></div>
+          <div><span>연결한 차트 진료실</span><strong>{r.name}</strong></div>
+          <div><span>진료과 · 의사</span><strong>{r.dept} · {r.doctors.join(', ')}</strong></div>
+          <p>연동 차트에서 관리하는 정보예요. 환자에게 보일 이름은 ‘이름 변경’(별칭)으로 바꿀 수 있어요. 차트 목록에서 빠진 진료실은 <button className="dw-link" onClick={() => open({ v: 'unused' })}>미사용 설정</button>으로 이동해요.</p>
+        </div>
+        <h2 className="dw-fig-sec">굿닥 운영 설정 <small>별칭·안내 문구·접수 허용·스케줄·내원목적·임시 마감</small></h2></>}
+      {kit.mode === 'unlinked' && <div className="dw-fig-guide pos"><span><VscInfo />차트를 연동하지 않은 병원이에요. 현장 접수·원격 접수는 차트 연동 시 사용할 수 있고, 예약은 지금 바로 운영할 수 있어요.</span></div>}
+      {/* figma baseline 참조 */}
+      {!r.alias && <div className="dw-fig-guide pos"><span><VscInfo />굿닥 서비스에서 환자들에게 안내할 진료실 이름을 설정해 보세요.</span><button onClick={() => { setError(''); setAliasDraft(''); setModal({ t: 'alias' }); }}>이름 설정하기 <VscArrowRight /></button></div>}
+      <div className="dw-fig-svc-list">{(['tablet', 'mobile', 'appt'] as SvcKey[]).map(section)}</div>
     </div>
+    {/* figma baseline 참조 */}
+    <div className="dw-fig-bottom"><button className="dw-fig-btn bold" onClick={back}>이전</button></div>
 
     {modal?.t === 'alias' && <M title="진료실 이름" busy={busy} onClose={closeM} footer={<><button className="cu-btn" disabled={busy} onClick={closeM}>취소</button><button className="cu-btn primary" disabled={busy} onClick={() => run(() => update(r.id, x => ({ ...x, alias: aliasDraft.trim() })), '진료실 이름을 변경했어요.', () => setModal(null))}>{retryLabel(busy, error, '확인')}</button></>}>
       <p>굿닥 서비스에서 환자들에게 보여줄 진료실 이름이에요.</p>
@@ -451,10 +465,6 @@ function Detail({ kit, room: r, allRooms, update, supported, back, open, Hold, b
     </M>; })()}
     {modal?.t === 'schedSwitch' && <M title={modal.to ? '스케줄 운영으로 변경하시겠어요?' : '항시 운영으로 변경하시겠어요?'} busy={busy} onClose={closeM} footer={<><button className="cu-btn" disabled={busy} onClick={closeM}>취소</button><button className="cu-btn primary" disabled={busy} onClick={() => run(() => setSvc('tablet', { slotUsed: modal.to }), modal.to ? '스케줄 운영으로 변경했어요.' : '항시 운영으로 변경했어요.', () => setModal(null))}>{retryLabel(busy, error, '변경')}</button></>}>
       <p className="dw-pre">{modal.to ? '변경된 운영일정을 적용하시겠습니까?' : '변경을 누르면 항시 현장 접수를 받아요.\n기존에 등록한 스케줄은 삭제되지 않고 유지되며\n언제든 다시 스케줄로 운영할 수 있으니 안심하세요.'}</p><Err text={error} />
-    </M>}
-    {modal?.t === 'kakaoBasic' && <M title="기본 설정으로 전환해야 연동할 수 있어요." busy={busy} onClose={closeM} footer={<><button className="cu-btn" disabled={busy} onClick={closeM}>취소</button><button className="cu-btn primary" disabled={busy} onClick={() => open({ v: 'asched', id: r.id })}>예약 스케줄로 이동</button></>}>
-      <p className="dw-pre">{'해당 진료실은 고급 설정으로 예약을 받고 있어요. \n카카오톡 예약하기와 연동하려면 먼저 기본 설정으로 전환해 주세요.'}</p>
-      <p className="cu-subnote">기본 설정 전환은 예약 스케줄 화면 상단의 ‘고급 설정’ 토글에서 해요.</p>
     </M>}
   </>;
 }
@@ -513,7 +523,7 @@ function HolidayNoteModal({ kit, onClose }: { kit: Kit; onClose: () => void }) {
 
 /* ═════════════ 접수 스케줄 (현장·원격) ═════════════ */
 type RForm = { id?: string; date: string; start: string; end: string; hasLimit: boolean; limit: string; days: number[] };
-function ReceiptSchedule({ kit, room: r, type, update, back, banner }: { kit: Kit; room: Room; type: 'tablet' | 'mobile'; update: (id: string, fn: (r: Room) => Room) => void; back: () => void; banner: React.ReactNode }) {
+function ReceiptSchedule({ kit, room: r, type, ro, update, back, banner }: { kit: Kit; room: Room; type: 'tablet' | 'mobile'; ro: boolean; update: (id: string, fn: (r: Room) => Room) => void; back: () => void; banner: React.ReactNode }) {
   const M = kit.Modal;
   const [weekStart, setWeekStart] = useState(weekStartOf(TODAY));
   const minWeek = weekStartOf(`${TODAY.slice(0, 5)}${String(Number(TODAY.slice(5, 7)) - 1).padStart(2, '0')}-01`);
@@ -529,7 +539,7 @@ function ReceiptSchedule({ kit, room: r, type, update, back, banner }: { kit: Ki
 
   const editing = form?.id ? slots.find(s => s.id === form.id) : undefined;
   const locked = !!editing && editing.current > 0;
-  const readOnly = !!editing && (editing.date < TODAY || (editing.date === TODAY && (editing.end === '24:00' ? '24:00' : editing.end) <= NOW));
+  const readOnly = ro || !!editing && (editing.date < TODAY || (editing.date === TODAY && (editing.end === '24:00' ? '24:00' : editing.end) <= NOW));
   const fWeek = form ? weekStartOf(form.date) : weekStart;
   const errs = (() => {
     if (!form) return [] as string[];
@@ -543,6 +553,7 @@ function ReceiptSchedule({ kit, room: r, type, update, back, banner }: { kit: Ki
     return out;
   })();
   const openNew = (date: string, hour: number) => {
+    if (ro) { kit.notify('읽기 전용 화면이라 스케줄을 등록할 수 없어요.'); return; }
     if (date < TODAY) { kit.fail('지난 날짜에는 스케줄을 등록할 수 없어요.'); return; }
     const st = hour * 60, en = Math.min(hour === 23 ? 1439 : st + 60, 1440);
     setError(''); setForm({ date, start: fromMin(st), end: en === 1440 ? '24:00' : fromMin(en), hasLimit: false, limit: '', days: [dowIdx(date)] });
@@ -587,21 +598,22 @@ function ReceiptSchedule({ kit, room: r, type, update, back, banner }: { kit: Ki
       <div><button className="dw-crumb" onClick={back}><VscChevronLeft />{r.alias || r.name} / {n} 운영 스케줄</button>
         <WeekHeader weekStart={weekStart} setWeekStart={setWeekStart} minWeek={minWeek} status={status} />
       </div>
-      <div className="dw-head-actions">
+      {!ro && <div className="dw-head-actions">
         <button className="cu-btn quiet" onClick={() => setUtil('holDel')}>공휴일 스케줄 삭제</button>
         <button className="cu-btn quiet" disabled={!weekSlots.length} onClick={() => setUtil('weekDel')}>주간 스케줄 삭제</button>
         <button className="cu-btn" disabled={!weekSlots.length} onClick={() => setUtil('copy')}><VscCopy />주간 스케줄 복사</button>
-      </div>
+      </div>}
     </header>
     {banner}
     <div className="cu-content">
       <p className="cu-inline-note dw-note"><VscInfo /><span>진료항목 예약은 병원 운영시간 기준으로 받아요. 이 진료실 스케줄과는 연결되지 않아요.<kit.Pin n={4} /></span></p>
       {type === 'tablet' && !r.tablet.slotUsed && <p className="cu-inline-note dw-note"><VscInfo />지금은 ‘항시 운영’이라 이 스케줄은 적용되지 않아요. 진료실 상세에서 ‘스케줄 운영’으로 바꾸면 적용돼요.</p>}
+      {ro && <div className="dw-fig-guide neg"><span><VscWarning />연결한 차트 진료실을 찾을 수 없어 읽기 전용으로 보여요.</span></div>}
       <p className="cu-subnote dw-mt0">빈 칸을 누르면 1시간 스케줄 등록, 블록을 누르면 수정·삭제해요. 지난달 1일이 있는 주까지 돌아볼 수 있어요. 드래그 이동·리사이즈는 시안에서 생략했어요.</p>
       <div className="dw-grid" style={{ ['--rows' as any]: G1 - G0 }}>
         <div className="dw-grid-head"><span />{days.map(d => { const past = d < TODAY; const cnt = slots.filter(s => s.date === d).length; return <div key={d} className={'dw-dh ' + (d === TODAY ? 'today ' : '') + (HOLIDAYS[d] || dowIdx(d) === 6 ? 'hol ' : '') + (past ? 'past' : '')}>
           <b>{DOWS[dowIdx(d)]} {Number(d.slice(8))}</b>{HOLIDAYS[d] && <small>{HOLIDAYS[d]}</small>}
-          {cnt > 0 && !past && <button className="dw-mini" onClick={() => delWhere(s => s.date === d, `${dotDate(d)} 스케줄을 삭제했어요.`)}>일 삭제</button>}
+          {cnt > 0 && !past && !ro && <button className="dw-mini" onClick={() => delWhere(s => s.date === d, `${dotDate(d)} 스케줄을 삭제했어요.`)}>일 삭제</button>}
         </div>; })}</div>
         <div className="dw-grid-body">
           <div className="dw-hours">{Array.from({ length: G1 - G0 }, (_, i) => <span key={i}>{String(G0 + i).padStart(2, '0')}:00</span>)}</div>
@@ -617,8 +629,8 @@ function ReceiptSchedule({ kit, room: r, type, update, back, banner }: { kit: Ki
       <div className="dw-bottom-bar left"><button className="cu-btn" onClick={back}>이전</button></div>
     </div>
 
-    {form && !dup && <M title={readOnly ? '지난 스케줄' : form.id ? '스케줄 수정' : '스케줄 등록'} busy={busy} onClose={() => { if (!busy) { setForm(null); setError(''); } }} footer={readOnly ? <button className="cu-btn primary" onClick={() => setForm(null)}>닫기</button> : <>{form.id && <button className="cu-btn dw-danger-line dw-mr-auto" disabled={busy} onClick={() => editing && del(editing)}>삭제</button>}<button className="cu-btn" disabled={busy} onClick={() => { setForm(null); setError(''); }}>취소</button><button className="cu-btn primary" disabled={busy || errs.length > 0} onClick={() => submit()}>{retryLabel(busy, error, form.id ? '수정' : '등록')}</button></>}>
-      <p>{readOnly ? '지난 시간의 스케줄은 볼 수만 있어요.' : '입력한 시간 동안 설정한 인원만큼 접수를 받아요.'}</p>
+    {form && !dup && <M title={ro ? '스케줄 보기' : readOnly ? '지난 스케줄' : form.id ? '스케줄 수정' : '스케줄 등록'} busy={busy} onClose={() => { if (!busy) { setForm(null); setError(''); } }} footer={readOnly ? <button className="cu-btn primary" onClick={() => setForm(null)}>닫기</button> : <>{form.id && <button className="cu-btn dw-danger-line dw-mr-auto" disabled={busy} onClick={() => editing && del(editing)}>삭제</button>}<button className="cu-btn" disabled={busy} onClick={() => { setForm(null); setError(''); }}>취소</button><button className="cu-btn primary" disabled={busy || errs.length > 0} onClick={() => submit()}>{retryLabel(busy, error, form.id ? '수정' : '등록')}</button></>}>
+      <p>{ro ? '읽기 전용 화면이에요.' : readOnly ? '지난 시간의 스케줄은 볼 수만 있어요.' : '입력한 시간 동안 설정한 인원만큼 접수를 받아요.'}</p>
       {(HOLIDAYS[form.date] || dowIdx(form.date) === 6) && <div className="dw-red-box">이날 진료 하시나요?<button className="dw-link" onClick={() => setUtil('holNote')}>자세히 보기</button></div>}
       {editing && <p className="dw-count-line">접수 환자 수 <b>{editing.current}{editing.limit != null ? `/${editing.limit}` : ''}</b></p>}
       <div className="dw-form-grid">
@@ -653,7 +665,7 @@ function ReceiptSchedule({ kit, room: r, type, update, back, banner }: { kit: Ki
 /* ═════════════ 예약 스케줄 ═════════════ */
 type AForm = { date: string; start: string; end: string; interval: number; days: number[] };
 type GForm = { id?: string; name: string; color: string; cap: string; sameDay: boolean; rangeMode: 'always' | 'period'; rangeDays: string; startDate: string; endDate: string; openTime: string };
-function ApptSchedule({ kit, room: r, update, back, banner }: { kit: Kit; room: Room; update: (id: string, fn: (r: Room) => Room) => void; back: () => void; banner: React.ReactNode }) {
+function ApptSchedule({ kit, room: r, ro, update, back, banner }: { kit: Kit; room: Room; ro: boolean; update: (id: string, fn: (r: Room) => Room) => void; back: () => void; banner: React.ReactNode }) {
   const M = kit.Modal;
   const [weekStart, setWeekStart] = useState(weekStartOf(TODAY));
   const minWeek = weekStartOf(`${TODAY.slice(0, 5)}${String(Number(TODAY.slice(5, 7)) - 1).padStart(2, '0')}-01`);
@@ -677,6 +689,7 @@ function ApptSchedule({ kit, room: r, update, back, banner }: { kit: Kit; room: 
     return '';
   })();
   const openNew = (date: string, hour: number) => {
+    if (ro) { kit.notify('읽기 전용 화면이라 스케줄을 등록할 수 없어요.'); return; }
     if (!r.groups.length) { setUtil('needGroup'); return; }
     if (!group) { kit.fail('일정 그룹을 먼저 선택해 주세요.'); return; }
     if (date < TODAY) { kit.fail('지난 날짜에는 스케줄을 등록할 수 없어요.'); return; }
@@ -734,32 +747,33 @@ function ApptSchedule({ kit, room: r, update, back, banner }: { kit: Kit; room: 
       <div><button className="dw-crumb" onClick={back}><VscChevronLeft />{r.alias || r.name} / 예약 운영 스케줄</button>
         <WeekHeader weekStart={weekStart} setWeekStart={setWeekStart} minWeek={minWeek} maxWeek={maxWeek} status={status} onMaxBlocked={() => kit.fail('스케줄은 최대 3개월 까지만 미리 설정할 수 있어요.')} />
       </div>
-      <div className="dw-head-actions">
+      {!ro && <div className="dw-head-actions">
         <label className="dw-adv"><span>고급 설정</span><button className={'cu-toggle ' + (r.appt.advanced ? 'on' : '')} aria-label="고급 설정" aria-pressed={r.appt.advanced} onClick={() => { if (!r.appt.advanced && r.appt.kakao) { setKakaoBlock(true); return; } setAck(false); setUtil(r.appt.advanced ? 'toBasic' : 'toAdv'); }}><span /></button></label>
         <button className="cu-btn quiet" disabled={!weekSlots.length} onClick={() => setUtil('weekDel')}>주간 스케줄 전체 삭제</button>
         <button className="cu-btn quiet" onClick={() => setUtil('holDel')}>공휴일 스케줄 삭제</button>
         <button className="cu-btn" disabled={!weekSlots.length || maxCopyWeeks < 1} onClick={() => setUtil('copy')}><VscCopy />스케줄 복사</button>
-      </div>
+      </div>}
     </header>
     {banner}
     <div className="cu-content dw-appt-wrap">
+      {ro && <div className="dw-fig-guide neg dw-span-all"><span><VscWarning />연결한 차트 진료실을 찾을 수 없어 읽기 전용으로 보여요.</span></div>}
       <p className="cu-inline-note dw-note dw-span-all"><VscInfo /><span>진료항목 예약은 병원 운영시간 기준으로 받아요. 이 진료실 예약 스케줄과는 연결되지 않아요.<kit.Pin n={4} /></span></p>
       <aside className="dw-groups" aria-label="일정 그룹">
         <div className="dw-groups-head"><strong>일정 그룹</strong><small>{r.appt.advanced ? '고급 설정' : '기본 설정'}</small></div>
         {r.groups.length === 0 && <p className="cu-subnote">등록된 일정 그룹이 없어요.</p>}
         {r.groups.map(g => { const expired = g.rangeMode === 'period' && g.endDate < TODAY; return <div key={g.id} className={'dw-group ' + (sel === g.id ? 'sel' : '')}>
           <button className="dw-group-main" aria-pressed={sel === g.id} onClick={() => setSel(g.id)}><i style={{ background: g.color }} /><span><b>{g.name}</b><small>{g.sameDay ? '당일 예약 가능' : '당일 예약 불가'} · {g.rangeMode === 'always' ? `${g.rangeDays}일 노출` : `${g.startDate.slice(5)}~${g.endDate.slice(5)}`}{r.appt.advanced ? ` · 최대 ${g.cap}명` : ''}</small></span>{expired && <em className="dw-red">수정 필요</em>}</button>
-          <button className="cu-icon" aria-label={`${g.name} 수정`} onClick={() => openGroup(g)}><VscGear /></button>
+          {!ro && <button className="cu-icon" aria-label={`${g.name} 수정`} onClick={() => openGroup(g)}><VscGear /></button>}
         </div>; })}
         {orphanN > 0 && <div className="dw-group orphan"><span className="dw-group-main"><i style={{ background: '#B0B8C1' }} /><span><b>그룹 없음(기존 예약 보존)</b><small>예약이 있어 남긴 시간 {orphanN}개 · 복사 대상 아님</small></span></span></div>}
-        <button className="cu-btn quiet dw-add-group" onClick={() => openGroup()}><VscAdd />새 일정 그룹</button>
+        {!ro && <button className="cu-btn quiet dw-add-group" onClick={() => openGroup()}><VscAdd />새 일정 그룹</button>}
         <p className="cu-subnote">그룹을 고른 뒤 빈 칸을 누르면 그 그룹 색으로 예약 시간을 만들어요.</p>
       </aside>
       <div className="dw-appt-main">
         <div className="dw-grid appt" style={{ ['--rows' as any]: G1 - G0 }}>
           <div className="dw-grid-head"><span />{days.map(d => { const past = d < TODAY; const ds = r.aSlots.filter(s => s.date === d); const avail = ds.reduce((a, s) => a + (s.cap - s.booked), 0); return <div key={d} className={'dw-dh ' + (d === TODAY ? 'today ' : '') + (HOLIDAYS[d] || dowIdx(d) === 6 ? 'hol ' : '') + (past ? 'past' : '')}>
             <b>{DOWS[dowIdx(d)]} {Number(d.slice(8))}</b>{HOLIDAYS[d] && <small>{HOLIDAYS[d]}</small>}<small className="dw-avail">{avail}명 예약 가능</small>
-            {ds.length > 0 && !past && <button className="dw-mini" onClick={() => dayDel(d)}>일 삭제</button>}
+            {ds.length > 0 && !past && !ro && <button className="dw-mini" onClick={() => dayDel(d)}>일 삭제</button>}
           </div>; })}</div>
           <div className="dw-grid-body">
             <div className="dw-hours">{Array.from({ length: G1 - G0 }, (_, i) => <span key={i}>{String(G0 + i).padStart(2, '0')}:00</span>)}</div>
@@ -767,7 +781,7 @@ function ApptSchedule({ kit, room: r, update, back, banner }: { kit: Kit; room: 
               {Array.from({ length: G1 - G0 }, (_, i) => { const h = G0 + i; const chips = r.aSlots.filter(s => s.date === d && Number(s.time.slice(0, 2)) === h).sort((a, b) => a.time.localeCompare(b.time)); return <div key={i} className="dw-cell appt" onClick={e => { if ((e.target as HTMLElement).closest('.dw-chip-slot')) return; openNew(d, h); }} role="button" tabIndex={0} aria-label={`${dotDate(d)} ${h}시 예약 스케줄 등록`} onKeyDown={e => { if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) { e.preventDefault(); openNew(d, h); } }}>
                 {chips.map(s => { const g = gName(s.groupId); const full = s.booked >= s.cap; return <span key={s.id} className={'dw-chip-slot ' + (full ? 'full ' : '') + (g ? '' : 'orphan')} title={g ? g.name : '그룹 없음(기존 예약 보존)'} style={{ borderColor: g?.color || '#B0B8C1', background: (g?.color || '#B0B8C1') + '33' }}>
                   {s.time}{s.cap > 1 ? ` (${s.booked}/${s.cap})` : ''}{full ? ' (완)' : ''}
-                  {!full && d >= TODAY && <button aria-label={`${s.time} 스케줄 삭제`} onClick={() => delSlot(s)}><VscClose /></button>}
+                  {!full && d >= TODAY && !ro && <button aria-label={`${s.time} 스케줄 삭제`} onClick={() => delSlot(s)}><VscClose /></button>}
                 </span>; })}
               </div>; })}
             </div>)}

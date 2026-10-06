@@ -1,10 +1,10 @@
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : desk-web — 굿닥 데스크(Windows 프로그램) 기능을 커넥트 웹뷰 UI로 옮긴 웹 이관 시안
- * 상태     : 현행(active) · 검토용 시안(미승인)   버전: v0.8   최종수정: 2026-10-06
+ * 상태     : 현행(active) · 검토용 시안(미승인)   버전: v0.11  최종수정: 2026-10-06
  * PRD      : 내부 기획 문서(공개 저장소라 티켓 번호·링크·원문 미기재)
  * 배포URL  : https://connect-sq-sandbox.github.io/out/desk-web.html — v0.3 배포됨, 이후 버전 미배포
- * 피그마   : 없음
+ * 피그마   : 사내 파일(공개 저장소라 파일명·URL·노드 ID 미기재) · 진료실 설정 목록·상세 · 반영 값과 노드는 figma/baseline.md 참조(기준선 2026-10-06)
  * 관련 CSS : styles/connectUnified.css(재사용, cu-*) + styles/deskWeb.css(이 화면 전용, dw-*)
  * 관련 소스: ./examRooms.tsx (진료실 목록·순서·미사용·상세·접수/예약 스케줄, 진료실 운영 설정)
  * 기술제약 : react 훅만 · plain CSS · react-icons(vsc) · 가상 데이터 · 브라우저 메모리 상태 · 네트워크 0
@@ -37,7 +37,7 @@
  *   [제안·PO확인] 예약 취소 사유 모달: 현행과 달리 처음엔 사유를 고르지 않은 상태, 고르기 전 [예약 취소] 비활성, 버튼 문구 '예약 취소'(판단 메모 6).
  *   [제안·PO확인] 운영 중 판정(환자가 실제로 예약 가능한 조건 기준) · 끈 유형의 진행 중 건 계속 처리 · 진료항목 예약은 진료실
  *             배정 없이 진료완료 · 시간 기준 불일치는 안내·경고만 · 같은 날·같은 시간 중복은 표시만 · 취소 사유 유형별 필터·필수 ·
- *             카카오 연동/노출은 각 위치 유지 + 끌 때 영향 안내. 화면의 판단 메모 핀 1~25번에 제안·근거·대안을 적어 둠.
+ *             카카오 연동/노출은 각 위치 유지 + 끌 때 영향 안내. 화면의 판단 메모 핀 1~29번에 제안·근거·대안을 적어 둠.
  *
  * 보류 · TODO (PO 확인 대기):
  *   [보류] 예약 등록(웹에서 병원이 직접 등록) 제공 여부·필수 항목.
@@ -55,6 +55,9 @@
  *                      진료실/진료항목 예약 분리(유형별 상태·액션·필터·열, 진료항목 예약 설정), 비연동 진료실 없음 = 정상 상태.
  *   v0.5  2026-10-06 — PO 결정 대기 항목을 제안안으로 구현하고 판단 메모 핀·드로어(17건) 추가.
  *   v0.6  2026-10-06 — 운영 설정·진료실 상세·카카오 연동 설정을 차트 모드(데스크 차트 병원 기본 / 비연동 / 연동 차트)별로 분기, 판단 메모 18~25 추가.
+ *   v0.11 2026-10-06 — 검수 반영: 피그마 버튼 타이포 우선순위 수정, 판단 메모 이동 조건 명시·이동 전 스냅샷 복원, 차트 진료실 없음 읽기 전용 완성, 프리셋 '사용자 정의' 표시, 소스·빌드에서 피그마 노드 ID 제거, 미사용 코드 정리.
+ *   v0.10 2026-10-06 — 진료실 관리 목록·상세를 피그마에 맞춤(2열 카드·배지, 헤더·서비스 카드 운영상태 변형·설정 행·Bottom Bar 이전), 카카오 연동을 '페이지로 이동' 버튼으로 변경(판단 메모 29), 차트 진료실 없음 체험 추가.
+ *   v0.9  2026-10-06 — 운영 유형 프리셋 4종(둘 다 / 진료실 예약만 / 진료항목 예약만 / 진료실 예약 운영 중지)으로 분리, 프리셋·차트 모드 기준으로 데이터 재구성, 판단 메모 26~28 추가.
  *   v0.8  2026-10-06 — 재검수 반영: 운영 설정 저장값을 상위로 올려 메뉴 이동 후 유지, 판단 메모 이동 시 스크롤 후 팝오버 유지, 직접 바꾼 체험 조건은 메모 되돌리기에서 제외, 진료 현황 첫 화면 밀도 개선.
  *   v0.7  2026-10-06 — 검수 반영: 순서 화면 크래시 수정·최상위 오류 화면, 스케줄 등록 날짜 기준 수정·부분 저장 안내·접수 있는 블록 보존, 판단 메모 팝오버 화면 경계 배치, 체험 띠 1줄화 등.
  * └──────────────────────────────────────────────────────
@@ -162,10 +165,19 @@ const DESC: Record<string, string> = {
 };
 
 /* ───────── 판단 메모(프로토 메타) ───────── */
+type Preset = '둘 다' | '진료실 예약만' | '진료항목 예약만' | '진료실 예약 운영 중지';
+const CUSTOM = '사용자 정의(판정 기준)';
+const PRESETS: Preset[] = ['둘 다', '진료실 예약만', '진료항목 예약만', '진료실 예약 운영 중지'];
+/** 판단 메모 이동 조건: 기본은 운영 유형 '둘 다' + 데스크 차트 병원. 메모마다 핀이 보이는 상태를 명시한다 */
+const MEMO_COND: Record<number, string> = {
+  1: 'preset:둘 다', 2: 'preset:진료실 예약 운영 중지', 3: 'detail:D006', 6: 'cancel:D002', 13: 'detail:D006', 15: 'partial', 16: 'norooms',
+  18: 'mode:unlinked', 22: 'mode:unlinked;room:R1', 23: 'kakao', 24: 'mode:linked;room:R1', 26: 'preset:진료항목 예약만;mode:desk',
+  27: 'preset:진료항목 예약만;mode:desk', 28: 'preset:진료항목 예약만;mode:linked', 29: 'room:R1;open:mobile'
+};
 type Note = { n: number; menu: string; where: string; title: string; proposal: string; basis: string; alt: string; setup?: string };
 const NOTES: Note[] = [
-  { n: 1, menu: '진료 현황', where: '진료 현황 · 유형 필터', title: '운영 중 판정 기준', proposal: '진료실 예약은 진료실이 1개 이상이고 예약 섹션을 켠 진료실이 1개 이상일 때, 진료항목 예약은 예약 받기 ON이고 노출 진료항목이 1개 이상일 때 운영 중으로 봐요. 운영하지 않는 유형은 유형 필터·열·대시보드 내역에서 숨겨요.', basis: '환자가 앱에서 실제로 예약할 수 있는 조건(병원 상세 예약 버튼 기준)과 맞추면 병원 화면과 환자 화면이 어긋나지 않아요.', alt: '설정 토글만으로 판정' },
-  { n: 2, menu: '진료항목', where: '진료항목 · 진료 예약 받기', title: '운영을 끈 유형의 진행 중 건', proposal: '끈 뒤에도 진행 중 건은 목록에 남기고 처리도 허용해요. 끌 때 "새 예약만 받지 않아요. 이미 받은 진행 중 예약 N건은 그대로 처리해 주세요." 확인을 띄워요.', basis: '신청 유실 0건이 성공 기준이고, 이미 잡힌 환자 약속은 지켜야 해요.', alt: '끄면 진행 중 건 일괄 취소' },
+  { n: 1, setup: 'preset:둘 다', menu: '진료 현황', where: '진료 현황 · 유형 필터', title: '운영 중 판정 기준', proposal: '진료실 예약은 진료실이 1개 이상이고 예약 섹션을 켠 진료실이 1개 이상일 때, 진료항목 예약은 예약 받기 ON이고 노출 진료항목이 1개 이상일 때 운영 중으로 봐요. 운영하지 않는 유형은 유형 필터·열·대시보드 내역에서 숨겨요.', basis: '환자가 앱에서 실제로 예약할 수 있는 조건(병원 상세 예약 버튼 기준)과 맞추면 병원 화면과 환자 화면이 어긋나지 않아요.', alt: '설정 토글만으로 판정' },
+  { n: 2, setup: 'preset:진료실 예약 운영 중지', menu: '진료 현황', where: '진료 현황 · 운영 중지 안내 / 진료항목 · 진료 예약 받기', title: '운영을 끈 유형의 진행 중 건', proposal: '끈 뒤에도 진행 중 건은 목록에 남기고 처리도 허용해요. 끌 때 "새 예약만 받지 않아요. 이미 받은 진행 중 예약 N건은 그대로 처리해 주세요." 확인을 띄워요.', basis: '신청 유실 0건이 성공 기준이고, 이미 잡힌 환자 약속은 지켜야 해요.', alt: '끄면 진행 중 건 일괄 취소' },
   { n: 3, menu: '진료 현황', where: '진료항목 예약 상세 · 처리 안내', title: '진료항목 예약 환자의 내원 처리', proposal: '접수 전환·진료실 배정 없이 [진료완료]가 곧 기록이 돼요(현행 유지). 상세에 안내 문구를 둬요.', basis: '하반기는 서버·앱 변경을 최소화하고, 데스크 차트 병원은 이 웹이 기록의 원천이에요.', alt: '내원 시 진료실 배정·접수 전환(서버 신규 필요)', setup: 'detail:D006' },
   { n: 4, menu: '진료항목', where: '진료항목 설정 · 병원 운영시간 기준 / 진료 현황 · 운영시간 확인 칩 / 진료실 스케줄 안내', title: '예약 시간 기준 불일치', proposal: '시간 기준은 연결하지 않고 안내·경고만 해요. 휴진일이거나 오늘 임시 마감한 진료실이 있는 날의 진료항목 예약에는 ‘운영시간 확인’ 칩을 붙이고 상세에 설명을 둬요.', basis: '시간 기준을 바꾸면 앱·카카오 슬롯 계산이 바뀌는 큰 작업이라 하반기 범위 밖이에요. 대신 운영자가 충돌을 놓치지 않게 해요.', alt: '진료항목 예약을 진료실 스케줄과 연결' },
   { n: 5, menu: '진료 현황', where: '진료 현황 · 같은 시간·같은 환자 안내', title: '같은 시간·같은 환자 중복', proposal: '차단하지 않고 표시만 해요. 같은 날 이름·연락처가 같은 두 유형 건에 ‘같은 날 다른 예약’ 칩과 상세 이동 링크를, 30분 안에 진료항목 예약이 몰리면 ‘같은 시간 n건’ 안내를 띄워요. 진료항목 예약은 환자 정보와 연결되지 않아 이름·연락처로 추정해요.', basis: '차단하려면 앱·카카오 변경이 필요하고, 진료 + 접종처럼 실제 동반 진료일 수 있어 매출 손실 우려가 있어요.', alt: '서버 중복 검증·진료항목 정원 도입' },
@@ -188,8 +200,12 @@ const NOTES: Note[] = [
   { n: 22, menu: '진료실', where: '진료실 상세 · 현장·원격 접수 섹션(비연동)', title: '비연동 병원의 접수 섹션', proposal: '현장 접수·원격 접수는 ‘사용불가 · 차트 연동 시 사용 가능’으로, 예약 섹션은 그대로 활성으로 둬요.', basis: '접수는 차트 연결이 없으면 서버가 거절하고, 예약은 차트 연결 없이도 진행돼요.', alt: '접수 섹션을 숨김', setup: 'mode:unlinked;room:R1' },
   { n: 23, menu: '대시보드', where: '카카오톡 예약하기 · 연동 설정', title: '카카오 연동 가능 범위', proposal: '원격 접수·예약 기능이 둘 다 막힌 병원은 ‘연동 불가’와 차트사 문의 안내를 보여요. 비연동 병원은 예약만 연동할 수 있어요.', basis: '카카오 연동은 원격 접수·예약 기능 위에서만 동작해요.', alt: '연동 메뉴를 숨김', setup: 'kakao' },
   { n: 24, menu: '진료실', where: '진료실 상세 · 차트 정보 / 굿닥 운영 설정(연동)', title: '연동 병원 진료실 필드 원천', proposal: '진료실명·진료과·의사는 차트 원천이라 잠그고 이름은 별칭으로만 바꿔요. 굿닥이 관리하는 항목(별칭·안내 문구·접수 허용·스케줄·내원 목적·임시 마감)과 나눠 보여요.', basis: '차트와 굿닥에 같은 정보를 두 번 고치면 어긋나요. 차트 목록에서 빠진 진료실은 미사용 설정으로 이동해요.', alt: '굿닥에서 차트 정보 덮어쓰기 허용', setup: 'mode:linked;room:R1' },
+  { n: 26, setup: 'preset:진료항목 예약만', menu: '대시보드', where: '대시보드 · 진료실 예약 선택형 안내(진료항목 예약만)', title: '진료실 예약을 안 하는 병원의 안내', proposal: '진료항목 예약만 운영하는 병원(비연동·데스크)에도 "진료실을 만들면 진료실 예약도 받을 수 있어요"를 기본으로 보여 주되, 닫을 수 있게 해요.', basis: '나중에 진료실 예약을 시작할 수 있다는 걸 알리는 게 운영 확장에 도움이 되고, 원하지 않으면 닫으면 돼요.', alt: '진료항목 예약만 운영하면 안내를 숨김' },
+  { n: 27, setup: 'preset:진료항목 예약만', menu: '진료실', where: '진료실 · 빈 상태(진료항목 예약만)', title: '진료항목 예약만 운영할 때 진료실 메뉴', proposal: '진료실·진료실 운영 설정 메뉴는 유지해요. 데스크·비연동은 진료실이 빈 상태로 보이고, 운영 설정은 진료실 단위 항목을 비활성하고 이유를 안내해요.', basis: '나중에 진료실 예약을 시작할 때 같은 자리에서 바로 만들 수 있어요.', alt: '진료실 예약을 운영하지 않으면 두 메뉴를 숨김' },
+  { n: 28, setup: 'preset:진료항목 예약만;mode:linked', menu: '진료실', where: '진료실 설정 · 연동 병원 진료항목 예약만', title: '연동 병원이 진료항목 예약만 운영할 때', proposal: '진료실은 차트 동기화로 그대로 보여요. 모든 진료실의 예약 섹션은 미사용이고 진료실 예약 데이터는 없어요. 현장·원격 접수는 차트 기능 기준으로 운영할 수 있어요. 여기서 예약 ‘사용하기’를 켜거나 진료실을 만들어 실제 판정이 바뀌면 체험 띠의 운영 유형은 ‘사용자 정의(판정 기준)’로 바뀌어요(의도된 동작).', basis: '연동 병원의 진료실은 차트가 원천이라 지울 수 없고, 접수는 진료실 예약과 별개로 운영돼요.', alt: '진료실 목록도 숨김' },
+  { n: 29, menu: '진료실', where: '진료실 상세 · 카카오톡 예약하기 연동 행', title: '카카오 연동을 상세 토글에서 연동 설정 화면으로', proposal: '피그마대로 진료실 상세에는 토글 대신 ‘페이지로 이동’ 버튼을 두고, 연동 켜기·끄기는 카카오톡 예약하기 연동 설정 화면에서 해요. 연동 중 사용중지 차단, 고급 설정이면 연동 불가, 운영 스케줄 필요 규칙은 그 화면에서 그대로 동작해요.', basis: '연동은 병원·진료실 단위 설정을 한곳에서 보는 게 실수를 줄이고, 피그마 정본과 맞춰요.', alt: '상세에 토글을 남기고 연동 설정 화면과 이중 제공', setup: 'room:R1' },
   { n: 25, menu: '진료실', where: '진료실 관리 · 새 진료실 / 정보 수정(비연동·데스크)', title: '비연동 병원 진료실 웹 생성·수정·삭제', proposal: '현행 웹에는 없는 신규 기능이에요. 서버에 진료실 생성 API가 필요해요.', basis: '차트 연동이 없는 병원은 진료실을 만들 곳이 없어 웹에서 직접 관리해야 해요.', alt: '굿닥 운영팀이 대신 생성', setup: 'mode:desk' }
-];
+].sort((a, b) => a.n - b.n);
 
 /* ───────── 유틸 ───────── */
 const wait = (ms: number) => new Promise(res => setTimeout(res, ms));
@@ -201,6 +217,9 @@ const daysBetween = (a: string, b: string) => Math.round((new Date(`${a}T00:00:0
 const clone = <T,>(x: T): T => JSON.parse(JSON.stringify(x));
 const eul = (w: string) => { const c = w.charCodeAt(w.length - 1); if (c >= 0xac00 && c <= 0xd7a3) return (c - 0xac00) % 28 ? '을' : '를'; return /[013678]$/.test(w) ? '을' : '를'; };
 const timeLabel = (x: Rec) => x.time || '시간 미정';
+/** 받침에 따라 '으로/로' (ㄹ 받침은 '로') */
+const ro = (w: string) => { const c = w.charCodeAt(w.length - 1); if (c < 0xac00 || c > 0xd7a3) return '로'; const j = (c - 0xac00) % 28; return j === 0 || j === 8 ? '로' : '으로'; };
+type SvcKeyT = 'tablet' | 'mobile' | 'appt';
 let focusReturn: HTMLElement | null = null;
 const modalStack: HTMLDivElement[] = [];
 const focusFallback = () => {
@@ -340,13 +359,15 @@ function Page() {
   const [tAppt, setTAppt] = useState(TAPPT0);
   // 체험 설정(메타)
   const [chartMode, setChartMode] = useState<ChartMode>('desk'), [noRooms, setNoRooms] = useState(false), [failSim, setFailSim] = useState(false), [serverDown, setServerDown] = useState(false), [manyNoti, setManyNoti] = useState(false), [panelOpen, setPanelOpen] = useState(false);
-  const [chartLimited, setChartLimited] = useState(false), [smart, setSmart] = useState(true), [partialFail, setPartialFail] = useState(false);
+  const [chartMissing, setChartMissing] = useState(false), [chartLimited, setChartLimited] = useState(false), [smart, setSmart] = useState(true), [partialFail, setPartialFail] = useState(false);
   const linked = chartMode === 'linked';
   const [moreOpen, setMoreOpen] = useState(false);
-  const [opPreset, setOpPreset] = useState<'둘 다' | '진료실 예약만' | '진료항목 예약만'>('둘 다'), [savedAppt, setSavedAppt] = useState<Record<string, boolean> | null>(null);
+  const [opPreset, setOpPreset] = useState<Preset>('둘 다'), [softDismissed, setSoftDismissed] = useState(false);
   // 판단 메모
   const [annot, setAnnot] = useState(true), [drawer, setDrawer] = useState(false), [hiPin, setHiPin] = useState<number | null>(null);
-  const [memoPrev, setMemoPrev] = useState<null | { partial: boolean; noRooms: boolean; mode: ChartMode; limited: boolean }>(null);
+  type Snap = { rows: Rec[]; rooms: Room[]; savedRooms: Room[] | null; savedRows: Rec[] | null; noRooms: boolean; preset: Preset; mode: ChartMode; limited: boolean; missing: boolean; partial: boolean; tAppt: typeof TAPPT0; soft: boolean };
+  const [memoSnap, setMemoSnap] = useState<Snap | null>(null);
+  const suppressRebuild = useRef(false);
   const [pinReq, setPinReq] = useState<number | null>(null);
   pinCtx = { on: annot, hi: hiPin, openReq: pinReq };
   // 셸
@@ -436,6 +457,9 @@ function Page() {
   /* 운영 판정 [제안·PO확인] */
   const roomOp = rooms.length > 0 && rooms.some(x => x.appt.accepted);
   const itemOp = tAppt.on && items.some(x => x.active);
+  /** 프리셋 기대 판정과 실제 판정이 다르면(예: 연동 + 진료항목만에서 예약 사용하기) 띠에 '사용자 정의(판정 기준)' 표시 */
+  const presetExpect: Record<Preset, [boolean, boolean]> = { '둘 다': [true, true], '진료실 예약만': [true, false], '진료항목 예약만': [false, true], '진료실 예약 운영 중지': [false, true] };
+  const presetShown = presetExpect[opPreset][0] === roomOp && presetExpect[opPreset][1] === itemOp ? opPreset : CUSTOM;
   /* 진료실 없음 체험: 진료실 예약만 숨김(0개 상태에서 새로 만든 진료실에 등록한 건은 표시). 진료항목 조회 실패 체험: 진료항목 예약 숨김 */
   const viewRows = rows.filter(x => (x.kind === '진료항목 예약' ? !partialFail : !noRooms || (x.id.startsWith('W') && rooms.some(rm => rm.name === x.room))));
   // 숨겨진 건(진료실 없음·조회 실패)의 상세는 열지 않는다
@@ -446,6 +470,7 @@ function Page() {
   const roomSide = roomOp, itemSide = itemOp;
   const showBoth = roomSide && itemSide;
   const visitColOn = rooms.length > 0 && (roomOp || hasActive('진료실 예약'));
+  const roomFilterOn = rooms.length > 0 && (roomOp || hasActive('진료실 예약'));
   const allNotis = notis.filter(n => !n.rec || viewRows.some(x => x.id === n.rec));
   const unread = allNotis.filter(n => !n.read).length;
   const roomPaused = (d: string) => d === TODAY && rooms.some(x => x.tablet.paused || x.mobile.paused || x.appt.paused);
@@ -476,35 +501,45 @@ function Page() {
   /* 체험 토글 */
   const modalOpen = !!dialog || keyConfirm;
   const toggleNoRooms = (v: boolean) => {
-    if (modalOpen || v === noRooms) return;
+    if (modalOpen || v === noRooms || opPreset === '진료항목 예약만') return;
     setNoRooms(v); setRoomFilter('전체 진료실');
     if (v) { setSavedRooms(rooms); setSavedRows(rows.filter(x => x.kind === '진료실 예약')); setRooms([]); notify((chartMode === 'unlinked' ? '진료실 없음(정상 상태)' : '진료실 없음') + '으로 바꿨어요. 진료실 예약만 숨기고 진료항목 예약은 그대로예요.'); }
     else {
       const made = rooms.length > 0 || rows.some(x => x.id.startsWith('W') && !(savedRows || []).some(y => y.id === x.id));
       const restored = savedRooms || seedRooms();
-      if (opPreset === '진료항목 예약만') { setSavedAppt(Object.fromEntries(restored.map(x => [x.id, x.appt.accepted]))); setRooms(restored.map(x => ({ ...x, appt: { ...x.appt, accepted: false } }))); }
-      else setRooms(restored);
+      setRooms(restored);
       setRows(cur => [...cur.filter(x => x.kind === '진료항목 예약'), ...(savedRows || BASE.filter(x => x.kind === '진료실 예약'))]); setSavedRooms(null); setSavedRows(null);
       notify(made ? '진료실 없음 체험을 끝냈어요. 체험 중 만든 진료실·진료실 예약은 버리고 원래 진료실 3개로 되돌렸어요.' : '진료실 없음 체험을 끝내고 원래 진료실 3개로 되돌렸어요.');
     }
   };
-  const applyPreset = (p: typeof opPreset) => {
-    if (modalOpen) return;
-    setOpPreset(p);
-    if (p === '진료항목 예약만') { setSavedAppt(Object.fromEntries(rooms.map(x => [x.id, x.appt.accepted]))); setRooms(old => old.map(x => ({ ...x, appt: { ...x.appt, accepted: false } }))); setTAppt(o => ({ ...o, on: true })); }
-    else {
-      if (savedAppt) { setRooms(old => old.map(x => ({ ...x, appt: { ...x.appt, accepted: savedAppt[x.id] ?? x.appt.accepted } }))); setSavedAppt(null); }
-      setTAppt(o => ({ ...o, on: p === '둘 다' }));
-    }
-    notify(`운영 유형을 ‘${p}’로 바꿨어요(체험). 진행 중 건은 그대로 처리할 수 있어요.`);
+  /** 운영 유형 프리셋: 체험 데이터를 프리셋·차트 모드 기준으로 다시 구성한다(체험 중 만든 데이터는 버림)
+   *  진료항목 예약만 — 데스크·비연동: 진료실 0개·진료실 예약 0건 / 연동: 진료실은 차트 동기화로 유지, 예약 섹션 미사용·진료실 예약 0건
+   *  진료실 예약만 — 진료항목 예약 0건, 진료항목 '진료 예약 받기' OFF
+   *  진료실 예약 운영 중지 — 모든 진료실 예약 섹션 OFF, 기존 진료실 예약 건은 남음(판단 메모 2) */
+  const applyPreset = (p: Preset, mode: ChartMode = chartMode, silent = false, withNoRooms = false) => {
+    if (modalOpen && !silent) return;
+    let rms = seedRooms(), rws = clone(BASE), nr = false;
+    const apptOff = (x: Room): Room => ({ ...x, appt: { ...x.appt, accepted: false, kakao: false, paused: false, advanced: false } });
+    if (p === '진료실 예약만') rws = rws.filter(x => x.kind === '진료실 예약');
+    if (p === '진료항목 예약만') { rws = rws.filter(x => x.kind === '진료항목 예약'); if (mode === 'linked') rms = rms.map(x => ({ ...apptOff(x), aSlots: [], groups: [] })); else { rms = []; nr = true; } }
+    if (p === '진료실 예약 운영 중지') rms = rms.map(apptOff);
+    let svR: Room[] | null = null, svW: Rec[] | null = null;
+    if (withNoRooms && !nr) { svR = rms; svW = rws.filter(x => x.kind === '진료실 예약'); rws = rws.filter(x => x.kind === '진료항목 예약'); rms = []; nr = true; }
+    setOpPreset(p); setRooms(rms); setRows(rws); setNoRooms(nr); setSavedRooms(svR); setSavedRows(svW); setRoomFilter('전체 진료실'); setKindFilter('전체'); setSub('전체'); setSoftDismissed(false);
+    setTAppt(o => ({ ...o, on: p !== '진료실 예약만' }));
+    if (!silent) notify(`운영 유형을 ‘${p}’${ro(p)} 바꿨어요(체험). 체험 중 만든 데이터는 버리고 이 유형 기준으로 다시 구성했어요.`);
   };
+  // 진료항목 예약만은 차트 모드에 따라 진료실 구성이 달라 모드를 바꾸면 다시 구성
+  useEffect(() => { if (suppressRebuild.current) { suppressRebuild.current = false; return; } if (opPreset === '진료항목 예약만') applyPreset(opPreset, chartMode, true); }, [chartMode]);
+  // 차트 진료실 없음은 연동 모드에서만 의미가 있어 다른 모드로 바꾸면 자동으로 끈다
+  useEffect(() => { if (chartMode !== 'linked' && chartMissing) setChartMissing(false); }, [chartMode]);
   const toggleMany = (v: boolean) => {
     setManyNoti(v);
     setNotis(old => v ? [...old, ...Array.from({ length: 120 }, (_, i): Noti => ({ id: `X${i}`, type: i % 3 === 0 ? '환자 도착' : i % 3 === 1 ? '새 예약' : '진료항목 예약', text: `체험용 대량 알림 ${i + 1} · 가상 환자 ○○님`, at: `2026-10-0${5 - (i % 5)} 0${7 + (i % 3)}:${String(10 + (i % 50)).padStart(2, '0')}`, read: false, rec: '' }))] : old.filter(x => !x.id.startsWith('X')));
   };
   const resetAll = () => {
     setRows(clone(BASE)); setRooms(seedRooms()); setInvalid(seedInvalid()); setSavedRooms(null); setSavedRows(null); setNotis(clone(BASE_NOTI)); setChartMode('desk'); setNoRooms(false); setFailSim(false); setServerDown(false); setManyNoti(false);
-    setChartLimited(false); setSmart(true); setPartialFail(false); setOpPreset('둘 다'); setSavedAppt(null); setMemoPrev(null);
+    setChartLimited(false); setChartMissing(false); setSmart(true); setPartialFail(false); setOpPreset('둘 다'); setSoftDismissed(false); setMemoSnap(null);
     setItems(ITEMS0); setTAppt(TAPPT0); setCfg(CFG0); setCfgDraft(CFG0); setOpSaved(OP0); setOpPaths(VISIT_PATHS_DEFAULT); setOpAuto({}); setNotiFilter('전체'); setHSearch(''); setHPeriod('최근 30일'); setNoticePage(1); setKeyConfirm(false); setKebab(null);
     setDialog(null); setError(''); clearFilters(); setTab('진행 중'); setClosed(false); setMaximized(false); go('대시보드'); notify('모든 가상 데이터를 처음 상태로 되돌렸어요.');
   };
@@ -512,31 +547,33 @@ function Page() {
   /* 판단 메모 드로어 → 해당 화면 이동 + 핀 하이라이트 */
   const jumpTo = (note: Note) => {
     setDrawer(false); setAnnot(true); setDialog(null);
-    const su = note.setup || '';
-    // 이전 메모 이동으로 바뀐 체험 상태는 먼저 되돌리고, 이번 메모에 필요한 상태만 적용한다
-    const base = memoPrev || { partial: partialFail, noRooms, mode: chartMode, limited: chartLimited };
-    const mm = su.match(/mode:(\w+)/), rm = su.match(/room:(\w+)/);
-    const want = { partial: su === 'partial' ? true : base.partial, noRooms: su === 'norooms' ? true : rm ? false : base.noRooms, mode: (mm ? mm[1] : base.mode) as ChartMode, limited: mm && mm[1] !== 'linked' ? false : base.limited };
-    setPartialFail(want.partial); setChartMode(want.mode); setChartLimited(want.limited);
-    if (want.noRooms !== noRooms) toggleNoRooms(want.noRooms);
-    const changed = want.partial !== base.partial || want.noRooms !== base.noRooms || want.mode !== base.mode || want.limited !== base.limited;
-    setMemoPrev(changed ? base : null);
-    go(note.menu, rm ? { v: 'detail', id: rm[1] } : undefined);
+    const su = MEMO_COND[note.n] || '';
+    const get = (k: string) => (su.match(new RegExp(k + ':([^;]+)')) || [])[1];
+    const preset = (get('preset') || '둘 다') as Preset, mode = (get('mode') || 'desk') as ChartMode;
+    // 첫 메모 이동 직전 상태를 통째로 저장해 두었다가 '되돌리기'에서 그대로 복원
+    if (!memoSnap) setMemoSnap({ rows, rooms, savedRooms, savedRows, noRooms, preset: opPreset, mode: chartMode, limited: chartLimited, missing: chartMissing, partial: partialFail, tAppt, soft: softDismissed });
+    if (mode !== chartMode) suppressRebuild.current = true;
+    setChartMode(mode); setChartLimited(false); setChartMissing(false); setPartialFail(su.includes('partial'));
+    applyPreset(preset, mode, true, su.includes('norooms')); // 운영 유형·진료실 없음을 함께 강제 적용
+    const room = get('room'), openK = get('open') as SvcKeyT | undefined, detail = get('detail'), cancel = get('cancel');
+    go(note.menu, room ? { v: 'detail', id: room, open: openK } : undefined);
     if (note.menu === '진료 현황') { clearFilters(); setTab('진행 중'); }
     setTimeout(() => {
-      if (note.setup?.startsWith('detail:')) setDialog({ type: 'detail', id: note.setup.slice(7) });
-      if (note.setup?.startsWith('cancel:')) { setReason(''); setDialog({ type: 'cancel', id: note.setup.slice(7), from: 'list' }); }
-      if (su === 'kakao') setDialog({ type: 'kakao' });
+      if (detail) setDialog({ type: 'detail', id: detail });
+      if (cancel) { setReason(''); setDialog({ type: 'cancel', id: cancel, from: 'list' }); }
+      if (su.includes('kakao')) setDialog({ type: 'kakao' });
       setHiPin(note.n);
-      setTimeout(() => { const el = document.querySelector<HTMLElement>(`[data-pin="${note.n}"]`); el?.scrollIntoView({ block: 'center', behavior: 'smooth' }); pinScrollGuardUntil = Date.now() + 1500; setTimeout(() => { const pinEl = el?.querySelector('.dw-pin') as HTMLElement | null; const pr = pinEl?.getBoundingClientRect(); const mr = document.querySelector('.cu-main')?.getBoundingClientRect(); if (pr && mr && (pr.top < mr.top || pr.bottom > mr.bottom)) el?.scrollIntoView({ block: 'center' }); /* 부드러운 스크롤이 중간에 끊긴 경우 보정 */ pinEl?.focus({ preventScroll: true }); pinScrollGuardUntil = Date.now() + 800; setPinReq(note.n); setTimeout(() => setPinReq(null), 50); }, 650); }, 450);
+      setTimeout(() => { const el = document.querySelector<HTMLElement>(`[data-pin="${note.n}"]`); el?.scrollIntoView({ block: 'center', behavior: 'smooth' }); pinScrollGuardUntil = Date.now() + 1500; setTimeout(() => { const pinEl = el?.querySelector('.dw-pin') as HTMLElement | null; const pr = pinEl?.getBoundingClientRect(); const mr = document.querySelector('.cu-main')?.getBoundingClientRect(); if (pr && mr && (pr.top < mr.top || pr.bottom > mr.bottom)) el?.scrollIntoView({ block: 'center' }); pinEl?.focus({ preventScroll: true }); pinScrollGuardUntil = Date.now() + 800; setPinReq(note.n); setTimeout(() => setPinReq(null), 50); }, 650); }, 450);
     }, 420);
   };
 
   const revertMemo = () => {
-    if (!memoPrev || modalOpen) return;
-    setPartialFail(memoPrev.partial); setChartMode(memoPrev.mode); setChartLimited(memoPrev.limited);
-    if (memoPrev.noRooms !== noRooms) toggleNoRooms(memoPrev.noRooms);
-    setMemoPrev(null); notify('판단 메모 이동으로 바뀐 체험 상태를 되돌렸어요.');
+    if (!memoSnap || modalOpen) return;
+    const m = memoSnap;
+    if (m.mode !== chartMode) suppressRebuild.current = true;
+    setRows(m.rows); setRooms(m.rooms); setSavedRooms(m.savedRooms); setSavedRows(m.savedRows); setNoRooms(m.noRooms); setOpPreset(m.preset);
+    setChartMode(m.mode); setChartLimited(m.limited); setChartMissing(m.missing); setPartialFail(m.partial); setTAppt(m.tAppt); setSoftDismissed(m.soft);
+    setMemoSnap(null); notify('판단 메모 이동 전 상태로 되돌렸어요.');
   };
 
   /* 진료 건 처리 */
@@ -629,7 +666,7 @@ function Page() {
   /* ───────── 렌더 조각 ───────── */
   const skeleton = (n = 5) => <div className="dw-skeleton" aria-label="불러오는 중" role="status">{Array.from({ length: n }, (_, i) => <div key={i}><i /><i /><i /><i /></div>)}</div>;
   const serverBanner = serverDown && <div className="cu-warning dw-banner" role="alert"><VscWarning />굿닥 서버에 연결할 수 없어요. 마지막으로 불러온 정보이며, 상태 변경을 저장할 수 없어요.<button className="cu-btn quiet" onClick={() => { setServerDown(false); notify('서버 연결을 모의 복구했어요.'); }}>다시 연결 (모의)</button></div>;
-  const partialBanner = partialFail && <div className="cu-warning dw-banner dw-partial" role="alert"><VscWarning /><span>진료항목 예약을 불러오지 못했어요. 진료실 예약은 정상 표시 중이에요.<Pin n={15} /></span><button className="cu-btn quiet" onClick={() => { setMemoPrev(null); setPartialFail(false); notify('진료항목 예약을 다시 불러왔어요 (모의).'); }}>다시 시도</button></div>;
+  const partialBanner = partialFail && <div className="cu-warning dw-banner dw-partial" role="alert"><VscWarning /><span>진료항목 예약을 불러오지 못했어요. 진료실 예약은 정상 표시 중이에요.<Pin n={15} /></span><button className="cu-btn quiet" onClick={() => { setMemoSnap(null); setPartialFail(false); notify('진료항목 예약을 다시 불러왔어요 (모의).'); }}>다시 시도</button></div>;
   const failHint = failSim && <p className="dw-fail-hint"><VscBeaker />체험 설정의 ‘저장 실패’가 켜져 있어요. 확인을 누르면 실패 결과를 보여 줍니다.</p>;
   const errorBox = error && <p className="cu-error" role="alert"><VscError /> {error}</p>;
   const pager = (cur: number, count: number, set: (n: number) => void, label: string) => (
@@ -639,13 +676,13 @@ function Page() {
       <button disabled={cur === count} onClick={() => set(cur + 1)} aria-label="다음 페이지">›</button>
     </div></div>
   );
-  /** 진료실 없음: 비연동은 선택형 안내(진료항목만 운영 프리셋이면 숨김), 연동은 차트 안내 */
-  const roomSoftNote = rooms.length === 0 && (linked
+  /** 진료실 없음: 비연동·데스크는 선택형 안내(진료항목 예약만이어도 기본 노출, 닫기 가능 — 판단 메모 26), 연동은 차트 안내 */
+  const roomSoftNote = rooms.length === 0 && !softDismissed && (linked
     ? <div className="dw-soft-note"><VscInfo /><span>차트에서 진료실을 등록하면 여기에 표시돼요.</span></div>
-    : opPreset !== '진료항목 예약만' && <div className="dw-soft-note"><VscInfo /><span>진료실을 만들면 진료실 예약도 받을 수 있어요.<Pin n={16} /></span><button className="cu-btn" onClick={() => { go('진료실'); openRoomForm(); }}><VscAdd />진료실 만들기</button></div>);
+    : <div className="dw-soft-note"><VscInfo /><span>진료실을 만들면 진료실 예약도 받을 수 있어요.{opPreset === '진료항목 예약만' ? <Pin n={26} /> : <Pin n={16} />}</span><button className="cu-btn" onClick={() => { go('진료실'); openRoomForm(); }}><VscAdd />진료실 만들기</button><button className="cu-icon" aria-label="안내 닫기" onClick={() => setSoftDismissed(true)}><VscChromeClose /></button></div>);
   const roomsEmpty = linked
     ? <div className="cu-empty"><VscOrganization /><strong>차트에서 진료실을 등록하면 여기에 표시돼요</strong><p>연동 차트의 진료실이 자동으로 반영돼요.</p></div>
-    : <div className="cu-empty"><VscOrganization /><strong>진료실이 없어요</strong><p>진료실 예약을 받으려면 진료실을 만들어 주세요. 진료항목 예약은 진료실 없이도 받을 수 있어요.</p><button className="cu-btn" onClick={() => openRoomForm()}><VscAdd />진료실 만들기</button></div>;
+    : <div className="cu-empty"><VscOrganization /><strong>진료실이 없어요{opPreset === '진료항목 예약만' && <Pin n={27} />}</strong><p>진료실 예약을 받으려면 진료실을 만들어 주세요. 진료항목 예약은 진료실 없이도 받을 수 있어요.</p><button className="cu-btn" onClick={() => openRoomForm()}><VscAdd />진료실 만들기</button></div>;
 
   const actionsFor = (x: Rec): Act[] => x.kind === '진료항목 예약'
     ? (x.state === '확정 필요' ? ['confirm'] : x.state === '예약확정' ? ['complete'] : [])
@@ -722,7 +759,8 @@ function Page() {
     const needConfirm = tabList.filter(x => x.state === '확정 필요').length;
     return <>
       {partialBanner}
-      {rooms.length === 0 && <p className="cu-inline-note dw-note dw-note-compact"><VscInfo />{linked ? '차트에서 진료실을 등록하면 진료실 예약을 받을 수 있어요. 진료항목 예약은 그대로 처리할 수 있어요.' : '진료실이 없어 진료실 예약을 받을 수 없어요. 진료항목 예약은 그대로 처리할 수 있어요.'}</p>}
+      {!roomOp && hasActive('진료실 예약') && <p className="cu-inline-note dw-note dw-note-compact"><VscInfo /><span>진료실 예약 운영을 멈췄어요. 새 예약만 받지 않고, 이미 받은 진행 중 예약 {viewRows.filter(x => x.kind === '진료실 예약' && ACTIVE.includes(x.state)).length}건은 그대로 처리할 수 있어요.<Pin n={2} /></span></p>}
+      {rooms.length === 0 && opPreset !== '진료항목 예약만' && <p className="cu-inline-note dw-note dw-note-compact"><VscInfo />{linked ? '차트에서 진료실을 등록하면 진료실 예약을 받을 수 있어요. 진료항목 예약은 그대로 처리할 수 있어요.' : '진료실이 없어 진료실 예약을 받을 수 없어요. 진료항목 예약은 그대로 처리할 수 있어요.'}</p>}
       <div className="cu-tabs" role="tablist" aria-label="진료 상태">
         {(['진행 중', '지난 내역'] as const).map(tb => <button key={tb} role="tab" aria-selected={tab === tb} className={tab === tb ? 'active' : ''} onClick={() => { setTab(tb); if (chip && chip !== '오늘 신청' && tb === '진행 중') setChip(''); }}>{tb}<span>{tabRows(tb).length}</span></button>)}
         <Pin n={8} />
@@ -732,7 +770,7 @@ function Page() {
         <select aria-label="조회 날짜" value={dateMode} disabled={!!chip} onChange={e => setDateMode(e.target.value)}><option>오늘</option><option>날짜 선택</option><option>전체 기간</option></select>
         {dateMode === '날짜 선택' && !chip && <input type="date" className="dw-date" aria-label="날짜 선택" value={pickDate} onChange={e => setPickDate(e.target.value || TODAY)} />}
         {showBoth && <span className="dw-filter-pin"><select aria-label="예약 유형" value={kindFilter} onChange={e => setKindFilter(e.target.value as any)}><option>전체</option><option>진료실 예약</option><option>진료항목 예약</option></select><Pin n={1} /></span>}
-        {rooms.length > 0 && <span className="dw-filter-pin"><select aria-label="진료실 필터" value={roomFilter} onChange={e => setRoomFilter(e.target.value)}><option>전체 진료실</option>{rooms.map(x => <option key={x.id}>{x.name}</option>)}{itemSide && <option value="진료실 미지정">진료실 미지정(진료항목 예약)</option>}</select><Pin n={14} /></span>}
+        {roomFilterOn && <span className="dw-filter-pin"><select aria-label="진료실 필터" value={roomFilter} onChange={e => setRoomFilter(e.target.value)}><option>전체 진료실</option>{rooms.map(x => <option key={x.id}>{x.name}</option>)}{itemSide && <option value="진료실 미지정">진료실 미지정(진료항목 예약)</option>}</select><Pin n={14} /></span>}
         <button className="cu-icon" aria-label="검색 조건 초기화" title="검색 조건 초기화" onClick={clearFilters}><VscRefresh /></button>
         {crowd.length > 0 && <span className="dw-crowd-chip" role="status" title={`${crowd.map(([k, c]) => `${fmt(k.slice(0, 10))} ${k.slice(11)}~ 같은 시간 진료항목 예약 ${c}건`).join(' · ')} · 진료항목 예약은 환자 정보와 연결되지 않아 같은 환자 여부는 이름·연락처로 추정해요.`}><VscInfo />같은 시간 {crowd.reduce((a, [, c]) => a + c, 0)}건<Pin n={5} /></span>}
       </div>
@@ -849,23 +887,24 @@ function Page() {
   };
 
   /* ───────── 셸 ───────── */
-  const kit: Kit = { Modal, notify: (s: string) => notify(s), fail, instant, serverDown, failSim, linked, chartLimited, mode: chartMode, Pin };
+  const kit: Kit = { Modal, notify: (s: string) => notify(s), fail, instant, serverDown, failSim, linked, chartLimited, mode: chartMode, Pin, itemOnly: opPreset === '진료항목 예약만', chartMissingId: chartMissing ? 'R2' : undefined, onOpenKakao: () => setDialog({ type: 'kakao' }) };
   const noRoomLabel = chartMode === 'unlinked' ? '진료실 없음(정상 상태)' : '진료실 없음';
   const expToggles: [string, boolean, (v: boolean) => void, React.ReactNode, boolean?][] = [
-    ['차트 기능 제한', chartLimited, (v: boolean) => { setMemoPrev(null); setChartLimited(v); }, <span>차트 기능 제한 <em className="dw-exp-note">연동만 · 원격·예약 막힘</em></span>, !linked],
+    ['차트 진료실 없음', chartMissing, setChartMissing, <span>차트 진료실 없음 <em className="dw-exp-note">연동만 · 2진료실</em></span>, !linked],
+    ['차트 기능 제한', chartLimited, (v: boolean) => { setMemoSnap(null); setChartLimited(v); }, <span>차트 기능 제한 <em className="dw-exp-note">연동만 · 원격·예약 막힘</em></span>, !linked],
     ['스마트접수 가능', smart, setSmart, '스마트접수 가능'],
-    ['진료항목 조회 실패', partialFail, (v: boolean) => { setMemoPrev(null); setPartialFail(v); }, '진료항목 조회 실패'],
+    ['진료항목 조회 실패', partialFail, (v: boolean) => { setMemoSnap(null); setPartialFail(v); }, '진료항목 조회 실패'],
     ['저장 실패', failSim, setFailSim, '저장 실패'],
     ['서버 오류', serverDown, setServerDown, '서버 오류'],
     ['알림 99+', manyNoti, toggleMany, '알림 99+']
   ];
-  const moreOn = [chartLimited, !smart, partialFail, failSim, serverDown, manyNoti].filter(Boolean).length;
+  const moreOn = [chartMissing, chartLimited, !smart, partialFail, failSim, serverDown, manyNoti].filter(Boolean).length;
   const expOn = [chartMode !== 'desk', chartLimited, noRooms, !smart, partialFail, failSim, serverDown, manyNoti, opPreset !== '둘 다'].filter(Boolean).length;
   const connection = chartMode === 'linked' ? `${CHART_NAME} · 연결됨` : chartMode === 'unlinked' ? '차트 미연동' : '데스크(굿닥) 차트';
   const moduleMenu = menu === '진료실' || menu === '진료실 운영 설정';
   return <div className="cu-app dw-app">
     <div className="cu-prototype">
-      <div><strong>데스크 기능 웹 이관 시안</strong><span>v0.8 · 커넥트 웹뷰 UI · 가상 데이터</span></div>
+      <div><strong>데스크 기능 웹 이관 시안</strong><span>v0.11 · 커넥트 웹뷰 UI · 가상 데이터</span></div>
       <div className="cu-proto-actions">
         <span className="dw-legend"><Hold /> = PO 확인 중</span>
         <label className="dw-annot-toggle"><button type="button" className={'cu-toggle ' + (annot ? 'on' : '')} aria-pressed={annot} aria-label="판단 메모 보기" onClick={() => setAnnot(!annot)}><span /></button>판단 메모 보기</label>
@@ -877,15 +916,15 @@ function Page() {
     {panelOpen && <div className="dw-exp-strip" id="dw-exp-strip" role="region" aria-label="체험 설정 (프로토타입 전용 · 실제 기능 아님)">
       <span className="dw-exp-tag">프로토 전용</span>
       {modalOpen && <span className="dw-exp-lock">모달이 열려 있는 동안은 바꿀 수 없어요</span>}
-      <label className={'dw-exp-item ' + (modalOpen ? 'locked' : '')}>차트 모드<select aria-label="차트 모드" disabled={modalOpen} value={chartMode} onChange={e => { const v = e.target.value as ChartMode; setMemoPrev(null); setChartMode(v); if (v !== 'linked') setChartLimited(false); notify(v === 'desk' ? '데스크 차트 병원(하반기 기본)으로 전환했어요.' : v === 'unlinked' ? '차트 비연동 병원으로 전환했어요. 접수는 받을 수 없고 예약만 운영해요.' : '연동 차트 병원으로 전환했어요. 진료실 자체는 차트에서 관리해요.'); }}><option value="desk">데스크 차트 병원(기본)</option><option value="unlinked">비연동</option><option value="linked">연동 차트</option></select></label>
-      <label className={'dw-exp-item ' + (modalOpen ? 'locked' : '')}>운영 유형<select aria-label="운영 유형" disabled={modalOpen} value={opPreset} onChange={e => applyPreset(e.target.value as any)}><option>둘 다</option><option>진료실 예약만</option><option>진료항목 예약만</option></select></label>
-      <label className={'dw-exp-item ' + (modalOpen ? 'locked' : '')}><button type="button" className={'cu-toggle ' + (noRooms ? 'on' : '')} aria-label={noRoomLabel} aria-pressed={noRooms} disabled={modalOpen} onClick={() => { setMemoPrev(null); toggleNoRooms(!noRooms); }}><span /></button>{noRoomLabel}{noRooms && rooms.length > 0 && <em className="dw-exp-note">체험 중 · {rooms.length}개 만듦</em>}</label>
+      <label className={'dw-exp-item ' + (modalOpen ? 'locked' : '')}>차트 모드<select aria-label="차트 모드" disabled={modalOpen} value={chartMode} onChange={e => { const v = e.target.value as ChartMode; setMemoSnap(null); setChartMode(v); if (v !== 'linked') setChartLimited(false); notify(v === 'desk' ? '데스크 차트 병원(하반기 기본)으로 전환했어요.' : v === 'unlinked' ? '차트 비연동 병원으로 전환했어요. 접수는 받을 수 없고 예약만 운영해요.' : '연동 차트 병원으로 전환했어요. 진료실 자체는 차트에서 관리해요.'); }}><option value="desk">데스크 차트 병원(기본)</option><option value="unlinked">비연동</option><option value="linked">연동 차트</option></select></label>
+      <label className={'dw-exp-item ' + (modalOpen ? 'locked' : '')}>운영 유형<select aria-label="운영 유형" disabled={modalOpen} value={presetShown} onChange={e => { if (e.target.value === CUSTOM) return; setMemoSnap(null); applyPreset(e.target.value as Preset); }}>{PRESETS.map(x => <option key={x}>{x}</option>)}{presetShown === CUSTOM && <option value={CUSTOM} disabled>{CUSTOM}</option>}</select></label>
+      <label className={'dw-exp-item ' + (modalOpen ? 'locked' : '')}><button type="button" className={'cu-toggle ' + (noRooms ? 'on' : '')} aria-label={noRoomLabel} aria-pressed={noRooms} disabled={modalOpen || opPreset === '진료항목 예약만'} title={opPreset === '진료항목 예약만' ? '진료항목 예약만 프리셋에서는 프리셋이 정해요' : undefined} onClick={() => { setMemoSnap(null); toggleNoRooms(!noRooms); }}><span /></button>{noRoomLabel}{opPreset === '진료항목 예약만' && <em className="dw-exp-note">프리셋 고정</em>}{noRooms && rooms.length > 0 && <em className="dw-exp-note">체험 중 · {rooms.length}개 만듦</em>}</label>
       <div className="dw-exp-more-wrap">
         <button type="button" className="dw-exp-more" disabled={modalOpen} aria-expanded={moreOpen} onClick={() => setMoreOpen(!moreOpen)}>조건 더보기{moreOn > 0 && <b>{moreOn}</b>} ▾</button>
         {moreOpen && <div className="dw-exp-pop" role="group" aria-label="체험 조건">{expToggles.map(([label, value, set, shown, dis]) => <label key={label} className={'dw-exp-item ' + (modalOpen || dis ? 'locked' : '')}><button type="button" className={'cu-toggle ' + (value ? 'on' : '')} aria-label={label} aria-pressed={value} disabled={modalOpen || !!dis} onClick={() => set(!value)}><span /></button>{shown}</label>)}</div>}
       </div>
       <span className="dw-exp-judge">판정: 진료실 예약 {roomOp ? '운영' : '미운영'} · 진료항목 예약 {itemOp ? '운영' : '미운영'}</span>
-      {memoPrev && <span className="dw-exp-memo">메모 이동으로 바뀜<button type="button" className="dw-link" disabled={modalOpen} onClick={revertMemo}>되돌리기</button></span>}
+      {memoSnap && <span className="dw-exp-memo">메모 이동으로 바뀜<button type="button" className="dw-link" disabled={modalOpen} onClick={revertMemo}>되돌리기</button></span>}
       <button className="cu-btn quiet dw-exp-reset" disabled={modalOpen} onClick={resetAll}><VscRefresh />처음 상태로</button>
     </div>}
     <div className="cu-planned"><VscInfo />미승인 시안 · 하반기 범위: 차트가 ‘데스크’인 병원 · 굿닥 서버 기준 데이터 · 실제 서버·차트·환자 알림과 통신하지 않아요.</div>
@@ -1044,13 +1083,18 @@ function Page() {
       const none = !sup('mobile') && !sup('appt');
       const label = (k: 'mobile' | 'appt') => k === 'mobile' ? '원격 접수' : '예약';
       return <Modal title={<>카카오톡 예약하기 연동 설정<Pin n={23} /></>} wide onClose={close} footer={<button className="cu-btn primary" onClick={close}>닫기</button>}>
-        <p>진료실별로 카카오 예약하기·카카오 맵에서 원격 접수·예약을 받을지 정해요. 진료실 상세의 카카오톡 예약하기 연동과 같은 설정이에요.</p>
+        <p>진료실별로 카카오 예약하기·카카오 맵에서 원격 접수·예약을 받을지 정해요. 진료실 상세의 ‘페이지로 이동’에서도 열 수 있어요.</p>
         {none ? <div className="dw-red-box"><VscWarning /><span><b>연동 불가</b> · 현재 사용 중인 차트({CHART_NAME})는 원격 접수·예약 기능이 지원되지 않으니, 사용을 원하실 경우 차트사에 문의해 주세요.</span></div>
           : chartMode === 'unlinked' && <p className="cu-inline-note"><VscInfo />차트를 연동하지 않은 병원은 예약만 연동할 수 있어요. 원격 접수는 차트 연동 시 사용 가능해요.</p>}
         {rooms.length === 0 ? <p className="cu-subnote">진료실이 없어요. 진료실 예약을 연동하려면 진료실을 만들어 주세요.</p> :
           <table className="dw-auto-table dw-kakao-table"><thead><tr><th>진료실</th><th>원격 접수</th><th>예약</th></tr></thead><tbody>{rooms.map(rm => <tr key={rm.id}><td className="dw-auto-name">{rm.alias || rm.name}</td>
             {(['mobile', 'appt'] as const).map(k => <td key={k}>{!sup(k) ? <span className="dw-muted">{chartMode === 'unlinked' ? '차트 연동 시 사용 가능' : '연동 불가'}</span> : !rm[k].accepted ? <span className="dw-muted">{label(k)} 미사용</span>
-              : <span className="dw-kakao-cell"><span className={'dw-kakao ' + (rm[k].kakao ? 'on' : '')}>{rm[k].kakao ? '연동중' : '미연동'}</span><button className={'cu-toggle ' + (rm[k].kakao ? 'on' : '')} aria-label={`${rm.name} ${label(k)} 카카오 연동`} aria-pressed={rm[k].kakao} onClick={() => instant(() => setRooms(old => old.map(x => x.id === rm.id ? { ...x, [k]: { ...x[k], kakao: !x[k].kakao } } : x)), rm[k].kakao ? `${label(k)} 연동을 해지했어요.` : `${label(k)} 연동을 완료했어요.`, rm[k].kakao ? '연동 해지' : '연동')}><span /></button></span>}</td>)}
+              : <span className="dw-kakao-cell"><span className={'dw-kakao ' + (rm[k].kakao ? 'on' : '')}>{rm[k].kakao ? '연동중' : '미연동'}</span><button className={'cu-toggle ' + (rm[k].kakao ? 'on' : '')} aria-label={`${rm.name} ${label(k)} 카카오 연동`} aria-pressed={rm[k].kakao} onClick={() => {
+                if (!rm[k].kakao && k === 'appt' && rm.appt.advanced) { fail('기본 설정으로 전환해야 연동할 수 있어요. 해당 진료실은 고급 설정으로 예약을 받고 있어요.'); return; }
+                const hasSched = k === 'mobile' ? rm.rSlots.mobile.some(x => x.date > TODAY || (x.date === TODAY && x.end > NOW)) : rm.aSlots.some(x => x.date > TODAY || (x.date === TODAY && x.time > NOW));
+                if (!rm[k].kakao && !hasSched) { fail(`카카오 예약하기로 ${label(k)}${k === 'mobile' ? '를' : '을'} 받으려면 운영 스케줄이 필요해요`); return; }
+                instant(() => setRooms(old => old.map(x => x.id === rm.id ? { ...x, [k]: { ...x[k], kakao: !x[k].kakao } } : x)), rm[k].kakao ? `${label(k)} 연동을 해지했어요.` : `${label(k)} 연동을 완료했어요.`, rm[k].kakao ? '연동 해지' : '연동');
+              }}><span /></button></span>}</td>)}
           </tr>)}</tbody></table>}
         <p className="cu-subnote">진료항목의 카카오톡 예약하기 노출은 진료항목 메뉴에서 항목별로 관리해요.</p>
       </Modal>;

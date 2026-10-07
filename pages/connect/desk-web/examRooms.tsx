@@ -118,15 +118,15 @@ const ST_LABEL: Record<string, string> = { active: '운영중', error: '운영�
 
 /* ───────── 공통 props · 저장 흐름 ───────── */
 type ModalT = (p: { title: React.ReactNode; children: React.ReactNode; footer?: React.ReactNode; onClose: () => void; wide?: boolean; busy?: boolean; className?: string }) => JSX.Element;
-export type ChartMode = 'desk' | 'unlinked' | 'linked';
-/** 서비스 지원 여부: 비연동=예약만(접수는 브릿지 없이 서버가 거절), 데스크=전부, 연동=차트 기능값(체험: 기능 제한이면 현장 접수만) */
-export const svcSupported = (mode: ChartMode, chartLimited: boolean, k: SvcKey) => mode === 'unlinked' ? k === 'appt' : mode === 'linked' && chartLimited ? k === 'tablet' : true;
+export type ChartMode = 'unlinked' | 'linked';
+/** 서비스 지원 여부: 비연동(기본, 기존 데스크)=예약만(접수는 EMR 연결 없이 서버가 거절), EMR 연동=차트 기능값(체험: 기능 제한이면 현장 접수만) */
+export const svcSupported = (mode: ChartMode, chartLimited: boolean, k: SvcKey) => mode === 'unlinked' ? k === 'appt' : chartLimited ? k === 'tablet' : true;
 export type Kit = {
   Modal: ModalT; notify: (t: string) => void; fail: (t: string) => void; instant: (apply: () => void, ok: string, what?: string) => boolean;
   serverDown: boolean; failSim: boolean; linked: boolean; chartLimited: boolean; mode: ChartMode; Pin: (p: { n: number }) => JSX.Element | null; itemOnly?: boolean; chartMissingId?: string; onOpenKakao?: () => void;
 };
 const supportedOf = (kit: Kit) => (k: SvcKey) => svcSupported(kit.mode, kit.chartLimited, k);
-export const CHART_NAME = '연동 차트 예시';
+export const CHART_NAME = '연동 EMR 예시';
 /** 모달 저장: 처리 중 → 실패면 상태 유지 + 오류, 성공일 때만 반영 */
 function useRun(kit: Kit) {
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
@@ -197,7 +197,7 @@ export function ExamRooms(props: {
     {props.banner}
     <div className="cu-content dw-fig-content">
       {kit.linked && kit.itemOnly && <p className="cu-inline-note dw-note"><VscInfo /><span>진료항목 예약만 운영하는 연동 병원이에요. 진료실은 차트 동기화로 표시되고 예약 섹션은 미사용이에요. 현장·원격 접수는 차트 기능 기준으로 운영할 수 있어요.<kit.Pin n={28} /></span></p>}
-      {kit.linked && <p className="cu-inline-note dw-note"><VscInfo />연동 차트 병원이에요. 진료실 이름·진료과·의사는 차트에서 관리하고, 운영 설정과 스케줄은 여기서 바꿀 수 있어요.</p>}
+      {kit.linked && <p className="cu-inline-note dw-note"><VscInfo />EMR 연동 병원이에요. 진료실 이름·진료과·의사는 EMR에서 관리하고, 운영 설정과 스케줄은 여기서 바꿀 수 있어요.</p>}
       {rooms.length === 0 ? props.emptyNode : <div className="dw-fig-grid">{/* figma baseline 참조 */}{sorted.map(r => <RoomCard key={r.id} grid r={r} supported={supported} chartMissing={kit.linked && kit.chartMissingId === r.id} onClick={() => go({ v: 'detail', id: r.id })} extra={props.activeIn(r) > 0 ? `진행 중 예약 ${props.activeIn(r)}건` : ''} />)}</div>}
     </div>
   </>;
@@ -302,7 +302,7 @@ function Detail({ kit, room: r, allRooms, update, supported, back, open, Hold, b
   const subtitle = (k: SvcKey, st: St) => {
     const n = SVC_NAME[k];
     if (st === 'nochart') return '차트 진료실을 찾을 수 없어요.';
-    if (st === 'none') return kit.mode === 'unlinked' ? `사용불가 · 차트 연동 시 사용 가능해요. ${n}${eul(n)} 받으려면 차트가 연결돼 있어야 해요.` : `현재 사용 중인 차트(${CHART_NAME})는 ${n} 기능이 지원되지 않으니, 사용을 원하실 경우 차트사에 문의해 주세요.`;
+    if (st === 'none') return kit.mode === 'unlinked' ? `사용불가 · EMR 연동 시 사용 가능해요. ${n}${eul(n)} 받으려면 EMR이 연결돼 있어야 해요.` : `현재 사용 중인 차트(${CHART_NAME})는 ${n} 기능이 지원되지 않으니, 사용을 원하실 경우 차트사에 문의해 주세요.`;
     if (st === 'disabled') return k === 'tablet' ? '굿닥 태블릿 무인 접수로 업무 효율 개선 효과를 경험해 보세요.' : k === 'mobile' ? '원격 접수로 대기실을 쾌적하게, 효율적으로 관리해 보세요.' : '전화 문의 없는 예약으로 바쁜 업무 환경을 개선해 보세요.';
     if (st === 'error') return `운영 스케줄을 등록하면 ${n}${eul(n)} 받을 수 있어요.`;
     if (k === 'appt') { // figma baseline 참조
@@ -372,7 +372,7 @@ function Detail({ kit, room: r, allRooms, update, supported, back, open, Hold, b
 
   const pauseItems: [SvcKey, string][] = [['tablet', '현장접수'], ['mobile', '원격접수'], ['appt', '예약']];
   const pauseDesc = (k: SvcKey) => {
-    if (!supported(k)) return kit.mode === 'unlinked' ? '차트 연동 시 사용 가능해요.' : '차트에서 지원하지 않는 서비스예요.';
+    if (!supported(k)) return kit.mode === 'unlinked' ? 'EMR 연동 시 사용 가능해요.' : '차트에서 지원하지 않는 서비스예요.';
     if (!r[k].accepted) return k === 'appt' ? '예약 미운영 진료실 이에요.' : `${SVC_NAME[k]} 미운영 진료실 이에요.`;
     if (k === 'appt' && !r.appt.todayUsed) return '당일 예약을 받지 않아요.';
     if (k === 'appt') return r.appt.paused ? '오늘 자정까지 당일 예약을 받지 않아요.' : '오늘 당일 예약을 받고 있어요.';
@@ -415,10 +415,10 @@ function Detail({ kit, room: r, allRooms, update, supported, back, open, Hold, b
           <div><span>진료실 이름</span><strong>{r.alias || r.name}</strong></div>
           <div><span>연결한 차트 진료실</span><strong>{r.name}</strong></div>
           <div><span>진료과 · 의사</span><strong>{r.dept} · {r.doctors.join(', ')}</strong></div>
-          <p>연동 차트에서 관리하는 정보예요. 환자에게 보일 이름은 ‘이름 변경’(별칭)으로 바꿀 수 있어요. 차트 목록에서 빠진 진료실은 <button className="dw-link" onClick={() => open({ v: 'unused' })}>미사용 설정</button>으로 이동해요.</p>
+          <p>연동한 EMR에서 관리하는 정보예요. 환자에게 보일 이름은 ‘이름 변경’(별칭)으로 바꿀 수 있어요. 차트 목록에서 빠진 진료실은 <button className="dw-link" onClick={() => open({ v: 'unused' })}>미사용 설정</button>으로 이동해요.</p>
         </div>
         <h2 className="dw-fig-sec">굿닥 운영 설정 <small>별칭·안내 문구·접수 허용·스케줄·내원목적·임시 마감</small></h2></>}
-      {kit.mode === 'unlinked' && <div className="dw-fig-guide pos"><span><VscInfo />차트를 연동하지 않은 병원이에요. 현장 접수·원격 접수는 차트 연동 시 사용할 수 있고, 예약은 지금 바로 운영할 수 있어요.</span></div>}
+      {kit.mode === 'unlinked' && <div className="dw-fig-guide pos"><span><VscInfo />EMR을 연동하지 않은 비연동 병원이에요. 현장 접수·원격 접수는 EMR 연동 시 사용할 수 있고, 예약은 지금 바로 운영할 수 있어요.</span></div>}
       {/* figma baseline 참조 */}
       {!r.alias && <div className="dw-fig-guide pos"><span><VscInfo />굿닥 서비스에서 환자들에게 안내할 진료실 이름을 설정해 보세요.</span><button onClick={() => { setError(''); setAliasDraft(''); setModal({ t: 'alias' }); }}>이름 설정하기 <VscArrowRight /></button></div>}
       <div className="dw-fig-svc-list">{(['tablet', 'mobile', 'appt'] as SvcKey[]).map(section)}</div>
@@ -858,7 +858,7 @@ const Tg = ({ v, onChange, label, disabled }: { v: boolean; onChange: () => void
 export type OpStore = { saved: Op; setSaved: (o: Op) => void; paths: string[]; setPaths: (p: string[]) => void; autoSaved: Record<string, AutoRow>; setAutoSaved: (a: Record<string, AutoRow>) => void };
 export const VISIT_PATHS_DEFAULT = ['지인 소개', '인터넷 검색', '굿닥 앱', '블로그/카페', '간판/지나가다', '기타'];
 export function OperationPage({ kit, rooms, smart, onOpenRoom, banner, store }: { kit: Kit; rooms: Room[]; smart: boolean; onOpenRoom: (id: string) => void; banner: React.ReactNode; store: OpStore }) {
-  const unl = kit.mode === 'unlinked', noQueue = kit.mode !== 'linked';
+  const unl = kit.mode === 'unlinked', noQueue = unl;
   const noRoom = rooms.length === 0;
   const noRoomHint = <small className="dw-noroom-hint">진료실이 없어 설정할 수 없어요. 진료실을 만들면 설정할 수 있어요.</small>;
   const M = kit.Modal;
@@ -895,7 +895,7 @@ export function OperationPage({ kit, rooms, smart, onOpenRoom, banner, store }: 
         {noRoom && <p className="cu-inline-note dw-note"><VscInfo />진료실이 없어 진료실 단위 항목(진료실 정보 표시·예약 시간 맞춤 자동 접수)은 설정할 수 없어요. 나머지 항목은 병원 전체에 적용돼요.</p>}
         <h2 className="dw-op-sec">공통</h2>
         <h3 className="dw-op-sub">태블릿 접수<kit.Pin n={18} /></h3>
-        {unl && <p className="cu-inline-note dw-note"><VscInfo />차트 연동 병원에서 태블릿 접수에 사용돼요. 차트를 연동하지 않은 병원은 태블릿 접수를 받을 수 없어 아래 3개 항목을 바꿀 수 없어요.</p>}
+        {unl && <p className="cu-inline-note dw-note"><VscInfo /><span>EMR 연동 병원에서 태블릿 접수에 사용돼요. 비연동 병원은 태블릿 접수를 받을 수 없어 아래 3개 항목을 바꿀 수 없어요.<kit.Pin n={19} /></span></p>}
         <div className={unl ? 'dw-off-group' : ''}>
         <Row title="환자 조회 방식 선택" sub="환자 조회 시 차트에서 사용하는 정보를 선택해 주세요.">
           <div className="dw-pop-wrap"><button className="dw-select" data-pop="pri" disabled={unl} aria-haspopup="listbox" aria-expanded={priOpen} onClick={() => setPriOpen(!priOpen)}>{unl ? '해당 없음' : form.priority === 1 ? '휴대폰번호' : '주민등록번호'}<VscChevronDown /></button>
@@ -914,11 +914,11 @@ export function OperationPage({ kit, rooms, smart, onOpenRoom, banner, store }: 
         <Row title="내원경로 받기" sub="처음 접수하는 환자에게 내원경로를 받을 수 있습니다.">{form.visitPathUsed && !unl && <button className="cu-btn" onClick={() => { setError(''); setPathDraft(paths); setPathInput(''); setPathErr(''); setModal('path'); }}>설정</button>}{unl && <span className="dw-muted">해당 없음</span>}<Tg v={unl ? false : form.visitPathUsed} disabled={unl} label="내원경로 받기" onChange={() => set({ visitPathUsed: !form.visitPathUsed })} /></Row>
         </div>
         <h3 className="dw-op-sub">접수·예약 공통</h3>
-        <Row title="재진 환자만 접수 받기" sub={unl ? '차트 환자번호가 없어 켜면 모든 예약이 거절돼요. 차트를 연동하지 않은 병원은 끈 상태로 고정돼요.' : '신환 접수를 데스크에서 직접 받아야 할 때 선택해 주세요.'} off={unl} hold={kit.mode === 'desk' ? <kit.Pin n={19} /> : undefined}>{unl && <span className="dw-warn-chip">비연동 · 끔 고정</span>}<Tg v={unl ? false : form.onlyReturned} disabled={unl} label="재진 환자만 접수 받기" onChange={() => set({ onlyReturned: !form.onlyReturned })} /></Row>
+        <Row title="재진 환자만 접수 받기" sub={unl ? '차트 환자번호가 없어 켜면 모든 예약이 거절돼요. 비연동 병원은 끈 상태로 고정돼요.' : '신환 접수를 데스크에서 직접 받아야 할 때 선택해 주세요.'} off={unl} hold={unl ? <kit.Pin n={21} /> : undefined}>{unl && <span className="dw-warn-chip">비연동 · 끔 고정</span>}<Tg v={unl ? false : form.onlyReturned} disabled={unl} label="재진 환자만 접수 받기" onChange={() => set({ onlyReturned: !form.onlyReturned })} /></Row>
         {<Row title="진료과 중복 접수 · 예약 받기" sub="같은 날짜에 동일한 진료과로 이미 접수 또는 예약되어 있어도 추가로 신청할 수 있어요. 기본값은 허용 안 함이에요." hold={<kit.Pin n={20} />}><span className="dw-muted">{form.deptDup ? '허용' : '허용 안 함'}</span><Tg v={form.deptDup} label="진료과 중복 접수 · 예약 받기" onChange={() => set({ deptDup: !form.deptDup })} /></Row>}
         <h3 className="dw-op-sub">앱 노출</h3>
         <Row title="진료실 정보 표시" sub="굿닥 서비스에서 환자들에게 보여줄 정보를 선택해 주세요.">{noRoom && noRoomHint}<label className="dw-check"><input type="checkbox" disabled={noRoom} checked={form.viewDept} onChange={() => set({ viewDept: !form.viewDept })} />진료과명</label><label className="dw-check"><input type="checkbox" disabled={noRoom} checked={form.viewDoctor} onChange={() => set({ viewDoctor: !form.viewDoctor })} />의사명</label></Row>
-        <Row title="진료 차례 알림 발송하기" sub={noQueue ? '차트 대기 순번이 있어야 보낼 수 있어요.' : '차트에서 진료 차례가 된 환자들에게 안내 알림을 발송할 수 있습니다.'} off={noQueue} hold={kit.mode === 'desk' ? <kit.Pin n={21} /> : undefined}><Tg v={noQueue ? false : form.turnAlarm} disabled={noQueue} label="진료 차례 알림 발송하기" onChange={() => set({ turnAlarm: !form.turnAlarm })} /></Row>
+        <Row title="진료 차례 알림 발송하기" sub={noQueue ? 'EMR 대기 순번이 있어야 보낼 수 있어요.' : '차트에서 진료 차례가 된 환자들에게 안내 알림을 발송할 수 있습니다.'} off={noQueue}><Tg v={noQueue ? false : form.turnAlarm} disabled={noQueue} label="진료 차례 알림 발송하기" onChange={() => set({ turnAlarm: !form.turnAlarm })} /></Row>
         {smart && <>
           <h2 className="dw-op-sec">예약</h2>
           <Row title="예약 시간 맞춤 자동 접수" sub="예약 환자가 예약 시간에 맞춰 진료받도록, 대기 현황에 따라 알맞은 순서에 자동으로 접수합니다.">{noRoom && noRoomHint}<button className="cu-btn" disabled={noRoom} onClick={() => { if (!sorted.length) { kit.fail('자동 접수를 설정할 진료실이 없어요.'); return; } setError(''); setAuto(JSON.parse(JSON.stringify({ ...mk(), ...autoSaved }))); setModal('auto'); }}>설정</button></Row>

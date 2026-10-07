@@ -574,3 +574,8 @@ button.dw-room-row:hover{border-color:var(--blue)}
 .cu-app .dw-fig-svc-ic,.cu-app .dw-fig-svc-ic svg{color:#434956}
 .cu-app .dw-fig-danger:disabled{opacity:.4;cursor:not-allowed}
 .dw-fig-missing{display:flex;align-items:center;gap:6px;margin-top:6px!important;font:600 13px/20px Pretendard,sans-serif;color:#EC3847}
+/* v0.14 지난 내역 기간 직접 설정 */
+.dw-range{display:inline-flex;align-items:center;gap:6px;color:var(--g70);font-size:13px}
+.dw-range-err{display:flex;align-items:center;gap:6px;margin:6px 0 0;font-size:12px;color:#d93838}
+.dw-range-err small{color:var(--g70)}
+.dw-auto-chip{background:#f2f3f5;color:var(--g70);border-color:var(--g30)}

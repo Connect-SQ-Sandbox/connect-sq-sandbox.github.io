@@ -3,7 +3,7 @@
  * 현행 커넥트 웹뷰(진료실 설정·상세·스케줄·운영 설정) 구조·문구·노출 조건을 옮긴 축약 재현이다.
  * 결정 태그·변경 이력은 index.page.tsx 헤더에 둔다. 가상 데이터 · 메모리 상태 · 네트워크 0.
  */
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   VscAdd, VscArrowDown, VscArrowUp, VscChevronDown, VscChevronLeft, VscChevronRight, VscClose, VscDebugPause,
   VscDebugStart, VscEdit, VscGripper, VscInfo, VscExtensions, VscTrash, VscWarning, VscCopy, VscCheck, VscGear, VscVm, VscDeviceMobile, VscCalendar, VscArrowRight
@@ -873,6 +873,17 @@ export function OperationPage({ kit, rooms, smart, onOpenRoom, banner, store }: 
   const { busy, error, setError, run } = useRun(kit);
   const dirty = JSON.stringify(form) !== JSON.stringify(saved);
   const set = (p: Partial<Op>) => setForm(f => ({ ...f, ...p }));
+  /** 모드·스마트접수가 바뀌어 숨겨지거나 잠기는 항목은 저장하지 않은 편집분을 저장값으로 되돌린다(화면에 남은 항목의 편집분은 유지) */
+  const hideKeys = (u: boolean, sm: boolean): (keyof Op)[] => [...(u ? ['priority', 'addressUsed', 'addrInput', 'addr2', 'addrSkip', 'visitPathUsed', 'onlyReturned', 'turnAlarm'] as (keyof Op)[] : []), ...(!sm ? ['holdStatus'] as (keyof Op)[] : [])];
+  const prevGate = useRef({ u: unl, sm: smart });
+  useEffect(() => {
+    const p = prevGate.current; prevGate.current = { u: unl, sm: smart };
+    if (p.u === unl && p.sm === smart) return;
+    const before = new Set(hideKeys(p.u, p.sm)), keys = hideKeys(unl, smart).filter(k => !before.has(k) && form[k] !== saved[k]);
+    if (!keys.length) return;
+    setForm(f => { const n = { ...f }; keys.forEach(k => { (n as any)[k] = saved[k]; }); return n; });
+    kit.notify('숨겨진 항목의 저장하지 않은 변경은 취소했어요.');
+  }, [unl, smart]);
   useEffect(() => {
     if (!priOpen) return;
     const h = (e: MouseEvent) => { if (!(e.target as HTMLElement).closest('.dw-pop-wrap')) setPriOpen(false); };
@@ -892,7 +903,7 @@ export function OperationPage({ kit, rooms, smart, onOpenRoom, banner, store }: 
     {banner}
     <div className="cu-content">
       <div className="cu-settings-page dw-op">
-        {noRoom && <p className="cu-inline-note dw-note"><VscInfo />진료실이 없어 진료실 단위 항목(진료실 정보 표시·예약 시간 맞춤 자동 접수)은 설정할 수 없어요. 나머지 항목은 병원 전체에 적용돼요.</p>}
+        {noRoom && <p className="cu-inline-note dw-note"><VscInfo />진료실이 없어 진료실 단위 항목({smart ? '진료실 정보 표시·예약 시간 맞춤 자동 접수' : '진료실 정보 표시'})은 설정할 수 없어요. 나머지 항목은 병원 전체에 적용돼요.</p>}
         <h2 className="dw-op-sec">공통</h2>
         <h3 className="dw-op-sub">태블릿 접수<kit.Pin n={18} /></h3>
         {unl && <p className="cu-inline-note dw-note"><VscInfo /><span>EMR 연동 병원에서 태블릿 접수에 사용돼요. 비연동 병원은 태블릿 접수를 받을 수 없어 아래 3개 항목을 바꿀 수 없어요.<kit.Pin n={19} /></span></p>}

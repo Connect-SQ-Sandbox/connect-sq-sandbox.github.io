@@ -1,10 +1,10 @@
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : desk-web — 굿닥 데스크(Windows 프로그램) 기능을 커넥트 웹뷰 UI로 옮긴 웹 이관 시안
- * 상태     : 현행(active) · 검토용 시안(미승인)   버전: v0.16  최종수정: 2026-10-07
+ * 상태     : 현행(active) · 검토용 시안(미승인)   버전: v0.18  최종수정: 2026-10-07
  * PRD      : 내부 기획 문서(공개 저장소라 티켓 번호·링크·원문 미기재)
  * 배포URL  : https://connect-sq-sandbox.github.io/out/desk-web.html — v0.3 배포됨, 이후 버전 미배포
- * 피그마   : 사내 파일(공개 저장소라 파일명·URL·노드 ID 미기재) · 진료실 설정 목록·상세 · 반영 값과 노드는 figma/baseline.md 참조(기준선 2026-10-06)
+ * 피그마   : 사내 파일(공개 저장소라 파일명·URL·노드 ID 미기재) · 진료실 설정 목록·상세, 진료항목 운영 설정 · 반영 값과 노드는 figma/baseline.md 참조(기준선 2026-10-06, 진료항목 운영 설정 2026-10-07)
  * 관련 CSS : styles/connectUnified.css(재사용, cu-*) + styles/deskWeb.css(이 화면 전용, dw-*)
  * 관련 소스: ./examRooms.tsx (진료실 목록·순서·미사용·상세·접수/예약 스케줄, 진료실 운영 설정)
  * 기술제약 : react 훅만 · plain CSS · react-icons(vsc) · 가상 데이터 · 브라우저 메모리 상태 · 네트워크 0
@@ -24,14 +24,15 @@
  *   [확정·PO] 서버 기준 알림 메시지함. 좌측 메뉴·타이틀바 종에 미읽음 배지, 99 초과는 '99+'.
  *   [확정·PO] 진료실 운영 설정·스케줄은 연동/비연동 공통으로 웹에서 전부 가능. 차이는 둘뿐:
  *             비연동 = 진료실 생성·수정·삭제 + 진료과·의사 텍스트 입력, 연동 = 진료실 자체는 '차트에서 관리'(수정 불가).
+ *   [확정·PD 2026-10-07] 운영 설정의 기준은 연동 여부가 아니라 진료실 유무(굿닥·EMR 진료실 동일 동작). 진료실 없거나 해당 서비스가 꺼져 있으면 적용 대상 0 안내(D안). 스마트접수만 EMR 전용
  *   [확정·PD 2026-10-07] 좌측 메뉴: 운영 설정 > 진료실 운영 설정 / 진료항목 운영 설정
  *   [확정·PD 2026-10-07] 진료내역 메뉴 → 진료 현황 '지난 내역' 탭 통합. 기간(오늘·7일·30일 기본·직접 설정 최대 6개월, 방문 예정일 기준)·상태·검색·유형·진료실 필터, 읽기 전용. 결제는 TBD라 미반영.
  *   [확정·PD 2026-10-07] 스마트접수(자동 접수)는 특정 EMR 전용 — 비연동 미노출. EMR 연동은 '스마트접수 가능'일 때만 '예약 > 자동 접수' 노출(현행 게이트).
  *   [확정·PD] 비연동 병원은 진료실 필수 아님 — 0개는 정상 상태(진료항목 예약만 운영 가능).
- *   [현행 유지] 차트 모드 분기 근거: 접수는 차트 연결(브릿지)이 없으면 서버가 거절, 예약은 차트 연결 없이도 진행(환자 조회는 굿닥 DB 대체).
- *             비연동 = 태블릿 접수 묶음·차례 알림 비활성, 재진만 받기 끔 고정, 현장·원격 접수 섹션 사용불가, 카카오는 예약만 연동.
+ *   [폐기 2026-10-07 · v0.6·v0.12 결정] 차트 모드 분기 근거: 접수는 차트 연결(브릿지)이 없으면 서버가 거절, 예약은 차트 연결 없이도 진행(환자 조회는 굿닥 DB 대체).
+ *             [폐기] 비연동 = 태블릿 접수 묶음·차례 알림 비활성, 재진만 받기 끔 고정, 현장·원격 접수 섹션 사용불가, 카카오는 예약만 연동.
  *             EMR 연동 = 차트 기능값 기준('차트 기능 제한'·'차트 진료실 없음' 체험은 EMR 연동에서만).
- *             서버가 차트 응답을 대신해 비연동도 접수를 제공할지는 미정(판단 메모 19).
+ *             굿닥 진료실이 EMR 진료실처럼 동작하려면 서버가 차트 역할을 대신해야 함(판단 메모 19·21).
  *   [현행 유지] 진료실 관리·순서·미사용·상세(현장/원격/예약 섹션, 안내 문구, 내원 목적, 카카오 연동, 임시 진료 마감)·
  *             접수 스케줄·예약 스케줄(일정 그룹·고급 설정)·진료실 운영 설정 문구와 노출 조건은 현행 커넥트 웹뷰를 옮김.
  *   [현행 유지] 진료항목 예약 설정(예약 받기·자동 확정·당일 예약·새 예약 알림)과 노출 0개 차단·카카오 자동 확정 끄기 확인.
@@ -42,7 +43,7 @@
  *   [제안·PO확인] 예약 취소 사유 모달: 현행과 달리 처음엔 사유를 고르지 않은 상태, 고르기 전 [예약 취소] 비활성, 버튼 문구 '예약 취소'(판단 메모 6).
  *   [제안·PO확인] 운영 중 판정(환자가 실제로 예약 가능한 조건 기준) · 끈 유형의 진행 중 건 계속 처리 · 진료항목 예약은 진료실
  *             배정 없이 진료완료 · 시간 기준 불일치는 안내·경고만 · 같은 날·같은 시간 중복은 표시만 · 취소 사유 유형별 필터·필수 ·
- *             카카오 연동/노출은 각 위치 유지 + 끌 때 영향 안내. 화면의 판단 메모 핀 1~31번에 제안·근거·대안을 적어 둠.
+ *             카카오 연동/노출은 각 위치 유지 + 끌 때 영향 안내. 화면의 판단 메모 핀 1~32번에 제안·근거·대안을 적어 둠.
  *
  * 보류 · TODO (PO 확인 대기):
  *   [보류] 예약 등록(웹에서 병원이 직접 등록) 제공 여부·필수 항목.
@@ -59,6 +60,8 @@
  *                      진료실/진료항목 예약 분리(유형별 상태·액션·필터·열, 진료항목 예약 설정), 비연동 진료실 없음 = 정상 상태.
  *   v0.5  2026-10-06 — PO 결정 대기 항목을 제안안으로 구현하고 판단 메모 핀·드로어(17건) 추가.
  *   v0.6  2026-10-06 — 운영 설정·진료실 상세·카카오 연동 설정을 차트 모드(데스크 차트 병원 기본 / 비연동 / 연동 차트)별로 분기, 판단 메모 18~25 추가.
+ *   v0.18 2026-10-07 — 운영 설정 기준을 진료실 유무로 변경: 비연동 잠금(태블릿 접수 묶음·재진만·차례 알림, 상세 현장·원격 사용불가, 카카오 원격 열) 해제, 설정별 '적용 중 진료실 N개'·N=0 정보 안내(D안), 판단 메모 18·19·21·22 재작성·32 추가. 스마트접수 EMR 전용 유지.
+ *   v0.17 2026-10-07 — 진료항목 운영 설정을 피그마에 맞춤(독립 카드 '진료 예약 받기'·'설정' 그룹·운영시간 안내 배너·행 카드 96/118·스위치 ON 색), 부제는 피그마 문구·제목은 메뉴명 유지, 메모 4 핀을 배너로·메모 7 핀을 스위치 옆으로.
  *   v0.16 2026-10-07 — 좌측 메뉴에 '운영 설정' 그룹 추가(진료실 운영 설정 / 진료항목 운영 설정), 진료항목 메뉴의 진료 예약 설정을 진료항목 운영 설정 페이지로 분리, 판단 메모 11을 PD 확정으로 교체(상태 칩 'PD 확정' 추가), 메모 2·4·7 위치 이동.
  *   v0.15 2026-10-07 — 상단 체험 설정 띠를 기본 펼침으로 변경(세화님 요청).
  *   v0.14 2026-10-07 — 진료내역 메뉴를 진료 현황 '지난 내역' 탭으로 통합(기간·상태·검색·유형·진료실 필터, 탭별 필터 유지, 긴 기간 시드 합침), 판단 메모 30·31 추가, 메모 되돌리기에 스마트접수 포함, 모드 전환 시 숨겨지는 운영 설정 편집 취소 안내.
@@ -184,7 +187,7 @@ const DESC: Record<string, string> = {
   '대시보드': '오늘 우리 병원의 예약·진료 현황과 공지사항을 확인할 수 있어요.',
   '진료 현황': '굿닥 서버에 저장된 진료실 예약·진료항목 예약을 확인하고 처리할 수 있어요.',
   '진료항목': '굿닥에 노출되는 우리 병원 진료항목을 관리할 수 있어요.',
-  '진료항목 운영 설정': '진료항목으로 예약을 받을지, 확정·당일 예약·알림을 어떻게 할지 정해요. 병원 전체에 적용돼요.',
+  '진료항목 운영 설정': '굿닥에 등록한 진료항목으로 예약을 받을 수 있습니다.',
   '알림 메시지함': '새 예약·환자 도착·진료항목 예약 알림을 서버 기준으로 모아 볼 수 있어요.'
 };
 
@@ -196,17 +199,17 @@ const PRESETS: Preset[] = ['둘 다', '진료실 예약만', '진료항목 예�
 const MEMO_COND: Record<number, string> = {
   1: 'preset:둘 다', 2: 'preset:진료실 예약 운영 중지', 3: 'detail:D006', 6: 'cancel:D002', 13: 'detail:D006', 15: 'partial', 16: 'norooms',
   18: 'mode:unlinked', 19: 'mode:unlinked', 21: 'mode:unlinked', 22: 'mode:unlinked;room:R1', 23: 'kakao', 24: 'mode:linked;room:R1', 25: 'mode:unlinked', 26: 'preset:진료항목 예약만;mode:unlinked',
-  27: 'preset:진료항목 예약만;mode:unlinked', 28: 'preset:진료항목 예약만;mode:linked', 29: 'room:R1;open:appt', 30: 'tab:past', 31: 'tab:past'
+  27: 'preset:진료항목 예약만;mode:unlinked', 28: 'preset:진료항목 예약만;mode:linked', 29: 'room:R1;open:appt', 30: 'tab:past', 31: 'tab:past', 32: 'mode:unlinked'
 };
 type Note = { n: number; menu: string; where: string; title: string; proposal: string; basis: string; alt: string; setup?: string; status?: 'PD 확정' };
 const NOTES: Note[] = [
   { n: 1, setup: 'preset:둘 다', menu: '진료 현황', where: '진료 현황 · 유형 필터', title: '운영 중 판정 기준', proposal: '진료실 예약은 진료실이 1개 이상이고 예약 섹션을 켠 진료실이 1개 이상일 때, 진료항목 예약은 예약 받기 ON이고 노출 진료항목이 1개 이상일 때 운영 중으로 봐요. 운영하지 않는 유형은 유형 필터·열·대시보드 내역에서 숨겨요.', basis: '환자가 앱에서 실제로 예약할 수 있는 조건(병원 상세 예약 버튼 기준)과 맞추면 병원 화면과 환자 화면이 어긋나지 않아요.', alt: '설정 토글만으로 판정' },
   { n: 2, setup: 'preset:진료실 예약 운영 중지', menu: '진료항목 운영 설정', where: '진료항목 운영 설정 · 진료 예약 받기 / 진료 현황 · 운영 중지 안내', title: '운영을 끈 유형의 진행 중 건', proposal: '끈 뒤에도 진행 중 건은 목록에 남기고 처리도 허용해요. 끌 때 "새 예약만 받지 않아요. 이미 받은 진행 중 예약 N건은 그대로 처리해 주세요." 확인을 띄워요.', basis: '신청 유실 0건이 성공 기준이고, 이미 잡힌 환자 약속은 지켜야 해요.', alt: '끄면 진행 중 건 일괄 취소' },
   { n: 3, menu: '진료 현황', where: '진료항목 예약 상세 · 처리 안내', title: '진료항목 예약 환자의 내원 처리', proposal: '접수 전환·진료실 배정 없이 [진료완료]가 곧 기록이 돼요(현행 유지). 상세에 안내 문구를 둬요.', basis: '하반기는 서버·앱 변경을 최소화하고, 비연동 병원은 이 웹이 기록의 원천이에요.', alt: '내원 시 진료실 배정·접수 전환(서버 신규 필요)', setup: 'detail:D006' },
-  { n: 4, menu: '진료항목 운영 설정', where: '진료항목 운영 설정 · 병원 운영시간 기준 / 진료 현황 · 운영시간 확인 칩 / 진료실 스케줄 안내', title: '예약 시간 기준 불일치', proposal: '시간 기준은 연결하지 않고 안내·경고만 해요. 휴진일이거나 오늘 임시 마감한 진료실이 있는 날의 진료항목 예약에는 ‘운영시간 확인’ 칩을 붙이고 상세에 설명을 둬요.', basis: '시간 기준을 바꾸면 앱·카카오 슬롯 계산이 바뀌는 큰 작업이라 하반기 범위 밖이에요. 대신 운영자가 충돌을 놓치지 않게 해요.', alt: '진료항목 예약을 진료실 스케줄과 연결' },
+  { n: 4, menu: '진료항목 운영 설정', where: '진료항목 운영 설정 · 병원 운영시간 안내 배너 / 진료 현황 · 운영시간 확인 칩 / 진료실 스케줄 안내', title: '예약 시간 기준 불일치', proposal: '시간 기준은 연결하지 않고 안내·경고만 해요. 휴진일이거나 오늘 임시 마감한 진료실이 있는 날의 진료항목 예약에는 ‘운영시간 확인’ 칩을 붙이고 상세에 설명을 둬요.', basis: '시간 기준을 바꾸면 앱·카카오 슬롯 계산이 바뀌는 큰 작업이라 하반기 범위 밖이에요. 대신 운영자가 충돌을 놓치지 않게 해요.', alt: '진료항목 예약을 진료실 스케줄과 연결' },
   { n: 5, menu: '진료 현황', where: '진료 현황 · 같은 시간·같은 환자 안내', title: '같은 시간·같은 환자 중복', proposal: '차단하지 않고 표시만 해요. 같은 날 이름·연락처가 같은 두 유형 건에 ‘같은 날 다른 예약’ 칩과 상세 이동 링크를, 30분 안에 진료항목 예약이 몰리면 ‘같은 시간 n건’ 안내를 띄워요. 진료항목 예약은 환자 정보와 연결되지 않아 이름·연락처로 추정해요.', basis: '차단하려면 앱·카카오 변경이 필요하고, 진료 + 접종처럼 실제 동반 진료일 수 있어 매출 손실 우려가 있어요.', alt: '서버 중복 검증·진료항목 정원 도입' },
   { n: 6, menu: '진료 현황', where: '예약 취소 모달 · 사유', title: '취소 사유 유형별 필터·필수', proposal: '공통 5종을 유지하되 ‘진료항목 확인 필요’는 진료항목 예약에만 보여요. 진료실 예약도 사유 선택을 필수로 하고, 선택한 사유는 환자에게 안내된다는 힌트를 붙여요. 현행 웹과 다른 점: 처음엔 사유를 고르지 않은 상태로 열고(현행은 첫 사유가 미리 선택됨), 고르기 전에는 버튼이 비활성이며, 버튼 문구는 ‘예약 취소’예요.', basis: '환자 문의를 줄이고, 유형에 맞지 않는 사유가 나오지 않게 해요. 기존 데스크는 사유 없이 고정 문구였어요.', alt: '사유 비공개 또는 자유 입력 병행', setup: 'cancel:D002' },
-  { n: 7, menu: '진료항목 운영 설정', where: '진료항목 운영 설정 · 진료 예약 받기 카카오 안내 / 진료항목 · 카카오 노출 안내', title: '카카오 공존', proposal: '진료실 상세의 카카오 연동 토글과 진료항목 메뉴의 카카오 노출은 각자 위치에 둬요. 진료항목 예약 받기를 끌 때 "카카오톡 예약하기의 진료항목 상품 판매도 함께 중지돼요"를 알려요.', basis: '연동 단위가 진료실 단위 / 항목 단위로 달라 합치면 오해가 생겨요. 끌 때 영향만 확실히 알려요.', alt: '연동 화면 한곳으로 통합' },
+  { n: 7, menu: '진료항목 운영 설정', where: '진료항목 운영 설정 · 진료 예약 받기 스위치 / 진료항목 · 카카오 노출 안내', title: '카카오 공존', proposal: '진료실 상세의 카카오 연동 토글과 진료항목 메뉴의 카카오 노출은 각자 위치에 둬요. 진료항목 예약 받기를 끌 때 "카카오톡 예약하기의 진료항목 상품 판매도 함께 중지돼요"를 알려요.', basis: '연동 단위가 진료실 단위 / 항목 단위로 달라 합치면 오해가 생겨요. 끌 때 영향만 확실히 알려요.', alt: '연동 화면 한곳으로 통합' },
   { n: 8, menu: '진료 현황', where: '진료 현황 · 상태 칩', title: '상태 칩 어휘', proposal: '진료항목 예약은 ‘확정 필요’ → ‘예약확정’, 진료실 예약은 ‘예약확정’ → ‘내원확정’. 같은 탭(진행 중)에 모아 보여요.', basis: '현행 웹·데스크에서 쓰던 말을 유지해 병원이 다시 배우지 않게 해요.', alt: '두 유형 공통 어휘 1세트로 통일' },
   { n: 9, menu: '진료 현황', where: '진료 현황 · 확정 필요 하위 필터', title: '신청 건 위치', proposal: '확정이 필요한 진료항목 신청은 진행 중 탭에 두고 ‘확정 필요’ 하위 필터로 모아 봐요.', basis: '탭을 늘리지 않고 놓치기 쉬운 미확정 건만 빠르게 걸러요.', alt: '별도 ‘처리 필요’ 탭' },
   { n: 10, menu: '대시보드', where: '대시보드 · 오늘 현황', title: '대시보드 집계', proposal: '타일은 두 유형 합산, 둘 다 운영할 때만 타일 아래에 유형별 내역(진료실 n · 진료항목 n)을 작게 보여요.', basis: '기존 데스크 대시보드 구성(3타일)을 유지하면서 유형 구분이 필요할 때만 보여요.', alt: '유형별 타일 분리' },
@@ -217,11 +220,11 @@ const NOTES: Note[] = [
   { n: 15, menu: '진료 현황', where: '진료 현황 · 유형별 조회 실패 배너', title: '부분 실패 처리', proposal: '유형별로 조회가 실패하면 그 유형만 배너로 알리고, 성공한 유형은 그대로 보여요.', basis: '한 유형 장애로 전체 업무가 멈추지 않게 해요.', alt: '하나라도 실패하면 전체 오류 화면', setup: 'partial' },
   { n: 16, menu: '대시보드', where: '대시보드 · 진료실 없음 안내', title: '비연동 진료실 없음은 정상 상태', proposal: '비연동 병원에서 진료실 0개는 정상이에요. 차단·경고 대신 "진료실을 만들면 진료실 예약도 받을 수 있어요" 선택형 안내만 둬요.', basis: '진료항목 예약만 운영하는 병원이 있어요.', alt: '진료실 생성 유도 카드(경고형)', setup: 'norooms' },
   { n: 17, menu: '진료 현황', where: '진료 현황 · 내원 체크 열', title: '데스크 현행과 다르게 바꾼 것', proposal: '내원 체크에 확인 모달을 한 번 거치고, 저장에 실패하면 성공으로 표시하지 않아요.', basis: '데스크는 체크 즉시 처리돼 오탭이 많았고, 실패해도 성공 토스트가 떠서 상태가 어긋났어요.', alt: '데스크와 같이 즉시 처리' },
-  { n: 18, menu: '진료실 운영 설정', where: '진료실 운영 설정 · 태블릿 접수 묶음', title: '비연동 병원의 태블릿 접수 항목', proposal: '환자 조회 방식·주소 정보·내원경로는 태블릿 신환 등록에 쓰여 ‘태블릿 접수’로 묶고, 비연동 병원에서는 묶음 전체를 비활성으로 두고 안내를 한 번만 보여요.', basis: 'EMR 연결이 없으면 서버가 접수를 거절해 비연동 병원은 태블릿 접수 자체를 할 수 없어요.', alt: '항목을 숨김', setup: 'mode:unlinked' },
-  { n: 19, menu: '진료실 운영 설정', where: '진료실 운영 설정 · 태블릿 접수 묶음 안내', title: '비연동 병원의 접수·차례 알림', proposal: '데스크가 하던 차트 응답(접수 처리·대기 순번)은 통합 웹으로 옮길 때 서버가 대신할지 정해지지 않았어요. 그래서 비연동은 접수·차례 알림을 비활성으로 뒀어요.', basis: '지금은 EMR 연결이 없으면 서버가 접수를 거절하고, 대기 순번도 EMR에서만 와요. 웹만으로는 접수 처리와 차례 알림을 만들 수 없어요.', alt: '서버가 차트 응답을 대신해서 비연동도 접수 제공', setup: 'mode:unlinked' },
+  { n: 18, menu: '진료실 운영 설정', where: '진료실 운영 설정 · 태블릿 접수 묶음', title: '태블릿 접수 항목은 진료실 기준으로 동작', proposal: '환자 조회 방식·주소 정보·내원경로는 태블릿 신환 등록에 쓰여 ‘태블릿 접수’로 묶어요. 연동 여부와 관계없이 활성이고, 현장 접수를 켠 진료실에 적용돼요. 묶음 단위로 적용 중 진료실 수를 한 번 보여요.', basis: '비연동 병원도 진료실이 있으면 굿닥 진료실이 EMR 진료실과 같게 동작해요. 차이는 환자 정보가 도착하는 곳(EMR 진료실/굿닥 진료실)뿐이에요.', alt: '항목마다 적용 진료실 수를 따로 표시', setup: 'mode:unlinked' },
+  { n: 19, menu: '진료실 운영 설정', where: '진료실 운영 설정 · 진료 차례 알림', title: '굿닥 진료실의 접수·차례 알림', proposal: '굿닥 진료실이 EMR 진료실처럼 동작하려면 서버가 차트 역할을 대신해야 해요. 현행은 브릿지가 없으면 서버가 접수를 거절하고, 차례 알림은 차트가 보내는 대기 순번으로만 발송돼요. 굿닥 진료실은 진료 현황의 호출·진료 처리로 순번을 만드는 방식이 필요해요.', basis: '운영 설정은 연동 여부가 아니라 진료실 유무를 기준으로 하기로 했어요. 시안은 비연동에서도 접수·차례 알림 설정을 활성으로 보여 줘요.', alt: '서버 대행 전까지 비연동 접수·차례 알림 비활성', setup: 'mode:unlinked' },
   { n: 20, menu: '진료실 운영 설정', where: '진료실 운영 설정 · 진료과 중복 접수', title: '진료과 중복 접수 노출 범위', proposal: '모든 병원에 노출하고 기본값은 ‘허용 안 함’으로 둬요. 체험 설정의 특정 차트 토글은 이 결정으로 필요 없어져 정리했어요.', basis: '토글이 없는 병원도 이미 중복 차단 상태로 동작하므로, 노출하면 병원이 직접 정할 수 있어요.', alt: '현행처럼 특정 차트에서만 노출' },
-  { n: 21, menu: '진료실 운영 설정', where: '진료실 운영 설정 · 재진 환자만 접수 받기', title: '비연동 병원의 재진만 받기', proposal: '비연동 병원은 끈 상태로 고정하고 "차트 환자번호가 없어 켜면 모든 예약이 거절돼요"를 보여요. EMR 연동 병원은 차트 기능값대로 켜고 끌 수 있어요.', basis: '서버는 차트 환자번호가 없으면 재진 확인을 거절해요. 비연동 병원은 환자번호를 줄 곳이 없어요.', alt: '굿닥 방문 이력으로 재진을 판단(서버 신규)', setup: 'mode:unlinked' },
-  { n: 22, menu: '진료실', where: '진료실 상세 · 현장·원격 접수 섹션(비연동)', title: '비연동 병원의 접수 섹션', proposal: '현장 접수·원격 접수는 ‘사용불가 · EMR 연동 시 사용 가능’으로, 예약 섹션은 그대로 활성으로 둬요.', basis: '접수는 EMR 연결이 없으면 서버가 거절하고, 예약은 EMR 연결 없이도 진행돼요.', alt: '접수 섹션을 숨김', setup: 'mode:unlinked;room:R1' },
+  { n: 21, menu: '진료실 운영 설정', where: '진료실 운영 설정 · 재진 환자만 접수 받기', title: '굿닥 진료실의 재진 판단', proposal: '비연동에서도 켜고 끌 수 있게 해요. 굿닥 진료실은 차트 환자번호가 없으니 굿닥 방문 이력(진료완료 기록)으로 재진을 판단해야 해요(서버 신규 필요).', basis: '현행 서버는 차트 환자번호로 재진을 확인해요. 굿닥 진료실에는 그 번호가 없어서, 판단 기준을 굿닥 이력으로 바꾸지 않으면 켜는 순간 모든 신청이 거절돼요.', alt: '서버 신규 전까지 비연동은 끈 상태로 고정', setup: 'mode:unlinked' },
+  { n: 22, menu: '진료실', where: '진료실 상세 · 현장 접수 섹션(비연동)', title: '비연동 진료실 상세의 접수 섹션', proposal: '현장 접수·원격 접수·예약 모두 일반 상태 규칙(사용하기·운영중·임시마감·스케줄 필요)대로 보여요. 사용불가는 EMR 연동에서 차트 기능값으로 막힌 경우에만 나와요.', basis: '굿닥 진료실도 진료실 기준으로 EMR 진료실과 같게 동작해요. 접수 처리를 서버가 대신하는 부분은 판단 메모 19에 적었어요.', alt: '서버 대행 전까지 비연동 접수 섹션 사용불가', setup: 'mode:unlinked;room:R1' },
   { n: 23, menu: '대시보드', where: '카카오톡 예약하기 · 연동 설정', title: '카카오 연동 가능 범위', proposal: '원격 접수·예약 기능이 둘 다 막힌 병원은 ‘연동 불가’와 차트사 문의 안내를 보여요. 비연동 병원은 예약만 연동할 수 있어요.', basis: '카카오 연동은 원격 접수·예약 기능 위에서만 동작해요.', alt: '연동 메뉴를 숨김', setup: 'kakao' },
   { n: 24, menu: '진료실', where: '진료실 상세 · 차트 정보 / 굿닥 운영 설정(EMR 연동)', title: 'EMR 연동 병원 진료실 필드 원천', proposal: '진료실명·진료과·의사는 차트 원천이라 잠그고 이름은 별칭으로만 바꿔요. 굿닥이 관리하는 항목(별칭·안내 문구·접수 허용·스케줄·내원 목적·임시 마감)과 나눠 보여요.', basis: '차트와 굿닥에 같은 정보를 두 번 고치면 어긋나요. 차트 목록에서 빠진 진료실은 미사용 설정으로 이동해요.', alt: '굿닥에서 차트 정보 덮어쓰기 허용', setup: 'mode:linked;room:R1' },
   { n: 26, setup: 'preset:진료항목 예약만', menu: '대시보드', where: '대시보드 · 진료실 예약 선택형 안내(진료항목 예약만)', title: '진료실 예약을 안 하는 병원의 안내', proposal: '진료항목 예약만 운영하는 비연동 병원에도 "진료실을 만들면 진료실 예약도 받을 수 있어요"를 기본으로 보여 주되, 닫을 수 있게 해요.', basis: '나중에 진료실 예약을 시작할 수 있다는 걸 알리는 게 운영 확장에 도움이 되고, 원하지 않으면 닫으면 돼요.', alt: '진료항목 예약만 운영하면 안내를 숨김' },
@@ -230,6 +233,7 @@ const NOTES: Note[] = [
   { n: 29, menu: '진료실', where: '진료실 상세 · 카카오톡 예약하기 연동 행', title: '카카오 연동을 상세 토글에서 연동 설정 화면으로', proposal: '피그마대로 진료실 상세에는 토글 대신 ‘페이지로 이동’ 버튼을 두고, 연동 켜기·끄기는 카카오톡 예약하기 연동 설정 화면에서 해요. 연동 중 사용중지 차단, 고급 설정이면 연동 불가, 운영 스케줄 필요 규칙은 그 화면에서 그대로 동작해요.', basis: '연동은 병원·진료실 단위 설정을 한곳에서 보는 게 실수를 줄이고, 피그마 정본과 맞춰요.', alt: '상세에 토글을 남기고 연동 설정 화면과 이중 제공', setup: 'room:R1' },
   { n: 30, menu: '진료 현황', where: '진료 현황 · 지난 내역 탭 · 기간 필터', title: '진료내역 메뉴를 지난 내역 탭으로 통합', proposal: '진료내역 메뉴를 없애고 진료 현황 ‘지난 내역’ 탭이 종료 건 조회를 맡아요. 기간(오늘·7일·30일 기본·직접 설정 최대 6개월, 방문 예정일 기준)과 상태(진료완료·병원취소·환자취소·자동 종료)로 찾고, 행은 읽기 전용이에요.', basis: '카카오톡 예약하기 파트너의 예약/취소 관리처럼 목록형 화면은 한 메뉴에서 상태·기간 필터로 처리해요. 기존 데스크에서 메뉴를 나눈 이유(목록에서 종료 건이 사라짐, 환자 메뉴와 함께 쓰는 구조)는 웹에 없어요.', alt: '이력 전용 메뉴(장기 조회·내보내기·통계)를 따로 둠. 결제·정산이 생기면 별도 메뉴로 검토.', setup: 'tab:past' },
   { n: 31, menu: '진료 현황', where: '진료 현황 · 지난 내역 탭 · 검색', title: '검색창은 탭마다 따로', proposal: '검색어는 탭마다 따로 기억해요. 진행 중은 이름·연락처·진료항목, 지난 내역은 이름·연락처로 찾아요. 탭을 오가도 각 탭의 검색어·필터는 유지되고, ‘처음 상태로’를 누르면 함께 초기화돼요.', basis: '진행 중은 오늘 처리할 건을 좁히고, 지난 내역은 특정 환자의 과거 건을 찾는 용도예요. 한쪽 검색어가 다른 탭 결과를 비우면 헷갈려요.', alt: '두 탭이 검색창 하나를 공유', setup: 'tab:past' },
+  { n: 32, menu: '진료실 운영 설정', where: '진료실 운영 설정 · 태블릿 접수 적용 중 진료실', title: '진료실 없을 때 설정 처리(적용 대상 표시형)', proposal: '설정마다 ‘적용 중 진료실 N개’를 보여 주고, 누르면 해당 진료실 목록이 떠요. N이 0이어도 값은 저장되고 막지 않아요. 진료실이 없으면 “적용될 진료실이 없어요”와 [진료실 만들기], 진료실은 있지만 서비스가 꺼져 있으면 “○○을 켠 진료실이 없어 지금은 적용되지 않아요”와 [진료실 설정으로 이동]을 정보 톤으로 보여요.', basis: '진료실 0개는 비연동에서 정상 상태라 막지 않아요. 진료실이 있어도 서비스가 꺼진 경우를 같은 방식으로 안내해요.', alt: 'A 설정 가능 + 미적용 안내만 / B 진료실부터 만들기 / C 진료실 상세로 설정 이동', setup: 'mode:unlinked', status: 'PD 확정' },
   { n: 25, menu: '진료실', where: '진료실 관리 · 새 진료실 / 정보 수정(비연동)', title: '비연동 병원 진료실 웹 생성·수정·삭제', proposal: '현행 웹에는 없는 신규 기능이에요. 서버에 진료실 생성 API가 필요해요.', basis: 'EMR을 연동하지 않은 병원은 진료실을 만들 곳이 없어 웹에서 직접 관리해야 해요.', alt: '굿닥 운영팀이 대신 생성', setup: 'mode:unlinked' }
 ].sort((a, b) => a.n - b.n);
 
@@ -848,21 +852,24 @@ function Page() {
     </>;
   };
 
-  const itemOpsPage = () => <>
-    <section className="dw-tsec" aria-label="진료 예약 설정">
-      <div className="dw-tsec-head"><h2>진료 예약 설정<Pin n={11} /></h2><p>굿닥에 등록한 진료항목으로 예약을 받을 수 있습니다. 진료실 예약 설정(진료실별 예약·스케줄)과는 별개예요.</p></div>
-      <div className="cu-setting-row"><div><strong>진료 예약 받기</strong><p><b>{items.length}개의 진료항목이</b> 등록되어 있어요. 노출 중 {visibleItems}개.</p></div>
-        <div className="dw-row-ctl"><span className={tAppt.on ? 'cu-blue' : 'cu-muted'}>{tAppt.on ? '운영중' : '미운영'}</span><button className={'cu-toggle ' + (tAppt.on ? 'on' : '')} aria-label="진료 예약 받기" aria-pressed={tAppt.on} onClick={toggleTAppt}><span /></button><Pin n={2} /></div></div>
-      {kakaoHospital && <p className="cu-subnote dw-kakao-off-note">카카오톡 예약하기에 노출 중인 진료항목이 있어요. 진료 예약 받기를 끄면 카카오톡 예약하기의 진료항목 판매도 함께 중지돼요.<Pin n={7} /></p>}
-      <h3 className="dw-tsub">설정</h3>
-      <p className="cu-inline-note"><VscInfo /><span><b>병원 운영시간 기준</b> · 병원 운영 시간에 맞춰 30분 단위로 예약을 받습니다. 진료실 스케줄과는 연결되지 않아요.<Pin n={4} /></span></p>
-      <div className="cu-setting-row"><div><strong>예약 자동 확정</strong><p>자동 확정 사용 시, 별도 승인 없이 예약 신청과 동시에 자동으로 확정됩니다.</p>{kakaoHospital && tAppt.autoConfirm && <p className="cu-blue">카카오톡 예약하기로 받는 예약은 이 설정과 관계없이 자동으로 확정됩니다.</p>}
-        {kakaoHospital && !tAppt.autoConfirm && <div className="dw-guide-warn"><b>카카오톡 예약하기로 받는 예약은 자동으로 확정됩니다</b><ul><li>카카오톡 예약하기가 수동 확정을 지원하지 않아 적용된 임시 정책입니다.</li><li>굿닥으로 받는 예약은 수동으로 확정됩니다.</li><li>진료하기 어려운 예약은 예약 신청 내역에서 취소할 수 있습니다.</li></ul></div>}</div>
-        <button className={'cu-toggle ' + (tAppt.autoConfirm ? 'on' : '')} aria-label="예약 자동 확정" aria-pressed={tAppt.autoConfirm} onClick={() => { if (tAppt.autoConfirm && kakaoHospital) { setError(''); setDialog({ type: 'tAutoOff' }); return; } instant(() => setTAppt(o => ({ ...o, autoConfirm: !o.autoConfirm })), tAppt.autoConfirm ? '예약 자동 확정을 껐어요.' : '예약 자동 확정을 켰어요.'); }}><span /></button></div>
-      <div className="cu-setting-row"><div><strong>당일 예약 허용</strong><p>당일 예약 허용 시, 현재 시간 기준 1시간 이후부터 당일 예약을 받습니다.</p></div><button className={'cu-toggle ' + (tAppt.sameDay ? 'on' : '')} aria-label="당일 예약 허용" aria-pressed={tAppt.sameDay} onClick={() => instant(() => setTAppt(o => ({ ...o, sameDay: !o.sameDay })), '설정을 저장했어요.')}><span /></button></div>
-      <div className="cu-setting-row"><div><strong>새 예약 알림 받기</strong><p>새 예약 신청이 발생하면, 이 PC에서 윈도우 알림을 받습니다.</p></div><button className={'cu-toggle ' + (tAppt.notify ? 'on' : '')} aria-label="새 예약 알림 받기" aria-pressed={tAppt.notify} onClick={() => instant(() => setTAppt(o => ({ ...o, notify: !o.notify })), '설정을 저장했어요.')}><span /></button></div>
-    </section>
-  </>;
+  /** 진료항목 운영 설정 — 시각·고정 카피는 figma baseline 참조, 동작·분기는 기존 규칙 그대로 */
+  const itemOpsPage = () => <div className="dw-io">
+    <div className="dw-io-card">
+      <div className="dw-io-text"><strong className="dw-io-title">진료 예약 받기</strong><p className="dw-io-desc"><span className="dw-io-n">{visibleItems}개의 진료항목이</span> 등록되어 있어요.</p></div>
+      <div className="dw-io-ctl"><span className={'dw-io-status ' + (tAppt.on ? 'on' : '')}>{tAppt.on ? '운영중' : '미운영'}</span><button className={'cu-toggle ' + (tAppt.on ? 'on' : '')} aria-label="진료 예약 받기" aria-pressed={tAppt.on} onClick={toggleTAppt}><span /></button><Pin n={2} /><Pin n={7} /></div>
+    </div>
+    <div className="dw-io-group">
+      <h2 className="dw-io-sec">설정<Pin n={11} /></h2>
+      <div className="dw-io-banner"><span className="dw-io-banner-msg"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8" fill="currentColor" /><rect x="9" y="5.5" width="2" height="6" rx="1" fill="#fff" /><circle cx="10" cy="14" r="1.1" fill="#fff" /></svg>병원 운영 시간에 맞춰 30분 단위로 예약을 받습니다.<Pin n={4} /></span><button type="button" className="dw-io-banner-link" onClick={() => notify('병원 운영시간은 병원 정보 화면에서 관리해요.')}>병원 운영시간 관리<VscChevronRight /></button></div>
+      <div className="dw-io-card">
+        <div className="dw-io-text"><strong className="dw-io-title">예약 자동 확정</strong><p className="dw-io-desc">자동 확정 사용 시, 별도 승인 없이 예약 신청과 동시에 자동으로 확정됩니다.{kakaoHospital && tAppt.autoConfirm && <><br /><span className="dw-io-kakao">카카오톡 예약하기로 받는 예약은 이 설정과 관계없이 자동으로 확정됩니다.</span></>}</p>
+          {kakaoHospital && !tAppt.autoConfirm && <div className="dw-guide-warn"><b>카카오톡 예약하기로 받는 예약은 자동으로 확정됩니다</b><ul><li>카카오톡 예약하기가 수동 확정을 지원하지 않아 적용된 임시 정책입니다.</li><li>굿닥으로 받는 예약은 수동으로 확정됩니다.</li><li>진료하기 어려운 예약은 예약 신청 내역에서 취소할 수 있습니다.</li></ul></div>}</div>
+        <button className={'cu-toggle ' + (tAppt.autoConfirm ? 'on' : '')} aria-label="예약 자동 확정" aria-pressed={tAppt.autoConfirm} onClick={() => { if (tAppt.autoConfirm && kakaoHospital) { setError(''); setDialog({ type: 'tAutoOff' }); return; } instant(() => setTAppt(o => ({ ...o, autoConfirm: !o.autoConfirm })), tAppt.autoConfirm ? '예약 자동 확정을 껐어요.' : '예약 자동 확정을 켰어요.'); }}><span /></button>
+      </div>
+      <div className="dw-io-card"><div className="dw-io-text"><strong className="dw-io-title">당일 예약 허용</strong><p className="dw-io-desc">당일 예약 허용 시, 현재 시간 기준 1시간 이후부터 당일 예약을 받습니다.</p></div><button className={'cu-toggle ' + (tAppt.sameDay ? 'on' : '')} aria-label="당일 예약 허용" aria-pressed={tAppt.sameDay} onClick={() => instant(() => setTAppt(o => ({ ...o, sameDay: !o.sameDay })), '설정을 저장했어요.')}><span /></button></div>
+      <div className="dw-io-card"><div className="dw-io-text"><strong className="dw-io-title">새 예약 알림 받기</strong><p className="dw-io-desc">새 예약 신청이 발생하면, 이 PC에서 윈도우 알림을 받습니다.</p></div><button className={'cu-toggle ' + (tAppt.notify ? 'on' : '')} aria-label="새 예약 알림 받기" aria-pressed={tAppt.notify} onClick={() => instant(() => setTAppt(o => ({ ...o, notify: !o.notify })), '설정을 저장했어요.')}><span /></button></div>
+    </div>
+  </div>;
 
   const itemsPage = () => <>
     <p className="cu-inline-note dw-note"><VscInfo /><span>진료 예약 받기·자동 확정·당일 예약·새 예약 알림은 운영 설정에서 바꿀 수 있어요. <button type="button" className="dw-link" onClick={() => go('진료항목 운영 설정')}>진료항목 운영 설정으로 이동</button></span></p>
@@ -957,7 +964,7 @@ function Page() {
   const moduleMenu = menu === '진료실' || menu === '진료실 운영 설정';
   return <div className="cu-app dw-app">
     <div className="cu-prototype">
-      <div><strong>데스크 기능 웹 이관 시안</strong><span>v0.16 · 커넥트 웹뷰 UI · 가상 데이터</span></div>
+      <div><strong>데스크 기능 웹 이관 시안</strong><span>v0.18 · 커넥트 웹뷰 UI · 가상 데이터</span></div>
       <div className="cu-proto-actions">
         <span className="dw-legend"><Hold /> = PO 확인 중</span>
         <label className="dw-annot-toggle"><button type="button" className={'cu-toggle ' + (annot ? 'on' : '')} aria-pressed={annot} aria-label="판단 메모 보기" onClick={() => setAnnot(!annot)}><span /></button>판단 메모 보기</label>
@@ -969,7 +976,7 @@ function Page() {
     {panelOpen && <div className="dw-exp-strip" id="dw-exp-strip" role="region" aria-label="체험 설정 (프로토타입 전용 · 실제 기능 아님)">
       <span className="dw-exp-tag">프로토 전용</span>
       {modalOpen && <span className="dw-exp-lock">모달이 열려 있는 동안은 바꿀 수 없어요</span>}
-      <label className={'dw-exp-item ' + (modalOpen ? 'locked' : '')}>차트 모드<select aria-label="차트 모드" disabled={modalOpen} value={chartMode} onChange={e => { const v = e.target.value as ChartMode; setMemoSnap(null); setChartMode(v); if (v !== 'linked') setChartLimited(false); notify(v === 'unlinked' ? '비연동 병원(기본)으로 전환했어요. 접수·차례 알림은 비활성이고 예약을 운영해요.' : 'EMR 연동 병원으로 전환했어요. 진료실 자체는 EMR에서 관리해요.'); }}><option value="unlinked">비연동 · 굿닥에서 관리</option><option value="linked">EMR 연동</option></select></label>
+      <label className={'dw-exp-item ' + (modalOpen ? 'locked' : '')}>차트 모드<select aria-label="차트 모드" disabled={modalOpen} value={chartMode} onChange={e => { const v = e.target.value as ChartMode; setMemoSnap(null); setChartMode(v); if (v !== 'linked') setChartLimited(false); notify(v === 'unlinked' ? '비연동 병원(기본)으로 전환했어요. 굿닥 진료실 기준으로 동작해요.' : 'EMR 연동 병원으로 전환했어요. 진료실 자체는 EMR에서 관리해요.'); }}><option value="unlinked">비연동 · 굿닥에서 관리</option><option value="linked">EMR 연동</option></select></label>
       <label className={'dw-exp-item ' + (modalOpen ? 'locked' : '')}>운영 유형<select aria-label="운영 유형" disabled={modalOpen} value={presetShown} onChange={e => { if (e.target.value === CUSTOM) return; setMemoSnap(null); applyPreset(e.target.value as Preset); }}>{PRESETS.map(x => <option key={x}>{x}</option>)}{presetShown === CUSTOM && <option value={CUSTOM} disabled>{CUSTOM}</option>}</select></label>
       <label className={'dw-exp-item ' + (modalOpen ? 'locked' : '')}><button type="button" className={'cu-toggle ' + (noRooms ? 'on' : '')} aria-label={noRoomLabel} aria-pressed={noRooms} disabled={modalOpen || opPreset === '진료항목 예약만'} title={opPreset === '진료항목 예약만' ? '진료항목 예약만 프리셋에서는 프리셋이 정해요' : undefined} onClick={() => { setMemoSnap(null); toggleNoRooms(!noRooms); }}><span /></button>{noRoomLabel}{opPreset === '진료항목 예약만' && <em className="dw-exp-note">프리셋 고정</em>}{noRooms && rooms.length > 0 && <em className="dw-exp-note">체험 중 · {rooms.length}개 만듦</em>}</label>
       <div className="dw-exp-more-wrap">
@@ -1015,9 +1022,9 @@ function Page() {
           <main className="cn-main cu-main">
             {menu === '진료실' && <ExamRooms key={roomsKey} kit={kit} rooms={rooms} setRooms={setRooms} invalid={invalid} setInvalid={setInvalid} initialView={roomsInit} emptyNode={roomsEmpty} activeIn={activeIn} banner={serverBanner} Hold={Hold}
               onCreate={() => openRoomForm()} onEdit={rm => openRoomForm(rm)} onDelete={rm => { setError(''); setDialog({ type: 'roomDelete', id: rm.id }); }} />}
-            {menu === '진료실 운영 설정' && <OperationPage key={roomsKey} kit={kit} rooms={rooms} smart={linked && smart} banner={serverBanner} store={{ saved: opSaved, setSaved: setOpSaved, paths: opPaths, setPaths: setOpPaths, autoSaved: opAuto, setAutoSaved: setOpAuto }} onOpenRoom={id => go('진료실', { v: 'detail', id })} />}
+            {menu === '진료실 운영 설정' && <OperationPage key={roomsKey} kit={kit} rooms={rooms} smart={linked && smart} banner={serverBanner} store={{ saved: opSaved, setSaved: setOpSaved, paths: opPaths, setPaths: setOpPaths, autoSaved: opAuto, setAutoSaved: setOpAuto }} onOpenRoom={id => go('진료실', { v: 'detail', id })} onGoRooms={() => go('진료실')} onCreateRoom={() => { go('진료실'); openRoomForm(); }} />}
             {!moduleMenu && <>
-              <header className={'cn-header cu-header ' + (menu === '진료 현황' ? 'dw-status-head' : '')}>
+              <header className={'cn-header cu-header ' + (menu === '진료 현황' ? 'dw-status-head' : menu === '진료항목 운영 설정' ? 'dw-io-head' : '')}>
                 <div><h1 className="cn-title" tabIndex={-1} title={menu === '진료 현황' ? DESC[menu] : undefined}>{menu}</h1><p className="cn-desc">{DESC[menu]}</p></div>
                 {menu === '진료 현황' && roomOp && <div className="dw-head-actions"><span className="dw-hold-inline"><Hold /></span><button className="cu-btn primary" disabled={!rooms.length} title={!rooms.length ? '진료실 예약은 진료실이 있어야 등록할 수 있어요' : undefined} onClick={() => { setError(''); setRegTried(false); setReg({ room: rooms[0]?.name || '', date: TODAY, time: '', name: '', phone: '' }); setDialog({ type: 'register' }); }}><VscAdd />진료실 예약 등록</button></div>}
                 {['대시보드', '알림 메시지함'].includes(menu) && <button className="cu-btn quiet" onClick={() => { setLoading(true); notify('서버에서 다시 불러왔어요 (모의).'); }}><VscRefresh />새로고침</button>}
@@ -1140,10 +1147,10 @@ function Page() {
       return <Modal title={<>카카오톡 예약하기 연동 설정<Pin n={23} /></>} wide onClose={close} footer={<button className="cu-btn primary" onClick={close}>닫기</button>}>
         <p>진료실별로 카카오 예약하기·카카오 맵에서 원격 접수·예약을 받을지 정해요. 진료실 상세의 ‘페이지로 이동’에서도 열 수 있어요.</p>
         {none ? <div className="dw-red-box"><VscWarning /><span><b>연동 불가</b> · 현재 사용 중인 차트({CHART_NAME})는 원격 접수·예약 기능이 지원되지 않으니, 사용을 원하실 경우 차트사에 문의해 주세요.</span></div>
-          : chartMode === 'unlinked' && <p className="cu-inline-note"><VscInfo />비연동 병원은 예약만 연동할 수 있어요. 원격 접수는 EMR 연동 시 사용 가능해요.</p>}
+          : null}
         {rooms.length === 0 ? <p className="cu-subnote">진료실이 없어요. 진료실 예약을 연동하려면 진료실을 만들어 주세요.</p> :
           <table className="dw-auto-table dw-kakao-table"><thead><tr><th>진료실</th><th>원격 접수</th><th>예약</th></tr></thead><tbody>{rooms.map(rm => <tr key={rm.id}><td className="dw-auto-name">{rm.alias || rm.name}</td>
-            {(['mobile', 'appt'] as const).map(k => <td key={k}>{!sup(k) ? <span className="dw-muted">{chartMode === 'unlinked' ? 'EMR 연동 시 사용 가능' : '연동 불가'}</span> : !rm[k].accepted ? <span className="dw-muted">{label(k)} 미사용</span>
+            {(['mobile', 'appt'] as const).map(k => <td key={k}>{!sup(k) ? <span className="dw-muted">연동 불가</span> : !rm[k].accepted ? <span className="dw-muted">{label(k)} 미사용</span>
               : <span className="dw-kakao-cell"><span className={'dw-kakao ' + (rm[k].kakao ? 'on' : '')}>{rm[k].kakao ? '연동중' : '미연동'}</span><button className={'cu-toggle ' + (rm[k].kakao ? 'on' : '')} aria-label={`${rm.name} ${label(k)} 카카오 연동`} aria-pressed={rm[k].kakao} onClick={() => {
                 if (!rm[k].kakao && k === 'appt' && rm.appt.advanced) { fail('기본 설정으로 전환해야 연동할 수 있어요. 해당 진료실은 고급 설정으로 예약을 받고 있어요.'); return; }
                 const hasSched = k === 'mobile' ? rm.rSlots.mobile.some(x => x.date > TODAY || (x.date === TODAY && x.end > NOW)) : rm.aSlots.some(x => x.date > TODAY || (x.date === TODAY && x.time > NOW));
@@ -1167,8 +1174,8 @@ function Page() {
       <div className="cu-setting-row"><div><strong>환자 도착 알림</strong><p>예약 환자가 도착하면 이 PC에 윈도우 알림을 띄워요.</p></div><button className={'cu-toggle ' + (cfgDraft.arrival ? 'on' : '')} aria-label="환자 도착 알림" aria-pressed={cfgDraft.arrival} onClick={() => setCfgDraft(o => ({ ...o, arrival: !o.arrival }))}><span /></button></div>
       <p className="cu-subnote">알림 켜기·끄기는 PC마다 따로 저장돼요. 알림 메시지함의 기록은 서버 기준이라 설정과 상관없이 쌓여요.</p>
       <h3 className="cu-detail-label">EMR 연동</h3>
-      <div className="dw-key"><span className={'cu-dot ' + (serverDown ? 'warn' : '')} /><div><strong>{connection}</strong><p>{linked ? '연동한 EMR의 설정에서 관리해요 (체험).' : '진료실·예약을 굿닥에서 관리해요. 접수·차례 알림을 쓰려면 EMR을 연동해 주세요.'}</p></div>{!linked && <button className="cu-btn" aria-expanded={emrGuide} onClick={() => setEmrGuide(!emrGuide)}>EMR 연동하기</button>}</div>
-      {!linked && emrGuide && <div className="cu-inline-note dw-note"><VscInfo /><span>EMR 연동은 병원에서 쓰는 EMR에 굿닥 연동을 설치한 뒤 적용돼요. 연동하면 현장·원격 접수와 차례 알림을 쓸 수 있고, 진료실은 EMR 기준으로 바뀌어요. 시안에서는 설치 과정을 생략했어요. <button type="button" className="dw-link" onClick={() => { setMemoSnap(null); setChartMode('linked'); setChartLimited(false); setEmrGuide(false); notify('EMR 연동 병원으로 전환했어요(체험). 진료실 자체는 EMR에서 관리해요.'); }}>EMR 연동 병원으로 체험하기</button></span></div>}
+      <div className="dw-key"><span className={'cu-dot ' + (serverDown ? 'warn' : '')} /><div><strong>{connection}</strong><p>{linked ? '연동한 EMR의 설정에서 관리해요 (체험).' : '진료실·접수·예약을 굿닥에서 관리해요. 환자 정보는 굿닥 진료실로 전달돼요.'}</p></div>{!linked && <button className="cu-btn" aria-expanded={emrGuide} onClick={() => setEmrGuide(!emrGuide)}>EMR 연동하기</button>}</div>
+      {!linked && emrGuide && <div className="cu-inline-note dw-note"><VscInfo /><span>EMR 연동은 병원에서 쓰는 EMR에 굿닥 연동을 설치한 뒤 적용돼요. 연동하면 환자 정보가 EMR 진료실로 전달되고, 진료실은 EMR 기준으로 바뀌어요. 스마트접수처럼 특정 EMR 전용 기능도 쓸 수 있어요. 시안에서는 설치 과정을 생략했어요. <button type="button" className="dw-link" onClick={() => { setMemoSnap(null); setChartMode('linked'); setChartLimited(false); setEmrGuide(false); notify('EMR 연동 병원으로 전환했어요(체험). 진료실 자체는 EMR에서 관리해요.'); }}>EMR 연동 병원으로 체험하기</button></span></div>}
     </Modal>}
 
     {keyConfirm && <Modal title="제품키를 해제할까요?" busy={keyBusy} onClose={() => setKeyConfirm(false)} footer={<><button className="cu-btn" disabled={keyBusy} onClick={() => setKeyConfirm(false)}>취소</button><button className="cu-btn danger" disabled={keyBusy} onClick={async () => { setKeyBusy(true); await wait(600); setKeyBusy(false); setKeyConfirm(false); if (serverDown || failSim) { fail(serverDown ? '굿닥 서버에 연결할 수 없어 제품키를 해제하지 못했어요. 상태는 그대로예요.' : '제품키를 해제하지 못했어요(모의 실패). 상태는 그대로예요.'); return; } notify('제품키 해제를 모의 처리했어요. 실제로는 인증 화면으로 돌아가요(시안에선 생략).'); }}>{keyBusy ? '처리 중…' : '해제'}</button></>}>

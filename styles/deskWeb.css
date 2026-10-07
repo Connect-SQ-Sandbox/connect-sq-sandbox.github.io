@@ -341,10 +341,6 @@ button.dw-room-row:hover{border-color:var(--blue)}
 .dw-path-list{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
 .dw-path-list li{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .dw-path-list li input{flex:1;min-height:34px}
-.cu-modal.dw-auto-modal{width:960px}
-.dw-bulk{display:flex;align-items:center;gap:12px;padding:12px;border-radius:8px;background:var(--g10);font-size:13px;flex-wrap:wrap}
-.dw-bulk label{display:inline-flex;align-items:center;gap:6px}
-.dw-bulk input{width:64px;min-height:32px}
 .dw-auto-table-wrap{overflow:auto;margin-top:12px}
 .dw-auto-table{border-collapse:collapse;width:100%;font-size:12px}
 .dw-auto-table th,.dw-auto-table td{border-bottom:1px solid var(--g30);padding:6px 4px;text-align:center}
@@ -622,3 +618,37 @@ button.dw-room-row:hover{border-color:var(--blue)}
 .cu-app .dw-apply-info svg{color:#808799}
 .cu-app .dw-apply .dw-link{font-size:13px}
 .cu-app .dw-apply-sub{font-weight:500;color:#808799}
+/* v0.19 진료실 운영 설정 — 값은 figma baseline 참조(행 카드·스위치는 dw-io 공통) */
+.cu-app .dw-ro{gap:0}
+.cu-app .dw-ro-sec{display:flex;flex-direction:column;gap:12px;padding-bottom:48px}
+.cu-app .dw-ro-sec.res{padding-bottom:0}
+.cu-app .dw-ro-title{margin:0;font-size:18px;line-height:26px;font-weight:700;color:#16181D}
+.cu-app .dw-ro-col{flex-direction:column;align-items:stretch;gap:0}
+.cu-app .dw-ro-head{display:flex;align-items:center;gap:16px}
+.cu-app .dw-ro-select{width:240px;box-sizing:border-box;justify-content:space-between;gap:12px;padding:9px 16px;border:1px solid #CACED8;border-radius:6px;background:transparent;font-size:14px;line-height:22px;font-weight:500;color:#31353F}
+.cu-app .dw-ro-addr{display:flex;gap:32px;padding-top:24px}
+.cu-app .dw-ro-addr-item{flex:1;display:flex;flex-direction:column;gap:8px;min-width:0}
+.cu-app .dw-ro-addr-item>span{font-size:14px;line-height:22px;font-weight:600;color:#5D6474}
+.cu-app .dw-ro-addr-item select{height:40px;padding:0 12px 0 16px;border:1px solid #CACED8;border-radius:6px;background:#fff;font-size:14px;line-height:22px;font-weight:500;color:#31353F;font-family:inherit}
+.cu-app .dw-ro-addr-item small{font-size:14px;line-height:22px;font-weight:400;color:#808799}
+.cu-app .dw-ro-checks{display:flex;gap:16px}
+.cu-app .dw-ro-check{display:inline-flex;align-items:center;gap:8px;min-height:24px;font-size:14px;line-height:22px;font-weight:500;color:#31353F;cursor:pointer}
+.cu-app .dw-ro-check input{width:18px;height:18px;margin:0;border-radius:4px;accent-color:#0073FA}
+.cu-app .dw-ro-auto-head{padding-bottom:24px}
+.cu-app .dw-ro-banner{display:flex;align-items:center;gap:8px;height:54px;box-sizing:border-box;padding:0 20px 0 16px;background:rgba(0,115,250,.05);border:1px solid rgba(0,115,250,.1);border-radius:8px;font-size:14px;line-height:22px;font-weight:600;color:#066AE5}
+.cu-app .dw-ro-banner svg{width:20px;height:20px;flex-shrink:0;color:#066AE5}
+.cu-app .dw-ro-min{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0}
+.cu-app .dw-ro-min:last-child{padding-bottom:0}
+.cu-app .dw-ro-min b{display:block;font-size:14px;line-height:22px;font-weight:600;color:#5D6474}
+.cu-app .dw-ro-min small{display:block;font-size:14px;line-height:22px;font-weight:400;color:#808799}
+.cu-app .dw-ro-min-in{display:inline-flex;align-items:center;gap:8px;font-size:14px;line-height:22px;color:#434956}
+.cu-app .dw-ro-min-in input{width:80px;box-sizing:border-box;padding:9px 16px;border:1px solid #CACED8;border-radius:6px;font-size:14px;line-height:22px;font-weight:500;color:#31353F;font-family:inherit}
+.cu-app .dw-ro-div{height:1px;margin:0;border:0;background:#F6F7F9}
+.cu-app .dw-ro-bar{height:64px;box-sizing:border-box;padding:12px 0;border-top:1px solid #E3E6ED;gap:8px;align-items:center}
+.cu-app .dw-ro-cancel,.cu-app .dw-ro-save{min-width:80px;height:40px;padding:0 20px;border-radius:6px;font-family:Pretendard,'Apple SD Gothic Neo',sans-serif;font-size:14px;line-height:22px;font-weight:700}
+.cu-app .dw-ro-cancel{border:1px solid rgba(128,135,153,.2);background:#fff;color:#5D6474}
+.cu-app .dw-ro-save{border:0;background:#0073FA;color:#fff}
+.cu-app .dw-ro-save:disabled{background:#CACED8;color:#fff;cursor:not-allowed}
+.cu-app .dw-ro-cancel:disabled{opacity:.5}
+.cu-app .dw-ro-select,.cu-app .dw-ro-min-in input{height:40px;min-height:40px;padding-top:0;padding-bottom:0} /* INSIDE stroke 보정: py9+22+테두리 → 40 */
+.cu-app .dw-ro-min .dw-ro-min-in input{border-color:#CACED8}

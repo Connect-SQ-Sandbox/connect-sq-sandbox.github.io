@@ -843,50 +843,55 @@ function ApptSchedule({ kit, room: r, ro, update, back, banner }: { kit: Kit; ro
   </>;
 }
 
-/* ═════════════ 진료실 운영 설정 (/operation) ═════════════ */
+/* ═════════════ 진료실 운영 설정 (/operation) — 시각·고정 카피는 figma baseline 참조, 동작은 프로토 ═════════════ */
 type Op = {
   priority: 1 | 0; addressUsed: boolean; addrInput: 1 | 2; addr2: boolean; addrSkip: boolean; visitPathUsed: boolean; onlyReturned: boolean;
-  deptDup: boolean; viewDept: boolean; viewDoctor: boolean; turnAlarm: boolean; holdStatus: boolean;
+  deptDup: boolean; viewDept: boolean; viewDoctor: boolean; turnAlarm: boolean;
+  /* 예약(스마트접수 전용) — 병원 단위 */
+  autoPer: string; autoGap: string; cancelNoti: boolean;
 };
-export const OP0: Op = { priority: 1, addressUsed: false, addrInput: 1, addr2: true, addrSkip: true, visitPathUsed: true, onlyReturned: false, deptDup: false, viewDept: true, viewDoctor: true, turnAlarm: true, holdStatus: false };
-export type AutoRow = { on: boolean; per: string[]; gap: string[]; kept?: { per: string[]; gap: string[] } };
+export const OP0: Op = { priority: 1, addressUsed: true, addrInput: 2, addr2: false, addrSkip: false, visitPathUsed: true, onlyReturned: false, deptDup: false, viewDept: true, viewDoctor: true, turnAlarm: true, autoPer: '5', autoGap: '5', cancelNoti: true };
 /* 렌더마다 새로 만들면 행이 다시 마운트돼 포커스가 사라지므로 모듈 레벨에 둔다 */
-const Row = ({ title, sub, children, hold, off, apply }: { title: string; sub: string; children: React.ReactNode; hold?: React.ReactNode; off?: boolean; apply?: React.ReactNode }) => <div className={'cu-setting-row dw-op-row ' + (off ? 'dw-off' : '')}><div><strong>{title}{hold}</strong><p>{sub}</p>{apply}</div><div className="dw-row-ctl">{children}</div></div>;
+const Row = ({ title, sub, children, hold, apply }: { title: string; sub: string; children?: React.ReactNode; hold?: React.ReactNode; apply?: React.ReactNode }) =>
+  <div className="dw-io-card"><div className="dw-io-text"><strong className="dw-io-title">{title}{hold}</strong><p className="dw-io-desc">{sub}</p>{apply}</div>{children && <div className="dw-io-ctl">{children}</div>}</div>;
 const Tg = ({ v, onChange, label, disabled }: { v: boolean; onChange: () => void; label: string; disabled?: boolean }) => <button className={'cu-toggle ' + (v ? 'on' : '')} aria-label={label} aria-pressed={v} disabled={disabled} onClick={onChange}><span /></button>;
 /** 운영 설정 저장값은 상위(index)에서 보관해 메뉴를 오가도 유지되고 '처음 상태로'로 함께 초기화된다 */
-export type OpStore = { saved: Op; setSaved: (o: Op) => void; paths: string[]; setPaths: (p: string[]) => void; autoSaved: Record<string, AutoRow>; setAutoSaved: (a: Record<string, AutoRow>) => void };
+export type OpStore = { saved: Op; setSaved: (o: Op) => void; paths: string[]; setPaths: (p: string[]) => void };
 export const VISIT_PATHS_DEFAULT = ['지인 소개', '인터넷 검색', '굿닥 앱', '블로그/카페', '간판/지나가다', '기타'];
+const CAUTION = <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8" fill="currentColor" /><rect x="9" y="5.5" width="2" height="6" rx="1" fill="#fff" /><circle cx="10" cy="14" r="1.1" fill="#fff" /></svg>;
 export function OperationPage({ kit, rooms, smart, onOpenRoom, onGoRooms, onCreateRoom, banner, store }: { kit: Kit; rooms: Room[]; smart: boolean; onOpenRoom: (id: string) => void; onGoRooms: () => void; onCreateRoom: () => void; banner: React.ReactNode; store: OpStore }) {
   const unl = kit.mode === 'unlinked';
   /* D안 — 설정마다 적용 중인 진료실 수. 임시마감도 '켠 진료실'에 포함, 차트 기능값으로 미지원인 서비스는 제외 */
   const sup = supportedOf(kit);
   const on = (r: Room, k: SvcKey) => r[k].accepted && sup(k);
   const [applyOpen, setApplyOpen] = useState<string | null>(null);
-  useEffect(() => { if (!applyOpen) return; const h = (e: MouseEvent) => { if (!(e.target as HTMLElement).closest('.dw-apply')) setApplyOpen(null); }; document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h); }, [applyOpen]);
+  useEffect(() => {
+    if (!applyOpen) return;
+    const h = (e: MouseEvent) => { if (!(e.target as HTMLElement).closest('.dw-apply')) setApplyOpen(null); };
+    // ESC로 닫고 포커스를 버튼으로 돌려준다(모달 스택보다 먼저 처리)
+    const k = (e: KeyboardEvent) => { if (e.key !== 'Escape') return; e.stopPropagation(); const id = applyOpen; setApplyOpen(null); document.querySelector<HTMLElement>(`[data-apply="${id}"]`)?.focus(); };
+    document.addEventListener('mousedown', h); document.addEventListener('keydown', k, true);
+    return () => { document.removeEventListener('mousedown', h); document.removeEventListener('keydown', k, true); };
+  }, [applyOpen]);
   // 컴포넌트가 아니라 JSX를 돌려주는 함수(렌더마다 리마운트되면 판단 메모 팝오버가 닫혀서)
   const apply = ({ id, svc, list, pin }: { id: string; svc: string; list: Room[]; pin?: React.ReactNode }) => list.length > 0
-    ? <div className="dw-apply"><button type="button" className="dw-apply-btn" aria-expanded={applyOpen === id} onClick={() => setApplyOpen(applyOpen === id ? null : id)}>적용 중 진료실 {list.length}개<VscChevronDown /></button>{pin}
+    ? <div className="dw-apply"><button type="button" className="dw-apply-btn" data-apply={id} aria-expanded={applyOpen === id} onClick={() => setApplyOpen(applyOpen === id ? null : id)}>적용 중 진료실 {list.length}개<VscChevronDown /></button>{pin}
         {applyOpen === id && <div className="dw-apply-pop" role="dialog" aria-label={`적용 중 진료실 ${list.length}개`}><small>{svc} 기준</small>{list.map(r => <button key={r.id} type="button" onClick={() => { setApplyOpen(null); onOpenRoom(r.id); }}>{r.alias || r.name}{r.tablet.paused || r.mobile.paused || r.appt.paused ? <em>임시마감</em> : null}</button>)}</div>}</div>
     : <div className="dw-apply zero"><span className="dw-apply-info"><VscInfo />{rooms.length === 0 ? '적용될 진료실이 없어요' : `${svc}${eul(svc)} 켠 진료실이 없어 지금은 적용되지 않아요`}</span>{pin}
         {rooms.length === 0 ? (kit.linked ? <small className="dw-apply-sub">차트에서 진료실을 등록하면 적용돼요</small> : <button type="button" className="dw-link" onClick={onCreateRoom}>진료실 만들기</button>) : <button type="button" className="dw-link" onClick={onGoRooms}>진료실 설정으로 이동</button>}</div>;
   const tabletRooms = rooms.filter(r => on(r, 'tablet')), queueRooms = rooms.filter(r => on(r, 'tablet') || on(r, 'mobile'));
-  const anyRooms = rooms.filter(r => on(r, 'tablet') || on(r, 'mobile') || on(r, 'appt'));
-  const noRoom = rooms.length === 0;
-  const noRoomHint = <small className="dw-noroom-hint">진료실이 없어 설정할 수 없어요. 진료실을 만들면 설정할 수 있어요.</small>;
+  const anyRooms = rooms.filter(r => on(r, 'tablet') || on(r, 'mobile') || on(r, 'appt')), apptRooms = rooms.filter(r => on(r, 'appt'));
   const M = kit.Modal;
-  const { saved, setSaved, paths, setPaths, autoSaved, setAutoSaved } = store;
+  const { saved, setSaved, paths, setPaths } = store;
   const [form, setForm] = useState<Op>(saved); // 저장 전 편집값(메뉴를 떠나면 버려짐 — 현행과 같음)
-  const [modal, setModal] = useState<'' | 'leave' | 'path' | 'auto' | 'autoLeave'>('');
+  const [modal, setModal] = useState<'' | 'leave' | 'path'>('');
   const [pathDraft, setPathDraft] = useState<string[]>([]), [pathInput, setPathInput] = useState(''), [pathErr, setPathErr] = useState('');
   const [priOpen, setPriOpen] = useState(false);
-  const sorted = useMemo(() => [...rooms].sort((a, b) => a.sortIndex - b.sortIndex), [rooms]);
-  const mk = (): Record<string, AutoRow> => Object.fromEntries(sorted.map(r => [r.id, { on: false, per: Array(7).fill(''), gap: Array(7).fill('') }]));
-  const [auto, setAuto] = useState<Record<string, AutoRow>>({}), [bulk, setBulk] = useState({ per: '5', gap: '5' });
   const { busy, error, setError, run } = useRun(kit);
   const dirty = JSON.stringify(form) !== JSON.stringify(saved);
   const set = (p: Partial<Op>) => setForm(f => ({ ...f, ...p }));
-  /** 모드·스마트접수가 바뀌어 숨겨지거나 잠기는 항목은 저장하지 않은 편집분을 저장값으로 되돌린다(화면에 남은 항목의 편집분은 유지) */
-  const hideKeys = (_u: boolean, sm: boolean): (keyof Op)[] => (!sm ? ['holdStatus'] : []); // v0.18: 비연동 잠금 해제 — 스마트접수(보류 접수)만 숨겨짐
+  /** 스마트접수가 꺼져 '예약' 섹션이 숨겨지면 그 섹션의 저장하지 않은 편집분은 저장값으로 되돌린다(화면에 남은 항목의 편집분은 유지) */
+  const hideKeys = (_u: boolean, sm: boolean): (keyof Op)[] => (!sm ? ['autoPer', 'autoGap', 'cancelNoti'] : []);
   const prevGate = useRef({ u: unl, sm: smart });
   useEffect(() => {
     const p = prevGate.current; prevGate.current = { u: unl, sm: smart };
@@ -903,51 +908,55 @@ export function OperationPage({ kit, rooms, smart, onOpenRoom, onGoRooms, onCrea
     document.addEventListener('mousedown', h); document.addEventListener('keydown', k);
     return () => { document.removeEventListener('mousedown', h); document.removeEventListener('keydown', k); };
   }, [priOpen]);
-
-
   const pathValid = pathDraft.length >= 2 && pathDraft.every(p => p.trim());
-  const apptRooms = sorted.filter(r => r.appt.accepted);
-  const autoDirty = JSON.stringify(auto) !== JSON.stringify(autoSaved);
-  const clampMin = (v: string, prev: string) => { const n = Number(v); if (!v || n === 0) return prev || '5'; return String(Math.min(60, n)); };
+  /** 분 입력: 숫자 2자리까지, 1~60. 비우거나 0이면 저장값으로, 60을 넘으면 60으로 */
+  const clampMin = (v: string, prev: string) => { const n = Number(v); if (!v || n === 0) return prev; return String(Math.min(60, n)); };
+  const total = (Number(form.autoPer) || 0) + (Number(form.autoGap) || 0); // 배너 '1개 진료당 소요 시간' = 평균 소요 + 인터벌(figma에 규칙 없음 — baseline 참조)
+  const minRow = (key: 'autoPer' | 'autoGap', label: string, desc: string) => <div className="dw-ro-min">
+    <div><b>{label}</b><small>{desc}</small></div>
+    <span className="dw-ro-min-in"><input type="text" inputMode="numeric" aria-label={label} value={form[key]} onChange={e => set({ [key]: digits(e.target.value, 2, form[key]) } as any)} onBlur={e => set({ [key]: clampMin(e.target.value, saved[key]) } as any)} />분</span>
+  </div>;
 
   return <>
-    <header className="cn-header cu-header"><div><h1 className="cn-title" tabIndex={-1}>진료실 운영 설정</h1><p className="cn-desc">모든 진료실에 동일하게 적용되는 설정이에요.</p></div></header>
+    <header className="cn-header cu-header dw-io-head"><div><h1 className="cn-title" tabIndex={-1}>진료실 운영 설정</h1><p className="cn-desc">모든 진료실에 동일하게 적용되는 설정이에요.</p></div></header>
     {banner}
     <div className="cu-content">
-      <div className="cu-settings-page dw-op">
-        <h2 className="dw-op-sec">공통</h2>
-        <h3 className="dw-op-sub">태블릿 접수<kit.Pin n={18} /></h3>
-        {apply({ id: "tablet", svc: "현장 접수", list: tabletRooms, pin: <kit.Pin n={32} /> })}
-        <div>
-        <Row title="환자 조회 방식 선택" sub="환자 조회 시 차트에서 사용하는 정보를 선택해 주세요.">
-          <div className="dw-pop-wrap"><button className="dw-select" data-pop="pri" aria-haspopup="listbox" aria-expanded={priOpen} onClick={() => setPriOpen(!priOpen)}>{form.priority === 1 ? '휴대폰번호' : '주민등록번호'}<VscChevronDown /></button>
-            {priOpen && <div className="dw-pop dw-pop-right" role="listbox">{([[1, '휴대폰번호'], [0, '주민등록번호']] as const).map(([v, l]) => <button key={v} role="option" aria-selected={form.priority === v} className={'dw-pop-opt ' + (form.priority === v ? 'sel' : '')} onClick={() => { set({ priority: v }); setPriOpen(false); }}>{l}{form.priority === v && <VscCheck />}</button>)}</div>}
+      <div className="cu-settings-page dw-op dw-io dw-ro">
+        <section className="dw-ro-sec" aria-label="공통">
+          <h2 className="dw-ro-title">공통</h2>
+          <Row title="환자 조회 방식 선택" sub="환자 조회 시 차트에서 사용하는 정보를 선택해 주세요." hold={<kit.Pin n={18} />} apply={apply({ id: 'pri', svc: '현장 접수', list: tabletRooms, pin: <kit.Pin n={32} /> })}>
+            <div className="dw-pop-wrap"><button className="dw-select dw-ro-select" data-pop="pri" aria-haspopup="listbox" aria-expanded={priOpen} onClick={() => setPriOpen(!priOpen)}>{form.priority === 1 ? '휴대폰번호' : '주민등록번호'}<VscChevronDown /></button>
+              {priOpen && <div className="dw-pop dw-pop-right" role="listbox">{([[1, '휴대폰번호'], [0, '주민등록번호']] as const).map(([v, l]) => <button key={v} role="option" aria-selected={form.priority === v} className={'dw-pop-opt ' + (form.priority === v ? 'sel' : '')} onClick={() => { set({ priority: v }); setPriOpen(false); }}>{l}{form.priority === v && <VscCheck />}</button>)}</div>}
+            </div>
+          </Row>
+          <div className="dw-io-card dw-ro-col">
+            <div className="dw-ro-head"><div className="dw-io-text"><strong className="dw-io-title">주소 정보 받기</strong><p className="dw-io-desc">환자의 주소 정보를 받을 수 있어요.</p>{apply({ id: 'addr', svc: '현장 접수', list: tabletRooms })}</div><div className="dw-io-ctl"><Tg v={form.addressUsed} label="주소 정보 받기" onChange={() => set({ addressUsed: !form.addressUsed })} /></div></div>
+            {form.addressUsed && <div className="dw-ro-addr">
+              {([['입력방식', 'addrInput', [[1, '선택형'], [2, '검색형']], form.addrInput === 1 ? '우편번호가 필요 없는 차트에 적합해요.' : '우편번호가 필요한 차트에 적합해요.'],
+                ['주소유형', 'addr2', [[true, '상세주소'], [false, '간략주소']], form.addr2 ? '동, 층, 호 등 상세 주소까지 받아요.' : '동, 층, 호 등 상세 주소를 받지 않아요.'],
+                ['건너뛰기', 'addrSkip', [[true, '허용함'], [false, '허용안함']], form.addrSkip ? '주소 정보를 필수로 받지 않아요.' : '주소 정보를 필수로 받아요.']] as [string, keyof Op, [any, string][], string][]).map(([l, key, opts, hint]) => <label key={l} className="dw-ro-addr-item"><span>{l}</span>
+                <select aria-label={l} value={String(form[key])} onChange={e => { const raw = e.target.value; set({ [key]: raw === 'true' ? true : raw === 'false' ? false : Number(raw) } as any); }}>{opts.map(([v, t]) => <option key={String(v)} value={String(v)}>{t}</option>)}</select><small>{hint}</small></label>)}
+            </div>}
           </div>
-        </Row>
-        <div className="cu-setting-row dw-op-row dw-col-row">
-          <div className="dw-op-head"><div><strong>주소 정보 받기</strong><p>환자의 주소 정보를 받을 수 있어요.</p></div><Tg v={form.addressUsed} label="주소 정보 받기" onChange={() => set({ addressUsed: !form.addressUsed })} /></div>
-          {form.addressUsed && <div className="dw-addr">
-            {([['입력방식', 'addrInput', [[1, '선택형'], [2, '검색형']], form.addrInput === 1 ? '우편번호가 필요 없는 차트에 적합해요.' : '우편번호가 필요한 차트에 적합해요.'],
-              ['주소유형', 'addr2', [[true, '상세주소'], [false, '간략주소']], form.addr2 ? '동, 층, 호 등 상세 주소까지 받아요.' : '동, 층, 호 등 상세 주소를 받지 않아요.'],
-              ['건너뛰기', 'addrSkip', [[true, '허용함'], [false, '허용안함']], form.addrSkip ? '주소 정보를 필수로 받지 않아요.' : '주소 정보를 필수로 받아요.']] as [string, keyof Op, [any, string][], string][]).map(([l, key, opts, hint]) => <label key={l} className="dw-addr-item"><span>{l}</span>
-              <select aria-label={l} value={String(form[key])} onChange={e => { const raw = e.target.value; set({ [key]: raw === 'true' ? true : raw === 'false' ? false : Number(raw) } as any); }}>{opts.map(([v, t]) => <option key={String(v)} value={String(v)}>{t}</option>)}</select><small>{hint}</small></label>)}
-          </div>}
-        </div>
-        <Row title="내원경로 받기" sub="처음 접수하는 환자에게 내원경로를 받을 수 있습니다.">{form.visitPathUsed && <button className="cu-btn" onClick={() => { setError(''); setPathDraft(paths); setPathInput(''); setPathErr(''); setModal('path'); }}>설정</button>}<Tg v={form.visitPathUsed} label="내원경로 받기" onChange={() => set({ visitPathUsed: !form.visitPathUsed })} /></Row>
-        </div>
-        <h3 className="dw-op-sub">접수·예약 공통</h3>
-        <Row title="재진 환자만 접수 받기" sub="신환 접수를 데스크에서 직접 받아야 할 때 선택해 주세요." hold={unl ? <kit.Pin n={21} /> : undefined} apply={apply({ id: "return", svc: "접수·예약", list: anyRooms })}><Tg v={form.onlyReturned} label="재진 환자만 접수 받기" onChange={() => set({ onlyReturned: !form.onlyReturned })} /></Row>
-        {<Row title="진료과 중복 접수 · 예약 받기" sub="같은 날짜에 동일한 진료과로 이미 접수 또는 예약되어 있어도 추가로 신청할 수 있어요. 기본값은 허용 안 함이에요." hold={<kit.Pin n={20} />} apply={apply({ id: "dept", svc: "접수·예약", list: anyRooms })}><span className="dw-muted">{form.deptDup ? '허용' : '허용 안 함'}</span><Tg v={form.deptDup} label="진료과 중복 접수 · 예약 받기" onChange={() => set({ deptDup: !form.deptDup })} /></Row>}
-        <h3 className="dw-op-sub">앱 노출</h3>
-        <Row title="진료실 정보 표시" sub="굿닥 서비스에서 환자들에게 보여줄 정보를 선택해 주세요." apply={apply({ id: "info", svc: "진료실", list: rooms })}><label className="dw-check"><input type="checkbox" checked={form.viewDept} onChange={() => set({ viewDept: !form.viewDept })} />진료과명</label><label className="dw-check"><input type="checkbox" checked={form.viewDoctor} onChange={() => set({ viewDoctor: !form.viewDoctor })} />의사명</label></Row>
-        <Row title="진료 차례 알림 발송하기" sub="차트에서 진료 차례가 된 환자들에게 안내 알림을 발송할 수 있습니다." hold={unl ? <kit.Pin n={19} /> : undefined} apply={apply({ id: "queue", svc: "현장·원격 접수", list: queueRooms })}><Tg v={form.turnAlarm} label="진료 차례 알림 발송하기" onChange={() => set({ turnAlarm: !form.turnAlarm })} /></Row>
-        {smart && <>
-          <h2 className="dw-op-sec">예약</h2>
-          <Row title="예약 시간 맞춤 자동 접수" sub="예약 환자가 예약 시간에 맞춰 진료받도록, 대기 현황에 따라 알맞은 순서에 자동으로 접수합니다.">{noRoom && noRoomHint}<button className="cu-btn" disabled={noRoom} onClick={() => { if (!sorted.length) { kit.fail('자동 접수를 설정할 진료실이 없어요.'); return; } setError(''); setAuto(JSON.parse(JSON.stringify({ ...mk(), ...autoSaved }))); setModal('auto'); }}>설정</button></Row>
-          <Row title="보류 상태로 접수 받기" sub="자동 접수된 예약이 '예약' 대신 '보류' 상태로 접수됩니다."><Tg v={form.holdStatus} label="보류 상태로 접수 받기" onChange={() => set({ holdStatus: !form.holdStatus })} /></Row>
-        </>}
+          <Row title="내원경로 받기" sub="처음 접수하는 환자에게 내원경로를 받을 수 있습니다." apply={apply({ id: 'path', svc: '현장 접수', list: tabletRooms })}>{form.visitPathUsed && <button className="dw-fig-btn" onClick={() => { setError(''); setPathDraft(paths); setPathInput(''); setPathErr(''); setModal('path'); }}>항목 설정</button>}<Tg v={form.visitPathUsed} label="내원경로 받기" onChange={() => set({ visitPathUsed: !form.visitPathUsed })} /></Row>
+          <Row title="재진 환자만 접수 받기" sub="신환 접수를 데스크에서 직접 받아야 할 때 선택해 주세요." hold={unl ? <kit.Pin n={21} /> : undefined} apply={apply({ id: 'return', svc: '접수·예약', list: anyRooms })}><Tg v={form.onlyReturned} label="재진 환자만 접수 받기" onChange={() => set({ onlyReturned: !form.onlyReturned })} /></Row>
+          <Row title="진료실 정보 표시" sub="굿닥 서비스에서 환자들에게 보여줄 정보를 선택해 주세요." apply={apply({ id: 'info', svc: '진료실', list: rooms })}><span className="dw-ro-checks"><label className="dw-ro-check"><input type="checkbox" checked={form.viewDept} onChange={() => set({ viewDept: !form.viewDept })} />진료과명</label><label className="dw-ro-check"><input type="checkbox" checked={form.viewDoctor} onChange={() => set({ viewDoctor: !form.viewDoctor })} />의사명</label></span></Row>
+          <Row title="진료 차례 알림 발송하기" sub="차트에서 진료 차례가 된 환자들에게 안내 알림을 발송할 수 있습니다." hold={unl ? <kit.Pin n={19} /> : undefined} apply={apply({ id: 'queue', svc: '현장·원격 접수', list: queueRooms })}><Tg v={form.turnAlarm} label="진료 차례 알림 발송하기" onChange={() => set({ turnAlarm: !form.turnAlarm })} /></Row>
+          <Row title="진료과 중복 접수 · 예약 받기" sub="같은 날짜에 동일한 진료과로 이미 접수 또는 예약되어 있어도 추가로 신청할 수 있어요. 기본값은 허용 안 함이에요." hold={<kit.Pin n={20} />} apply={apply({ id: 'dept', svc: '접수·예약', list: anyRooms })}><span className="dw-io-status">{form.deptDup ? '허용' : '허용 안 함'}</span><Tg v={form.deptDup} label="진료과 중복 접수 · 예약 받기" onChange={() => set({ deptDup: !form.deptDup })} /></Row>
+        </section>
+        {smart && <section className="dw-ro-sec res" aria-label="예약">
+          <h2 className="dw-ro-title">예약</h2>
+          <div className="dw-io-card dw-ro-col dw-ro-auto">
+            <div className="dw-io-text dw-ro-auto-head"><strong className="dw-io-title">예약 시간 맞춤 자동 접수<kit.Pin n={33} /></strong><p className="dw-io-desc">예약 환자가 예약 시간에 맞춰 진료받도록, 대기 현황에 따라 알맞은 순서에 자동으로 접수합니다.</p>{apply({ id: 'auto', svc: '예약', list: apptRooms })}</div>
+            <div className="dw-ro-banner">{CAUTION}1개 진료당 소요 시간 : {total}분</div>
+            {minRow('autoPer', '진료당 평균 소요 시간', '진료 1건에 걸리는 평균 시간이에요. (1~60분)')}
+            <hr className="dw-ro-div" />
+            {minRow('autoGap', '진료간 인터벌 시간', '진료 사이에 필요한 여유 시간이에요. (1~60분)')}
+          </div>
+          <Row title="환자 취소 알림 받기" sub="자동 접수된 예약을 환자가 취소하면 병원 PC에서 알림을 받을 수 있습니다."><Tg v={form.cancelNoti} label="환자 취소 알림 받기" onChange={() => set({ cancelNoti: !form.cancelNoti })} /></Row>
+        </section>}
         <Err text={modal === '' ? error : ''} />
-        <div className="dw-bottom-bar sticky"><span className="cu-subnote">{dirty ? '저장하지 않은 변경이 있어요.' : '변경 사항 없음'}</span><button className="cu-btn" disabled={busy} onClick={() => dirty ? setModal('leave') : kit.notify('변경 사항이 없어요.')}>취소</button><button className="cu-btn primary" disabled={!dirty || busy} onClick={() => run(() => setSaved(form), '운영 설정을 저장했어요.')}>{retryLabel(busy, modal === '' ? error : '', '저장')}</button></div>
+        <div className="dw-bottom-bar sticky dw-ro-bar"><span className="cu-subnote">{dirty ? '저장하지 않은 변경이 있어요.' : '변경 사항 없음'}</span><button className="dw-ro-cancel" disabled={busy} onClick={() => dirty ? setModal('leave') : kit.notify('변경 사항이 없어요.')}>취소</button><button className="dw-ro-save" disabled={!dirty || busy} onClick={() => run(() => setSaved(form), '운영 설정을 저장했어요.')}>{retryLabel(busy, modal === '' ? error : '', '저장')}</button></div>
       </div>
     </div>
 
@@ -966,23 +975,5 @@ export function OperationPage({ kit, rooms, smart, onOpenRoom, onGoRooms, onCrea
       </li>)}</ul>}
       <p className="cu-subnote">현행은 드래그로 순서를 바꿔요. 시안에서는 위·아래 버튼으로 대신해요.</p><Err text={error} />
     </M>}
-    {modal === 'auto' && <M title="진료실별 자동 접수 설정" wide className="dw-auto-modal" busy={busy} onClose={() => { if (!busy) { setError(''); autoDirty ? setModal('autoLeave') : setModal(''); } }} footer={<><button className="cu-btn" disabled={busy} onClick={() => { setError(''); autoDirty ? setModal('autoLeave') : setModal(''); }}>취소</button><button className="cu-btn primary" disabled={busy} onClick={() => run(() => setAutoSaved(Object.fromEntries(Object.entries(auto).map(([k, v]) => [k, { ...v, per: v.per.map(x => x || '5'), gap: v.gap.map(x => x || '5') }]))), '진료실별 자동 접수 설정을 저장했어요.', () => setModal(''))}>{retryLabel(busy, error, '저장')}</button></>}>
-      <p className="cu-subnote dw-mt0">여러 개의 일정 그룹 생성 등 보다 상세한 예약 스케줄 관리를 위해 고급 설정으로 전환할 수 있습니다.</p>
-      <div className="dw-bulk"><b>일괄 입력</b><label>진료당(분)<input type="text" inputMode="numeric" value={bulk.per} onChange={e => setBulk({ ...bulk, per: digits(e.target.value, 2, bulk.per) })} onBlur={() => setBulk(b => ({ ...b, per: clampMin(b.per, '5') }))} /></label><label>인터벌(분)<input type="text" inputMode="numeric" value={bulk.gap} onChange={e => setBulk({ ...bulk, gap: digits(e.target.value, 2, bulk.gap) })} onBlur={() => setBulk(b => ({ ...b, gap: clampMin(b.gap, '5') }))} /></label>
-        <button className="cu-btn" onClick={() => setAuto(a => Object.fromEntries(Object.entries(a).map(([id, v]) => [id, apptRooms.some(r => r.id === id) && v.on ? { ...v, per: Array(7).fill(bulk.per), gap: Array(7).fill(bulk.gap) } : v])))}>모든 진료실·요일에 적용</button></div>
-      <div className="dw-auto-table-wrap"><table className="dw-auto-table"><thead><tr><th>진료실명</th><th>항목</th>{DOWS.map(d => <th key={d}>{d}</th>)}<th>사용</th></tr></thead><tbody>
-        {sorted.map(r => { const v = auto[r.id] || { on: false, per: Array(7).fill(''), gap: Array(7).fill('') }; const name = r.alias || r.name;
-          if (!r.appt.accepted) return <tr key={r.id} className="off"><td className="dw-auto-name">{name}</td><td colSpan={9}><b>예약이 비활성화된 진료실이에요.</b> 자동 접수를 설정하려면 먼저 진료실 설정에서 예약을 활성화해 주세요. <button className="dw-link" onClick={() => { if (autoDirty) { setModal('autoLeave'); return; } setModal(''); onOpenRoom(r.id); }}>진료실 설정으로 이동</button></td></tr>;
-          const setV = (p: Partial<AutoRow>) => setAuto(a => ({ ...a, [r.id]: { ...v, ...p } }));
-          return ['per', 'gap'].map((f, fi) => <tr key={r.id + f}>
-            {fi === 0 && <td rowSpan={2} className="dw-auto-name">{name}</td>}
-            <td>{f === 'per' ? '진료당(분)' : '인터벌(분)'}</td>
-            {DOWS.map((_, di) => <td key={di}><input type="text" inputMode="numeric" aria-label={`${name} ${DOWS[di]} ${f === 'per' ? '진료당' : '인터벌'}`} disabled={!v.on} value={(v as any)[f][di]} onChange={e => { const arr = [...(v as any)[f]]; arr[di] = digits(e.target.value, 2, arr[di]); setV({ [f]: arr } as any); }} onBlur={e => { const arr = [...(v as any)[f]]; arr[di] = clampMin(e.target.value, (autoSaved[r.id] as any)?.[f]?.[di] || '5'); setV({ [f]: arr } as any); }} /></td>)}
-            {fi === 0 && <td rowSpan={2}><Tg v={v.on} label={`${name} 자동 접수 사용`} onChange={() => setV(v.on ? { on: false, kept: { per: v.per, gap: v.gap } } : { on: true, per: v.kept?.per || v.per.map(x => x || '5'), gap: v.kept?.gap || v.gap.map(x => x || '5') })} /></td>}
-          </tr>); })}
-      </tbody></table></div>
-      <p className="cu-subnote">분 입력은 1~60, 비우거나 0이면 직전 값(없으면 5), 60을 넘으면 60으로 바뀌어요.</p><Err text={error} />
-    </M>}
-    {modal === 'autoLeave' && <M title="자동 접수 설정을 중단하시겠어요?" onClose={() => setModal('auto')} footer={<><button className="cu-btn" onClick={() => setModal('auto')}>취소</button><button className="cu-btn danger" onClick={() => { setAuto({}); setModal(''); }}>무시하고 중단하기</button></>}><p>중단하면 지금까지 변경한 정보가 저장되지 않아요.</p></M>}
   </>;
 }

@@ -852,35 +852,15 @@ type Op = {
 };
 export const OP0: Op = { priority: 1, addressUsed: true, addrInput: 2, addr2: false, addrSkip: false, visitPathUsed: true, onlyReturned: false, deptDup: false, viewDept: true, viewDoctor: true, turnAlarm: true, autoPer: '5', autoGap: '5', cancelNoti: true };
 /* 렌더마다 새로 만들면 행이 다시 마운트돼 포커스가 사라지므로 모듈 레벨에 둔다 */
-const Row = ({ title, sub, children, hold, apply }: { title: string; sub: string; children?: React.ReactNode; hold?: React.ReactNode; apply?: React.ReactNode }) =>
-  <div className="dw-io-card"><div className="dw-io-text"><strong className="dw-io-title">{title}{hold}</strong><p className="dw-io-desc">{sub}</p>{apply}</div>{children && <div className="dw-io-ctl">{children}</div>}</div>;
+const Row = ({ title, sub, children, hold }: { title: string; sub: string; children?: React.ReactNode; hold?: React.ReactNode }) =>
+  <div className="dw-io-card"><div className="dw-io-text"><strong className="dw-io-title">{title}{hold}</strong><p className="dw-io-desc">{sub}</p></div>{children && <div className="dw-io-ctl">{children}</div>}</div>;
 const Tg = ({ v, onChange, label, disabled }: { v: boolean; onChange: () => void; label: string; disabled?: boolean }) => <button className={'cu-toggle ' + (v ? 'on' : '')} aria-label={label} aria-pressed={v} disabled={disabled} onClick={onChange}><span /></button>;
 /** 운영 설정 저장값은 상위(index)에서 보관해 메뉴를 오가도 유지되고 '처음 상태로'로 함께 초기화된다 */
 export type OpStore = { saved: Op; setSaved: (o: Op) => void; paths: string[]; setPaths: (p: string[]) => void };
 export const VISIT_PATHS_DEFAULT = ['지인 소개', '인터넷 검색', '굿닥 앱', '블로그/카페', '간판/지나가다', '기타'];
 const CAUTION = <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8" fill="currentColor" /><rect x="9" y="5.5" width="2" height="6" rx="1" fill="#fff" /><circle cx="10" cy="14" r="1.1" fill="#fff" /></svg>;
-export function OperationPage({ kit, rooms, smart, onOpenRoom, onGoRooms, onCreateRoom, banner, store }: { kit: Kit; rooms: Room[]; smart: boolean; onOpenRoom: (id: string) => void; onGoRooms: () => void; onCreateRoom: () => void; banner: React.ReactNode; store: OpStore }) {
+export function OperationPage({ kit, smart, banner, store }: { kit: Kit; rooms: Room[]; smart: boolean; onOpenRoom: (id: string) => void; banner: React.ReactNode; store: OpStore }) {
   const unl = kit.mode === 'unlinked';
-  /* D안 — 설정마다 적용 중인 진료실 수. 임시마감도 '켠 진료실'에 포함, 차트 기능값으로 미지원인 서비스는 제외 */
-  const sup = supportedOf(kit);
-  const on = (r: Room, k: SvcKey) => r[k].accepted && sup(k);
-  const [applyOpen, setApplyOpen] = useState<string | null>(null);
-  useEffect(() => {
-    if (!applyOpen) return;
-    const h = (e: MouseEvent) => { if (!(e.target as HTMLElement).closest('.dw-apply')) setApplyOpen(null); };
-    // ESC로 닫고 포커스를 버튼으로 돌려준다(모달 스택보다 먼저 처리)
-    const k = (e: KeyboardEvent) => { if (e.key !== 'Escape') return; e.stopPropagation(); const id = applyOpen; setApplyOpen(null); document.querySelector<HTMLElement>(`[data-apply="${id}"]`)?.focus(); };
-    document.addEventListener('mousedown', h); document.addEventListener('keydown', k, true);
-    return () => { document.removeEventListener('mousedown', h); document.removeEventListener('keydown', k, true); };
-  }, [applyOpen]);
-  // 컴포넌트가 아니라 JSX를 돌려주는 함수(렌더마다 리마운트되면 판단 메모 팝오버가 닫혀서)
-  const apply = ({ id, svc, list, pin }: { id: string; svc: string; list: Room[]; pin?: React.ReactNode }) => list.length > 0
-    ? <div className="dw-apply"><button type="button" className="dw-apply-btn" data-apply={id} aria-expanded={applyOpen === id} onClick={() => setApplyOpen(applyOpen === id ? null : id)}>적용 중 진료실 {list.length}개<VscChevronDown /></button>{pin}
-        {applyOpen === id && <div className="dw-apply-pop" role="dialog" aria-label={`적용 중 진료실 ${list.length}개`}><small>{svc} 기준</small>{list.map(r => <button key={r.id} type="button" onClick={() => { setApplyOpen(null); onOpenRoom(r.id); }}>{r.alias || r.name}{r.tablet.paused || r.mobile.paused || r.appt.paused ? <em>임시마감</em> : null}</button>)}</div>}</div>
-    : <div className="dw-apply zero"><span className="dw-apply-info"><VscInfo />{rooms.length === 0 ? '적용될 진료실이 없어요' : `${svc}${eul(svc)} 켠 진료실이 없어 지금은 적용되지 않아요`}</span>{pin}
-        {rooms.length === 0 ? (kit.linked ? <small className="dw-apply-sub">차트에서 진료실을 등록하면 적용돼요</small> : <button type="button" className="dw-link" onClick={onCreateRoom}>진료실 만들기</button>) : <button type="button" className="dw-link" onClick={onGoRooms}>진료실 설정으로 이동</button>}</div>;
-  const tabletRooms = rooms.filter(r => on(r, 'tablet')), queueRooms = rooms.filter(r => on(r, 'tablet') || on(r, 'mobile'));
-  const anyRooms = rooms.filter(r => on(r, 'tablet') || on(r, 'mobile') || on(r, 'appt')), apptRooms = rooms.filter(r => on(r, 'appt'));
   const M = kit.Modal;
   const { saved, setSaved, paths, setPaths } = store;
   const [form, setForm] = useState<Op>(saved); // 저장 전 편집값(메뉴를 떠나면 버려짐 — 현행과 같음)
@@ -924,13 +904,13 @@ export function OperationPage({ kit, rooms, smart, onOpenRoom, onGoRooms, onCrea
       <div className="cu-settings-page dw-op dw-io dw-ro">
         <section className="dw-ro-sec" aria-label="공통">
           <h2 className="dw-ro-title">공통</h2>
-          <Row title="환자 조회 방식 선택" sub="환자 조회 시 차트에서 사용하는 정보를 선택해 주세요." hold={<kit.Pin n={18} />} apply={apply({ id: 'pri', svc: '현장 접수', list: tabletRooms, pin: <kit.Pin n={32} /> })}>
+          <Row title="환자 조회 방식 선택" sub="환자 조회 시 차트에서 사용하는 정보를 선택해 주세요." hold={<kit.Pin n={18} />}>
             <div className="dw-pop-wrap"><button className="dw-select dw-ro-select" data-pop="pri" aria-haspopup="listbox" aria-expanded={priOpen} onClick={() => setPriOpen(!priOpen)}>{form.priority === 1 ? '휴대폰번호' : '주민등록번호'}<VscChevronDown /></button>
               {priOpen && <div className="dw-pop dw-pop-right" role="listbox">{([[1, '휴대폰번호'], [0, '주민등록번호']] as const).map(([v, l]) => <button key={v} role="option" aria-selected={form.priority === v} className={'dw-pop-opt ' + (form.priority === v ? 'sel' : '')} onClick={() => { set({ priority: v }); setPriOpen(false); }}>{l}{form.priority === v && <VscCheck />}</button>)}</div>}
             </div>
           </Row>
           <div className="dw-io-card dw-ro-col">
-            <div className="dw-ro-head"><div className="dw-io-text"><strong className="dw-io-title">주소 정보 받기</strong><p className="dw-io-desc">환자의 주소 정보를 받을 수 있어요.</p>{apply({ id: 'addr', svc: '현장 접수', list: tabletRooms })}</div><div className="dw-io-ctl"><Tg v={form.addressUsed} label="주소 정보 받기" onChange={() => set({ addressUsed: !form.addressUsed })} /></div></div>
+            <div className="dw-ro-head"><div className="dw-io-text"><strong className="dw-io-title">주소 정보 받기</strong><p className="dw-io-desc">환자의 주소 정보를 받을 수 있어요.</p></div><div className="dw-io-ctl"><Tg v={form.addressUsed} label="주소 정보 받기" onChange={() => set({ addressUsed: !form.addressUsed })} /></div></div>
             {form.addressUsed && <div className="dw-ro-addr">
               {([['입력방식', 'addrInput', [[1, '선택형'], [2, '검색형']], form.addrInput === 1 ? '우편번호가 필요 없는 차트에 적합해요.' : '우편번호가 필요한 차트에 적합해요.'],
                 ['주소유형', 'addr2', [[true, '상세주소'], [false, '간략주소']], form.addr2 ? '동, 층, 호 등 상세 주소까지 받아요.' : '동, 층, 호 등 상세 주소를 받지 않아요.'],
@@ -938,16 +918,16 @@ export function OperationPage({ kit, rooms, smart, onOpenRoom, onGoRooms, onCrea
                 <select aria-label={l} value={String(form[key])} onChange={e => { const raw = e.target.value; set({ [key]: raw === 'true' ? true : raw === 'false' ? false : Number(raw) } as any); }}>{opts.map(([v, t]) => <option key={String(v)} value={String(v)}>{t}</option>)}</select><small>{hint}</small></label>)}
             </div>}
           </div>
-          <Row title="내원경로 받기" sub="처음 접수하는 환자에게 내원경로를 받을 수 있습니다." apply={apply({ id: 'path', svc: '현장 접수', list: tabletRooms })}>{form.visitPathUsed && <button className="dw-fig-btn" onClick={() => { setError(''); setPathDraft(paths); setPathInput(''); setPathErr(''); setModal('path'); }}>항목 설정</button>}<Tg v={form.visitPathUsed} label="내원경로 받기" onChange={() => set({ visitPathUsed: !form.visitPathUsed })} /></Row>
-          <Row title="재진 환자만 접수 받기" sub="신환 접수를 데스크에서 직접 받아야 할 때 선택해 주세요." hold={unl ? <kit.Pin n={21} /> : undefined} apply={apply({ id: 'return', svc: '접수·예약', list: anyRooms })}><Tg v={form.onlyReturned} label="재진 환자만 접수 받기" onChange={() => set({ onlyReturned: !form.onlyReturned })} /></Row>
-          <Row title="진료실 정보 표시" sub="굿닥 서비스에서 환자들에게 보여줄 정보를 선택해 주세요." apply={apply({ id: 'info', svc: '진료실', list: rooms })}><span className="dw-ro-checks"><label className="dw-ro-check"><input type="checkbox" checked={form.viewDept} onChange={() => set({ viewDept: !form.viewDept })} />진료과명</label><label className="dw-ro-check"><input type="checkbox" checked={form.viewDoctor} onChange={() => set({ viewDoctor: !form.viewDoctor })} />의사명</label></span></Row>
-          <Row title="진료 차례 알림 발송하기" sub="차트에서 진료 차례가 된 환자들에게 안내 알림을 발송할 수 있습니다." hold={unl ? <kit.Pin n={19} /> : undefined} apply={apply({ id: 'queue', svc: '현장·원격 접수', list: queueRooms })}><Tg v={form.turnAlarm} label="진료 차례 알림 발송하기" onChange={() => set({ turnAlarm: !form.turnAlarm })} /></Row>
-          <Row title="진료과 중복 접수 · 예약 받기" sub="같은 날짜에 동일한 진료과로 이미 접수 또는 예약되어 있어도 추가로 신청할 수 있어요. 기본값은 허용 안 함이에요." hold={<kit.Pin n={20} />} apply={apply({ id: 'dept', svc: '접수·예약', list: anyRooms })}><span className="dw-io-status">{form.deptDup ? '허용' : '허용 안 함'}</span><Tg v={form.deptDup} label="진료과 중복 접수 · 예약 받기" onChange={() => set({ deptDup: !form.deptDup })} /></Row>
+          <Row title="내원경로 받기" sub="처음 접수하는 환자에게 내원경로를 받을 수 있습니다.">{form.visitPathUsed && <button className="dw-fig-btn" onClick={() => { setError(''); setPathDraft(paths); setPathInput(''); setPathErr(''); setModal('path'); }}>항목 설정</button>}<Tg v={form.visitPathUsed} label="내원경로 받기" onChange={() => set({ visitPathUsed: !form.visitPathUsed })} /></Row>
+          <Row title="재진 환자만 접수 받기" sub="신환 접수를 데스크에서 직접 받아야 할 때 선택해 주세요." hold={unl ? <kit.Pin n={21} /> : undefined}><Tg v={form.onlyReturned} label="재진 환자만 접수 받기" onChange={() => set({ onlyReturned: !form.onlyReturned })} /></Row>
+          <Row title="진료실 정보 표시" sub="굿닥 서비스에서 환자들에게 보여줄 정보를 선택해 주세요."><span className="dw-ro-checks"><label className="dw-ro-check"><input type="checkbox" checked={form.viewDept} onChange={() => set({ viewDept: !form.viewDept })} />진료과명</label><label className="dw-ro-check"><input type="checkbox" checked={form.viewDoctor} onChange={() => set({ viewDoctor: !form.viewDoctor })} />의사명</label></span></Row>
+          <Row title="진료 차례 알림 발송하기" sub="차트에서 진료 차례가 된 환자들에게 안내 알림을 발송할 수 있습니다." hold={unl ? <kit.Pin n={19} /> : undefined}><Tg v={form.turnAlarm} label="진료 차례 알림 발송하기" onChange={() => set({ turnAlarm: !form.turnAlarm })} /></Row>
+          <Row title="진료과 중복 접수 · 예약 받기" sub="같은 날짜에 동일한 진료과로 이미 접수 또는 예약되어 있어도 추가로 신청할 수 있어요. 기본값은 허용 안 함이에요." hold={<kit.Pin n={20} />}><span className="dw-io-status">{form.deptDup ? '허용' : '허용 안 함'}</span><Tg v={form.deptDup} label="진료과 중복 접수 · 예약 받기" onChange={() => set({ deptDup: !form.deptDup })} /></Row>
         </section>
         {smart && <section className="dw-ro-sec res" aria-label="예약">
           <h2 className="dw-ro-title">예약</h2>
           <div className="dw-io-card dw-ro-col dw-ro-auto">
-            <div className="dw-io-text dw-ro-auto-head"><strong className="dw-io-title">예약 시간 맞춤 자동 접수<kit.Pin n={33} /></strong><p className="dw-io-desc">예약 환자가 예약 시간에 맞춰 진료받도록, 대기 현황에 따라 알맞은 순서에 자동으로 접수합니다.</p>{apply({ id: 'auto', svc: '예약', list: apptRooms })}</div>
+            <div className="dw-io-text dw-ro-auto-head"><strong className="dw-io-title">예약 시간 맞춤 자동 접수<kit.Pin n={33} /></strong><p className="dw-io-desc">예약 환자가 예약 시간에 맞춰 진료받도록, 대기 현황에 따라 알맞은 순서에 자동으로 접수합니다.</p></div>
             <div className="dw-ro-banner">{CAUTION}1개 진료당 소요 시간 : {total}분</div>
             {minRow('autoPer', '진료당 평균 소요 시간', '진료 1건에 걸리는 평균 시간이에요. (1~60분)')}
             <hr className="dw-ro-div" />

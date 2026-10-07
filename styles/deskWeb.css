@@ -603,21 +603,6 @@ button.dw-room-row:hover{border-color:var(--blue)}
 .cu-app .dw-io .cu-toggle{border-radius:10px}
 .cu-app .dw-io .dw-guide-warn{margin-top:8px}
 .cu-app .dw-io-head .cn-desc{font-size:14px;line-height:22px;color:#808799}
-/* v0.18 D안 — 적용 중 진료실 (Gray/60 · caption1) */
-.cu-app .dw-apply{position:relative;display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;margin-top:6px;font-family:Pretendard,'Apple SD Gothic Neo',sans-serif;font-size:13px;line-height:20px;font-weight:600;color:#808799}
-.cu-app .dw-apply-btn{display:inline-flex;align-items:center;gap:2px;font:inherit;color:#808799;padding:0;background:none}
-.cu-app .dw-apply-btn:hover{color:#5D6474;text-decoration:underline}
-.cu-app .dw-apply-btn svg{width:14px;height:14px}
-.cu-app .dw-apply-pop{position:absolute;top:24px;left:0;z-index:30;min-width:200px;display:flex;flex-direction:column;padding:8px;background:#fff;border:1px solid #E3E6ED;border-radius:8px;box-shadow:0 2px 4px #16181D0D,0 1px 0 #16181D08}
-.cu-app .dw-apply-pop small{font-size:12px;line-height:18px;color:#808799;padding:2px 8px 6px}
-.cu-app .dw-apply-pop button{display:flex;justify-content:space-between;gap:8px;text-align:left;padding:6px 8px;border-radius:4px;font-size:13px;line-height:20px;font-weight:500;color:#31353F}
-.cu-app .dw-apply-pop button:hover{background:#F2F4F7}
-.cu-app .dw-apply-pop em{font-style:normal;font-size:12px;color:#808799}
-.cu-app .dw-apply.zero{padding:6px 10px;background:rgba(128,135,153,.05);border:1px solid rgba(128,135,153,.1);border-radius:6px;width:fit-content}
-.cu-app .dw-apply-info{display:inline-flex;align-items:center;gap:6px;color:#5D6474;font-weight:500}
-.cu-app .dw-apply-info svg{color:#808799}
-.cu-app .dw-apply .dw-link{font-size:13px}
-.cu-app .dw-apply-sub{font-weight:500;color:#808799}
 /* v0.19 진료실 운영 설정 — 값은 figma baseline 참조(행 카드·스위치는 dw-io 공통) */
 .cu-app .dw-ro{gap:0}
 .cu-app .dw-ro-sec{display:flex;flex-direction:column;gap:12px;padding-bottom:48px}

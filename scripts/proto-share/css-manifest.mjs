@@ -28,7 +28,8 @@ export const SCREEN_CSS = {
   'application-unified': ['styles/applicationUnified.css'],
   'adot-clinic-linking': ['styles/adotClinicLinking.css'],
   'tablet-patient-select': ['styles/tabletPatientSelect.css'],
-  'desk-web': ['styles/connectUnified.css', 'styles/deskWeb.css']
+  'desk-web': ['styles/connectUnified.css', 'styles/deskWeb.css'],
+  'desk-web-v2': ['styles/connectUnified.css', 'styles/deskWebV2.css']
 };
 
 /**

@@ -1,7 +1,7 @@
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : desk-web — 굿닥 데스크(Windows 프로그램) 기능을 커넥트 웹뷰 UI로 옮긴 웹 이관 시안
- * 상태     : 현행(active) · 검토용 시안(미승인)   버전: v0.14  최종수정: 2026-10-07
+ * 상태     : 현행(active) · 검토용 시안(미승인)   버전: v0.15  최종수정: 2026-10-07
  * PRD      : 내부 기획 문서(공개 저장소라 티켓 번호·링크·원문 미기재)
  * 배포URL  : https://connect-sq-sandbox.github.io/out/desk-web.html — v0.3 배포됨, 이후 버전 미배포
  * 피그마   : 사내 파일(공개 저장소라 파일명·URL·노드 ID 미기재) · 진료실 설정 목록·상세 · 반영 값과 노드는 figma/baseline.md 참조(기준선 2026-10-06)
@@ -58,6 +58,7 @@
  *                      진료실/진료항목 예약 분리(유형별 상태·액션·필터·열, 진료항목 예약 설정), 비연동 진료실 없음 = 정상 상태.
  *   v0.5  2026-10-06 — PO 결정 대기 항목을 제안안으로 구현하고 판단 메모 핀·드로어(17건) 추가.
  *   v0.6  2026-10-06 — 운영 설정·진료실 상세·카카오 연동 설정을 차트 모드(데스크 차트 병원 기본 / 비연동 / 연동 차트)별로 분기, 판단 메모 18~25 추가.
+ *   v0.15 2026-10-07 — 상단 체험 설정 띠를 기본 펼침으로 변경(세화님 요청).
  *   v0.14 2026-10-07 — 진료내역 메뉴를 진료 현황 '지난 내역' 탭으로 통합(기간·상태·검색·유형·진료실 필터, 탭별 필터 유지, 긴 기간 시드 합침), 판단 메모 30·31 추가, 메모 되돌리기에 스마트접수 포함, 모드 전환 시 숨겨지는 운영 설정 편집 취소 안내.
  *   v0.13 2026-10-07 — 스마트접수(자동 접수)를 EMR 연동 전용으로: 비연동은 '예약 > 자동 접수' 섹션·모달·안내 미노출, 체험 띠 '스마트접수 가능'은 EMR 연동만·비연동 전환 시 자동 끔.
  *   v0.12 2026-10-07 — 차트 모드 3→2 통합(데스크 차트 병원 + 비연동 → '비연동 · 굿닥에서 관리', 연동 차트 → 'EMR 연동'), 비연동 규칙으로 일원화, 환경설정 'EMR 연동하기' 안내, 판단 메모 19·21 교체(비연동 접수·차례 알림 / 재진만 받기), 화면 문구에서 '데스크 차트 병원' 제거.
@@ -379,7 +380,7 @@ function Page() {
   const TAPPT0 = { on: true, autoConfirm: false, sameDay: true, notify: true };
   const [tAppt, setTAppt] = useState(TAPPT0);
   // 체험 설정(메타)
-  const [chartMode, setChartMode] = useState<ChartMode>('unlinked'), [noRooms, setNoRooms] = useState(false), [failSim, setFailSim] = useState(false), [serverDown, setServerDown] = useState(false), [manyNoti, setManyNoti] = useState(false), [panelOpen, setPanelOpen] = useState(false);
+  const [chartMode, setChartMode] = useState<ChartMode>('unlinked'), [noRooms, setNoRooms] = useState(false), [failSim, setFailSim] = useState(false), [serverDown, setServerDown] = useState(false), [manyNoti, setManyNoti] = useState(false), [panelOpen, setPanelOpen] = useState(true);
   const [chartMissing, setChartMissing] = useState(false), [chartLimited, setChartLimited] = useState(false), [smart, setSmart] = useState(false), [partialFail, setPartialFail] = useState(false);
   const linked = chartMode === 'linked';
   const [moreOpen, setMoreOpen] = useState(false);
@@ -945,7 +946,7 @@ function Page() {
   const moduleMenu = menu === '진료실' || menu === '진료실 운영 설정';
   return <div className="cu-app dw-app">
     <div className="cu-prototype">
-      <div><strong>데스크 기능 웹 이관 시안</strong><span>v0.14 · 커넥트 웹뷰 UI · 가상 데이터</span></div>
+      <div><strong>데스크 기능 웹 이관 시안</strong><span>v0.15 · 커넥트 웹뷰 UI · 가상 데이터</span></div>
       <div className="cu-proto-actions">
         <span className="dw-legend"><Hold /> = PO 확인 중</span>
         <label className="dw-annot-toggle"><button type="button" className={'cu-toggle ' + (annot ? 'on' : '')} aria-pressed={annot} aria-label="판단 메모 보기" onClick={() => setAnnot(!annot)}><span /></button>판단 메모 보기</label>

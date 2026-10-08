@@ -29,7 +29,8 @@ export const SCREEN_CSS = {
   'adot-clinic-linking': ['styles/adotClinicLinking.css'],
   'tablet-patient-select': ['styles/tabletPatientSelect.css'],
   'desk-web': ['styles/connectUnified.css', 'styles/deskWeb.css'],
-  'desk-web-v2': ['styles/connectUnified.css', 'styles/deskWebV2.css']
+  'desk-web-v2': ['styles/connectUnified.css', 'styles/deskWebV2.css'],
+  'partners-connect-preview': ['styles/partnersConnectSource.css', 'styles/partnersConnectPreview.css']
 };
 
 /**
@@ -45,5 +46,7 @@ export function resolveCssFiles(pagePath) {
   // 스펙-only 실험 페이지: 공용 shell/드로어 CSS를 상속하지 않고 리셋(globals)만 사용
   if (dir === 'kakao-spec-test') return ['styles/globals.css', ...screen];
   if (dir === 'kakao-realcode-test') return ['styles/globals.css', ...screen];
+  // Faithful source clone: sandbox globals change rem sizing and source font metrics.
+  if (dir === 'partners-connect-preview') return screen;
   return [...SHARED_CSS, ...screen];
 }

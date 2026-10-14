@@ -1,44 +1,59 @@
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 /**
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
- * 이름     : ti-legacy-readonly — 구 버전 상품을 추천 규격으로 다시 입력받기 (병원 어드민 · 진료항목 수정 · 필수 정보 카드만)
+ * 이름     : ti-legacy-readonly — 구 버전 상품을 추천 규격으로 다시 입력받기 (병원 어드민 · 진료항목 목록 + 수정)
  *            예시 = 가다실 9가(규격 행 1회 접종 / 3회 접종). ti-legacy-spec(3안 비교)에서 세화님이 고른 방향 하나만 구현한다.
- * 상태     : 탐색(draft)   버전: v0.1   최종수정: 2026-10-14
- * PRD      : 미발행. 짝 화면 = 트리판 진료항목 등록(out/treatment-create-tree.html)의 추천 항목 규격 행.
+ * 상태     : 탐색(draft)   버전: v0.2   최종수정: 2026-10-14
+ * PRD      : 미발행. 짝 화면 = 트리판 진료항목 목록·등록(out/treatment-create-tree.html)의 추천 항목 규격 행.
  * 배포URL  : 미배포 (로컬 out/ti-legacy-readonly.html 만 있음)
  * 관련 CSS : tiLegacySpecTree.css (트리판 out HTML 패치 <style> 사본 · ti-legacy-spec 과 공유 · 직접 수정 금지)
  *            tiLegacyReadonly.css (이 화면 전용 · lr- 접두사)
- * 기술제약 : react-only · plain CSS · mock · 네트워크 0
+ * 기술제약 : react-only · plain CSS · mock · 네트워크 0 · 해시 라우팅(#/items, #/items/<id>)
  *
- * 화면구성 : 상단 프로토 툴바(시나리오 칩 S0 새 규격 상품 + S1~S7 · 처음 상태로 · 저장 전/후 표시)
- *            + 필수 정보 카드(분류 트리 · 진료항목명 · 가격 정보) + 하단 [취소/저장] 바. LNB·추가 정보·미리보기 폰은 넣지 않는다.
- *            가격 정보 = ① 기존 가격 옵션(read-only, 이름·설명·유형·금액 표시, 수정·삭제 불가) ② 추천 규격 행(빈 상태).
- *            저장 성공 시 ① 이 사라지고 ② 의 값만 남는다(저장 후 상태).
+ * 화면구성 : 상단 프로토 툴바 + 커넥트 셸(LNB) 안에 두 화면.
+ *            ① 목록(#/items) — 라이브 트리판 목록과 같은 카테고리 2열 그리드. 테이블 위 요약 한 줄
+ *               "가격을 새 방식으로 다시 입력할 상품이 N개 있어요" + [모아 보기]/[전체 보기]. N=0 이면 숨김.
+ *               추천 규격 불일치 상품은 이름 옆 회색 태그 `이전 방식 가격`. 분류 미연결 상품은 태그·N 에서 제외.
+ *               툴바는 `처음 상태로`만.
+ *            ② 수정(#/items/<id>) — 본문은 필수 정보 카드만(분류 트리 · 진료항목명 · 가격 정보) + 하단 [취소/저장].
+ *               가격 정보 = 기존 가격 옵션(read-only, 수정·삭제 불가) + 추천 규격 행(빈 상태). 저장 성공 시 기존 영역이 사라진다.
+ *               툴바 칩 3개(새 규격 상품 / 이전 방식 가격 / 분류 미연결)로 예시 상품을 오간다.
+ *            목록 시드 = 새 규격 1 · 이전 방식 가격 3 · 분류 미연결 1 · 일반(피부·미용) 3. 저장 결과는 목록 상태에 반영된다(세션 내).
  *
  * 핵심 결정 (why):
  *   [확정·세화님] 기존 옵션은 read-only 로 남겨 값을 보여 주고, 아래 추천 규격 행은 비워 둔다(자동 채움 없음). (2026-10-14)
  *   [확정·세화님] 추천 규격에 맞게 입력해야만 저장된다. 유효 = 가격을 넣은 행 1개 이상 + 넣은 행의 유형·금액이 올바름
  *                (상담 후 결정은 금액 없이 유효). 저장 성공 시 기존 옵션은 새 규격으로 대체된다. (2026-10-14)
  *   [확정·세화님] 옮겨 적기 보조(금액 복사 등)는 넣지 않는다.
+ *   [확정·세화님] 예시는 3종으로 충분하다 — read-only 방식에서는 이름 회차·설명 회차·2회 등 기존 데이터 모양과 무관하게 동작이 같다. (2026-10-14)
+ *   [확정·세화님] 목록 태그는 회색(트리판 옵션 수 배지와 같은 스타일), 문구 `이전 방식 가격`. 분류 미연결은 표시하지 않는다. (2026-10-14)
  *   [유지·자체] 행 단위 검증은 트리판 라이브 규칙을 그대로 쓴다 — 고정 가격 금액 없음/0 = `가격을 입력해 주세요.`,
  *              할인 정상가·판매가 각각 같은 문구, 판매가 ≥ 정상가 = `정상가보다 낮은 가격을 입력해 주세요.`,
  *              판매가 < 정상가×0.51 = `최대 49%까지 할인할 수 있어요.\n(N원 초과)`. 에러는 칸 아래(rg-num-wrap > rg-error), 칸은 빨간 테두리.
  *              저장 실패 시 첫 에러 칸으로 스크롤(라이브 동작 동일).
- *   [유지·자체] "가격을 넣은 행" 판정 = 상담 후 결정이거나 금액 칸에 값이 하나라도 있는 행. 유형만 할인으로 바꾸고 비워 둔 행은 안 넣은 행으로 본다.
- *   [유지·자체] 넣은 행이 0개일 때의 에러는 트리판에 해당 문구가 없어 새로 썼다 — 규격 행 아래 `가격을 1개 이상 입력해 주세요.`
- *              (위치는 트리판 분류 미선택 에러처럼 블록 아래 한 줄).
+ *   [유지·자체] "가격을 넣은 행" = 상담 후 결정이거나 금액 칸에 값이 하나라도 있는 행. 유형만 할인으로 바꾸고 비워 둔 행은 안 넣은 행.
+ *   [유지·자체] 넣은 행 0개 에러는 트리판에 문구가 없어 새로 썼다 — 규격 행 아래 `가격을 1개 이상 입력해 주세요.`
  *   [유지·자체] 에러는 해당 칸을 고치면 그 칸만 지운다. 묶음 에러는 아무 행이나 고치면 지운다.
- *   [유지·자체] read-only 기존 옵션 영역 이름은 `기존 가격 옵션`, 안내 1줄만 둔다. 드래그 핸들·삭제(X)는 렌더하지 않는다.
- *   [유지·자체] S7 은 분류 트리에서 HPV 백신 → 가다실 9가를 직접 골라야 연결된다(별도 제안 배너 없음). 프로토 범위 밖 분류는 토스트만.
- *   [유지·자체] 저장 후 상태 표시는 화면 안이 아니라 툴바(`저장 후`)와 토스트로만 한다.
+ *   [유지·자체] read-only 영역 이름은 `기존 가격 옵션`, 안내 1줄. 드래그 핸들·삭제(X)는 렌더하지 않는다.
+ *   [유지·자체] 분류 미연결 상품은 분류 트리에서 HPV 백신 → 가다실 9가를 직접 골라야 연결된다(제안 배너 없음). 범위 밖 분류는 토스트만.
+ *   [유지·자체] 목록 기본 카테고리는 예방접종(가다실 상품이 바로 보이게). 모아 보기 중에는 태그 상품이 있는 카테고리만 남기고 건수도 필터 기준.
+ *   [유지·자체] 중분류가 없는 상품(분류 미연결)은 목록에서 대분류명(예방접종) 그룹 아래에 둔다. 라이브의 미분류 표시는 확인하지 못했다.
+ *   [유지·자체] 목록 가격 = 기존 옵션(또는 규격 행) 중 최저가, 2개 이상이면 `~`, 전부 상담이면 `상담 후 결정`. 옆 숫자는 옵션·행 수.
+ *   [유지·자체] 일반 상품·새 진료항목 버튼·노출 토글·삭제는 표시만(누르면 범위 밖 토스트 또는 무동작).
+ *   [유지·자체] 저장 후에도 수정 화면에 머문다(트리판 동작 미확인). 목록 복귀는 `목록`·`취소`. 취소는 저장 안 한 입력을 버린다.
+ *   [유지·자체] 저장 전/후 표시는 툴바와 토스트로만 한다.
+ *   [유지·자체] 모아 보기·선택 카테고리는 수정 화면을 다녀와도 유지한다(하나씩 처리하는 흐름). N=0 이 되면 필터는 자동으로 풀린다.
  *
  * 보류 · TODO:
- *   [보류] S7 분류 연결 전 저장 동작 미정 — 지금은 저장을 누르면 프로토 토스트로 "미정"만 알리고 아무것도 하지 않는다.
- *   [보류] 기존 옵션의 설명(예: S6 `2회 접종 필수`)은 규격 행에 받을 칸이 없어 저장 후 사라진다. 처리 방식 미정.
+ *   [보류] 분류 미연결 상품을 연결 전에 저장하면 어떻게 할지 미정 — 지금은 프로토 토스트로 "미정"만 알리고 아무것도 하지 않는다.
+ *   [보류] 기존 옵션의 설명은 규격 행에 받을 칸이 없어 저장 후 사라진다. 처리 방식 미정.
+ *   [보류] 기존 가격 옵션 박스 톤 · 저장 결과 경고 문구 · 목록의 기한/노출 정책 문구 — 세화님 미결정, 넣지 않음.
  *
  * 변경 이력:
- *   v0.1  2026-10-14 — 신규. S0(새 규격) + S1~S7, read-only 기존 옵션 + 빈 규격 행 + 저장 검증 + 저장 후 상태.
+ *   v0.2  2026-10-14 — 진료항목 목록 화면 추가(LNB 셸, 요약 줄 · 모아 보기 · 회색 태그, 해시 라우팅, 저장 결과 목록 반영).
+ *                      예시를 S0~S7 → 3종(새 규격 / 이전 방식 가격 / 분류 미연결)으로 줄이고 나머지 시나리오 데이터·칩 삭제.
+ *   v0.1  2026-10-14 — 신규. read-only 기존 옵션 + 빈 규격 행 + 저장 검증 + 저장 후 상태(필수 정보 카드만).
  * └──────────────────────────────────────────────────────
  */
 
@@ -47,7 +62,8 @@ type Legacy = { id: string; name: string; type: PType; amount?: number; original
 type SlotKey = '1' | '3';
 type Price = { type: PType; amount: string; original: string; sale: string };
 type Cat = { l1: string; l2: string | null; l3: string | null };
-type Scenario = { id: string; short: string; example: string; alias: string; cat: Cat; options: Legacy[]; spec?: Record<SlotKey, Price> };
+/** 가다실 9가 예시 상품. chip 이 있는 3개만 툴바 칩으로 보이고, 나머지는 목록 행으로만 쓴다. */
+type Example = { id: string; chip?: string; example: string; alias: string; cat: Cat; options: Legacy[]; spec?: Record<SlotKey, Price> };
 
 const SLOTS: { key: SlotKey; label: string }[] = [{ key: '1', label: '1회 접종' }, { key: '3', label: '3회 접종' }];
 const PRICE_TYPES: { value: PType; label: string }[] = [
@@ -58,27 +74,34 @@ const GADASIL: Cat = { l1: '예방접종', l2: 'HPV 백신', l3: '가다실 9가
 const emptyPrice = (): Price => ({ type: 'fixed', amount: '', original: '', sale: '' });
 const emptySpec = (): Record<SlotKey, Price> => ({ '1': emptyPrice(), '3': emptyPrice() });
 
-const SCENARIOS: Scenario[] = [
+const EXAMPLES: Example[] = [
   {
-    id: 'S0', short: '새 규격 상품', alias: '가다실 9가', cat: GADASIL, options: [],
+    id: 'new', chip: '새 규격 상품', alias: '가다실 9가', cat: GADASIL, options: [],
     example: '이미 추천 규격으로 등록된 상품 — 기존 가격 옵션 영역 없이 평소처럼 보여요.',
     spec: { '1': { type: 'fixed', amount: '230000', original: '', sale: '' }, '3': { type: 'discount', amount: '', original: '690000', sale: '650000' } }
   },
-  { id: 'S1', short: '이름에 회차', alias: '가다실 9가', cat: GADASIL, example: "'1회' 고정 210,000 / '3회 (완납)' 고정 610,000",
-    options: [{ id: 'opt-1101', name: '1회', type: 'fixed', amount: 210000 }, { id: 'opt-1102', name: '3회 (완납)', type: 'fixed', amount: 610000 }] },
-  { id: 'S2', short: '설명에만 회차', alias: '가다실 9가 접종', cat: GADASIL, example: "'가다실 9가' 170,000(설명 '1회') / '가다실 9가' 510,000(설명 '3회')",
-    options: [{ id: 'opt-2101', name: '가다실 9가', type: 'fixed', amount: 170000, desc: '1회' }, { id: 'opt-2102', name: '가다실 9가', type: 'fixed', amount: 510000, desc: '3회' }] },
-  { id: 'S3', short: '단일 · 회차 없음', alias: '가다실 9가', cat: GADASIL, example: "'가다실 9가' 고정 255,000",
-    options: [{ id: 'opt-3101', name: '가다실 9가', type: 'fixed', amount: 255000 }] },
-  { id: 'S4', short: '상담 1건', alias: '가다실 9가 접종', cat: GADASIL, example: "'가다실 9가 접종' 상담 후 결정",
-    options: [{ id: 'opt-4101', name: '가다실 9가 접종', type: 'consult' }] },
-  { id: 'S5', short: '규격 밖 회차(2회)', alias: '가다실 9가', cat: GADASIL, example: "'1회' 220,000 / '2회 완납 시' 할인 500,000→450,000 / '3회 완납 시' 550,000",
-    options: [{ id: 'opt-5101', name: '1회', type: 'fixed', amount: 220000 }, { id: 'opt-5102', name: '2회 완납 시', type: 'discount', original: 500000, sale: 450000 }, { id: 'opt-5103', name: '3회 완납 시', type: 'fixed', amount: 550000 }] },
-  { id: 'S6', short: '조건별 가격', alias: '가다실 9가', cat: GADASIL, example: "'15세 이하 1회 접종시' 220,000(설명 '2회 접종 필수') / '15세 이상 1회 접종시' 220,000(설명 '3회 접종 필수')",
-    options: [{ id: 'opt-6101', name: '15세 이하 1회 접종시', type: 'fixed', amount: 220000, desc: '2회 접종 필수' }, { id: 'opt-6102', name: '15세 이상 1회 접종시', type: 'fixed', amount: 220000, desc: '3회 접종 필수' }] },
-  { id: 'S7', short: '분류 미연결', alias: '예방접종', cat: { l1: '예방접종', l2: null, l3: null }, example: "상품명 '예방접종', 소분류 미설정 · '자궁경부암(가다실9가) 1회' 200,000 / '…3회' 570,000",
-    options: [{ id: 'opt-7101', name: '자궁경부암(가다실9가) 1회', type: 'fixed', amount: 200000 }, { id: 'opt-7102', name: '자궁경부암(가다실9가) 3회', type: 'fixed', amount: 570000 }] }
+  {
+    id: 'legacy', chip: '이전 방식 가격', alias: '가다실 9가 완납 패키지', cat: GADASIL,
+    example: "기존 옵션 3개 — '1회' 고정 220,000 / '2회 완납 시' 할인 500,000→450,000 / '3회 완납 시' 고정 550,000",
+    options: [{ id: 'opt-5101', name: '1회', type: 'fixed', amount: 220000 }, { id: 'opt-5102', name: '2회 완납 시', type: 'discount', original: 500000, sale: 450000 }, { id: 'opt-5103', name: '3회 완납 시', type: 'fixed', amount: 550000 }]
+  },
+  {
+    id: 'unlinked', chip: '분류 미연결', alias: '예방접종', cat: { l1: '예방접종', l2: null, l3: null },
+    example: "소분류 미설정 — '자궁경부암(가다실9가) 1회' 200,000 / '…3회' 570,000. 분류를 가다실 9가로 연결해야 규격 행이 생겨요.",
+    options: [{ id: 'opt-7101', name: '자궁경부암(가다실9가) 1회', type: 'fixed', amount: 200000 }, { id: 'opt-7102', name: '자궁경부암(가다실9가) 3회', type: 'fixed', amount: 570000 }]
+  },
+  {
+    id: 'legacy2', alias: '가다실 9가 접종', cat: GADASIL,
+    example: "기존 옵션 2개 — '1회' 고정 210,000 / '3회 (완납)' 고정 610,000",
+    options: [{ id: 'opt-1101', name: '1회', type: 'fixed', amount: 210000 }, { id: 'opt-1102', name: '3회 (완납)', type: 'fixed', amount: 610000 }]
+  },
+  {
+    id: 'legacy3', alias: '가다실 9가 상담', cat: GADASIL,
+    example: "기존 옵션 1개 — '가다실 9가 접종' 상담 후 결정",
+    options: [{ id: 'opt-4101', name: '가다실 9가 접종', type: 'consult' }]
+  }
 ];
+const CHIPS = EXAMPLES.filter((e) => e.chip);
 
 const nf = (v: string | number) => String(v).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 const digits = (s: string) => s.replace(/[^0-9]/g, '');
@@ -184,12 +207,166 @@ function TreeCol({ head, rows, sel, empty, onPick }: { head: string; rows: strin
   );
 }
 
-/* ============================ 카드 ============================ */
-function Editor({ sc, toast, onSaved }: { sc: Scenario; toast: (s: string) => void; onSaved: (v: boolean) => void }) {
-  const [cat, setCat] = useState<Cat>(sc.cat);
-  const [alias, setAlias] = useState(sc.alias);
-  const [spec, setSpec] = useState<Record<SlotKey, Price>>(() => (sc.spec ? { '1': { ...sc.spec['1'] }, '3': { ...sc.spec['3'] } } : emptySpec()));
-  const [legacy, setLegacy] = useState<Legacy[]>(sc.options);
+/* ============================ 목록 상태 ============================ */
+type Item = {
+  id: string; ex: Example | null; alias: string; cat: Cat; options: Legacy[]; spec: Record<SlotKey, Price> | null;
+  general?: { price: string; count: number; visible: boolean };
+};
+const seedItems = (): Item[] => [
+  { id: 'g1', ex: null, alias: '리쥬란 힐러', cat: { l1: '피부·미용', l2: '스킨부스터', l3: null }, options: [], spec: null, general: { price: '250,000원~', count: 2, visible: true } },
+  { id: 'g2', ex: null, alias: '물광주사', cat: { l1: '피부·미용', l2: '스킨부스터', l3: null }, options: [], spec: null, general: { price: '120,000원', count: 1, visible: true } },
+  { id: 'g3', ex: null, alias: '레이저 토닝', cat: { l1: '피부·미용', l2: '기미·색소·미백', l3: null }, options: [], spec: null, general: { price: '80,000원~', count: 2, visible: true } },
+  ...EXAMPLES.map((e) => ({
+    id: e.id, ex: e, alias: e.alias, cat: { ...e.cat }, options: e.options.map((o) => ({ ...o })),
+    spec: e.spec ? { '1': { ...e.spec['1'] }, '3': { ...e.spec['3'] } } : null
+  }))
+];
+const CAT_ORDER = ['피부·미용', '예방접종'];
+/** 추천 규격 불일치 = 소분류가 규격 상품(가다실 9가)인데 기존 자유 옵션이 남아 있는 상품. 분류 미연결은 제외. */
+const isLegacy = (it: Item) => it.cat.l3 === '가다실 9가' && it.options.length > 0;
+function listPrice(it: Item): { text: string; count: number } {
+  if (it.general) return { text: it.general.price, count: it.general.count };
+  const ps: Price[] = it.options.length
+    ? it.options.map((o) => ({ type: o.type, amount: String(o.amount ?? ''), original: String(o.original ?? ''), sale: String(o.sale ?? '') }))
+    : it.spec ? SLOTS.map(({ key }) => it.spec![key]).filter(isEntered) : [];
+  if (!ps.length) return { text: '가격 입력 전', count: 0 };
+  const nums = ps.filter((p) => p.type !== 'consult').map((p) => Number(p.type === 'discount' ? p.sale : p.amount)).filter((n) => n > 0);
+  if (!nums.length) return { text: '상담 후 결정', count: ps.length };
+  return { text: `${nf(Math.min(...nums))}원${ps.length > 1 ? '~' : ''}`, count: ps.length };
+}
+
+/* ============================ 아이콘(목록 · LNB) ============================ */
+const ChevronR = () => (<svg viewBox="0 0 12 12" fill="none"><path d="M4.5 2.5L8 6l-3.5 3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>);
+const ChevronD = () => (<svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8l3.5-3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>);
+const Back = () => (<svg viewBox="0 0 20 20" fill="none"><path d="M12 5l-5 5 5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>);
+const PlusIcon = () => (<svg viewBox="0 0 18 18" fill="none"><path d="M9 4v10M4 9h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>);
+const Handle = () => (<svg width="6" height="10" viewBox="0 0 6 10" fill="none"><rect width="2.25" height="2.30769" rx="1.125" fill="currentColor" /><rect x="3.75" width="2.25" height="2.30769" rx="1.125" fill="currentColor" /><rect y="3.84619" width="2.25" height="2.30769" rx="1.125" fill="currentColor" /><rect x="3.75" y="3.84619" width="2.25" height="2.30769" rx="1.125" fill="currentColor" /><rect y="7.69226" width="2.25" height="2.30769" rx="1.125" fill="currentColor" /><rect x="3.75" y="7.69226" width="2.25" height="2.30769" rx="1.125" fill="currentColor" /></svg>);
+const ThumbEmpty = () => (<svg viewBox="0 0 36 36" fill="none"><rect width="36" height="36" rx="6" fill="#F2F4F6" /><path d="M11 23l4.5-5 3 3.2L22 17l4 6" stroke="#B0B8C1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /><circle cx="14" cy="14" r="1.6" fill="#B0B8C1" /></svg>);
+const GdMark = () => (<svg viewBox="0 0 27 43" fill="none"><path d="M13.1516 36.3658C9.90902 36.3658 7.21826 33.9857 6.74251 30.8897H0.0390015C0.542057 37.65 6.2297 42.9981 13.1516 42.9981C20.0735 42.9981 25.7611 37.65 26.2642 30.8897H19.5587C19.0849 33.9857 16.3922 36.3658 13.1496 36.3658H13.1516Z" fill="#fff" /><path d="M26.2895 0H19.5197V6.61479H26.2895V0Z" fill="#41D293" /><path d="M13.1516 4.96207C5.90017 4.96207 0 10.832 0 18.0462C0 25.2603 5.90017 31.1302 13.1516 31.1302C20.403 31.1302 26.3032 25.2603 26.3032 18.0462C26.3032 10.832 20.403 4.96207 13.1516 4.96207ZM13.1516 24.498C9.5756 24.498 6.66646 21.6038 6.66646 18.0462C6.66646 14.4885 9.5756 11.5943 13.1516 11.5943C16.7276 11.5943 19.6367 14.4885 19.6367 18.0462C19.6367 21.6038 16.7276 24.498 13.1516 24.498V24.498Z" fill="#fff" /></svg>);
+const KkoMark = () => (<svg viewBox="0 0 20 20" fill="none"><rect width="20" height="20" rx="5" fill="#FEE500" /><path d="M10 5.1c-2.9 0-5.2 1.8-5.2 4 0 1.4.95 2.62 2.38 3.32-.1.36-.37 1.34-.42 1.55 0 0-.02.09.04.12.06.03.13 0 .13 0 .17-.02 1.9-1.28 2.2-1.5.29.04.58.06.87.06 2.9 0 5.2-1.8 5.2-4S12.9 5.1 10 5.1z" fill="#3C1E1E" /></svg>);
+const DelIcon = () => (<svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>);
+
+function SideNav() {
+  const N = ({ label, sub, active, beta, ex }: { label: string; sub?: boolean; active?: boolean; beta?: boolean; ex?: 'r' | 'd' }) => (
+    <button className={`cn-nav-item${sub ? ' sub' : ''}${active ? ' active' : ''}`}>
+      <span className="cn-nav-label-wrap"><span className="cn-nav-label">{label}</span>{beta && <span className="cn-beta">beta</span>}</span>
+      {ex && <span className="cn-chevron">{ex === 'r' ? <ChevronR /> : <ChevronD />}</span>}
+    </button>
+  );
+  return (
+    <nav className="cn-nav">
+      <div className="cn-nav-scroll">
+        <div className="cn-nav-group">
+          <div className="cn-nav-header">서비스 운영</div>
+          <N label="차트 접수·예약" ex="r" /><N label="진료 예약" beta ex="d" />
+          <N label="예약 신청 내역" sub /><N label="진료항목" sub active /><N label="진료 예약 설정" sub />
+          <N label="병원 약관" ex="r" />
+        </div>
+        <div className="cn-nav-divider"><span /></div>
+        <div className="cn-nav-group">
+          <div className="cn-nav-header">병원 홍보</div>
+          <N label="병원 검색 정보" ex="r" /><N label="병원 소식 알림" ex="r" />
+        </div>
+        <div className="cn-nav-divider"><span /></div>
+        <div className="cn-nav-group">
+          <div className="cn-nav-header">외부 플랫폼 연동</div>
+          <N label="카카오톡 예약하기" ex="r" /><N label="연동 설정" />
+        </div>
+      </div>
+      <div className="cn-nav-footer"><div className="cn-nav-divider"><span /></div><N label="고객센터" /><N label="환경 설정" /></div>
+    </nav>
+  );
+}
+
+/* ============================ 목록 ============================ */
+type ListUi = { onlyLegacy: boolean; cat: string };
+function ListView({ items, open, toast, ui, setUi }: { items: Item[]; open: (id: string) => void; toast: (s: string) => void; ui: ListUi; setUi: (u: ListUi) => void }) {
+  const { onlyLegacy, cat } = ui;
+  const setOnlyLegacy = (v: boolean) => setUi({ ...ui, onlyLegacy: v });
+  const setCat = (c: string) => setUi({ ...ui, cat: c });
+  const n = items.filter(isLegacy).length;
+  const filtering = onlyLegacy && n > 0;
+  const shown = filtering ? items.filter(isLegacy) : items;
+  const cats = CAT_ORDER.map((c) => ({ name: c, count: shown.filter((i) => i.cat.l1 === c).length })).filter((c) => c.count > 0);
+  const curCat = cats.some((c) => c.name === cat) ? cat : cats[0]?.name;
+  const rows = shown.filter((i) => i.cat.l1 === curCat);
+  const groups: { name: string; rows: Item[] }[] = [];
+  rows.forEach((r) => {
+    const g = r.cat.l2 || r.cat.l1; // 중분류 없는 상품(분류 미연결)은 대분류명 그룹
+    const hit = groups.find((x) => x.name === g);
+    if (hit) hit.rows.push(r); else groups.push({ name: g, rows: [r] });
+  });
+
+  return (
+    <main className="cn-main rg-main tk-main">
+      <div className="cn-header tk-list-header">
+        <div>
+          <div className="cn-header-title">진료항목</div>
+          <div className="tk-list-sub">굿닥에 노출되는 우리 병원 진료항목과 가격 정보를 관리할 수 있어요. 카카오톡 예약하기에서도 보이는지 여기서 확인해요.</div>
+        </div>
+        <button className="tk-btn-primary" onClick={() => toast('프로토 범위 밖이에요.')}><PlusIcon /> 새 진료항목</button>
+      </div>
+      <div className="tk-list-body">
+        {n > 0 && (
+          <div className="lr-summary">
+            <span>가격을 새 방식으로 다시 입력할 상품이 <b>{n}개</b> 있어요</span>
+            <button type="button" className="lr-summary-btn" onClick={() => setOnlyLegacy(!filtering)}>{filtering ? '전체 보기' : '모아 보기'}</button>
+          </div>
+        )}
+        <div className="tk-grid">
+          <div className="tk-grid-chead"><span className="tk-grid-title">카테고리</span></div>
+          <div className="tk-grid-ihead"><span className="tk-grid-title">{curCat}</span></div>
+          <nav className="tk-grid-clist" aria-label="진료항목 카테고리">
+            {cats.map((c) => (
+              <button key={c.name} className={`tk-cat${c.name === curCat ? ' sel' : ''}`} onClick={() => setCat(c.name)}>
+                <span className="tk-cat-handle"><Handle /></span><span className="tk-cat-name">{c.name}</span><span className="tk-cat-count">{c.count}</span>
+              </button>
+            ))}
+          </nav>
+          <section className="tk-grid-ilist">
+            {groups.map((g) => (
+              <div key={g.name} className="tk-l2">
+                <div className="tk-l2-head"><span className="tk-cat-handle"><Handle /></span><span className="tk-l2-name">{g.name}</span></div>
+                <div className="tk-l2-body">
+                  {g.rows.map((it) => {
+                    const lp = listPrice(it);
+                    const vis = it.general ? it.general.visible : true;
+                    return (
+                      <div key={it.id} className="tk-l3" data-id={it.id}>
+                        <span className="tk-l3-handle"><Handle /></span>
+                        <button className="tk-l3-detail" onClick={() => (it.ex ? open(it.id) : toast('프로토 범위 밖 상품이에요.'))}>
+                          <span className="tk-l3-name lr-name"><span className="lr-name-text">{it.alias}</span>{isLegacy(it) && <span className="lr-legacy-tag">이전 방식 가격</span>}</span>
+                          <span className="tk-l3-price"><span className="tk-l3-price-text">{lp.text}</span>{lp.count > 0 && <span className="tk-l3-optcount">{lp.count}</span>}</span>
+                          <span className="tk-l3-thumb"><ThumbEmpty /></span>
+                          <span className="tk-chans">
+                            <span className={`tk-chan tk-chan-gd${vis ? '' : ' dim'}`} title="굿닥에서 보임"><GdMark /></span>
+                            <span className="tk-chan tk-chan-kko dim" title="카카오톡 예약하기에서 안 보임"><KkoMark /></span>
+                          </span>
+                        </button>
+                        <span className={`tk-l3-visible${vis ? ' on' : ''}`}>{vis ? '노출중' : '미노출'}</span>
+                        <button className={`rg-toggle${vis ? '' : ' off'}`} aria-label="굿닥 노출 토글"><span className="rg-toggle-knob" /></button>
+                        <button className="tk-l3-del" aria-label="삭제"><DelIcon /></button>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="tk-l2-pad" />
+              </div>
+            ))}
+          </section>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+/* ============================ 수정 화면(필수 정보 카드만) ============================ */
+type Commit = { alias: string; cat: Cat; options: Legacy[]; spec: Record<SlotKey, Price> };
+function Editor({ item, toast, onCommit, onBack, onSaved }: { item: Item; toast: (s: string) => void; onCommit: (c: Commit) => void; onBack: () => void; onSaved: (v: boolean) => void }) {
+  const [cat, setCat] = useState<Cat>(item.cat);
+  const [alias, setAlias] = useState(item.alias);
+  const [spec, setSpec] = useState<Record<SlotKey, Price>>(() => (item.spec ? { '1': { ...item.spec['1'] }, '3': { ...item.spec['3'] } } : emptySpec()));
+  const [legacy, setLegacy] = useState<Legacy[]>(item.options);
   const [errors, setErrors] = useState<Errors>({});
   const linked = cat.l3 === '가다실 9가';
 
@@ -222,107 +399,126 @@ function Editor({ sc, toast, onSaved }: { sc: Scenario; toast: (s: string) => vo
       return;
     }
     // 저장 성공 — 기존 옵션은 새 규격으로 대체된다. 빈 행은 저장하지 않으므로 기본값으로 되돌린다.
+    const clean = { '1': isEntered(spec['1']) ? spec['1'] : emptyPrice(), '3': isEntered(spec['3']) ? spec['3'] : emptyPrice() };
     setLegacy([]);
-    setSpec((s) => ({ '1': isEntered(s['1']) ? s['1'] : emptyPrice(), '3': isEntered(s['3']) ? s['3'] : emptyPrice() }));
+    setSpec(clean);
+    onCommit({ alias, cat, options: [], spec: clean });
     onSaved(true);
     toast('저장했어요.');
   };
 
   return (
-    <>
-      <main className="cn-main rg-main tk-main lr-main">
-        <div className="rg-container">
-          <div className="rg-form">
-            <section className="rg-card required">
-              <div className="rg-group-title">필수 정보</div>
-              <div className="rg-field sep-category">
-                <div className="rg-field-head">
-                  <span className="rg-label">진료항목 분류</span>
-                  <span className="rg-help">예약받을 진료항목의 분류를 선택해 주세요. 이전 분류를 고르면 다음 분류가 나타나요.</span>
-                </div>
-                <div className="tt-search-wrap"><div className="tt-search">
-                  <input className="tt-search-input" aria-label="분류 검색" placeholder="진료명이나 제품명을 검색해 주세요. (예: 독감, 가다실)" readOnly />
-                  <span className="tt-search-ic"><SearchIcon /></span>
-                </div></div>
-                <div className="tt-tree">
-                  <TreeCol head="대분류" rows={TREE_L1} sel={cat.l1} onPick={pickL1} />
-                  <TreeCol head="중분류" rows={TREE_L2} sel={cat.l2} onPick={pickL2} />
-                  <TreeCol head="소분류" rows={cat.l2 ? TREE_L3[cat.l2] || [] : []} sel={cat.l3} empty="중분류를 고르면 소분류가 나타나요." onPick={pickL3} />
+    <main className="cn-main rg-main tk-main lr-main">
+      <div className="cn-header tk-form-header">
+        <button className="tk-back" onClick={onBack}><Back /> 목록</button>
+        <div className="rg-eyebrow">진료항목 <span className="sep-preview-label">검토용 시안 · 실제 서비스 아님</span></div>
+        <div className="cn-header-title">진료항목 정보</div>
+      </div>
+      <div className="rg-container">
+        <div className="rg-form">
+          <section className="rg-card required">
+            <div className="rg-group-title">필수 정보</div>
+            <div className="rg-field sep-category">
+              <div className="rg-field-head">
+                <span className="rg-label">진료항목 분류</span>
+                <span className="rg-help">예약받을 진료항목의 분류를 선택해 주세요. 이전 분류를 고르면 다음 분류가 나타나요.</span>
+              </div>
+              <div className="tt-search-wrap"><div className="tt-search">
+                <input className="tt-search-input" aria-label="분류 검색" placeholder="진료명이나 제품명을 검색해 주세요. (예: 독감, 가다실)" readOnly />
+                <span className="tt-search-ic"><SearchIcon /></span>
+              </div></div>
+              <div className="tt-tree">
+                <TreeCol head="대분류" rows={TREE_L1} sel={cat.l1} onPick={pickL1} />
+                <TreeCol head="중분류" rows={TREE_L2} sel={cat.l2} onPick={pickL2} />
+                <TreeCol head="소분류" rows={cat.l2 ? TREE_L3[cat.l2] || [] : []} sel={cat.l3} empty="중분류를 고르면 소분류가 나타나요." onPick={pickL3} />
+              </div>
+            </div>
+
+            <div className="rg-field alias">
+              <div className="rg-field-head"><span className="rg-label">진료항목명</span><span className="rg-help">굿닥 이용자에게 보여질 이름을 입력해 주세요.</span></div>
+              <input aria-label="진료항목명" className="rg-input" placeholder="예) 가다실 9가 접종, 영유아 검진" maxLength={50} value={alias} onChange={(e) => setAlias(e.target.value)} />
+              <div className="rg-extra"><div className="rg-counter"><span className="rg-counter-num">{alias.length}</span>/50자</div></div>
+            </div>
+
+            <div className="rg-field price">
+              <div className="tc-price-head">
+                <div className="rg-field-head"><span className="rg-label">가격 정보</span>
+                  <span className="rg-help">{linked ? '취급하는 항목에만 가격을 입력해 주세요. 가격을 넣은 항목만 이용자에게 보여져요.' : '이용자에게 보여줄 가격 정보를 설정해 주세요. (예: 횟수별, 시술명별 등)'}</span>
                 </div>
               </div>
 
-              <div className="rg-field alias">
-                <div className="rg-field-head"><span className="rg-label">진료항목명</span><span className="rg-help">굿닥 이용자에게 보여질 이름을 입력해 주세요.</span></div>
-                <input aria-label="진료항목명" className="rg-input" placeholder="예) 가다실 9가 접종, 영유아 검진" maxLength={50} value={alias} onChange={(e) => setAlias(e.target.value)} />
-                <div className="rg-extra"><div className="rg-counter"><span className="rg-counter-num">{alias.length}</span>/50자</div></div>
-              </div>
-
-              <div className="rg-field price">
-                <div className="tc-price-head">
-                  <div className="rg-field-head"><span className="rg-label">가격 정보</span>
-                    <span className="rg-help">{linked ? '취급하는 항목에만 가격을 입력해 주세요. 가격을 넣은 항목만 이용자에게 보여져요.' : '이용자에게 보여줄 가격 정보를 설정해 주세요. (예: 횟수별, 시술명별 등)'}</span>
+              {legacy.length > 0 && (
+                <div className="lr-ro">
+                  <div className="lr-ro-head">
+                    <span className="lr-ro-title">기존 가격 옵션</span>
+                    <span className="rg-help">{linked ? '이전 방식으로 등록한 가격이에요. 수정할 수 없어요. 아래 항목에 가격을 다시 입력해 저장해 주세요.' : '이전 방식으로 등록한 가격이에요. 수정할 수 없어요.'}</span>
                   </div>
+                  <div className="rg-price-list">{legacy.map((o) => <LegacyRow key={o.id} o={o} />)}</div>
                 </div>
+              )}
 
-                {legacy.length > 0 && (
-                  <div className="lr-ro">
-                    <div className="lr-ro-head">
-                      <span className="lr-ro-title">기존 가격 옵션</span>
-                      <span className="rg-help">{linked ? '이전 방식으로 등록한 가격이에요. 수정할 수 없어요. 아래 항목에 가격을 다시 입력해 저장해 주세요.' : '이전 방식으로 등록한 가격이에요. 수정할 수 없어요.'}</span>
-                    </div>
-                    <div className="rg-price-list">{legacy.map((o) => <LegacyRow key={o.id} o={o} />)}</div>
-                  </div>
-                )}
-
-                {linked && (
-                  <div className="lr-slots">
-                    {SLOTS.map(({ key, label }) => {
-                      const p = spec[key];
-                      return (
-                        <div key={key} className="lr-slot">
-                          <div className="lr-slot-label">{label}</div>
-                          <div className="rg-price-entry">
-                            <TypeSelect value={p.type} onChange={(t) => setSlot(key, { type: t })} />
-                            {p.type === 'fixed' && (<><Num value={p.amount} ph="0" err={errors[`${key}-amount`]} onChange={(v) => setSlot(key, { amount: v }, 'amount')} /><span className="rg-unit">원</span></>)}
-                            {p.type === 'discount' && (<>
-                              <Num value={p.original} ph="정상가" err={errors[`${key}-original`]} onChange={(v) => setSlot(key, { original: v }, 'original')} />
-                              <span className="rg-price-arrow">→</span>
-                              <Num value={p.sale} ph="판매가" err={errors[`${key}-sale`]} onChange={(v) => setSlot(key, { sale: v }, 'sale')} />
-                              <span className="rg-unit">원</span>
-                            </>)}
-                            {p.type === 'consult' && (<><input className="rg-num" disabled readOnly aria-label="상담 후 결정" value="0" /><span className="rg-unit">원</span></>)}
-                          </div>
+              {linked && (
+                <div className="lr-slots">
+                  {SLOTS.map(({ key, label }) => {
+                    const p = spec[key];
+                    return (
+                      <div key={key} className="lr-slot">
+                        <div className="lr-slot-label">{label}</div>
+                        <div className="rg-price-entry">
+                          <TypeSelect value={p.type} onChange={(t) => setSlot(key, { type: t })} />
+                          {p.type === 'fixed' && (<><Num value={p.amount} ph="0" err={errors[`${key}-amount`]} onChange={(v) => setSlot(key, { amount: v }, 'amount')} /><span className="rg-unit">원</span></>)}
+                          {p.type === 'discount' && (<>
+                            <Num value={p.original} ph="정상가" err={errors[`${key}-original`]} onChange={(v) => setSlot(key, { original: v }, 'original')} />
+                            <span className="rg-price-arrow">→</span>
+                            <Num value={p.sale} ph="판매가" err={errors[`${key}-sale`]} onChange={(v) => setSlot(key, { sale: v }, 'sale')} />
+                            <span className="rg-unit">원</span>
+                          </>)}
+                          {p.type === 'consult' && (<><input className="rg-num" disabled readOnly aria-label="상담 후 결정" value="0" /><span className="rg-unit">원</span></>)}
                         </div>
-                      );
-                    })}
-                    {errors.group && <p className="rg-error lr-group-error" role="alert">{errors.group}</p>}
-                  </div>
-                )}
-              </div>
-            </section>
-          </div>
+                      </div>
+                    );
+                  })}
+                  {errors.group && <p className="rg-error lr-group-error" role="alert">{errors.group}</p>}
+                </div>
+              )}
+            </div>
+          </section>
         </div>
-        <div className="rg-footer">
-          <div className="rg-footer-left">
-            <button className="rg-btn-cancel">취소</button>
-            <button className="rg-btn-save" onClick={save}>저장</button>
-          </div>
+      </div>
+      <div className="rg-footer">
+        <div className="rg-footer-left">
+          <button className="rg-btn-cancel" onClick={onBack}>취소</button>
+          <button className="rg-btn-save" onClick={save}>저장</button>
         </div>
-      </main>
-    </>
+      </div>
+    </main>
   );
 }
 
-/* ============================ 페이지 ============================ */
+/* ============================ 페이지 · 라우팅 ============================ */
+const parseHash = (): { view: 'list' } | { view: 'edit'; id: string } => {
+  const m = /^#\/items\/([a-z0-9-]+)$/.exec(window.location.hash);
+  return m ? { view: 'edit', id: m[1] } : { view: 'list' };
+};
+
 export default function Page() {
-  const [sid, setSid] = useState('S1');
+  const [items, setItems] = useState<Item[]>(seedItems);
+  const [route, setRoute] = useState(parseHash);
   const [resetKey, setResetKey] = useState(0);
   const [saved, setSaved] = useState(false);
+  // 목록의 모아 보기·카테고리 선택은 수정 화면을 다녀와도 유지한다
+  const [listUi, setListUi] = useState<ListUi>({ onlyLegacy: false, cat: '예방접종' });
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const timer = useRef<number | undefined>(undefined);
   const tbRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
-  const sc = SCENARIOS.find((s) => s.id === sid)!;
+
+  useEffect(() => {
+    if (!/^#\/items/.test(window.location.hash)) window.history.replaceState(null, '', '#/items');
+    const h = () => { setRoute(parseHash()); setSaved(false); window.scrollTo(0, 0); };
+    window.addEventListener('hashchange', h);
+    return () => window.removeEventListener('hashchange', h);
+  }, []);
 
   useLayoutEffect(() => {
     const tb = tbRef.current; const root = rootRef.current;
@@ -338,31 +534,46 @@ export default function Page() {
     window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => setToastMsg(null), 2400);
   };
-  const pick = (id: string) => { setSid(id); setSaved(false); setResetKey((k) => k + 1); };
+  const go = (hash: string) => { window.location.hash = hash; };
+  const reset = () => { setItems(seedItems()); setSaved(false); setListUi({ onlyLegacy: false, cat: '예방접종' }); setResetKey((k) => k + 1); };
+
+  const editItem = route.view === 'edit' ? items.find((i) => i.id === route.id && i.ex) : undefined;
+  const ex = editItem ? editItem.ex : null;
 
   return (
     <div className="lr-root" ref={rootRef}>
       <div className="lr-toolbar" ref={tbRef}>
         <div className="lr-tb-row">
           <span className="lr-tb-badge">PROTOTYPE</span>
-          <span className="lr-tb-title">구 버전 상품 → 추천 규격 다시 입력 <em>ti-legacy-readonly v0.1</em></span>
+          <span className="lr-tb-title">구 버전 상품 → 추천 규격 다시 입력 <em>ti-legacy-readonly v0.2</em></span>
           <span className="lr-tb-sp" />
-          <span className={`lr-tb-state${saved ? ' on' : ''}`}>{saved ? '저장 후' : '저장 전'}</span>
-          <button type="button" className="lr-tb-btn" onClick={() => pick(sid)}>처음 상태로</button>
+          {editItem && <span className={`lr-tb-state${saved ? ' on' : ''}`}>{saved ? '저장 후' : '저장 전'}</span>}
+          <button type="button" className="lr-tb-btn" onClick={reset}>처음 상태로</button>
         </div>
-        <div className="lr-tb-row">
-          <span className="lr-tb-label">상품</span>
-          <div className="lr-chips">
-            {SCENARIOS.map((s) => (
-              <button key={s.id} type="button" className={`lr-chip${s.id === sid ? ' on' : ''}${s.id === 'S0' ? ' ok' : ''}`} onClick={() => pick(s.id)} title={s.example}>
-                <b>{s.id}</b> {s.short}
-              </button>
-            ))}
+        {editItem && ex && (<>
+          <div className="lr-tb-row">
+            <span className="lr-tb-label">상품</span>
+            <div className="lr-chips">
+              {CHIPS.map((c) => (
+                <button key={c.id} type="button" className={`lr-chip${c.id === ex.id ? ' on' : ''}`} onClick={() => go(`#/items/${c.id}`)} title={c.example}>{c.chip}</button>
+              ))}
+            </div>
+          </div>
+          <div className="lr-tb-row"><span className="lr-tb-label" /><span className="lr-tb-example">{ex.example}</span></div>
+        </>)}
+      </div>
+
+      <div className="cn-artboard">
+        <div className="cn-screen">
+          <div className="cn-body">
+            <SideNav />
+            {editItem
+              ? <Editor key={`${editItem.id}-${resetKey}`} item={editItem} toast={toast} onSaved={setSaved} onBack={() => go('#/items')}
+                  onCommit={(c) => setItems((xs) => xs.map((x) => (x.id === editItem.id ? { ...x, ...c } : x)))} />
+              : <ListView key={resetKey} items={items} open={(id) => go(`#/items/${id}`)} toast={toast} ui={listUi} setUi={setListUi} />}
           </div>
         </div>
-        <div className="lr-tb-row"><span className="lr-tb-label" /><span className="lr-tb-example"><b>{sc.id}</b> {sc.example}</span></div>
       </div>
-      <Editor key={`${sid}-${resetKey}`} sc={sc} toast={toast} onSaved={setSaved} />
       {toastMsg && <div className="lr-toast" role="status">{toastMsg}</div>}
     </div>
   );

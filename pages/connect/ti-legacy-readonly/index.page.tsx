@@ -4,7 +4,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
  * ┌─ 프로토타입 컨텍스트 ───────────────────────────────────
  * 이름     : ti-legacy-readonly — 구 버전 상품을 추천 규격으로 다시 입력받기 (병원 어드민 · 진료항목 목록 + 수정)
  *            예시 = 가다실 9가(규격 행 1회 접종 / 3회 접종). ti-legacy-spec(3안 비교)에서 세화님이 고른 방향 하나만 구현한다.
- * 상태     : 탐색(draft)   버전: v0.2   최종수정: 2026-10-14
+ * 상태     : 탐색(draft)   버전: v0.4   최종수정: 2026-10-14
  * PRD      : 미발행. 짝 화면 = 트리판 진료항목 목록·등록(out/treatment-create-tree.html)의 추천 항목 규격 행.
  * 배포URL  : 미배포 (로컬 out/ti-legacy-readonly.html 만 있음)
  * 관련 CSS : tiLegacySpecTree.css (트리판 out HTML 패치 <style> 사본 · ti-legacy-spec 과 공유 · 직접 수정 금지)
@@ -13,13 +13,13 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
  *
  * 화면구성 : 상단 프로토 툴바 + 커넥트 셸(LNB) 안에 두 화면.
  *            ① 목록(#/items) — 라이브 트리판 목록과 같은 카테고리 2열 그리드. 테이블 위 요약 한 줄
- *               "가격을 새 방식으로 다시 입력할 상품이 N개 있어요" + [모아 보기]/[전체 보기]. N=0 이면 숨김.
- *               추천 규격 불일치 상품은 이름 옆 회색 태그 `이전 방식 가격`. 분류 미연결 상품은 태그·N 에서 제외.
+ *               요약 줄 없음. 추천 규격 불일치 상품은 이름 옆 회색 태그 `가격 재입력 필요`만 붙는다. 분류 미연결 상품은 태그 없음.
+ *               처음에는 라이브처럼 첫 카테고리(피부·미용)로 연다.
  *               툴바는 `처음 상태로`만.
  *            ② 수정(#/items/<id>) — 본문은 필수 정보 카드만(분류 트리 · 진료항목명 · 가격 정보) + 하단 [취소/저장].
  *               가격 정보 = 기존 가격 옵션(read-only, 수정·삭제 불가) + 추천 규격 행(빈 상태). 저장 성공 시 기존 영역이 사라진다.
- *               툴바 칩 3개(새 규격 상품 / 이전 방식 가격 / 분류 미연결)로 예시 상품을 오간다.
- *            목록 시드 = 새 규격 1 · 이전 방식 가격 3 · 분류 미연결 1 · 일반(피부·미용) 3. 저장 결과는 목록 상태에 반영된다(세션 내).
+ *               툴바 칩 3개(새 규격 상품 / 가격 재입력 필요 / 분류 미연결)로 예시 상품을 오간다.
+ *            목록 시드 = 새 규격 1 · 가격 재입력 필요 3 · 분류 미연결 1 · 일반(피부·미용) 3. 저장 결과는 목록 상태에 반영된다(세션 내).
  *
  * 핵심 결정 (why):
  *   [확정·세화님] 기존 옵션은 read-only 로 남겨 값을 보여 주고, 아래 추천 규격 행은 비워 둔다(자동 채움 없음). (2026-10-14)
@@ -27,7 +27,16 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
  *                (상담 후 결정은 금액 없이 유효). 저장 성공 시 기존 옵션은 새 규격으로 대체된다. (2026-10-14)
  *   [확정·세화님] 옮겨 적기 보조(금액 복사 등)는 넣지 않는다.
  *   [확정·세화님] 예시는 3종으로 충분하다 — read-only 방식에서는 이름 회차·설명 회차·2회 등 기존 데이터 모양과 무관하게 동작이 같다. (2026-10-14)
- *   [확정·세화님] 목록 태그는 회색(트리판 옵션 수 배지와 같은 스타일), 문구 `이전 방식 가격`. 분류 미연결은 표시하지 않는다. (2026-10-14)
+ *   [확정·세화님] 목록 태그는 회색(트리판 옵션 수 배지와 같은 스타일). 분류 미연결은 표시하지 않는다. (2026-10-14)
+ *   [확정·세화님] 태그는 상태가 아닌 할 일로 명명 — `이전 방식 가격` → `가격 재입력 필요`. 수정 화면 안내·툴바 칩에서도 `이전 방식` 표현을 뺀다. (2026-10-14)
+ *   [확정·세화님] 모아 보기 제거 — 병원당 대상이 적고 예방접종 한 카테고리에 몰려 있어 오버스펙.
+ *                (2026-10-14)
+ *   [확정·세화님] 목록 상단 요약 줄 제거 — 기존 상품은 내부에서 일괄 정리할 예정이고 병원 화면은 남는 소수를 위한 안전망이라 행 태그로 충분하다. (2026-10-14)
+ *   [확정·세화님] 규격 행 설명 칸 추가 불가(이미 개발됨) → 저장 직전 확인창 유무 비교. 툴바 세그먼트 [확인창 없음 | 확인창 있음](기본 없음),
+ *                `?confirm=1` 로 있음 상태 공유. 있음 = 유효성 통과 후 설명 있는 기존 옵션이 1개 이상이면 모달
+ *                (제목 `기존 옵션의 설명은 저장되지 않아요`, 옵션명 · 설명 목록 + 옮겨 적기 안내, [돌아가기]/[저장]). (2026-10-14)
+ *   [유지·자체] 확인 모달은 트리판 가격 초기화 모달(.sep-dialog.sep-convert, 560 · radius 16 · 버튼 sep-mbtn)과 같은 마크업. [돌아가기] = 닫기만, 입력값 유지.
+ *              ESC 도 [돌아가기]와 같다. 확인창 상태는 목록·수정 화면을 오가도 유지된다.
  *   [유지·자체] 행 단위 검증은 트리판 라이브 규칙을 그대로 쓴다 — 고정 가격 금액 없음/0 = `가격을 입력해 주세요.`,
  *              할인 정상가·판매가 각각 같은 문구, 판매가 ≥ 정상가 = `정상가보다 낮은 가격을 입력해 주세요.`,
  *              판매가 < 정상가×0.51 = `최대 49%까지 할인할 수 있어요.\n(N원 초과)`. 에러는 칸 아래(rg-num-wrap > rg-error), 칸은 빨간 테두리.
@@ -37,20 +46,24 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
  *   [유지·자체] 에러는 해당 칸을 고치면 그 칸만 지운다. 묶음 에러는 아무 행이나 고치면 지운다.
  *   [유지·자체] read-only 영역 이름은 `기존 가격 옵션`, 안내 1줄. 드래그 핸들·삭제(X)는 렌더하지 않는다.
  *   [유지·자체] 분류 미연결 상품은 분류 트리에서 HPV 백신 → 가다실 9가를 직접 골라야 연결된다(제안 배너 없음). 범위 밖 분류는 토스트만.
- *   [유지·자체] 목록 기본 카테고리는 예방접종(가다실 상품이 바로 보이게). 모아 보기 중에는 태그 상품이 있는 카테고리만 남기고 건수도 필터 기준.
+ *   [폐기]      목록 기본 카테고리를 예방접종으로 열던 판단(v0.2) — 철회, 라이브처럼 첫 카테고리. (2026-10-14)
  *   [유지·자체] 중분류가 없는 상품(분류 미연결)은 목록에서 대분류명(예방접종) 그룹 아래에 둔다. 라이브의 미분류 표시는 확인하지 못했다.
  *   [유지·자체] 목록 가격 = 기존 옵션(또는 규격 행) 중 최저가, 2개 이상이면 `~`, 전부 상담이면 `상담 후 결정`. 옆 숫자는 옵션·행 수.
  *   [유지·자체] 일반 상품·새 진료항목 버튼·노출 토글·삭제는 표시만(누르면 범위 밖 토스트 또는 무동작).
  *   [유지·자체] 저장 후에도 수정 화면에 머문다(트리판 동작 미확인). 목록 복귀는 `목록`·`취소`. 취소는 저장 안 한 입력을 버린다.
  *   [유지·자체] 저장 전/후 표시는 툴바와 토스트로만 한다.
- *   [유지·자체] 모아 보기·선택 카테고리는 수정 화면을 다녀와도 유지한다(하나씩 처리하는 흐름). N=0 이 되면 필터는 자동으로 풀린다.
+ *   [유지·자체] 선택 카테고리는 수정 화면을 다녀와도 유지한다(저장 후 돌아와 태그가 사라진 것을 바로 보도록).
+ *   [유지·자체] 분류 미연결 상품의 read-only 안내는 규격 행이 없어 `기존에 등록한 가격이에요. 수정할 수 없어요.`로 둔다.
  *
  * 보류 · TODO:
  *   [보류] 분류 미연결 상품을 연결 전에 저장하면 어떻게 할지 미정 — 지금은 프로토 토스트로 "미정"만 알리고 아무것도 하지 않는다.
- *   [보류] 기존 옵션의 설명은 규격 행에 받을 칸이 없어 저장 후 사라진다. 처리 방식 미정.
+ *   [보류] 기존 옵션 설명이 저장 후 사라지는 것을 확인창으로 알릴지 — 있음/없음 비교 중(v0.4).
  *   [보류] 기존 가격 옵션 박스 톤 · 저장 결과 경고 문구 · 목록의 기한/노출 정책 문구 — 세화님 미결정, 넣지 않음.
  *
  * 변경 이력:
+ *   v0.4  2026-10-14 — 저장 직전 확인창 있음/없음 비교(툴바 세그먼트 · ?confirm=1 · 설명 손실 확인 모달). 시드 2개 상품 옵션에 설명 추가.
+ *   v0.3  2026-10-14 — 태그 `가격 재입력 필요`로 변경, 모아 보기·필터와 요약 줄 제거(목록은 행 태그만), 첫 카테고리로 열기,
+ *                      기존 가격 옵션 안내·툴바 칩에서 `이전 방식` 표현 제거.
  *   v0.2  2026-10-14 — 진료항목 목록 화면 추가(LNB 셸, 요약 줄 · 모아 보기 · 회색 태그, 해시 라우팅, 저장 결과 목록 반영).
  *                      예시를 S0~S7 → 3종(새 규격 / 이전 방식 가격 / 분류 미연결)으로 줄이고 나머지 시나리오 데이터·칩 삭제.
  *   v0.1  2026-10-14 — 신규. read-only 기존 옵션 + 빈 규격 행 + 저장 검증 + 저장 후 상태(필수 정보 카드만).
@@ -81,9 +94,9 @@ const EXAMPLES: Example[] = [
     spec: { '1': { type: 'fixed', amount: '230000', original: '', sale: '' }, '3': { type: 'discount', amount: '', original: '690000', sale: '650000' } }
   },
   {
-    id: 'legacy', chip: '이전 방식 가격', alias: '가다실 9가 완납 패키지', cat: GADASIL,
-    example: "기존 옵션 3개 — '1회' 고정 220,000 / '2회 완납 시' 할인 500,000→450,000 / '3회 완납 시' 고정 550,000",
-    options: [{ id: 'opt-5101', name: '1회', type: 'fixed', amount: 220000 }, { id: 'opt-5102', name: '2회 완납 시', type: 'discount', original: 500000, sale: 450000 }, { id: 'opt-5103', name: '3회 완납 시', type: 'fixed', amount: 550000 }]
+    id: 'legacy', chip: '가격 재입력 필요', alias: '가다실 9가 완납 패키지', cat: GADASIL,
+    example: "기존 옵션 3개(설명 2개) — '1회' 고정 220,000 / '2회 완납 시' 할인 500,000→450,000(설명 '2회 접종 필수') / '3회 완납 시' 고정 550,000(설명 '3회 (0,2,6개월)')",
+    options: [{ id: 'opt-5101', name: '1회', type: 'fixed', amount: 220000 }, { id: 'opt-5102', name: '2회 완납 시', type: 'discount', original: 500000, sale: 450000, desc: '2회 접종 필수' }, { id: 'opt-5103', name: '3회 완납 시', type: 'fixed', amount: 550000, desc: '3회 (0,2,6개월)' }]
   },
   {
     id: 'unlinked', chip: '분류 미연결', alias: '예방접종', cat: { l1: '예방접종', l2: null, l3: null },
@@ -92,12 +105,12 @@ const EXAMPLES: Example[] = [
   },
   {
     id: 'legacy2', alias: '가다실 9가 접종', cat: GADASIL,
-    example: "기존 옵션 2개 — '1회' 고정 210,000 / '3회 (완납)' 고정 610,000",
-    options: [{ id: 'opt-1101', name: '1회', type: 'fixed', amount: 210000 }, { id: 'opt-1102', name: '3회 (완납)', type: 'fixed', amount: 610000 }]
+    example: "기존 옵션 2개(설명 1개) — '1회' 고정 210,000(설명 '진료비 포함 금액입니다') / '3회 (완납)' 고정 610,000",
+    options: [{ id: 'opt-1101', name: '1회', type: 'fixed', amount: 210000, desc: '진료비 포함 금액입니다' }, { id: 'opt-1102', name: '3회 (완납)', type: 'fixed', amount: 610000 }]
   },
   {
     id: 'legacy3', alias: '가다실 9가 상담', cat: GADASIL,
-    example: "기존 옵션 1개 — '가다실 9가 접종' 상담 후 결정",
+    example: "기존 옵션 1개(설명 없음) — '가다실 9가 접종' 상담 후 결정. 확인창 있음이어도 바로 저장되는 대조군",
     options: [{ id: 'opt-4101', name: '가다실 9가 접종', type: 'consult' }]
   }
 ];
@@ -279,17 +292,10 @@ function SideNav() {
 }
 
 /* ============================ 목록 ============================ */
-type ListUi = { onlyLegacy: boolean; cat: string };
-function ListView({ items, open, toast, ui, setUi }: { items: Item[]; open: (id: string) => void; toast: (s: string) => void; ui: ListUi; setUi: (u: ListUi) => void }) {
-  const { onlyLegacy, cat } = ui;
-  const setOnlyLegacy = (v: boolean) => setUi({ ...ui, onlyLegacy: v });
-  const setCat = (c: string) => setUi({ ...ui, cat: c });
-  const n = items.filter(isLegacy).length;
-  const filtering = onlyLegacy && n > 0;
-  const shown = filtering ? items.filter(isLegacy) : items;
-  const cats = CAT_ORDER.map((c) => ({ name: c, count: shown.filter((i) => i.cat.l1 === c).length })).filter((c) => c.count > 0);
+function ListView({ items, open, toast, cat, setCat }: { items: Item[]; open: (id: string) => void; toast: (s: string) => void; cat: string; setCat: (c: string) => void }) {
+  const cats = CAT_ORDER.map((c) => ({ name: c, count: items.filter((i) => i.cat.l1 === c).length })).filter((c) => c.count > 0);
   const curCat = cats.some((c) => c.name === cat) ? cat : cats[0]?.name;
-  const rows = shown.filter((i) => i.cat.l1 === curCat);
+  const rows = items.filter((i) => i.cat.l1 === curCat);
   const groups: { name: string; rows: Item[] }[] = [];
   rows.forEach((r) => {
     const g = r.cat.l2 || r.cat.l1; // 중분류 없는 상품(분류 미연결)은 대분류명 그룹
@@ -307,12 +313,6 @@ function ListView({ items, open, toast, ui, setUi }: { items: Item[]; open: (id:
         <button className="tk-btn-primary" onClick={() => toast('프로토 범위 밖이에요.')}><PlusIcon /> 새 진료항목</button>
       </div>
       <div className="tk-list-body">
-        {n > 0 && (
-          <div className="lr-summary">
-            <span>가격을 새 방식으로 다시 입력할 상품이 <b>{n}개</b> 있어요</span>
-            <button type="button" className="lr-summary-btn" onClick={() => setOnlyLegacy(!filtering)}>{filtering ? '전체 보기' : '모아 보기'}</button>
-          </div>
-        )}
         <div className="tk-grid">
           <div className="tk-grid-chead"><span className="tk-grid-title">카테고리</span></div>
           <div className="tk-grid-ihead"><span className="tk-grid-title">{curCat}</span></div>
@@ -335,7 +335,7 @@ function ListView({ items, open, toast, ui, setUi }: { items: Item[]; open: (id:
                       <div key={it.id} className="tk-l3" data-id={it.id}>
                         <span className="tk-l3-handle"><Handle /></span>
                         <button className="tk-l3-detail" onClick={() => (it.ex ? open(it.id) : toast('프로토 범위 밖 상품이에요.'))}>
-                          <span className="tk-l3-name lr-name"><span className="lr-name-text">{it.alias}</span>{isLegacy(it) && <span className="lr-legacy-tag">이전 방식 가격</span>}</span>
+                          <span className="tk-l3-name lr-name"><span className="lr-name-text">{it.alias}</span>{isLegacy(it) && <span className="lr-legacy-tag">가격 재입력 필요</span>}</span>
                           <span className="tk-l3-price"><span className="tk-l3-price-text">{lp.text}</span>{lp.count > 0 && <span className="tk-l3-optcount">{lp.count}</span>}</span>
                           <span className="tk-l3-thumb"><ThumbEmpty /></span>
                           <span className="tk-chans">
@@ -362,7 +362,29 @@ function ListView({ items, open, toast, ui, setUi }: { items: Item[]; open: (id:
 
 /* ============================ 수정 화면(필수 정보 카드만) ============================ */
 type Commit = { alias: string; cat: Cat; options: Legacy[]; spec: Record<SlotKey, Price> };
-function Editor({ item, toast, onCommit, onBack, onSaved }: { item: Item; toast: (s: string) => void; onCommit: (c: Commit) => void; onBack: () => void; onSaved: (v: boolean) => void }) {
+/** 저장 직전 확인 — 트리판 가격 초기화 모달과 같은 마크업 */
+function LossDialog({ items, onClose, onConfirm }: { items: Legacy[]; onClose: () => void; onConfirm: () => void }) {
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => { ref.current?.showModal(); }, []);
+  return (
+    <dialog ref={ref} className="sep-dialog sep-convert" aria-labelledby="lr-loss-title" onCancel={(e) => { e.preventDefault(); onClose(); }}>
+      <div className="sep-convert-text">
+        <h2 id="lr-loss-title">기존 옵션의 설명은 저장되지 않아요</h2>
+        <div className="sep-convert-body">
+          <ul className="lr-loss-list">{items.map((o) => <li key={o.id}>{o.name} · {o.desc}</li>)}</ul>
+          <p>필요한 내용은 상세 소개나 유의사항에 옮겨 적어 주세요.</p>
+        </div>
+      </div>
+      <div className="sep-convert-foot">
+        <button type="button" autoFocus className="sep-mbtn cancel" onClick={onClose}>돌아가기</button>
+        <button type="button" className="sep-mbtn primary" onClick={onConfirm}>저장</button>
+      </div>
+    </dialog>
+  );
+}
+
+function Editor({ item, toast, onCommit, onBack, onSaved, confirmMode }: { item: Item; toast: (s: string) => void; onCommit: (c: Commit) => void; onBack: () => void; onSaved: (v: boolean) => void; confirmMode: boolean }) {
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [cat, setCat] = useState<Cat>(item.cat);
   const [alias, setAlias] = useState(item.alias);
   const [spec, setSpec] = useState<Record<SlotKey, Price>>(() => (item.spec ? { '1': { ...item.spec['1'] }, '3': { ...item.spec['3'] } } : emptySpec()));
@@ -398,6 +420,13 @@ function Editor({ item, toast, onCommit, onBack, onSaved }: { item: Item; toast:
       requestAnimationFrame(() => (document.querySelector('.rg-num.error, .lr-group-error') as HTMLElement | null)?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
       return;
     }
+    // 확인창 있음: 설명이 있는 기존 옵션이 하나라도 있으면 저장 전에 확인받는다(유효성 통과 뒤에만).
+    if (confirmMode && legacy.some((o) => o.desc)) { setConfirmOpen(true); return; }
+    commit();
+  };
+
+  const commit = () => {
+    setConfirmOpen(false);
     // 저장 성공 — 기존 옵션은 새 규격으로 대체된다. 빈 행은 저장하지 않으므로 기본값으로 되돌린다.
     const clean = { '1': isEntered(spec['1']) ? spec['1'] : emptyPrice(), '3': isEntered(spec['3']) ? spec['3'] : emptyPrice() };
     setLegacy([]);
@@ -451,7 +480,7 @@ function Editor({ item, toast, onCommit, onBack, onSaved }: { item: Item; toast:
                 <div className="lr-ro">
                   <div className="lr-ro-head">
                     <span className="lr-ro-title">기존 가격 옵션</span>
-                    <span className="rg-help">{linked ? '이전 방식으로 등록한 가격이에요. 수정할 수 없어요. 아래 항목에 가격을 다시 입력해 저장해 주세요.' : '이전 방식으로 등록한 가격이에요. 수정할 수 없어요.'}</span>
+                    <span className="rg-help">{linked ? '가격 입력 형식이 바뀌었어요. 아래 항목에 가격을 다시 입력해야 저장할 수 있어요.' : '기존에 등록한 가격이에요. 수정할 수 없어요.'}</span>
                   </div>
                   <div className="rg-price-list">{legacy.map((o) => <LegacyRow key={o.id} o={o} />)}</div>
                 </div>
@@ -485,6 +514,7 @@ function Editor({ item, toast, onCommit, onBack, onSaved }: { item: Item; toast:
           </section>
         </div>
       </div>
+      {confirmOpen && <LossDialog items={legacy.filter((o) => o.desc)} onClose={() => setConfirmOpen(false)} onConfirm={commit} />}
       <div className="rg-footer">
         <div className="rg-footer-left">
           <button className="rg-btn-cancel" onClick={onBack}>취소</button>
@@ -506,8 +536,17 @@ export default function Page() {
   const [route, setRoute] = useState(parseHash);
   const [resetKey, setResetKey] = useState(0);
   const [saved, setSaved] = useState(false);
-  // 목록의 모아 보기·카테고리 선택은 수정 화면을 다녀와도 유지한다
-  const [listUi, setListUi] = useState<ListUi>({ onlyLegacy: false, cat: '예방접종' });
+  // 저장 직전 확인창 있음/없음 — URL 쿼리 ?confirm=1 과 동기화(해시 라우팅과 독립)
+  const [confirmMode, setConfirmModeState] = useState(() => new URLSearchParams(window.location.search).get('confirm') === '1');
+  const setConfirmMode = (v: boolean) => {
+    setConfirmModeState(v);
+    const q = new URLSearchParams(window.location.search);
+    if (v) q.set('confirm', '1'); else q.delete('confirm');
+    const qs = q.toString();
+    window.history.replaceState(null, '', `${window.location.pathname}${qs ? `?${qs}` : ''}${window.location.hash}`);
+  };
+  // 목록의 선택 카테고리는 수정 화면을 다녀와도 유지한다. 처음은 라이브처럼 첫 카테고리.
+  const [listCat, setListCat] = useState(CAT_ORDER[0]);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const timer = useRef<number | undefined>(undefined);
   const tbRef = useRef<HTMLDivElement>(null);
@@ -535,7 +574,7 @@ export default function Page() {
     timer.current = window.setTimeout(() => setToastMsg(null), 2400);
   };
   const go = (hash: string) => { window.location.hash = hash; };
-  const reset = () => { setItems(seedItems()); setSaved(false); setListUi({ onlyLegacy: false, cat: '예방접종' }); setResetKey((k) => k + 1); };
+  const reset = () => { setItems(seedItems()); setSaved(false); setListCat(CAT_ORDER[0]); setResetKey((k) => k + 1); };
 
   const editItem = route.view === 'edit' ? items.find((i) => i.id === route.id && i.ex) : undefined;
   const ex = editItem ? editItem.ex : null;
@@ -545,8 +584,12 @@ export default function Page() {
       <div className="lr-toolbar" ref={tbRef}>
         <div className="lr-tb-row">
           <span className="lr-tb-badge">PROTOTYPE</span>
-          <span className="lr-tb-title">구 버전 상품 → 추천 규격 다시 입력 <em>ti-legacy-readonly v0.2</em></span>
+          <span className="lr-tb-title">구 버전 상품 → 추천 규격 다시 입력 <em>ti-legacy-readonly v0.4</em></span>
           <span className="lr-tb-sp" />
+          <div className="lr-seg" role="group" aria-label="저장 직전 확인창">
+            <button type="button" className={confirmMode ? '' : 'on'} onClick={() => setConfirmMode(false)}>확인창 없음</button>
+            <button type="button" className={confirmMode ? 'on' : ''} onClick={() => setConfirmMode(true)}>확인창 있음</button>
+          </div>
           {editItem && <span className={`lr-tb-state${saved ? ' on' : ''}`}>{saved ? '저장 후' : '저장 전'}</span>}
           <button type="button" className="lr-tb-btn" onClick={reset}>처음 상태로</button>
         </div>
@@ -568,9 +611,9 @@ export default function Page() {
           <div className="cn-body">
             <SideNav />
             {editItem
-              ? <Editor key={`${editItem.id}-${resetKey}`} item={editItem} toast={toast} onSaved={setSaved} onBack={() => go('#/items')}
+              ? <Editor key={`${editItem.id}-${resetKey}`} item={editItem} confirmMode={confirmMode} toast={toast} onSaved={setSaved} onBack={() => go('#/items')}
                   onCommit={(c) => setItems((xs) => xs.map((x) => (x.id === editItem.id ? { ...x, ...c } : x)))} />
-              : <ListView key={resetKey} items={items} open={(id) => go(`#/items/${id}`)} toast={toast} ui={listUi} setUi={setListUi} />}
+              : <ListView key={resetKey} items={items} open={(id) => go(`#/items/${id}`)} toast={toast} cat={listCat} setCat={setListCat} />}
           </div>
         </div>
       </div>

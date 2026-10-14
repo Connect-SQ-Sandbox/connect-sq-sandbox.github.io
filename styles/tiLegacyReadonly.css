@@ -36,22 +36,13 @@
 /* 수정 화면은 미리보기 없이 카드만 — 폼 폭은 라이브(미리보기 320 + 간격 24 를 뺀 폭)에 맞춘다 */
 .lr-main .rg-form { flex: 0 1 718px; max-width: 718px; }
 
-/* ---------------- 목록: 요약 줄 · 회색 태그 ---------------- */
-.lr-summary {
-  display: flex; align-items: center; gap: 12px; margin-bottom: 12px; padding: 12px 16px; border-radius: 8px;
-  background: #f6f7f9; font: 400 14px/22px var(--font-sans); color: #434956;
-}
-.lr-summary b { font-weight: 600; color: #16181d; }
-.lr-summary-btn {
-  margin-left: auto; height: 32px; padding: 0 12px; border: 1px solid rgba(128, 135, 153, .3); border-radius: 6px; background: #fff;
-  font: 600 13px/1 var(--font-sans); color: #434956; cursor: pointer; white-space: nowrap;
-}
-.lr-summary-btn:hover { background: #f2f4f7; }
+/* ---------------- 목록: 회색 태그 ---------------- */
 .lr-name { display: flex; align-items: center; gap: 6px; }
-.lr-name-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lr-name-text { flex: 0 1 auto; min-width: 48px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* 트리판 옵션 수 배지(.tk-l3-optcount)와 같은 회색 태그 */
 .lr-legacy-tag {
-  flex: none; display: inline-flex; align-items: center; padding: 2px 6px; border-radius: 3px;
+  /* 좁은 폭에서는 이름을 먼저 지키고 태그를 줄인다 */
+  flex: 0 10 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; padding: 2px 6px; border-radius: 3px;
   background: var(--alpha-gray-10, rgba(128, 135, 153, .1)); color: var(--gray-80, #434956); font: 500 12px/18px var(--font-sans);
 }
 
@@ -83,3 +74,12 @@
   padding: 10px 16px; border-radius: 8px; background: rgba(22, 24, 29, .9); color: #fff; font: 500 13px/20px var(--font-sans);
   max-width: calc(100vw - 32px);
 }
+
+/* ---------------- v0.4 확인창 있음/없음 세그먼트(툴바) ---------------- */
+.lr-seg { display: inline-flex; padding: 2px; border-radius: 8px; background: #2a2f37; border: 1px solid #3a404a; }
+.lr-seg button { height: 24px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; color: #c3c8d0; font: 600 12px/1 var(--font-sans); cursor: pointer; white-space: nowrap; }
+.lr-seg button.on { background: #fff; color: #16181d; }
+
+/* 설명 손실 확인 모달 — 본문 목록 */
+.lr-loss-list { margin: 0 0 8px; padding: 0 0 0 18px; color: #434956; }
+.lr-loss-list li { font: 500 16px/24px var(--font-sans); }

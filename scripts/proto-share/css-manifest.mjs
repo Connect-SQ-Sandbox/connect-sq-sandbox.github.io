@@ -30,7 +30,9 @@ export const SCREEN_CSS = {
   'tablet-patient-select': ['styles/tabletPatientSelect.css'],
   'desk-web': ['styles/connectUnified.css', 'styles/deskWeb.css'],
   'desk-web-v2': ['styles/connectUnified.css', 'styles/deskWebV2.css'],
-  'partners-connect-preview': ['styles/partnersConnectSource.css', 'styles/partnersConnectPreview.css']
+  'partners-connect-preview': ['styles/partnersConnectSource.css', 'styles/partnersConnectPreview.css'],
+  'ti-legacy-spec': ['styles/connectRegister.css', 'styles/connectAdminNonpayAug.css', 'styles/tiCategoryC.css', 'styles/treatmentCreateSept.css', 'styles/tiLegacySpecTree.css', 'styles/tiLegacySpec.css'],
+  'ti-legacy-readonly': ['styles/connectRegister.css', 'styles/connectAdminNonpayAug.css', 'styles/tiCategoryC.css', 'styles/treatmentCreateSept.css', 'styles/tiLegacySpecTree.css', 'styles/tiLegacyReadonly.css']
 };
 
 /**

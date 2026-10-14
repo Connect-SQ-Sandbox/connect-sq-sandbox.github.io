@@ -1,0 +1,66 @@
+/* ti-legacy-readonly — 구 버전 상품을 추천 규격으로 다시 입력받기. lr- 접두사만 쓴다.
+   트리판 폼 생김새는 tiLegacySpecTree.css(사본)가 맡는다. */
+
+.lr-root { --lr-tb: 96px; --lr-proto: #6b4fd8; min-height: 100vh; background: #fff; }
+
+/* ---------------- 프로토 툴바 (실제 화면 밖) ---------------- */
+.lr-toolbar {
+  position: sticky; top: 0; z-index: 200; background: #1f2329; color: #e6e8ec;
+  padding: 10px 20px; display: flex; flex-direction: column; gap: 8px; font: 500 12px/18px var(--font-sans);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .18);
+}
+.lr-tb-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0; }
+.lr-tb-badge { padding: 2px 6px; border-radius: 4px; background: var(--lr-proto); color: #fff; font: 700 10px/16px var(--font-sans); letter-spacing: .06em; }
+.lr-tb-title { font: 700 13px/20px var(--font-sans); color: #fff; }
+.lr-tb-title em { font-style: normal; font-weight: 500; color: #9aa1ad; margin-left: 6px; }
+.lr-tb-sp { flex: 1 1 auto; }
+.lr-tb-label { flex: 0 0 40px; color: #9aa1ad; font-weight: 600; }
+.lr-tb-state { padding: 2px 8px; border-radius: 10px; background: #2a2f37; color: #b5bcc7; font-weight: 700; }
+.lr-tb-state.on { background: #0073fa; color: #fff; }
+.lr-tb-btn { height: 28px; padding: 0 10px; border: 1px solid #3a404a; border-radius: 6px; background: #2a2f37; color: #fff; font: 600 12px/1 var(--font-sans); cursor: pointer; }
+.lr-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.lr-chip {
+  height: 28px; padding: 0 10px; border: 1px solid #3a404a; border-radius: 14px; background: #2a2f37; color: #d7dbe1;
+  display: inline-flex; align-items: center; gap: 5px; font: 500 12px/1 var(--font-sans); cursor: pointer; white-space: nowrap;
+}
+.lr-chip b { color: #fff; font-weight: 700; }
+.lr-chip.ok { border-style: dashed; border-color: #41d293; }
+.lr-chip.on { background: #fff; border-color: #fff; color: #16181d; }
+.lr-chip.on b { color: #0073fa; }
+.lr-tb-example { flex: 1 1 320px; min-width: 0; color: #b5bcc7; }
+.lr-tb-example b { color: #fff; margin-right: 4px; }
+
+/* ---------------- 카드만 떼어 낸 레이아웃 ---------------- */
+.lr-main { min-height: calc(100vh - var(--lr-tb)); }
+.lr-main .rg-container { max-width: none; padding: 40px 24px 124px; justify-content: center; }
+.lr-main .rg-form { flex: 0 1 720px; max-width: 720px; }
+.lr-main .rg-footer { padding: 0 max(24px, calc((100% - 720px) / 2)); }
+
+/* ---------------- 기존 가격 옵션 (read-only) ---------------- */
+.rg-field.price > .lr-ro,
+.rg-field.price > .lr-slots { margin-left: 24px; }
+.lr-ro { margin-bottom: 8px; padding: 12px 16px 8px; border-radius: 8px; background: #f9f9fb; }
+.lr-ro-head { display: flex; flex-direction: column; gap: 2px; padding-bottom: 4px; }
+.lr-ro-title { font: 600 14px/22px var(--font-sans); color: #31353f; }
+.lr-ro .rg-price-row { padding: 8px 0; }
+.lr-ro-gutter { display: none; }
+.lr-ro .rg-input[readonly] { background: #f2f4f7; border-color: #e3e6ed; color: #434956; cursor: default; }
+.lr-ro .rg-input[readonly]::placeholder { color: #a8aebd; }
+.lr-ro .rg-input[readonly]:focus { border-color: #e3e6ed; }
+.lr-ro .rg-select:disabled { background: #f2f4f7; border-color: #e3e6ed; color: #434956; cursor: default; }
+.lr-ro .rg-select:disabled .rg-select-ic { color: #a8aebd; }
+.lr-ro .rg-num:disabled { background: #f2f4f7; border-color: #e3e6ed; color: #434956; cursor: default; }
+.lr-ro .rg-price-row + .rg-price-row { border-top: 1px solid #eef0f3; border-radius: 0; }
+
+/* ---------------- 추천 규격 행 (트리판 추천 행과 같은 치수) ---------------- */
+.lr-slots { display: flex; flex-direction: column; }
+.lr-slot { padding: 8px 0; display: flex; flex-direction: column; gap: 8px; }
+.lr-slot-label { font: 600 14px/22px var(--font-sans); color: #31353f; }
+.lr-group-error { margin: 0; }
+
+/* 토스트 */
+.lr-toast {
+  position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%); z-index: 400;
+  padding: 10px 16px; border-radius: 8px; background: rgba(22, 24, 29, .9); color: #fff; font: 500 13px/20px var(--font-sans);
+  max-width: calc(100vw - 32px);
+}

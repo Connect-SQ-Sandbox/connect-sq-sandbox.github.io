@@ -1618,10 +1618,17 @@ function HistoryDetail({ record, onBack, onState }: { record: HistoryRecord; onB
 
 function StatisticsScreen({ records }: { records: HistoryRecord[] }) {
   const [agent, setAgent] = useState('전체 상담사');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const invalidPeriod = Boolean(startDate && endDate && startDate > endDate);
+  const periodRecords = records.filter((record) => {
+    const createdDate = record.createdAt.slice(0, 10).replace(/\./g, '-');
+    return !invalidPeriod && (!startDate || createdDate >= startDate) && (!endDate || createdDate <= endDate);
+  });
   const accounts = [...AGENT_ACCOUNTS, ...(records.some((record) => record.agentId === 'master-01') ? ['master-01'] : [])];
-  const selected = agent === '전체 상담사' ? records : records.filter((record) => record.agentId === agent);
+  const selected = agent === '전체 상담사' ? periodRecords : periodRecords.filter((record) => record.agentId === agent);
   const rows = accounts.filter((id) => agent === '전체 상담사' || agent === id).map((id) => {
-    const own = records.filter((record) => record.agentId === id);
+    const own = periodRecords.filter((record) => record.agentId === id);
     const count = (state: BookingState) => own.filter((record) => record.state === state).length;
     return { id, total: own.length, pending: count('처리 중'), confirmed: count('예약 확정'), hospitalCanceled: count('병원 취소'), customerCanceled: count('고객 취소'), completed: count('진료 완료') };
   });
@@ -1629,7 +1636,16 @@ function StatisticsScreen({ records }: { records: HistoryRecord[] }) {
   const count = (state: BookingState) => selected.filter((record) => record.state === state).length;
   return <main className="adot-subpage kt-statistics-page">
     <header className="kt-statistics-header"><div><span>마스터 관리자 전용 · 초안</span><h1>상담사별 통계</h1><p>상담사별 예약 처리 현황을 표와 차트로 함께 확인합니다.</p></div><label>상담사<select aria-label="통계 상담사" value={agent} onChange={(event) => setAgent(event.target.value)}><option>전체 상담사</option>{accounts.map((id) => <option key={id} value={id}>{accountDisplayName(id)}</option>)}</select></label></header>
-    <div className="adot-record-privacy"><FiInfo /><div><strong>가상 연결 이력을 집계한 시안입니다.</strong><p>예시 기간 전체 · 현재 상태별 집계. 114 전체 전화 인입은 미연동이며 예약 신청 건수와 구분합니다.</p></div></div>
+    <div className="kt-statistics-period" role="group" aria-label="전체 통계 기간 필터">
+      <strong>조회 기간</strong>
+      <label>시작일<input type="date" aria-label="통계 시작일" value={startDate} onChange={(event) => setStartDate(event.target.value)} /></label>
+      <span aria-hidden="true">~</span>
+      <label>종료일<input type="date" aria-label="통계 종료일" value={endDate} onChange={(event) => setEndDate(event.target.value)} /></label>
+      <button type="button" onClick={() => { setStartDate(''); setEndDate(''); }}>전체 기간</button>
+      <small>요약·차트·표에 공통 적용</small>
+    </div>
+    {invalidPeriod && <p className="kt-statistics-period-error" role="alert">시작일이 종료일보다 늦습니다. 기간을 다시 선택해 주세요.</p>}
+    <div className="adot-record-privacy"><FiInfo /><div><strong>가상 연결 이력을 집계한 시안입니다.</strong><p>선택한 신청 기간 · 현재 상태별 집계. 114 전체 전화 인입은 미연동이며 예약 신청 건수와 구분합니다.</p></div></div>
     <section className="kt-statistics-cards" aria-label="처리 현황 요약">
       {[['예약 신청', selected.length], ['병원 처리 중', count('처리 중')], ['예약 확정', count('예약 확정')], ['예약 취소', count('병원 취소') + count('고객 취소')], ['114 전체 인입', '연동 대기']].map(([label, value]) => <article key={label}><span>{label}</span><strong>{value}<small>{typeof value === 'number' ? '건' : ''}</small></strong></article>)}
     </section>

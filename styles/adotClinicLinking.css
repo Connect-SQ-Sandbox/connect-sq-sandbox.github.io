@@ -2744,7 +2744,7 @@
 }
 
 .adot-history-table {
-  overflow: hidden;
+  overflow-x: auto;
   border: 1px solid var(--adot-border);
   border-top: 0;
   border-radius: 0 0 12px 12px;
@@ -2753,9 +2753,10 @@
 .adot-table-head,
 .adot-history-table > button {
   min-height: 58px;
+  min-width: 980px;
   padding: 0 18px;
   display: grid;
-  grid-template-columns: 1.35fr 1fr 1.35fr 1fr 0.8fr 86px;
+  grid-template-columns: 1.3fr 0.9fr 1.2fr 0.9fr 0.9fr 0.8fr 86px;
   align-items: center;
   gap: 14px;
 }

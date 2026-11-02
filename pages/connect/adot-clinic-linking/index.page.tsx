@@ -342,10 +342,16 @@ const HISTORY: HistoryRecord[] = [
 
 const AGENT_ACCOUNTS = ['agent-01', 'agent-02', 'agent-03', 'agent-04', 'agent-05'];
 
+function accountDisplayName(accountId: string) {
+  if (accountId === 'master-01') return '마스터 관리자';
+  const agent = /^agent-(\d+)$/.exec(accountId);
+  return agent ? `상담사 ${Number(agent[1])}` : accountId;
+}
+
 function PrototypeNavigator({ role, onRole }: { role: AccountRole; onRole: (role: AccountRole) => void }) {
   return <nav className="kt-prototype-navigator" aria-label="프로토타입 계정 보기">
     <strong>프로토타입 보기</strong>
-    <div><button type="button" aria-pressed={role === 'master'} onClick={() => onRole('master')}>1. 마스터 계정</button><button type="button" aria-pressed={role === 'agent'} onClick={() => onRole('agent')}>2. 상담사 계정</button></div>
+    <div><button type="button" aria-pressed={role === 'master'} onClick={() => onRole('master')}>1. 마스터 관리자</button><button type="button" aria-pressed={role === 'agent'} onClick={() => onRole('agent')}>2. 상담사 1</button></div>
     <span>계정 선택 시 로그인부터 시작 · 가상 권한 체험</span>
   </nav>;
 }
@@ -520,7 +526,7 @@ function TopNavigation({
           aria-expanded={profileOpen}
           onClick={() => setProfileOpen((value) => !value)}
         >
-          {role === 'master' ? '마스터 master-01' : '상담사 agent-01'} {profileOpen ? <FiChevronUp /> : <FiChevronDown />}
+          {accountDisplayName(role === 'master' ? 'master-01' : 'agent-01')} {profileOpen ? <FiChevronUp /> : <FiChevronDown />}
         </button>
         {profileOpen && (
           <div className="adot-account-menu">
@@ -1506,7 +1512,7 @@ function SuccessPanel({ hospital, summary, bookingNumber, state, onState, onHist
   );
 }
 
-function HistoryScreen({ records, onDetail }: { records: HistoryRecord[]; onDetail: (record: HistoryRecord) => void }) {
+function HistoryScreen({ role, records, onDetail }: { role: AccountRole; records: HistoryRecord[]; onDetail: (record: HistoryRecord) => void }) {
   const [searchType, setSearchType] = useState('예약번호');
   const [input, setInput] = useState('');
   const [query, setQuery] = useState('');
@@ -1523,7 +1529,7 @@ function HistoryScreen({ records, onDetail }: { records: HistoryRecord[]; onDeta
   });
   return (
     <main className="adot-history-page">
-      <header><span>상담사별 진료 연결 기록</span><h1>연결 이력</h1><p>고객에게 안내된 예약번호로 찾고, 개인정보를 가린 상태에서 신청 결과를 확인합니다.</p></header>
+      <header><span>{role === 'master' ? '전체 상담사 연결 이력' : '내 연결 이력 · 상담사 1'}</span><h1>연결 이력</h1><p>고객에게 안내된 예약번호로 찾고, 개인정보를 가린 상태에서 신청 결과를 확인합니다.</p></header>
       <form className="adot-history-filters" onSubmit={(event) => {
         event.preventDefault();
         const value = searchType === '휴대전화번호' ? input.replace(/\D/g, '') : input.trim();
@@ -1546,7 +1552,7 @@ function HistoryScreen({ records, onDetail }: { records: HistoryRecord[]; onDeta
       <p className="adot-history-help">전화번호는 전체 일치로만 검색하며 결과에서는 일부를 가립니다. 예약번호는 조회를 돕는 값으로 본인 확인을 대신하지 않습니다.</p>
       {searchError && <p className="adot-history-error" role="alert">{searchError}</p>}
       <section className="adot-history-table">
-        <div className="adot-table-head"><span>신청 일시</span><span>환자</span><span>병원</span><span>진료 목적</span><span>상태</span><span /></div>
+        <div className="adot-table-head"><span>신청 일시</span><span>환자</span><span>병원</span><span>진료 목적</span><span>담당 상담사</span><span>상태</span><span /></div>
         {filtered.map((record) => {
           const hospital = HOSPITALS.find((item) => item.id === record.hospitalId);
           return (
@@ -1555,6 +1561,7 @@ function HistoryScreen({ records, onDetail }: { records: HistoryRecord[]; onDeta
               <span><b>{record.patient}</b><small>{record.maskedPhone}</small></span>
               <span>{hospital?.name}</span>
               <span>{record.purpose}</span>
+              <span>{accountDisplayName(record.agentId)}</span>
               <span><em className={`state-${record.state.replace(' ', '-')}`}>{record.state}</em></span>
               <span className="adot-history-detail-link">상세 보기 <FiChevronRight /></span>
             </button>
@@ -1580,7 +1587,7 @@ function HistoryDetail({ record, onBack, onState }: { record: HistoryRecord; onB
           <div><dt>신청 일시</dt><dd>{record.createdAt}</dd></div>
           <div><dt>예약번호</dt><dd>{record.bookingNumber}</dd></div>
           <div><dt>진료연결 ID</dt><dd>{record.id}</dd></div>
-          <div><dt>담당 계정</dt><dd>{record.agentId}</dd></div>
+          <div><dt>담당 상담사</dt><dd>{accountDisplayName(record.agentId)}</dd></div>
           <div><dt>병원</dt><dd>{hospital.name}</dd></div>
           <div><dt>진료실</dt><dd>{record.room}</dd></div>
           <div><dt>진료 목적</dt><dd>{record.purpose}</dd></div>
@@ -1600,7 +1607,7 @@ function HistoryDetail({ record, onBack, onState }: { record: HistoryRecord; onB
       <section className="adot-record-card">
         <h2>처리 흐름</h2>
         <ol className="adot-timeline">
-          <li className="done"><b><FiCheck /></b><div><strong>상담사가 신청을 완료했습니다.</strong><span>{record.createdAt}</span></div></li>
+          <li className="done"><b><FiCheck /></b><div><strong>진료 신청을 완료했습니다.</strong><span>{accountDisplayName(record.agentId)} · {record.createdAt}</span></div></li>
           <li className={record.state === '처리 중' ? '' : 'done'}><b>{record.state === '처리 중' ? '2' : <FiCheck />}</b><div><strong>{record.state === '병원 취소' ? '병원에서 예약을 취소했습니다.' : record.state === '고객 취소' ? '고객이 앱에서 예약을 취소했습니다.' : record.state === '진료 완료' ? '병원에서 진료 완료에 준하는 처리가 확인되었습니다.' : record.state === '예약 확정' ? '병원 응답으로 예약 확정을 확인했습니다.' : '병원 처리 결과를 기다리고 있습니다.'}</strong><span>상담사 신청내역과 고객에게 안내하는 상태를 동일하게 유지합니다.</span></div></li>
         </ol>
       </section>
@@ -1621,22 +1628,22 @@ function StatisticsScreen({ records }: { records: HistoryRecord[] }) {
   const max = Math.max(1, ...rows.map((row) => row.total));
   const count = (state: BookingState) => selected.filter((record) => record.state === state).length;
   return <main className="adot-subpage kt-statistics-page">
-    <header className="kt-statistics-header"><div><span>마스터 계정 전용 · 초안</span><h1>상담사별 통계</h1><p>상담사별 예약 처리 현황을 표와 차트로 함께 확인합니다.</p></div><label>상담사<select aria-label="통계 상담사" value={agent} onChange={(event) => setAgent(event.target.value)}><option>전체 상담사</option>{accounts.map((id) => <option key={id}>{id}</option>)}</select></label></header>
+    <header className="kt-statistics-header"><div><span>마스터 관리자 전용 · 초안</span><h1>상담사별 통계</h1><p>상담사별 예약 처리 현황을 표와 차트로 함께 확인합니다.</p></div><label>상담사<select aria-label="통계 상담사" value={agent} onChange={(event) => setAgent(event.target.value)}><option>전체 상담사</option>{accounts.map((id) => <option key={id} value={id}>{accountDisplayName(id)}</option>)}</select></label></header>
     <div className="adot-record-privacy"><FiInfo /><div><strong>가상 연결 이력을 집계한 시안입니다.</strong><p>예시 기간 전체 · 현재 상태별 집계. 114 전체 전화 인입은 미연동이며 예약 신청 건수와 구분합니다.</p></div></div>
     <section className="kt-statistics-cards" aria-label="처리 현황 요약">
       {[['예약 신청', selected.length], ['병원 처리 중', count('처리 중')], ['예약 확정', count('예약 확정')], ['예약 취소', count('병원 취소') + count('고객 취소')], ['114 전체 인입', '연동 대기']].map(([label, value]) => <article key={label}><span>{label}</span><strong>{value}<small>{typeof value === 'number' ? '건' : ''}</small></strong></article>)}
     </section>
     <section className="adot-record-card kt-statistics-chart"><header><h2>상담사별 예약 신청</h2><span>연결 이력의 신청 건수 기준</span></header>
-      {rows.map((row) => <div className="kt-statistics-bar" key={row.id} role="img" aria-label={`${row.id} 예약 신청 ${row.total}건`}><b>{row.id}</b><div><i style={{ width: `${row.total / max * 100}%` }} /></div><strong>{row.total}<small>건</small></strong></div>)}
+      {rows.map((row) => <div className="kt-statistics-bar" key={row.id} role="img" aria-label={`${accountDisplayName(row.id)} 예약 신청 ${row.total}건`}><b>{accountDisplayName(row.id)}</b><div><i style={{ width: `${row.total / max * 100}%` }} /></div><strong>{row.total}<small>건</small></strong></div>)}
     </section>
-    <section className="adot-record-card kt-statistics-table"><header><h2>상담사별 처리 현황</h2><span>환자 개인정보 없는 집계</span></header><div className="kt-statistics-table-scroll"><table><thead><tr><th scope="col">상담사 계정</th><th scope="col">예약 신청</th><th scope="col">처리 중</th><th scope="col">예약 확정</th><th scope="col">병원 취소</th><th scope="col">고객 취소</th><th scope="col">진료 완료</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id}><th scope="row">{row.id}</th><td>{row.total}</td><td>{row.pending}</td><td>{row.confirmed}</td><td>{row.hospitalCanceled}</td><td>{row.customerCanceled}</td><td>{row.completed}</td></tr>)}</tbody><tfoot><tr><th scope="row">합계</th><td>{selected.length}</td><td>{count('처리 중')}</td><td>{count('예약 확정')}</td><td>{count('병원 취소')}</td><td>{count('고객 취소')}</td><td>{count('진료 완료')}</td></tr></tfoot></table></div><p className="adot-record-note">예약 신청은 전체 건수이며 나머지는 현재 상태별 분류입니다. 완료된 예약을 확정 건수에 중복 집계하지 않습니다. 실제 상담 건수·처리율·인입 통계의 정의와 연동은 별도 협의합니다.</p></section>
+    <section className="adot-record-card kt-statistics-table"><header><h2>상담사별 처리 현황</h2><span>환자 개인정보 없는 집계</span></header><div className="kt-statistics-table-scroll"><table><thead><tr><th scope="col">상담사 계정</th><th scope="col">예약 신청</th><th scope="col">처리 중</th><th scope="col">예약 확정</th><th scope="col">병원 취소</th><th scope="col">고객 취소</th><th scope="col">진료 완료</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id}><th scope="row">{accountDisplayName(row.id)}</th><td>{row.total}</td><td>{row.pending}</td><td>{row.confirmed}</td><td>{row.hospitalCanceled}</td><td>{row.customerCanceled}</td><td>{row.completed}</td></tr>)}</tbody><tfoot><tr><th scope="row">합계</th><td>{selected.length}</td><td>{count('처리 중')}</td><td>{count('예약 확정')}</td><td>{count('병원 취소')}</td><td>{count('고객 취소')}</td><td>{count('진료 완료')}</td></tr></tfoot></table></div><p className="adot-record-note">예약 신청은 전체 건수이며 나머지는 현재 상태별 분류입니다. 완료된 예약을 확정 건수에 중복 집계하지 않습니다. 실제 상담 건수·처리율·인입 통계의 정의와 연동은 별도 협의합니다.</p></section>
   </main>;
 }
 
 function ProfileScreen({ role }: { role: AccountRole }) {
   return (
     <main className="adot-subpage narrow">
-      <div className="adot-profile-head"><span className="adot-avatar">01</span><div><span>{role === 'master' ? '마스터 계정' : '상담사 계정'}</span><h1>{role === 'master' ? 'master-01' : 'agent-01'}</h1><p>KT114 진료 연결 지원 도구</p></div></div>
+      <div className="adot-profile-head"><span className="adot-avatar">01</span><div><span>{role === 'master' ? '마스터 계정' : '상담사 계정'}</span><h1>{accountDisplayName(role === 'master' ? 'master-01' : 'agent-01')}</h1><p>KT114 진료 연결 지원 도구</p></div></div>
       <section className="adot-record-card">
         <h2>계정 정보</h2>
         <dl>
@@ -1661,8 +1668,8 @@ function LoginScreen({ role, onLogin }: { role: AccountRole; onLogin: () => void
         <p>상담사용 검토 프로토타입입니다. 화면의 병원·환자 정보는 모두 가상 데이터입니다.</p>
       </section>
       <section className="adot-login-card">
-        <h2>{role === 'master' ? '마스터 로그인' : '상담사 로그인'}</h2>
-        <p>계정 정보가 미리 입력되어 있습니다. 로그인하여 {role === 'master' ? '상담사별 통계를' : '진료 연결을'} 확인해 주세요.</p>
+        <h2>{role === 'master' ? '마스터 관리자 로그인' : '상담사 로그인'}</h2>
+        <p>계정 정보가 미리 입력되어 있습니다. 로그인하여 {role === 'master' ? '상담사별 통계와 진료 연결을' : '진료 연결을'} 확인해 주세요.</p>
         <label>계정 ID<input value={role === 'master' ? 'master-01' : 'agent-01'} readOnly /></label>
         <label>비밀번호<input type="password" value={role === 'master' ? 'demo-master' : 'demo-agent'} readOnly /></label>
         <button type="button" onClick={onLogin}>로그인</button>
@@ -1779,7 +1786,7 @@ export default function AdotClinicLinkingPage() {
       {screen === 'link' && connectionOverlay === 'success' && selectedHospital && (
         <SuccessPanel hospital={selectedHospital} summary={bookingSummary} bookingNumber={bookingNumber} state={bookingState} onState={updateBookingState} onHistory={() => navigate('history')} onClose={() => setConnectionOverlay(null)} />
       )}
-      {screen === 'history' && <HistoryScreen records={visibleRecords} onDetail={(record) => navigate('history-detail', record)} />}
+      {screen === 'history' && <HistoryScreen role={role} records={visibleRecords} onDetail={(record) => navigate('history-detail', record)} />}
       {screen === 'history-detail' && (visibleSelectedRecord ? <HistoryDetail record={visibleSelectedRecord} onBack={() => navigate('history')} onState={(state) => setRecords((current) => current.map((record) => record.id === visibleSelectedRecord.id ? { ...record, state } : record))} /> : <main className="adot-subpage narrow"><h1>연결 이력을 찾을 수 없습니다.</h1><p>예약번호와 조회 권한을 확인하고 연결 이력에서 다시 조회해 주세요.</p><button type="button" className="adot-primary" onClick={() => navigate('history')}>연결 이력으로 돌아가기</button></main>)}
       {screen === 'profile' && <ProfileScreen role={role} />}
     </div>

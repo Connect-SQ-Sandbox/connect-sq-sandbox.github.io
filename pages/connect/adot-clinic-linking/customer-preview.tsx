@@ -3,7 +3,7 @@ import { FiX, FiCheck, FiChevronLeft } from 'react-icons/fi';
 
 export type CustomerView = 'kakao' | 'sms' | 'form' | 'notification';
 export type BookingState = '처리 중' | '예약 확정' | '병원 취소' | '진료 완료' | '고객 취소';
-export type CustomerSnapshot = { hospital: string; patient: string; room: string; purpose: string; schedule: string };
+export type CustomerSnapshot = { hospital: string; patient: string; room: string; purpose: string; schedule: string; bookingNumber?: string };
 
 // Public-safe, in-memory demonstration only. No resident number is returned to the agent.
 export function CustomerPreview({ view, snapshot, generation = 1, currentGeneration = 1, consumed = false, state = '예약 확정', standalone = false, onClose, onComplete, onCustomerCancel }: {
@@ -33,10 +33,11 @@ export function CustomerPreview({ view, snapshot, generation = 1, currentGenerat
     onComplete?.(generation);
   };
   const summary = <dl className="kt-customer-readonly">
+    {snapshot.bookingNumber && screen !== 'notification' && <div><dt>예약번호</dt><dd>{snapshot.bookingNumber}</dd></div>}
     <div><dt>병원</dt><dd>{snapshot.hospital}</dd></div><div><dt>진료실</dt><dd>{snapshot.room}</dd></div>
     <div><dt>내원 목적</dt><dd>{snapshot.purpose}</dd></div><div><dt>희망 방문 일시</dt><dd>{snapshot.schedule}</dd></div>
   </dl>;
-  const notificationTitle = state === '병원 취소' ? '병원에서 예약을 취소했습니다.' : state === '진료 완료' ? '진료가 완료되었습니다.' : '예약이 확정되었습니다.';
+  const notificationTitle = state === '처리 중' ? '예약 신청이 접수되었습니다.' : state === '병원 취소' ? '병원에서 예약을 취소했습니다.' : state === '고객 취소' ? '예약이 취소되었습니다.' : state === '진료 완료' ? '진료가 완료되었습니다.' : '예약이 확정되었습니다.';
   return <div className={`kt-customer-stage ${standalone ? 'standalone' : ''}`} role={standalone ? undefined : 'dialog'} aria-modal={standalone ? undefined : true} aria-label="고객 화면 시안">
     <header className="kt-preview-header"><div><b>고객 화면 시안</b><small>가상 정보 · 실제 메시지·예약·앱 연결 없음</small></div><button type="button" onClick={onClose} aria-label="고객 화면 닫기"><FiX /></button></header>
     <div className="kt-phone">
@@ -46,7 +47,8 @@ export function CustomerPreview({ view, snapshot, generation = 1, currentGenerat
         <p className="kt-chat-date">오늘 · 예시 메시지</p><div className="kt-message-row"><b className="kt-goodoc-avatar">굿닥</b><article className="kt-message-card">
           <header><strong>굿닥</strong><small>{screen === 'sms' ? '대체 문자' : '알림톡'}</small></header>
           <h2>{screen === 'notification' ? notificationTitle : '진료 예약을 위한 고객 확인 요청'}</h2>
-          <p>{screen === 'notification' ? state === '진료 완료' ? '병원에서 진료 완료에 준하는 처리가 확인되었습니다.' : state === '병원 취소' ? '방문 전 변경된 예약 상태를 확인해 주세요.' : '예약 내역을 확인하고, 취소가 필요하면 굿닥 앱에서 진행해 주세요.' : 'KT114 상담 중 선택한 예약을 위해 아래 링크에서 필요한 정보를 직접 입력해 주세요. 아직 예약 신청 전입니다.'}</p>
+          <p>{screen === 'notification' ? state === '처리 중' ? '병원에 신청을 전달했으며 아직 예약 확정 전입니다. 문의 시 아래 예약번호를 상담사에게 알려 주세요.' : state === '진료 완료' ? '병원에서 진료 완료에 준하는 처리가 확인되었습니다.' : state === '병원 취소' || state === '고객 취소' ? '변경된 예약 상태를 확인해 주세요.' : '예약 내역을 확인하고, 취소가 필요하면 굿닥 앱에서 진행해 주세요.' : 'KT114 상담 중 선택한 예약을 위해 아래 링크에서 필요한 정보를 직접 입력해 주세요. 아직 예약 신청 전입니다.'}</p>
+          {screen === 'notification' && snapshot.bookingNumber && <p className="kt-booking-number"><strong>예약번호</strong><b>{snapshot.bookingNumber}</b></p>}
           {screen !== 'sms' && summary}
           {screen === 'sms' && <p className="kt-short-sms">[굿닥] 예약 신청에 필요한 고객 확인을 완료해 주세요.<br />예시 링크: /demo/customer-link/{generation}</p>}
           <button type="button" disabled={screen !== 'notification' && !validLink} onClick={() => setScreen(screen === 'notification' ? 'app' : 'form')}>{screen === 'notification' ? '예약 내역 확인' : validLink ? '고객 정보 입력하기' : '폐기된 링크입니다'}</button>

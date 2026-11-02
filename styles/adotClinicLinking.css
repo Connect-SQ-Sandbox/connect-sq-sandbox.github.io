@@ -2708,13 +2708,15 @@
   padding: 16px;
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
   border: 1px solid var(--adot-border);
   border-radius: 12px 12px 0 0;
   background: var(--adot-bg);
 }
 
 .adot-history-filters > div {
-  min-width: 360px;
+  min-width: min(330px, 100%);
+  flex: 1 1 330px;
   height: 44px;
   padding: 0 13px;
   display: flex;
@@ -2753,7 +2755,7 @@
   min-height: 58px;
   padding: 0 18px;
   display: grid;
-  grid-template-columns: 1.25fr 0.65fr 1.35fr 1fr 0.75fr 28px;
+  grid-template-columns: 1.35fr 1fr 1.35fr 1fr 0.8fr 86px;
   align-items: center;
   gap: 14px;
 }
@@ -2783,6 +2785,26 @@
   display: flex;
   flex-direction: column;
 }
+
+.adot-history-table > button > span { min-width: 0; overflow-wrap: anywhere; }
+.adot-history-table > button > span:nth-child(2) { display: flex; flex-direction: column; gap: 3px; }
+.adot-history-detail-link { display: inline-flex; align-items: center; gap: 5px; color: var(--adot-blue-strong); font-size: 12px; }
+.adot-history-reset { padding: 0 12px; border: 1px solid var(--adot-border); border-radius: 8px; color: var(--adot-body); }
+.adot-history-help { margin: 12px 0; color: var(--adot-muted); font-size: 12px; line-height: 1.6; }
+.adot-history-error { margin-bottom: 12px; color: #c13a3a; font-size: 13px; }
+.adot-history-filters > .adot-primary, .adot-record-card > .adot-primary { min-height: 44px; padding: 11px 16px; border: 0; border-radius: 8px; background: var(--adot-blue); color: #fff; font-weight: 700; }
+.adot-history-table { border-top: 1px solid var(--adot-border); }
+.adot-history-table .state-예약-확정, .adot-record-head .state-예약-확정 { background: var(--adot-blue-selected); color: var(--adot-blue-strong); }
+.adot-history-table .state-처리-중, .adot-record-head .state-처리-중 { background: #fff6dd; color: #916700; }
+.adot-history-table .state-병원-취소, .adot-record-head .state-병원-취소, .adot-history-table .state-고객-취소, .adot-record-head .state-고객-취소 { background: #f0f2f6; color: var(--adot-secondary); }
+.adot-history-empty { padding: 40px 20px; color: var(--adot-muted); text-align: center; }
+.adot-record-privacy { display: flex; align-items: flex-start; gap: 10px; padding: 16px; border-radius: 10px; background: var(--adot-blue-selected); color: var(--adot-blue-strong); font-size: 13px; }
+.adot-record-privacy > svg { flex: none; margin-top: 2px; }
+.adot-record-privacy p { margin-top: 5px; line-height: 1.65; color: var(--adot-body); }
+.adot-record-note { margin: 12px 0; font-size: 13px; line-height: 1.7; color: var(--adot-muted); }
+.kt-message-card .kt-booking-number { padding: 12px; border-radius: 8px; background: #edf5ff; color: #0877f9; }
+.kt-booking-number strong, .kt-booking-number b { display: block; }
+.kt-booking-number b { font-size: 18px; letter-spacing: .6px; }
 
 .adot-history-table small {
   color: var(--adot-muted);

@@ -2806,6 +2806,45 @@
 .kt-booking-number strong, .kt-booking-number b { display: block; }
 .kt-booking-number b { font-size: 18px; letter-spacing: .6px; }
 
+/* Prototype-only account navigator; never part of the service navigation. */
+.adot-app.with-prototype-navigator { padding-top: 48px; }
+.kt-prototype-navigator { position: fixed; top: 0; left: 0; width: 100%; height: 48px; z-index: 4000; padding: 0 24px; display: flex; align-items: center; gap: 20px; background: #17253a; color: #e9f0fa; box-shadow: 0 1px 6px #10203933; }
+.kt-prototype-navigator > strong { white-space: nowrap; font-size: 12px; letter-spacing: .1px; }
+.kt-prototype-navigator > div { display: flex; gap: 8px; }
+.kt-prototype-navigator button { height: 32px; padding: 0 14px; border: 1px solid #697891; border-radius: 6px; background: transparent; color: #d5dfed; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.kt-prototype-navigator button[aria-pressed="true"] { background: #e9f2ff; border-color: #e9f2ff; color: #075fc5; }
+.kt-prototype-navigator > span { margin-left: auto; color: #b8c7dc; font-size: 11px; white-space: nowrap; }
+.with-prototype-navigator .adot-login { min-height: calc(100vh - 48px); }
+.with-prototype-navigator .kt-preview-header { top: 48px; }
+.with-prototype-navigator .kt-customer-stage:not(.standalone), .with-prototype-navigator .adot-panel-layer { top: 48px; }
+
+.kt-statistics-header { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 8px 0 24px; }
+.kt-statistics-header h1 { margin: 5px 0 8px; font-size: 30px; font-weight: 800; }
+.kt-statistics-header > div > span { color: var(--adot-blue-strong); font-size: 12px; font-weight: 700; }
+.kt-statistics-header p { color: var(--adot-muted); }
+.kt-statistics-header label { display: flex; align-items: center; gap: 10px; color: var(--adot-secondary); font-size: 13px; }
+.kt-statistics-header select { min-width: 160px; height: 42px; padding: 0 12px; border: 1px solid var(--adot-border); border-radius: 8px; background: #fff; }
+.kt-statistics-cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; margin: 22px 0; }
+.kt-statistics-cards article { border: 1px solid var(--adot-border); border-radius: 12px; padding: 20px; background: #fff; }
+.kt-statistics-cards article > span { color: var(--adot-muted); font-size: 13px; }
+.kt-statistics-cards strong { display: block; margin-top: 10px; color: var(--adot-title); font-size: 26px; font-weight: 800; }
+.kt-statistics-cards small { margin-left: 5px; font-size: 13px; color: var(--adot-muted); }
+.kt-statistics-chart > header, .kt-statistics-table > header { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 22px; }
+.kt-statistics-chart header span, .kt-statistics-table header span { font-size: 12px; color: var(--adot-muted); }
+.kt-statistics-bar { display: flex; align-items: center; gap: 18px; margin: 16px 0; }
+.kt-statistics-bar > b { width: 92px; flex: none; font-size: 13px; }
+.kt-statistics-bar > div { flex: 1; height: 22px; overflow: hidden; border-radius: 6px; background: #eff4fb; }
+.kt-statistics-bar i { display: block; height: 100%; border-radius: 6px; background: #408cf4; }
+.kt-statistics-bar > strong { min-width: 44px; text-align: right; font-size: 16px; }
+.kt-statistics-bar small { margin-left: 4px; font-size: 12px; color: var(--adot-muted); }
+.kt-statistics-table-scroll { overflow-x: auto; }
+.kt-statistics-table table { width: 100%; min-width: 720px; border-collapse: collapse; font-size: 13px; text-align: center; }
+.kt-statistics-table th, .kt-statistics-table td { padding: 15px 10px; border-bottom: 1px solid var(--adot-border); }
+.kt-statistics-table thead th { color: var(--adot-muted); background: var(--adot-soft); font-size: 12px; }
+.kt-statistics-table th:first-child { text-align: left; }
+.kt-statistics-table tfoot th, .kt-statistics-table tfoot td { background: #f4f9ff; color: var(--adot-blue-strong); font-weight: 800; }
+@media (max-width: 1100px) { .kt-prototype-navigator { padding: 0 18px; gap: 14px; } .kt-prototype-navigator > span { font-size: 10px; } .kt-statistics-cards article { padding: 15px; } .kt-statistics-cards strong { font-size: 23px; } }
+
 .adot-history-table small {
   color: var(--adot-muted);
   font-size: 11px;

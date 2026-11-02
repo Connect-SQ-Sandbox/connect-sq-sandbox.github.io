@@ -53,7 +53,8 @@ import hospital3 from '../../../assets/adot-clinic-linking/hospital-3.jpg';
 import hospital4 from '../../../assets/adot-clinic-linking/hospital-4.jpg';
 import mapComposite from '../../../assets/adot-clinic-linking/map-composite.png';
 
-type Screen = 'login' | 'link' | 'history' | 'history-detail' | 'profile';
+type AccountRole = 'master' | 'agent';
+type Screen = 'login' | 'statistics' | 'link' | 'history' | 'history-detail' | 'profile';
 type ConnectionOverlay = 'hospital-detail' | 'application' | 'success' | null;
 type OperationState = 'open' | 'ready' | 'closed' | 'dayOff' | 'unknown';
 type TreatmentSelection = { level: 'middle' | 'item'; major: string; middle: string; item?: string } | null;
@@ -94,6 +95,7 @@ type Hospital = {
 
 type HistoryRecord = {
   id: string;
+  agentId: string;
   bookingNumber: string;
   patientId: string;
   createdAt: string;
@@ -333,10 +335,20 @@ const HOSPITALS: Hospital[] = [
 ];
 
 const HISTORY: HistoryRecord[] = [
-  { id: 'LINK-260930-0142', bookingNumber: 'KT-B7K4-P9Q2', patientId: 'KT-U7M4K8', createdAt: '2026.09.30 11:42', patient: '김*닥', maskedPhone: '010-****-5678', demoSearchPhone: '01000005678', hospitalId: 'sample-01', room: '내과 1진료실', purpose: '일반 진료', schedule: '2026.10.01 10:30', state: '예약 확정' },
-  { id: 'LINK-260929-0087', bookingNumber: 'KT-H6W3-R8D9', patientId: 'KT-J4R9Q2', createdAt: '2026.09.29 16:08', patient: '이*연', maskedPhone: '010-****-6789', demoSearchPhone: '01000006789', hospitalId: 'sample-02', room: '정형외과 1진료실', purpose: '진료 상담', schedule: '2026.10.02 14:00', state: '진료 완료' },
-  { id: 'LINK-260928-0031', bookingNumber: 'KT-N4X8-C7M2', patientId: 'KT-P6C8N3', createdAt: '2026.09.28 09:21', patient: '박*수', maskedPhone: '010-****-7890', demoSearchPhone: '01000007890', hospitalId: 'sample-04', room: '이비인후과 1진료실', purpose: '비염 진료', schedule: '2026.09.29 09:30', state: '병원 취소' }
+  { id: 'LINK-260930-0142', agentId: 'agent-01', bookingNumber: 'KT-B7K4-P9Q2', patientId: 'KT-U7M4K8', createdAt: '2026.09.30 11:42', patient: '김*닥', maskedPhone: '010-****-5678', demoSearchPhone: '01000005678', hospitalId: 'sample-01', room: '내과 1진료실', purpose: '일반 진료', schedule: '2026.10.01 10:30', state: '예약 확정' },
+  { id: 'LINK-260929-0087', agentId: 'agent-02', bookingNumber: 'KT-H6W3-R8D9', patientId: 'KT-J4R9Q2', createdAt: '2026.09.29 16:08', patient: '이*연', maskedPhone: '010-****-6789', demoSearchPhone: '01000006789', hospitalId: 'sample-02', room: '정형외과 1진료실', purpose: '진료 상담', schedule: '2026.10.02 14:00', state: '진료 완료' },
+  { id: 'LINK-260928-0031', agentId: 'agent-03', bookingNumber: 'KT-N4X8-C7M2', patientId: 'KT-P6C8N3', createdAt: '2026.09.28 09:21', patient: '박*수', maskedPhone: '010-****-7890', demoSearchPhone: '01000007890', hospitalId: 'sample-04', room: '이비인후과 1진료실', purpose: '비염 진료', schedule: '2026.09.29 09:30', state: '병원 취소' }
 ];
+
+const AGENT_ACCOUNTS = ['agent-01', 'agent-02', 'agent-03', 'agent-04', 'agent-05'];
+
+function PrototypeNavigator({ role, onRole }: { role: AccountRole; onRole: (role: AccountRole) => void }) {
+  return <nav className="kt-prototype-navigator" aria-label="프로토타입 계정 보기">
+    <strong>프로토타입 보기</strong>
+    <div><button type="button" aria-pressed={role === 'master'} onClick={() => onRole('master')}>1. 마스터 계정</button><button type="button" aria-pressed={role === 'agent'} onClick={() => onRole('agent')}>2. 상담사 계정</button></div>
+    <span>계정 선택 시 로그인부터 시작 · 가상 권한 체험</span>
+  </nav>;
+}
 
 function maskPatientName(name: string) {
   const letters = Array.from(name.trim());
@@ -476,10 +488,12 @@ function selectionLabel(selection: TreatmentSelection) {
 }
 
 function TopNavigation({
+  role,
   screen,
   onNavigate,
   onLogout
 }: {
+  role: AccountRole;
   screen: Screen;
   onNavigate: (screen: Screen) => void;
   onLogout: () => void;
@@ -495,6 +509,7 @@ function TopNavigation({
       </div>
       <span className="adot-prototype-badge">개발 협의용 시안</span>
       <nav className="adot-main-nav" aria-label="주 메뉴">
+        {role === 'master' && <button className={screen === 'statistics' ? 'active' : ''} type="button" onClick={() => onNavigate('statistics')}>상담사별 통계</button>}
         <button className={linkActive ? 'active' : ''} type="button" onClick={() => onNavigate('link')}>진료 연결</button>
         <button className={historyActive ? 'active' : ''} type="button" onClick={() => onNavigate('history')}>연결 이력</button>
       </nav>
@@ -505,11 +520,11 @@ function TopNavigation({
           aria-expanded={profileOpen}
           onClick={() => setProfileOpen((value) => !value)}
         >
-          상담사 agent-01 {profileOpen ? <FiChevronUp /> : <FiChevronDown />}
+          {role === 'master' ? '마스터 master-01' : '상담사 agent-01'} {profileOpen ? <FiChevronUp /> : <FiChevronDown />}
         </button>
         {profileOpen && (
           <div className="adot-account-menu">
-            <button type="button" onClick={() => { onNavigate('profile'); setProfileOpen(false); }}><FiUser /> 상담사 정보</button>
+            <button type="button" onClick={() => { onNavigate('profile'); setProfileOpen(false); }}><FiUser /> 계정 정보</button>
             <button type="button" onClick={onLogout}><FiLogOut /> 로그아웃</button>
           </div>
         )}
@@ -1565,6 +1580,7 @@ function HistoryDetail({ record, onBack, onState }: { record: HistoryRecord; onB
           <div><dt>신청 일시</dt><dd>{record.createdAt}</dd></div>
           <div><dt>예약번호</dt><dd>{record.bookingNumber}</dd></div>
           <div><dt>진료연결 ID</dt><dd>{record.id}</dd></div>
+          <div><dt>담당 계정</dt><dd>{record.agentId}</dd></div>
           <div><dt>병원</dt><dd>{hospital.name}</dd></div>
           <div><dt>진료실</dt><dd>{record.room}</dd></div>
           <div><dt>진료 목적</dt><dd>{record.purpose}</dd></div>
@@ -1593,16 +1609,40 @@ function HistoryDetail({ record, onBack, onState }: { record: HistoryRecord; onB
   );
 }
 
-function ProfileScreen() {
+function StatisticsScreen({ records }: { records: HistoryRecord[] }) {
+  const [agent, setAgent] = useState('전체 상담사');
+  const accounts = [...AGENT_ACCOUNTS, ...(records.some((record) => record.agentId === 'master-01') ? ['master-01'] : [])];
+  const selected = agent === '전체 상담사' ? records : records.filter((record) => record.agentId === agent);
+  const rows = accounts.filter((id) => agent === '전체 상담사' || agent === id).map((id) => {
+    const own = records.filter((record) => record.agentId === id);
+    const count = (state: BookingState) => own.filter((record) => record.state === state).length;
+    return { id, total: own.length, pending: count('처리 중'), confirmed: count('예약 확정'), hospitalCanceled: count('병원 취소'), customerCanceled: count('고객 취소'), completed: count('진료 완료') };
+  });
+  const max = Math.max(1, ...rows.map((row) => row.total));
+  const count = (state: BookingState) => selected.filter((record) => record.state === state).length;
+  return <main className="adot-subpage kt-statistics-page">
+    <header className="kt-statistics-header"><div><span>마스터 계정 전용 · 초안</span><h1>상담사별 통계</h1><p>상담사별 예약 처리 현황을 표와 차트로 함께 확인합니다.</p></div><label>상담사<select aria-label="통계 상담사" value={agent} onChange={(event) => setAgent(event.target.value)}><option>전체 상담사</option>{accounts.map((id) => <option key={id}>{id}</option>)}</select></label></header>
+    <div className="adot-record-privacy"><FiInfo /><div><strong>가상 연결 이력을 집계한 시안입니다.</strong><p>예시 기간 전체 · 현재 상태별 집계. 114 전체 전화 인입은 미연동이며 예약 신청 건수와 구분합니다.</p></div></div>
+    <section className="kt-statistics-cards" aria-label="처리 현황 요약">
+      {[['예약 신청', selected.length], ['병원 처리 중', count('처리 중')], ['예약 확정', count('예약 확정')], ['예약 취소', count('병원 취소') + count('고객 취소')], ['114 전체 인입', '연동 대기']].map(([label, value]) => <article key={label}><span>{label}</span><strong>{value}<small>{typeof value === 'number' ? '건' : ''}</small></strong></article>)}
+    </section>
+    <section className="adot-record-card kt-statistics-chart"><header><h2>상담사별 예약 신청</h2><span>연결 이력의 신청 건수 기준</span></header>
+      {rows.map((row) => <div className="kt-statistics-bar" key={row.id} role="img" aria-label={`${row.id} 예약 신청 ${row.total}건`}><b>{row.id}</b><div><i style={{ width: `${row.total / max * 100}%` }} /></div><strong>{row.total}<small>건</small></strong></div>)}
+    </section>
+    <section className="adot-record-card kt-statistics-table"><header><h2>상담사별 처리 현황</h2><span>환자 개인정보 없는 집계</span></header><div className="kt-statistics-table-scroll"><table><thead><tr><th scope="col">상담사 계정</th><th scope="col">예약 신청</th><th scope="col">처리 중</th><th scope="col">예약 확정</th><th scope="col">병원 취소</th><th scope="col">고객 취소</th><th scope="col">진료 완료</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id}><th scope="row">{row.id}</th><td>{row.total}</td><td>{row.pending}</td><td>{row.confirmed}</td><td>{row.hospitalCanceled}</td><td>{row.customerCanceled}</td><td>{row.completed}</td></tr>)}</tbody><tfoot><tr><th scope="row">합계</th><td>{selected.length}</td><td>{count('처리 중')}</td><td>{count('예약 확정')}</td><td>{count('병원 취소')}</td><td>{count('고객 취소')}</td><td>{count('진료 완료')}</td></tr></tfoot></table></div><p className="adot-record-note">예약 신청은 전체 건수이며 나머지는 현재 상태별 분류입니다. 완료된 예약을 확정 건수에 중복 집계하지 않습니다. 실제 상담 건수·처리율·인입 통계의 정의와 연동은 별도 협의합니다.</p></section>
+  </main>;
+}
+
+function ProfileScreen({ role }: { role: AccountRole }) {
   return (
     <main className="adot-subpage narrow">
-      <div className="adot-profile-head"><span className="adot-avatar">01</span><div><span>발급 계정</span><h1>agent-01</h1><p>KT114 진료 연결 지원 도구</p></div></div>
+      <div className="adot-profile-head"><span className="adot-avatar">01</span><div><span>{role === 'master' ? '마스터 계정' : '상담사 계정'}</span><h1>{role === 'master' ? 'master-01' : 'agent-01'}</h1><p>KT114 진료 연결 지원 도구</p></div></div>
       <section className="adot-record-card">
         <h2>계정 정보</h2>
         <dl>
-          <div><dt>상담사 ID</dt><dd>agent-01</dd></div>
+          <div><dt>계정 ID</dt><dd>{role === 'master' ? 'master-01' : 'agent-01'}</dd></div>
           <div><dt>계정 방식</dt><dd>신원 확인·보안 방식은 협의 후 확정</dd></div>
-          <div><dt>권한</dt><dd>병원 탐색 · 진료 신청 · 연결 이력 조회</dd></div>
+          <div><dt>권한</dt><dd>{role === 'master' ? '상담사별 통계 · 전체 연결 이력 · 진료 연결' : '병원 탐색 · 진료 신청 · 본인 연결 이력 조회'}</dd></div>
         </dl>
       </section>
       <p className="adot-data-note"><FiInfo /> 모든 화면은 샘플 데이터로 구성되어 있으며 실제 환자 정보와 연결되지 않습니다.</p>
@@ -1610,7 +1650,7 @@ function ProfileScreen() {
   );
 }
 
-function LoginScreen({ onLogin }: { onLogin: () => void }) {
+function LoginScreen({ role, onLogin }: { role: AccountRole; onLogin: () => void }) {
   return (
     <main className="adot-login">
       <section className="adot-login-intro">
@@ -1621,10 +1661,10 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
         <p>상담사용 검토 프로토타입입니다. 화면의 병원·환자 정보는 모두 가상 데이터입니다.</p>
       </section>
       <section className="adot-login-card">
-        <h2>상담사 로그인</h2>
-        <p>발급받은 상담사 계정으로 로그인해 주세요.</p>
-        <label>상담사 ID<input defaultValue="agent-01" /></label>
-        <label>비밀번호<input type="password" defaultValue="prototype" /></label>
+        <h2>{role === 'master' ? '마스터 로그인' : '상담사 로그인'}</h2>
+        <p>계정 정보가 미리 입력되어 있습니다. 로그인하여 {role === 'master' ? '상담사별 통계를' : '진료 연결을'} 확인해 주세요.</p>
+        <label>계정 ID<input value={role === 'master' ? 'master-01' : 'agent-01'} readOnly /></label>
+        <label>비밀번호<input type="password" value={role === 'master' ? 'demo-master' : 'demo-agent'} readOnly /></label>
         <button type="button" onClick={onLogin}>로그인</button>
         <small>검토용 화면으로 입력 정보는 저장되지 않습니다.</small>
       </section>
@@ -1634,7 +1674,14 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
 
 export default function AdotClinicLinkingPage() {
   const preview = new URLSearchParams(window.location.search);
-  const [screen, setScreen] = useState<Screen>(preview.get('view') === 'login' ? 'login' : preview.get('view') === 'history' ? 'history' : preview.get('view') === 'history-detail' ? 'history-detail' : 'link');
+  const [role, setRole] = useState<AccountRole>(preview.get('role') === 'master' ? 'master' : 'agent');
+  const [screen, setScreen] = useState<Screen>(() => {
+    const view = preview.get('view');
+    if (view === 'history' || view === 'history-detail') return view;
+    if (view === 'statistics') return preview.get('role') === 'master' ? 'statistics' : 'login';
+    if (['link', 'application', 'hospital', 'success'].includes(view || '')) return 'link';
+    return 'login';
+  });
   const [connectionOverlay, setConnectionOverlay] = useState<ConnectionOverlay>(() => {
     const preview = new URLSearchParams(window.location.search).get('view');
     if (preview === 'hospital') return 'hospital-detail';
@@ -1648,17 +1695,21 @@ export default function AdotClinicLinkingPage() {
   const activeRecordId = useRef<string | null>(null);
   const [bookingState, setBookingState] = useState<BookingState>('처리 중');
   const [records, setRecords] = useState<HistoryRecord[]>(HISTORY);
+  const visibleRecords = role === 'master' ? records : records.filter((record) => record.agentId === 'agent-01');
+  const visibleSelectedRecord = selectedRecord && visibleRecords.find((record) => record.id === selectedRecord.id);
   const updateBookingState = (state: BookingState) => {
     setBookingState(state);
     setRecords((current) => current.map((record) => record.id === activeRecordId.current ? { ...record, state } : record));
   };
 
   const navigate = (next: Screen, record?: HistoryRecord) => {
+    if (next === 'statistics' && role !== 'master') return;
     if (connectionOverlay === 'application' && !window.confirm('입력 중인 신청을 닫을까요? 입력 내용과 고객 확인 링크가 폐기됩니다.')) return;
     setConnectionOverlay(null);
     if (record) setSelectedRecord(record);
     setScreen(next);
     const url = new URL(window.location.href);
+    url.searchParams.set('role', role);
     if (next === 'link') url.searchParams.delete('view');
     else url.searchParams.set('view', next);
     if (next === 'history-detail' && record) url.searchParams.set('reservation', record.bookingNumber);
@@ -1666,6 +1717,22 @@ export default function AdotClinicLinkingPage() {
     window.history.replaceState({}, '', url);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  const switchRole = (next: AccountRole) => {
+    // Prototype-only switch: always discard an unfinished draft and restart at login.
+    setRole(next);
+    setConnectionOverlay(null);
+    setSelectedRecord(undefined);
+    activeRecordId.current = null;
+    setScreen('login');
+    const url = new URL(window.location.href);
+    url.search = '';
+    url.searchParams.set('role', next);
+    url.searchParams.set('view', 'login');
+    window.history.replaceState({}, '', url);
+    window.scrollTo({ top: 0 });
+  };
+  const prototypeNavigator = <PrototypeNavigator role={role} onRole={switchRole} />;
 
   const cancelApplication = () => {
     const confirmed = window.confirm('진행 중인 진료 신청을 닫을까요?\n입력 내용과 고객 확인 링크는 폐기되며 병원 탐색 화면은 유지됩니다. 이미 최종 신청한 예약을 취소하는 것은 아닙니다.');
@@ -1676,14 +1743,16 @@ export default function AdotClinicLinkingPage() {
   if (customerPreview?.startsWith('customer-') || customerPreview === 'notification') {
     const view = customerPreview === 'notification' ? 'notification' : customerPreview.replace('customer-', '') as CustomerView;
     const states: Record<string, BookingState> = { requested: '처리 중', confirmed: '예약 확정', canceled: '병원 취소', completed: '진료 완료' };
-    return <CustomerPreview view={['kakao', 'sms', 'form', 'notification'].includes(view) ? view : 'form'} standalone state={states[preview.get('status') || 'confirmed'] || '예약 확정'} snapshot={{ hospital: HOSPITALS[0].name, ...bookingSummary, ...(view === 'notification' ? { bookingNumber } : {}) }} onClose={() => { window.location.search = ''; }} />;
+    return <div className="adot-app with-prototype-navigator">{prototypeNavigator}<CustomerPreview view={['kakao', 'sms', 'form', 'notification'].includes(view) ? view : 'form'} standalone state={states[preview.get('status') || 'confirmed'] || '예약 확정'} snapshot={{ hospital: HOSPITALS[0].name, ...bookingSummary, ...(view === 'notification' ? { bookingNumber } : {}) }} onClose={() => navigate(role === 'master' ? 'statistics' : 'link')} /></div>;
   }
 
-  if (screen === 'login') return <div className="adot-app"><LoginScreen onLogin={() => navigate('link')} /></div>;
+  if (screen === 'login') return <div className="adot-app with-prototype-navigator">{prototypeNavigator}<LoginScreen key={role} role={role} onLogin={() => navigate(role === 'master' ? 'statistics' : 'link')} /></div>;
 
   return (
-    <div className="adot-app">
-      <TopNavigation screen={screen} onNavigate={navigate} onLogout={() => navigate('login')} />
+    <div className="adot-app with-prototype-navigator">
+      {prototypeNavigator}
+      <TopNavigation role={role} screen={screen} onNavigate={navigate} onLogout={() => navigate('login')} />
+      {screen === 'statistics' && role === 'master' && <StatisticsScreen records={records} />}
       {screen === 'link' && (
         <LinkScreen
           selectedHospital={selectedHospital}
@@ -1703,16 +1772,16 @@ export default function AdotClinicLinkingPage() {
           setBookingNumber(number);
           setBookingSummary(summary);
           setBookingState('처리 중');
-          setRecords((current) => [{ id, bookingNumber: number, patientId: summary.patientId, createdAt: '2026.10.01 14:18', hospitalId: selectedHospital.id, patient: summary.patientName, maskedPhone: summary.maskedPhone, demoSearchPhone: summary.demoSearchPhone, room: summary.room, purpose: summary.purpose, schedule: summary.schedule, state: '처리 중' }, ...current]);
+          setRecords((current) => [{ id, agentId: role === 'master' ? 'master-01' : 'agent-01', bookingNumber: number, patientId: summary.patientId, createdAt: '2026.10.01 14:18', hospitalId: selectedHospital.id, patient: summary.patientName, maskedPhone: summary.maskedPhone, demoSearchPhone: summary.demoSearchPhone, room: summary.room, purpose: summary.purpose, schedule: summary.schedule, state: '처리 중' }, ...current]);
           setConnectionOverlay('success');
         }} />
       )}
       {screen === 'link' && connectionOverlay === 'success' && selectedHospital && (
         <SuccessPanel hospital={selectedHospital} summary={bookingSummary} bookingNumber={bookingNumber} state={bookingState} onState={updateBookingState} onHistory={() => navigate('history')} onClose={() => setConnectionOverlay(null)} />
       )}
-      {screen === 'history' && <HistoryScreen records={records} onDetail={(record) => navigate('history-detail', record)} />}
-      {screen === 'history-detail' && (selectedRecord ? <HistoryDetail record={records.find((record) => record.id === selectedRecord.id) || selectedRecord} onBack={() => navigate('history')} onState={(state) => setRecords((current) => current.map((record) => record.id === selectedRecord.id ? { ...record, state } : record))} /> : <main className="adot-subpage narrow"><h1>연결 이력을 찾을 수 없습니다.</h1><p>예약번호를 확인하고 연결 이력에서 다시 조회해 주세요.</p><button type="button" className="adot-primary" onClick={() => navigate('history')}>연결 이력으로 돌아가기</button></main>)}
-      {screen === 'profile' && <ProfileScreen />}
+      {screen === 'history' && <HistoryScreen records={visibleRecords} onDetail={(record) => navigate('history-detail', record)} />}
+      {screen === 'history-detail' && (visibleSelectedRecord ? <HistoryDetail record={visibleSelectedRecord} onBack={() => navigate('history')} onState={(state) => setRecords((current) => current.map((record) => record.id === visibleSelectedRecord.id ? { ...record, state } : record))} /> : <main className="adot-subpage narrow"><h1>연결 이력을 찾을 수 없습니다.</h1><p>예약번호와 조회 권한을 확인하고 연결 이력에서 다시 조회해 주세요.</p><button type="button" className="adot-primary" onClick={() => navigate('history')}>연결 이력으로 돌아가기</button></main>)}
+      {screen === 'profile' && <ProfileScreen role={role} />}
     </div>
   );
 }

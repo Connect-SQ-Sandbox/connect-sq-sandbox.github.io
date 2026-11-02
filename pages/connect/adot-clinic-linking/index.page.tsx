@@ -1228,9 +1228,15 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
   const [appointmentMode, setAppointmentMode] = useState<'time' | 'arrival'>('time');
   const [schedule, setSchedule] = useState(hospital.availableSlots[0] || '');
   const [agreed, setAgreed] = useState(false);
+  const [termsMode, setTermsMode] = useState<'customer' | 'phone'>('customer');
+  const [phoneConsentAt, setPhoneConsentAt] = useState<string | null>(null);
+  const [webTermsAccepted, setWebTermsAccepted] = useState(false);
   const patientVerified = patientStatus === 'verified';
   const selectionReady = ['new', 'waiting', 'verified'].includes(patientStatus);
-  const selectionLocked = patientStatus === 'waiting' || (patientVerified && !returningPatient);
+  const linkLocked = patientStatus === 'waiting' || (patientVerified && snapshot !== null);
+  const selectionLocked = linkLocked;
+  const hospitalTermsAccepted = termsMode === 'phone' ? phoneConsentAt !== null : webTermsAccepted;
+  const canSubmit = patientVerified && hospitalTermsAccepted && agreed && (appointmentMode === 'arrival' || !!schedule);
   const selectedRoom = examRooms.find((room) => room.id === examRoomId) || examRooms[0];
   const formattedSchedule = appointmentMode === 'arrival'
     ? `2026.10.${String(selectedDay).padStart(2, '0')} 선착순 예약`
@@ -1251,6 +1257,8 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
     setPatientStatus('idle');
     setLookupIssue('');
     setReturningPatient(false);
+    setPhoneConsentAt(null);
+    setWebTermsAccepted(false);
     setPollCount(0);
     setAgreed(false);
   };
@@ -1271,13 +1279,15 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
   };
 
   const sendVerificationLink = (resend = false) => {
+    if (!selectionReady || (termsMode === 'phone' && !phoneConsentAt) || (appointmentMode === 'time' && !schedule)) return;
     if (resend && !window.confirm('고객 확인 링크를 다시 보낼까요? 이전 링크와 입력 내용은 즉시 폐기되며 고객이 다시 입력해야 합니다.')) return;
     const next = currentGeneration.current + 1;
     currentGeneration.current = next;
     setLinkGeneration(next);
     completedGeneration.current = null;
     setAgreed(false);
-    setSnapshot({ hospital: hospital.name, patient: maskedFourCode, room: selectedRoom.name, purpose, schedule: formattedSchedule });
+    setWebTermsAccepted(false);
+    setSnapshot({ hospital: hospital.name, patient: maskedFourCode, room: selectedRoom.name, purpose, schedule: formattedSchedule, hospitalTermsByPhone: termsMode === 'phone' && !!phoneConsentAt, requiresIdentityInput: !returningPatient });
     setPollCount(0);
     setPatientStatus('waiting');
     setResendNotice(resend ? '이전 링크와 고객 입력 내용을 폐기했습니다. 새 링크로 다시 입력해 주세요.' : '');
@@ -1318,11 +1328,12 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
         <li className="active"><b>1</b><span>환자 확인</span></li>
         <li className={patientVerified ? 'active' : ''}><b>2</b><span>진료 목적</span></li>
         <li className={patientVerified ? 'active' : ''}><b>3</b><span>예약 일시</span></li>
-        <li className={patientVerified && agreed ? 'active' : ''}><b>4</b><span>최종 확인</span></li>
+        <li className={hospitalTermsAccepted ? 'active' : ''}><b>4</b><span>병원 약관</span></li>
+        <li className={canSubmit ? 'active' : ''}><b>5</b><span>최종 확인</span></li>
           </ol>
           <form className="adot-application" onSubmit={(event) => {
         event.preventDefault();
-        if (patientVerified && agreed && (appointmentMode === 'arrival' || schedule)) {
+        if (canSubmit) {
           onComplete({ patient: maskedFourCode, patientName: maskedPatientName, patientId: demoPatientId, maskedPhone, demoSearchPhone: phoneDigits, room: selectedRoom.name, purpose, schedule: formattedSchedule });
         }
       }}>
@@ -1355,7 +1366,7 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
             <div className="adot-patient-status new" role="status">
               <div className="adot-status-heading"><FiUser /><div><span>조회 결과</span><strong>환자 기록이 조회되지 않습니다.</strong></div></div>
               <div className="adot-four-code"><span>조회 4코드</span><strong>{maskedFourCode}</strong></div>
-              <p>예약 신청을 위해 고객이 직접 주민등록번호 뒷자리 7자리와 필수 동의를 입력해야 합니다. 상담사 화면에는 번호가 표시되지 않습니다.</p>
+              <p>예약에 필요한 주민번호 뒷 7자리는 고객이 굿닥 링크에서 직접 입력합니다. 병원 약관은 아래에서 동의 확인 방식을 선택합니다.</p>
               <p>아래에서 진료실·내원 목적·일시를 선택한 뒤 고객 확인 링크를 발송해 주세요.</p>
             </div>
           )}
@@ -1364,7 +1375,7 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
             <div className="adot-patient-status waiting" role="status" aria-live="polite">
               <div className="adot-status-heading"><FiRefreshCw className="spinning" /><div><span>고객 확인 요청 발송 완료</span><strong>고객 입력을 기다리고 있습니다.</strong></div></div>
               <div className="adot-four-code"><span>조회 4코드</span><strong>{maskedFourCode}</strong></div>
-              <p>알림톡 발송에 실패하면 문자로 자동 대체 발송합니다. 고객은 링크에서 주민등록번호 뒷자리만 입력합니다.</p>
+              <p>{returningPatient ? '고객이 굿닥 웹에서 병원 약관을 확인·동의하면 상태가 갱신됩니다. 주민번호 추가 입력은 없습니다.' : '고객은 굿닥 링크에서 필요한 주민번호를 직접 입력합니다. 전화로 확인한 병원 약관은 웹에서 다시 동의받지 않습니다.'}</p>
               <div className="adot-polling-line"><span><i /> 2초마다 자동으로 상태 확인 중</span><small>{pollCount + 1}회 확인</small></div>
               <button className="secondary" type="button" onClick={pollVerification}><FiRefreshCw /> 지금 다시 확인</button>
               <div className="kt-preview-actions"><button type="button" onClick={() => openCustomer('kakao')}>알림톡 시안</button><button type="button" onClick={() => openCustomer('sms')}>문자 시안</button><button type="button" onClick={() => openCustomer('form')}>고객 입력 화면 체험</button></div>
@@ -1449,25 +1460,46 @@ function ApplicationPanel({ hospital, onCancel, onComplete }: { hospital: Hospit
             <div className="adot-no-slot"><FiCalendar /><div><strong>현재 선택 가능한 예약 시간이 없습니다.</strong><p>예약 설정과 실제 잔여 시간은 다를 수 있습니다. 다른 병원을 선택해 주세요.</p></div></div>
           )}
         </section>
-        <section className={!patientVerified ? 'adot-form-section-locked' : ''} aria-disabled={!patientVerified}>
-          <div className="adot-form-title"><b>4</b><div><h2>신청 내용 확인</h2><p>신청 직전 최신 예약 가능 여부를 다시 확인합니다.</p></div></div>
-          {patientStatus === 'new' && <div className="kt-send-link"><p>선택한 내용을 고객에게 확인받습니다. 입력 완료 후에도 상담사가 최종 신청해야 합니다.</p><button type="button" disabled={appointmentMode === 'time' && !schedule} onClick={() => sendVerificationLink()}><FiSend /> 고객 확인 링크 발송</button></div>}
+        <section className={`kt-hospital-terms ${!selectionReady ? 'adot-form-section-locked' : ''}`} aria-disabled={!selectionReady}>
+          <div className="adot-form-title"><b>4</b><div><h2>병원 약관 안내·동의</h2><p>선택 병원의 약관에 대한 환자의 동의 응답을 확인합니다.</p></div></div>
+          <div className="kt-terms-mode" role="group" aria-label="병원 약관 동의 방식">
+            <button type="button" disabled={!selectionReady || linkLocked} aria-pressed={termsMode === 'customer'} className={termsMode === 'customer' ? 'selected' : ''} onClick={() => { setTermsMode('customer'); setPhoneConsentAt(null); setWebTermsAccepted(false); setAgreed(false); }}>고객 웹에서 직접 동의</button>
+            <button type="button" disabled={!selectionReady || linkLocked} aria-pressed={termsMode === 'phone'} className={termsMode === 'phone' ? 'selected' : ''} onClick={() => { setTermsMode('phone'); setWebTermsAccepted(false); setAgreed(false); }}>상담사가 전화 안내 후 확인</button>
+          </div>
+          <details className="kt-terms-text">
+            <summary>{hospital.name} 병원 약관 보기 · 안내용 예시</summary>
+            <p>선택 병원의 약관 원문이 표시되는 영역입니다. 실제 서비스는 해당 병원의 약관 항목·원문·버전을 사용합니다.</p>
+            <p>상담사는 병원명과 예약 내용을 확인하고 약관의 필수 안내 사항을 고객에게 설명한 뒤, 고객의 동의 응답을 확인합니다. 이 예시는 확정된 병원 약관 전문이 아닙니다.</p>
+            <small>가상 약관 ID: DEMO-HOSPITAL-TERMS · 시안 v1</small>
+          </details>
+          {termsMode === 'phone' ? <>
+            <p className="kt-terms-draft">추가 검토안 · 전화 동의 수령 방식·안내 문구·증빙 요건은 법률·보안 검토 후 확정합니다.</p>
+            <label className="adot-lookup-consent kt-phone-consent"><input type="checkbox" disabled={!selectionReady || linkLocked} checked={!!phoneConsentAt} onChange={(event) => { setPhoneConsentAt(event.target.checked ? new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }) : null); setAgreed(false); }} /><span><b>환자에게 병원 약관을 안내했고, 환자가 동의한다고 응답했습니다.</b><small>상담사가 환자 대신 동의하는 것이 아니라 환자의 응답을 기록합니다. 주민번호는 고객 직접 입력을 유지합니다.</small></span></label>
+            {phoneConsentAt && <div className="kt-terms-record" role="status"><b>전화로 환자 동의 확인</b><span>{hospital.name} · 시안 v1</span><span>전화 · 현재 상담사 · {phoneConsentAt}</span></div>}
+          </> : <p className="adot-booking-helper">굿닥이 보낸 링크에서 환자가 병원 약관에 직접 동의합니다. 기존 환자도 약관 동의가 필요하면 링크를 보냅니다.</p>}
+          {linkLocked && <p className="adot-lock-note">발송한 내용과 같도록 동의 방식이 고정됩니다. 변경하려면 신청 패널을 닫고 다시 시작해 주세요.</p>}
+          {(patientStatus === 'new' || (returningPatient && patientVerified && !hospitalTermsAccepted)) && <div className="kt-send-link"><p>{returningPatient ? '주민번호 추가 입력 없이 병원 약관 동의를 요청합니다.' : '필요한 주민번호와 아직 확인되지 않은 동의를 고객에게 요청합니다.'}</p><button type="button" disabled={!selectionReady || (termsMode === 'phone' && !phoneConsentAt) || (appointmentMode === 'time' && !schedule)} onClick={() => sendVerificationLink()}><FiSend /> 고객 확인 링크 발송</button></div>}
+          {termsMode === 'customer' && webTermsAccepted && <div className="kt-terms-record"><b>고객 웹에서 병원 약관 동의 완료</b></div>}
+        </section>
+        <section className={!patientVerified || !hospitalTermsAccepted ? 'adot-form-section-locked' : ''} aria-disabled={!patientVerified || !hospitalTermsAccepted}>
+          <div className="adot-form-title"><b>5</b><div><h2>신청 내용 확인</h2><p>신청 직전 최신 예약 가능 여부를 다시 확인합니다.</p></div></div>
           <dl className="adot-summary-list">
             <div><dt>4코드</dt><dd>{patientVerified ? maskedFourCode : '환자 확인 필요'}</dd></div>
+            <div><dt>병원 약관</dt><dd>{hospitalTermsAccepted ? termsMode === 'phone' ? '전화로 환자 동의 확인' : '고객 웹에서 직접 동의' : '동의 확인 필요'}</dd></div>
             <div><dt>진료실</dt><dd>{selectedRoom.name}</dd></div>
             <div><dt>진료 목적</dt><dd>{purpose}</dd></div>
             <div><dt>예약 일시</dt><dd>{appointmentMode === 'arrival' || schedule ? formattedSchedule : '선택 가능한 시간 없음'}</dd></div>
           </dl>
           <label className="adot-consent">
-            <input type="checkbox" disabled={!patientVerified} checked={agreed} onChange={(event) => setAgreed(event.target.checked)} />
+            <input type="checkbox" disabled={!patientVerified || !hospitalTermsAccepted} checked={agreed} onChange={(event) => setAgreed(event.target.checked)} />
             <span><b>필수 안내를 확인했습니다.</b> 이 화면은 검토용이며 실제 환자 정보나 예약은 전송되지 않습니다.</span>
           </label>
         </section>
-            <button className="adot-submit" type="submit" disabled={!patientVerified || !agreed || (appointmentMode === 'time' && !schedule)}>최종 진료 신청</button>
+            <button className="adot-submit" type="submit" disabled={!canSubmit}>최종 진료 신청</button>
           </form>
         </div>
       </aside>
-      {customerView && <CustomerPreview view={customerView} snapshot={snapshot || { hospital: hospital.name, patient: maskedFourCode, room: selectedRoom.name, purpose, schedule: formattedSchedule }} generation={customerGeneration} currentGeneration={linkGeneration} consumed={completedGeneration.current === customerGeneration} onClose={() => setCustomerView(null)} onComplete={(generation) => { if (generation === currentGeneration.current) completedGeneration.current = generation; }} />}
+      {customerView && <CustomerPreview view={customerView} snapshot={snapshot || { hospital: hospital.name, patient: maskedFourCode, room: selectedRoom.name, purpose, schedule: formattedSchedule }} generation={customerGeneration} currentGeneration={linkGeneration} consumed={completedGeneration.current === customerGeneration} onClose={() => setCustomerView(null)} onComplete={(generation) => { if (generation === currentGeneration.current) { completedGeneration.current = generation; if (!snapshot?.hospitalTermsByPhone) setWebTermsAccepted(true); } }} />}
     </div>
   );
 }

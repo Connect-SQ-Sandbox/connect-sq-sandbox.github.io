@@ -3,7 +3,7 @@ import { FiX, FiCheck, FiChevronLeft } from 'react-icons/fi';
 
 export type CustomerView = 'kakao' | 'sms' | 'form' | 'notification';
 export type BookingState = '처리 중' | '예약 확정' | '병원 취소' | '진료 완료' | '고객 취소';
-export type CustomerSnapshot = { hospital: string; patient: string; room: string; purpose: string; schedule: string; bookingNumber?: string };
+export type CustomerSnapshot = { hospital: string; patient: string; room: string; purpose: string; schedule: string; bookingNumber?: string; hospitalTermsByPhone?: boolean; requiresIdentityInput?: boolean };
 
 // Public-safe, in-memory demonstration only. No resident number is returned to the agent.
 export function CustomerPreview({ view, snapshot, generation = 1, currentGeneration = 1, consumed = false, state = '예약 확정', standalone = false, onClose, onComplete, onCustomerCancel }: {
@@ -15,6 +15,10 @@ export function CustomerPreview({ view, snapshot, generation = 1, currentGenerat
   const [digits, setDigits] = useState('');
   const [processingConsent, setProcessingConsent] = useState(false);
   const [provisionConsent, setProvisionConsent] = useState(false);
+  const [hospitalTermsConsent, setHospitalTermsConsent] = useState(false);
+  const needsIdentity = snapshot.requiresIdentityInput !== false;
+  const hospitalTermsAccepted = snapshot.hospitalTermsByPhone || hospitalTermsConsent;
+  const inputReady = hospitalTermsAccepted && (!needsIdentity || (digits.length === 7 && processingConsent && provisionConsent));
   const [completed, setCompleted] = useState(consumed);
   const [customerCanceled, setCustomerCanceled] = useState(false);
   const validLink = generation === currentGeneration;
@@ -27,7 +31,7 @@ export function CustomerPreview({ view, snapshot, generation = 1, currentGenerat
   }, [onClose]);
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
-    if (!validLink || consumed || completed || digits.length !== 7 || !processingConsent || !provisionConsent) return;
+    if (!validLink || consumed || completed || !inputReady) return;
     setDigits(''); // discard the mock input; never persist it or expose it to the agent
     setCompleted(true);
     onComplete?.(generation);
@@ -61,12 +65,15 @@ export function CustomerPreview({ view, snapshot, generation = 1, currentGenerat
           <span className="kt-customer-kicker">KT114 진료 연결 · 아직 예약 신청 전</span><h1>필요한 정보를 입력해 주세요.</h1>
           <p>가상 번호로만 체험해 주세요. 실제 주민등록번호는 입력하지 마세요.</p>
           <form className="kt-customer-card" onSubmit={submit}>
-            <label className="kt-rrn-label" htmlFor="mock-rrn">주민등록번호 뒷자리 7자리 <small>고객 직접 입력</small></label>
+            {needsIdentity && <><label className="kt-rrn-label" htmlFor="mock-rrn">주민등록번호 뒷자리 7자리 <small>고객 직접 입력</small></label>
             <input id="mock-rrn" type="password" inputMode="numeric" autoComplete="off" maxLength={7} value={digits} onChange={(event) => setDigits(event.target.value.replace(/\D/g, '').slice(0, 7))} placeholder="가상 숫자 7자리 입력" />
             <label className="kt-customer-consent"><input type="checkbox" checked={processingConsent} onChange={(event) => setProcessingConsent(event.target.checked)} /><span><b>[필수] 예약 신청을 위한 정보 처리 동의</b><small>고객 입력 정보를 예약 신청을 위해 임시 처리합니다.</small></span></label>
             <label className="kt-customer-consent"><input type="checkbox" checked={provisionConsent} onChange={(event) => setProvisionConsent(event.target.checked)} /><span><b>[필수] 선택한 병원으로의 제3자 정보 제공 동의</b><small>예약·환자 확인에 필요한 정보를 선택한 병원에 전달합니다.</small></span></label>
+            </>}
+            {snapshot.hospitalTermsByPhone ? <p className="kt-phone-terms-confirmed">선택 병원 약관은 상담사가 전화로 안내하고 환자의 동의 응답을 확인했습니다. 이 화면에서는 다시 동의받지 않습니다.</p> : <label className="kt-customer-consent"><input type="checkbox" checked={hospitalTermsConsent} onChange={(event) => setHospitalTermsConsent(event.target.checked)} /><span><b>[필수] {snapshot.hospital} 병원 약관에 동의합니다.</b><small>선택 병원의 약관을 환자가 직접 확인하는 시안입니다.</small></span></label>}
+            {!needsIdentity && <p>주민번호 추가 입력 없이 병원 약관만 확인합니다.</p>}
             <p className="kt-legal-note">법률 검토 전 시안 문구입니다. 처리·제공 주체, 항목, 목적, 보유기간, 거부권과 영향은 법무 검토 후 확정합니다. 이 동의만으로 주민번호 처리의 적법성을 보장하지 않습니다.</p>
-            <button className="kt-customer-submit" type="submit" disabled={digits.length !== 7 || !processingConsent || !provisionConsent}>입력 완료하기</button>
+            <button className="kt-customer-submit" type="submit" disabled={!inputReady}>입력 완료하기</button>
             <small>완료 후 상담사가 최종 신청해야 병원에 전달됩니다.</small>
           </form>
           <section className="kt-customer-card"><h2>신청 내용 <small>확인만 가능</small></h2>{summary}</section>

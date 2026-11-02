@@ -3176,3 +3176,17 @@
     transform: translate(-35%, -50%);
   }
 }
+
+/* KTP-1: patient response captured by phone, draft prototype only. */
+.kt-terms-mode { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 18px 0; }
+.kt-terms-mode button { padding: 13px 9px; border: 1px solid #d9e2ee; border-radius: 9px; background: #fff; font-size: 13px; color: #40516b; cursor: pointer; }
+.kt-terms-mode button.selected { border-color: #1672ff; background: #edf5ff; color: #0961d8; font-weight: 700; }
+.kt-terms-mode button:disabled { opacity: .65; cursor: default; }
+.kt-terms-text { border: 1px solid #dce5f0; border-radius: 10px; padding: 15px; font-size: 13px; line-height: 1.65; }
+.kt-terms-text summary { font-weight: 700; cursor: pointer; }
+.kt-terms-text p { margin: 12px 0; }
+.kt-terms-text small { color: #77869a; }
+.kt-terms-draft { color: #8a651d; background: #fff8e8; padding: 12px; border-radius: 8px; font-size: 12px; line-height: 1.6; }
+.kt-phone-consent { margin-top: 14px; }
+.kt-terms-record, .kt-phone-terms-confirmed { display: grid; gap: 6px; border: 1px solid #b9decd; background: #f0faf5; color: #2b654c; padding: 13px; border-radius: 9px; font-size: 12px; line-height: 1.6; }
+.adot-stepper li { min-width: 0; font-size: 12px; }

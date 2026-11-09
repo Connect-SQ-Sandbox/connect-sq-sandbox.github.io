@@ -1144,6 +1144,7 @@ body:has(.dw-refetching) .dw-portal .cu-modal footer{opacity:.45;pointer-events:
 .dw4-table td:first-of-type{text-overflow:clip}
 .dw4-table tbody tr{cursor:pointer}
 .dw4-table tbody tr:hover{background:var(--r-g10)}
+.dw4-table.room tbody td,.dw4-table.item tbody td,.dw4-table.rcp tbody td{border-bottom:1px solid var(--r-g20)}.dw4-table.room tbody tr:last-child td,.dw4-table.item tbody tr:last-child td,.dw4-table.rcp tbody tr:last-child td{border-bottom:0} /* v3.11.198 행 하단 선 Gray 20, 접수와 같게 */
 .dw4-table td{color:var(--r-g90);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dw4-table .cu-tag{min-width:48px;justify-content:center}
 .dw4-table.item th:nth-child(1),.dw4-table.item th:nth-child(2){text-align:center}.dw4-table.item td:nth-child(1),.dw4-table.item td:nth-child(2){text-align:center}
@@ -2448,7 +2449,7 @@ body:has(.dw-refetching) .dw-portal .cu-modal footer{opacity:.45;pointer-events:
 /* 머리 = dw4-table thead(흰 배경 · 13px 600 GRAY_60 · 위아래 8 · 하단선 ALPHA_GRAY_20) */
 .dw4-embed .dw2-grid th{height:auto;padding:8px 12px;background:#fff;font-size:13px;font-weight:600;line-height:1.5;color:var(--r-g60);border-bottom:1px solid var(--r-line)}
 /* 본문 = dw4-table td(14px 400 GRAY_90 · padding 12 · 첫 열 왼쪽 20) */
-.dw4-embed .dw2-grid td{height:auto;padding:12px;font-size:14px;font-weight:400;line-height:normal;color:var(--r-g90);border-bottom:1px solid var(--r-line)}
+.dw4-embed .dw2-grid td{height:auto;padding:12px;font-size:14px;font-weight:400;line-height:normal;color:var(--r-g90);border-bottom:1px solid var(--r-g20)}
 .dw4-embed .dw2-grid tbody tr:last-child td{border-bottom:0}
 .dw4-embed .dw2-grid th.c-order,.dw4-embed .dw2-grid td.c-order{padding-left:12px;padding-right:12px;border-right:1px solid var(--r-line)}
 .dw4-embed .dw2-grid th:first-child:not(.c-order),.dw4-embed .dw2-grid td:first-child:not(.c-order){padding-left:20px}

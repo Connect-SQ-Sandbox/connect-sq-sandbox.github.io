@@ -2431,7 +2431,7 @@ body:has(.dw-refetching) .dw-portal .cu-modal footer{opacity:.45;pointer-events:
 .cu-app .dw-chart-done{display:inline-flex;align-items:center;gap:4px;color:var(--r-blue);font-weight:600}
 .cu-app .dw-chart-check{display:inline-flex;align-items:center;flex-wrap:wrap;gap:4px 8px}
 .cu-app .dw-chart-check label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
-.cu-app .dw-chart-check label:has(input:disabled){cursor:default} /* v3.11.211 1064-D44 비활성이어도 라벨은 활성과 같은 진한 글자 */
+.cu-app .dw-chart-check label:has(input:disabled){cursor:default;color:var(--r-g60)} /* v3.11.212 1064-D47 읽기 전용(비활성) 차팅 완료·내원 확정 라벨 그레이 60, 굵기는 그대로 */
 .cu-app .dw-chart-check small{font-size:12px;color:var(--r-g60);font-weight:400}
 .cu-app select.dw-ro-sel{display:block;max-width:100%;background:#fff;font-family:inherit;cursor:pointer}
 @media (max-width:640px){.cu-app .dw-io-card.dw-ro-wrap{flex-wrap:wrap}.cu-app .dw-io-card.dw-ro-wrap>.dw-io-text{flex:1 1 100%}.cu-app .dw-io-card.dw-ro-wrap>.dw-io-ctl{flex:1 1 100%}.cu-app .dw-io-card.dw-ro-wrap select.dw-ro-sel{width:100%}}

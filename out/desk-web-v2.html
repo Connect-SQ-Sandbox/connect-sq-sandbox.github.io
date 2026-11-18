@@ -2335,13 +2335,13 @@ body:has(.dw-refetching) .dw-portal .cu-modal footer{opacity:.45;pointer-events:
    하단 고정 바는 본문 좌우 여백만큼 바깥으로 넓힌다(--dw5-gx). */
 .cu-app .pt-main.cu-main{padding-left:16px;padding-right:16px;box-sizing:border-box}
 @media(min-width:640px){.cu-app .pt-main.cu-main{padding-left:24px;padding-right:24px}}
-@media(min-width:1024px){.cu-app .pt-main.cu-main{padding-left:64px;padding-right:64px}} /* v3.11.127 피그마 Header·Main Container 좌우 64 (기존 48) */
+@media(min-width:1024px){.cu-app .pt-main.cu-main{padding-left:48px;padding-right:48px}} /* v3.11.248 1064-D116 피그마 Header·Main Container·Bottom Bar 좌우 48(19422:5023) — v3.11.127의 64를 되돌림 */
 .cu-app .pt-inner{width:100%;max-width:1600px;margin:0 auto;min-width:0;box-sizing:border-box} /* v3.11.72 D109 본문 상한 1152 → 1600(좌우 48 여백은 cn-main 그대로) */
 .cu-app .pt-inner .cu-header.cn-header,.cu-app .pt-inner .cu-content{padding-left:0!important;padding-right:0!important}
 .cu-app .pt-inner .cu-content,.cu-app .pt-inner .dw5-body.cu-content{max-width:none}
 .cu-app .pt-inner .cu-content{--dw5-gx:16px}
 @media(min-width:640px){.cu-app .pt-inner .cu-content{--dw5-gx:24px}}
-@media(min-width:1024px){.cu-app .pt-inner .cu-content{--dw5-gx:64px}}
+@media(min-width:1024px){.cu-app .pt-inner .cu-content{--dw5-gx:48px}}
 .cu-app .pt-main .pt-inner .cu-header.cn-header,.cu-app .pt-main .pt-inner .cu-content,.cu-app .pt-main .pt-inner .dw5-hc-page .dw5-head.cu-header.cn-header,.cu-app .pt-main .pt-inner .dw5-hc-page .dw5-body.cu-content{padding-left:0!important;padding-right:0!important}
 .cu-app .pt-main .pt-inner .dw5-hc-page .dw5-body.cu-content{max-width:902px}
 /* v3.8.3 하단 고정 바: 배경·윗선은 본문 영역(main) 전체 폭, 버튼은 1152 본문 폭 안에 정렬(통합 파트너스 하단 바 방식).
@@ -2350,7 +2350,7 @@ body:has(.dw-refetching) .dw-portal .cu-modal footer{opacity:.45;pointer-events:
 .cu-app .pt-inner .dw5-bottom,.cu-app .pt-inner .dw-fig-bottom{--dw5-side:max(0px, (100cqw - 1600px) / 2);box-sizing:border-box;width:calc(100cqw + 2 * var(--dw5-gx, 0px));max-width:none;margin-left:calc(-1 * (var(--dw5-gx, 0px) + var(--dw5-side)));margin-right:0;padding-left:calc(var(--dw5-gx, 0px) + var(--dw5-side));padding-right:calc(var(--dw5-gx, 0px) + var(--dw5-side))}
 .cu-app .pt-main .pt-inner{--dw5-gx:16px}
 @media(min-width:640px){.cu-app .pt-main .pt-inner{--dw5-gx:24px}}
-@media(min-width:1024px){.cu-app .pt-main .pt-inner{--dw5-gx:64px}}
+@media(min-width:1024px){.cu-app .pt-main .pt-inner{--dw5-gx:48px}}
 
 /* v3.9 알림센터(조건부) · 진료실 상세 카카오 연동 상태 */
 .cu-app .pt-alert{position:relative;display:flex;align-items:center;gap:4px}
@@ -3135,11 +3135,11 @@ body.dw-col-resizing .cu-app .dw-col-rz:not(.active)::after{background:transpare
 .cu-modal.dw-n4-m .dw-n4-link:focus-visible{outline:2px solid #0073FA;outline-offset:2px;border-radius:2px}
 
 /* ═════ v3.11.245 1064-D110·D112·D113 N6 커넥트 첫 설치 안내 배너(피그마 띠 노드 기준) ═════
- * 피그마 컴포넌트 세트(상태 = 기본 · 띠 호버 · 다시 보지 않기 호버). 헤더 바로 아래, LNB 오른쪽 본문 폭 전체 띠. 본문 열 = 배너(고정) + 본문(스크롤). 높이 44 · 패딩 10/64(v3.11.247 1064-D115 본문 좌우 64와 맞춤) · 간격 12 · 세로 가운데
+ * 피그마 컴포넌트 세트(상태 = 기본 · 띠 호버 · 다시 보지 않기 호버). 헤더 바로 아래, LNB 오른쪽 본문 폭 전체 띠. 본문 열 = 배너(고정) + 본문(스크롤). 높이 44 · 패딩 10/48(v3.11.248 1064-D116 본문 좌우 48과 맞춤) · 간격 12 · 세로 가운데
  * 배경 Blue/20 · 아래 테두리 Blue/30(토큰 없음 → hex). 띠 hover = Blue/30, 단 [다시 보지 않기] hover 때는 기본 배경 유지 */
 .cu-app .dw-n6-col{display:flex;flex-direction:column;min-width:0;min-height:0}
 .cu-app .dw-n6-col>.pt-main{flex:1;min-height:0}
-.cu-app .dw-n6{flex:none;display:flex;align-items:center;gap:12px;height:44px;padding:10px 64px;box-sizing:border-box;background:#E5F2FF;border-bottom:1px solid #D1E8FF;cursor:pointer}
+.cu-app .dw-n6{flex:none;display:flex;align-items:center;gap:12px;height:44px;padding:10px 48px;box-sizing:border-box;background:#E5F2FF;border-bottom:1px solid #D1E8FF;cursor:pointer}
 .cu-app .dw-n6:hover:not(:has(.dw-n6-off:hover)){background:#D1E8FF}
 .cu-app .dw-n6-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 14px/22px Pretendard,'Apple SD Gothic Neo',sans-serif;color:#115FD4;text-decoration:none} /* 문구 색 Blue/80(피그마 컴포넌트 세트 갱신, 토큰 없음 → hex) */
 .cu-app .dw-n6-text:focus-visible,.cu-app .dw-n6-off:focus-visible{outline:2px solid #0073FA;outline-offset:2px;border-radius:2px}

@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : tablet-patient-select — 태블릿 접수 '환자 조회 → 1. 환자 선택' · 새 환자 등록 오탭 UX 개선 체험판
- * 상태      : 검토용 초안 · v0.5 · 최종수정 2026-10-02
+ * 상태      : 검토용 초안 · v0.6 · 최종수정 2026-11-19
  * PRD       : 없음(VOC 기반). 병원 VOC: 조회된 본인 카드가 떠도 환자가 '새 환자 등록'을 눌러 정보를 처음부터 다시 입력(고령 재진 환자 중심, 하루 3명).
  *             사내 논의 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/tablet-patient-select.html
@@ -40,6 +40,7 @@
  *  - [보류] 주민등록번호 조회 경로는 미포함(대기화면 피그마가 휴대전화번호 입력만 있음).
  *
  * 변경 이력
+ *  - v0.6 (2026-11-19) 태블릿 프레임 표시 크기 상한(배율 0.6, 1152×720). 큰 모니터에서 과하게 커지던 것 방지.
  *  - v0.5 (2026-10-02) 조회 시나리오에서 '없음 → 등록 직행' 제거(세화님 요청). 결과 없음 분기 코드 정리.
  *  - v0.4 (2026-10-02) 시안 선택을 상단 바에서 좌측 패널 첫 카드로 합침(바뀐 것 목록과 한 카드). 상단 바는 제목 + 현재 시안 이름.
  *  - v0.3 (2026-10-02) proto-qa 3차 반영: 휠 끝에서 페이지 스크롤 허용, 심볼 viewBox 18.57 상단 정렬(워터마크 698), 스피너 외경 79·7/8 호, 시안 재클릭 무시, 상단 바 61px·줄바꿈 억제.
@@ -640,6 +641,8 @@ function Tablet({ vars, scenario, onLog, resetKey }: { vars: Variables; scenario
 }
 
 /* ---------- 캔버스(스케일) ---------- */
+// 큰 모니터에서 프레임이 과하게 커지지 않게 하는 상한. 0.6 = 1152×720.
+const MAX_SCALE = 0.6;
 function Stage({ children }: { children: React.ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.5);
@@ -650,7 +653,7 @@ function Stage({ children }: { children: React.ReactNode }) {
     const update = () => {
       const w = el.clientWidth - 48;
       const h = el.clientHeight - 48;
-      setScale(Math.max(0.12, Math.min(w / 1920, h / 1200)));
+      setScale(Math.max(0.12, Math.min(MAX_SCALE, w / 1920, h / 1200)));
     };
     update();
     const ro = new ResizeObserver(update);
@@ -740,7 +743,7 @@ function App() {
       <div className="tps-bar">
         <div className="tps-bar-title">
           <strong>태블릿 접수 · 환자 조회 → 환자 선택</strong>
-          <span>‘새 환자 등록’ 오탭 UX 개선 체험판 · 검토용 초안 v0.5</span>
+          <span>‘새 환자 등록’ 오탭 UX 개선 체험판 · 검토용 초안 v0.6</span>
         </div>
         <div className="tps-bar-now">{headTitle}</div>
       </div>

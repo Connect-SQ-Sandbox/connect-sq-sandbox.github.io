@@ -1,435 +1,501 @@
 <!doctype html>
 <!--
-  이름: 비연동 앱 환자 조회 · 폰 두 대 비교 (nonlinked-app-lookup)
-  상태: 검토용 초안 · v0.1 · 2026-11-20
-  원본: Desktop/Source/1064-decisions/lookup-phones.html (자체완결 정적 HTML, 빌드 없음)
+  이름: 비연동 앱 환자 조회 체험판 (nonlinked-app-lookup)
+  상태: 검토용 초안 · v0.2 · 2026-11-20
+  원본: 이 파일이 원본(자체완결 정적 HTML, 빌드 없음)
   배포: https://connect-sq-sandbox.github.io/out/nonlinked-app-lookup.html
-  화면구성: 조건(상황 4 · 접수/예약 · 휴대폰 저장값 · 오른쪽 폰 개선 후/지금 코드) → 6단계 재생(1차 조회·진료 받을 분·주민번호 입력·2차 조회·번호 선택·신청) → 결과 비교 표
-  기준: 앱 문구·색은 goodoc-mobile 420 환자 선택·주민번호 바텀시트·번호 선택 바텀시트 코드. 마지막 '신청'은 요약 화면.
+  화면구성: 왼쪽 조건(로그인한 사람 4명 · 병원 방식 3개 · 휴대폰 저장값) / 가운데 직접 조작하는 앱(병원 상세 → 조회 → 진료 받을 분 → 주민번호 키패드 → 번호 선택 → 신청 확인 → 완료) / 오른쪽 뒤에서 일어나는 일(조회 로그 · 환자 목록 하이라이트 · 휴대폰 저장값 · 병원이 받은 신청) / 아래 방식별 결과 기록
+  조회 엔진: 시나리오를 고정하지 않고 입력값으로 실제 조회
+    - 데스크 시절: 1차 휴대폰번호, 2차 주민번호 13자리 일치. 응답 13자리
+    - 개선 후: 1차 휴대폰번호, 2차 이름(앞뒤 공백·대소문자 무시)+앞 7자리. 응답 7자리, 뒷자리는 휴대폰 저장값 또는 입력
+    - 지금 코드: 1차 휴대폰번호, 2차 앞 7자리만(이름 없음). 접수는 응답 첫 번째 환자·7자리로 바뀜, 예약은 응답을 쓰지 않음, 재진 판정 안 함
+  기준: 앱 문구·색은 goodoc-mobile 420 환자 선택·주민번호 바텀시트·번호 선택 바텀시트 코드. 병원 상세·신청 확인·완료는 체험용 요약 화면
   핵심 결정: [확정] 비연동만 적용 · 이름 없는 2차 조회는 지금처럼 · 이름은 앞뒤 공백·대소문자 무시 · 저장값 성별 자리 다르면 입력 · 비연동 예약도 번호 선택 시트
-  보류: 이름·생년월일·성별 모두 같은 환자 2차 조회 처리(미정 표시)
-  변경 이력: v0.1 첫 게시
+  보류: 이름·생년월일·성별 모두 같은 다른 환자가 있을 때 2차 조회 처리(미정 표시)
+  변경 이력: v0.1 단계 넘김 비교판 / v0.2 직접 조작하는 앱 + 실제 조회 엔진 + 결과 기록
 -->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>비연동 앱 환자 조회 · 폰 비교</title>
+<title>비연동 앱 환자 조회 체험판</title>
 <style>
 :root{
-  --bg:#F2F4F7; --panel:#FFFFFF; --text:#16181D; --sub:#5D6474; --line:#E1E4EA;
+  --bg:#F2F4F7; --panel:#FFFFFF; --text:#16181D; --sub:#5D6474; --line:#E1E4EA; --chip:#F2F4F7;
   --accent:#0073FA; --good:#0E8A52; --good-bg:#E7F6EE; --warn:#B26A00; --warn-bg:#FFF4DE;
-  --bad:#D92D3B; --bad-bg:#FFECEE; --todo:#6B47D6; --todo-bg:#F0EBFF; --chip:#F2F4F7;
+  --bad:#D92D3B; --bad-bg:#FFECEE; --todo:#6B47D6; --todo-bg:#F0EBFF; --hl:#FFF7C2;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#111317; --panel:#1B1E24; --text:#EEF0F4; --sub:#A3A9B6; --line:#2C3038;
+    --bg:#111317; --panel:#1B1E24; --text:#EEF0F4; --sub:#A3A9B6; --line:#2C3038; --chip:#262A31;
     --accent:#479DFF; --good:#4CC98A; --good-bg:#16301F; --warn:#F2B34B; --warn-bg:#33270F;
-    --bad:#FF7A85; --bad-bg:#3A1A1E; --todo:#B39BFF; --todo-bg:#2A2342; --chip:#262A31;
+    --bad:#FF7A85; --bad-bg:#3A1A1E; --todo:#B39BFF; --todo-bg:#2A2342; --hl:#3A3415;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#111317; --panel:#1B1E24; --text:#EEF0F4; --sub:#A3A9B6; --line:#2C3038;
+  --bg:#111317; --panel:#1B1E24; --text:#EEF0F4; --sub:#A3A9B6; --line:#2C3038; --chip:#262A31;
   --accent:#479DFF; --good:#4CC98A; --good-bg:#16301F; --warn:#F2B34B; --warn-bg:#33270F;
-  --bad:#FF7A85; --bad-bg:#3A1A1E; --todo:#B39BFF; --todo-bg:#2A2342; --chip:#262A31;
+  --bad:#FF7A85; --bad-bg:#3A1A1E; --todo:#B39BFF; --todo-bg:#2A2342; --hl:#3A3415;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:Pretendard,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;font-size:14px;line-height:1.5}
-.wrap{max-width:1040px;margin:0 auto;padding:20px 16px 48px}
-h1{font-size:20px;margin:0 0 4px}
-.lead{color:var(--sub);margin:0 0 16px}
-.ctrl{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;gap:10px}
-.ctrl .r{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap}
-.ctrl .k{width:96px;flex:none;color:var(--sub);font-weight:600;padding-top:6px}
-.seg{display:flex;flex-wrap:wrap;gap:6px;flex:1;min-width:0}
-.seg button{border:1px solid var(--line);background:var(--chip);color:var(--text);border-radius:999px;padding:5px 12px;font:inherit;cursor:pointer}
-.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
-.desc{color:var(--sub);margin:0}
-.stepper{display:flex;align-items:center;gap:10px;margin:16px 0 12px;flex-wrap:wrap}
-.stepper .nav{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:10px;padding:8px 14px;font:inherit;font-weight:600;cursor:pointer}
-.stepper .nav.primary{background:var(--accent);border-color:var(--accent);color:#fff}
-.stepper .nav:disabled{opacity:.4;cursor:default}
-.dots{display:flex;gap:4px;flex:1;min-width:240px}
-.dot{flex:1;border:none;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 4px;font:inherit;font-size:12px;color:var(--sub);cursor:pointer;text-align:center}
-.dot.on{border-color:var(--accent);color:var(--accent);font-weight:700}
-.dot.past{color:var(--text)}
-.phones{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-@media (max-width:760px){.phones{grid-template-columns:1fr}}
-.col{display:flex;flex-direction:column;align-items:center;gap:10px;min-width:0}
-.col h2{font-size:15px;margin:0;display:flex;gap:8px;align-items:center}
+.wrap{max-width:1240px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:20px;margin:0 0 4px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .tag{font-size:11px;font-weight:600;color:var(--sub);background:var(--chip);border-radius:6px;padding:2px 6px}
-.srv{width:100%;max-width:340px;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--line);border-radius:10px;padding:10px 12px}
-.srv .who{font-size:11px;font-weight:700;color:var(--sub)}
-.srv .t{font-weight:600}
-.srv.good{border-left-color:var(--good);background:var(--good-bg)}
-.srv.warn{border-left-color:var(--warn);background:var(--warn-bg)}
-.srv.bad{border-left-color:var(--bad);background:var(--bad-bg)}
-.srv.todo{border-left-color:var(--todo);background:var(--todo-bg)}
-.flag{display:inline-block;font-size:11px;font-weight:700;border-radius:5px;padding:1px 6px;margin-left:6px;color:#fff}
-.flag.good{background:var(--good)}.flag.warn{background:var(--warn)}.flag.bad{background:var(--bad)}.flag.todo{background:var(--todo)}
+.lead{color:var(--sub);margin:0 0 16px}
+.grid{display:grid;grid-template-columns:260px 340px 1fr;gap:16px;align-items:start}
+@media (max-width:1080px){.grid{grid-template-columns:1fr 340px}.ctl-col{grid-column:1 / -1;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}.opt button span{display:none}}
+@media (max-width:720px){.grid{grid-template-columns:1fr}.phonecol{position:static}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.card h3{font-size:13px;margin:0 0 8px;color:var(--sub)}
+.ctl-col,.stack{display:grid;gap:12px}
+.opt{display:grid;gap:6px}
+.opt button{text-align:left;border:1px solid var(--line);background:var(--chip);color:var(--text);border-radius:10px;padding:8px 10px;font:inherit;cursor:pointer}
+.opt button[aria-pressed="true"]{border-color:var(--accent);background:var(--panel);box-shadow:inset 0 0 0 1px var(--accent)}
+.opt button b{display:block;font-size:13px}
+.opt button span{display:block;font-size:12px;color:var(--sub)}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px}
+.sw button{width:44px;height:26px;border-radius:13px;border:none;background:var(--line);position:relative;cursor:pointer;flex:none}
+.sw button::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .15s}
+.sw button[aria-pressed="true"]{background:var(--accent)}
+.sw button[aria-pressed="true"]::after{left:21px}
+.reset{width:100%;border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:10px;padding:9px;font:inherit;font-weight:600;cursor:pointer}
 
-/* ===== phone (앱 화면은 라이트 고정) ===== */
-.phone{width:320px;max-width:100%;aspect-ratio:320/660;background:#16181D;border-radius:40px;padding:10px;box-shadow:0 8px 24px rgba(0,0,0,.18)}
-.scr{position:relative;width:100%;height:100%;background:#fff;border-radius:31px;overflow:hidden;color:#16181D;font-size:14px;display:flex;flex-direction:column}
-.sb{height:34px;flex:none;display:flex;justify-content:space-between;align-items:center;padding:0 22px;font-size:12px;font-weight:600}
-.hdr{height:44px;flex:none;display:flex;align-items:center;padding:0 12px}
-.body{flex:1;overflow:hidden;padding:8px 20px 0;display:flex;flex-direction:column}
+.phonecol{display:flex;flex-direction:column;align-items:center;gap:8px;position:sticky;top:12px}
+.modebar{font-size:12px;font-weight:700;color:#fff;border-radius:999px;padding:4px 12px}
+.m-desk{background:#5D6474}.m-new{background:#0E8A52}.m-now{background:#D92D3B}
+.phone{width:340px;max-width:100%;aspect-ratio:340/700;background:#16181D;border-radius:44px;padding:10px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+.scr{position:relative;width:100%;height:100%;background:#fff;border-radius:35px;overflow:hidden;color:#16181D;display:flex;flex-direction:column}
+.sb{height:36px;flex:none;display:flex;justify-content:space-between;align-items:center;padding:0 24px;font-size:12px;font-weight:600}
+.hdr{height:44px;flex:none;display:flex;align-items:center;padding:0 10px;gap:4px;font-weight:700;font-size:16px}
+.hdr button{background:none;border:none;padding:6px;cursor:pointer;display:grid;place-items:center}
+.body{flex:1;overflow:auto;padding:6px 20px 0;display:flex;flex-direction:column}
 .ttl{font-size:20px;font-weight:700;line-height:28px;margin:4px 0 16px;white-space:pre-line}
-.item{border:1px solid #F2F4F7;border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;margin-bottom:8px;background:#fff}
+.item{width:100%;font:inherit;text-align:left;border:1px solid #F2F4F7;border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;margin-bottom:8px;background:#fff;cursor:pointer;color:inherit}
 .item.sel{border-color:#0073FA;background:#F5FAFF}
-.item.hl-bad{box-shadow:0 0 0 3px rgba(217,45,59,.35)}
-.item.hl-good{box-shadow:0 0 0 3px rgba(14,138,82,.35)}
-.item.hl-warn{box-shadow:0 0 0 3px rgba(178,106,0,.35)}
-.item.hl-todo{box-shadow:0 0 0 3px rgba(107,71,214,.4)}
 .av{width:40px;height:40px;border-radius:50%;background:#F2F4F7;display:grid;place-items:center;flex:none}
 .inf{flex:1;min-width:0}
-.nm{font-size:16px;font-weight:600;color:#16181D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nm{font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .st{font-size:13px;font-weight:500;color:#808799}
 .st.need{color:#0073FA}
-.st.badtx{color:#D92D3B}
-.ck{flex:none}
-.addbtn{border:1px dashed #CACED8;border-radius:12px;padding:12px;text-align:center;color:#5D6474;font-weight:600;font-size:14px}
-.cta{margin:auto 0 0;padding:12px 0 22px}
-.btn{background:#0073FA;color:#fff;border-radius:12px;text-align:center;font-weight:700;padding:14px;font-size:16px}
-.btn.off{background:#CACED8}
-.dim{position:absolute;inset:0;background:rgba(22,24,29,.55)}
-.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;padding:24px 20px 22px}
-.sheet .ttl{font-size:20px;margin:0 0 16px}
+.addbtn{border:1px dashed #CACED8;border-radius:12px;padding:12px;text-align:center;color:#808799;font-weight:600;font-size:14px}
+.cta{margin-top:auto;padding:12px 0 24px;background:#fff}
+.btn{display:block;width:100%;border:none;background:#0073FA;color:#fff;border-radius:12px;text-align:center;font:inherit;font-weight:700;padding:14px;font-size:16px;cursor:pointer}
+.btn:disabled{background:#CACED8;cursor:default}
+.btn.line{background:#fff;color:#0073FA;border:1px solid #0073FA}
+.row2{display:flex;gap:8px}
+.dim{position:absolute;inset:0;background:rgba(22,24,29,.55);animation:fd .15s}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;padding:22px 20px 20px;animation:up .2s ease-out}
+@keyframes up{from{transform:translateY(40%);opacity:.4}}
+@keyframes fd{from{opacity:0}}
+.sheet .ttl{margin:0 0 14px}
 .rrn{display:flex;align-items:center;gap:8px}
-.inp{flex:1;border:1px solid #CACED8;border-radius:10px;height:48px;display:flex;align-items:center;padding:0 12px;font-size:16px;letter-spacing:1px;background:#fff;min-width:0}
+.inp{flex:1;border:1px solid #CACED8;border-radius:10px;height:48px;display:flex;align-items:center;padding:0 12px;font-size:17px;letter-spacing:1px;min-width:0}
 .inp.ro{background:#F2F4F7;color:#5D6474}
-.inp.ph{color:#CACED8;letter-spacing:0}
-.inp.fill{border-color:#0073FA}
+.inp.focus{border-color:#0073FA;box-shadow:0 0 0 1px #0073FA}
+.inp .ph{color:#CACED8;letter-spacing:0;font-size:15px}
+.inp .cur{display:inline-block;width:2px;height:20px;background:#0073FA;margin:0 1px;animation:bl 1s steps(1) infinite}
+@keyframes bl{50%{opacity:0}}
 .hy{width:8px;height:2px;background:#5D6474;flex:none}
-.safe{background:#F9F9FB;border-radius:12px;padding:12px;margin:16px 0}
-.safe b{display:flex;gap:6px;align-items:center;font-size:14px;color:#31353F}
-.safe p{margin:4px 0 0;font-size:13px;color:#5D6474;line-height:1.5}
-.pnote{font-size:12px;font-weight:600;border-radius:6px;padding:4px 8px;margin:-6px 0 10px;display:inline-block}
-.pnote.good{color:#0E8A52;background:#E7F6EE}.pnote.warn{color:#B26A00;background:#FFF4DE}
-.pick{border:1px solid #F2F4F7;border-radius:12px;padding:14px;margin-bottom:8px}
+.err{color:#FA4655;font-size:13px;margin-top:6px}
+.prefill{font-size:12px;font-weight:600;color:#0E8A52;background:#E7F6EE;border-radius:6px;padding:3px 8px;margin:8px 0 0;display:inline-block}
+.safe{background:#F9F9FB;border-radius:12px;padding:10px 12px;margin:12px 0}
+.safe b{display:flex;gap:6px;align-items:center;font-size:13px;color:#31353F}
+.safe p{margin:2px 0 0;font-size:12px;color:#5D6474}
+.kp{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:10px}
+.kp button{border:none;background:#F2F4F7;border-radius:8px;height:38px;font:inherit;font-size:18px;font-weight:600;cursor:pointer;color:#16181D}
+.kp button:active{background:#CACED8}
+.kp .fn{font-size:12px;font-weight:600;color:#5D6474}
+.pick{width:100%;font:inherit;text-align:left;border:1px solid #F2F4F7;border-radius:12px;padding:12px 14px;margin-bottom:8px;background:#fff;cursor:pointer;color:inherit}
 .pick.sel{border-color:#0073FA;background:#F5FAFF}
 .pick .lb{font-size:12px;color:#808799;font-weight:600}
 .pick .v{font-size:16px;font-weight:600}
-.pick.badv .v{color:#D92D3B}
-.toggle{font-size:13px;color:#5D6474;text-decoration:underline;margin:-8px 0 12px}
+.lnk{background:none;border:none;padding:0;font:inherit;font-size:13px;color:#5D6474;text-decoration:underline;cursor:pointer;margin:0 0 12px}
 .loading{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;padding:0 24px}
 .spin{width:36px;height:36px;border-radius:50%;border:4px solid #F2F4F7;border-top-color:#0073FA;animation:sp 1s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
-@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+@media (prefers-reduced-motion:reduce){.sheet,.dim,.spin,.cur,.log .e{animation:none}}
 .loading .a{font-size:18px;font-weight:700}
 .loading .b{font-size:14px;color:#5D6474}
-.skip{position:absolute;inset:0;background:rgba(255,255,255,.72);display:grid;place-items:center}
-.skip span{background:#16181D;color:#fff;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:700}
-.sum{font-size:12px;color:#808799;text-align:center;margin:-8px 0 14px}
-.done{display:flex;flex-direction:column;align-items:center;margin:8px 0 18px;gap:8px}
-.done .ic{width:56px;height:56px;border-radius:50%;background:#0073FA;display:grid;place-items:center}
+.ovl{position:absolute;inset:0;background:rgba(255,255,255,.75);display:grid;place-items:center}
+.hosp-hero{height:150px;margin:0 -20px 16px;background:linear-gradient(135deg,#E8F1FF,#F5FAFF);display:grid;place-items:center;color:#479DFF;font-weight:700}
+.hname{font-size:22px;font-weight:700}
+.hmeta{font-size:13px;color:#808799;margin:2px 0 14px}
+.badge{display:inline-block;font-size:12px;font-weight:600;color:#0073FA;background:#F5FAFF;border-radius:6px;padding:3px 8px;margin-right:4px}
+.kv{border-top:1px solid #F2F4F7;margin-top:6px}
+.kv div{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #F2F4F7;font-size:14px}
+.kv span:first-child{color:#808799;flex:none}
+.kv span:last-child{font-weight:600;text-align:right}
+.mini{font-size:11px;color:#808799;text-align:center;margin:0 0 10px}
+.done{display:flex;flex-direction:column;align-items:center;margin:20px 0;gap:8px}
+.done .ic{width:60px;height:60px;border-radius:50%;background:#0073FA;display:grid;place-items:center}
 .done .a{font-size:20px;font-weight:700}
-.rows{border-top:1px solid #F2F4F7}
-.rows div{display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid #F2F4F7;font-size:14px}
-.rows span:first-child{color:#808799;flex:none}
-.rows span:last-child{font-weight:600;text-align:right}
-.rows .bad{color:#D92D3B}.rows .warn{color:#B26A00}.rows .todo{color:#6B47D6}.rows .good{color:#0E8A52}
+.hint{font-size:12px;color:var(--sub);text-align:center;max-width:340px;min-height:18px}
 
-.cmpbox{margin-top:24px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;overflow-x:auto}
-.cmpbox h3{margin:0 0 8px;font-size:15px}
-table{border-collapse:collapse;width:100%;min-width:420px}
-th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
-thead th{color:var(--sub);font-size:12px}
-td.diff{background:var(--warn-bg)}td.bad{background:var(--bad-bg);color:var(--bad);font-weight:600}td.todo{background:var(--todo-bg);color:var(--todo);font-weight:600}
+.log{display:grid;gap:6px;max-height:360px;overflow:auto}
+.log .e{border:1px solid var(--line);border-left:4px solid var(--line);border-radius:8px;padding:7px 10px;font-size:13px}
+.log .e.new{animation:fd .35s}
+.log .e .w{font-size:11px;font-weight:700;color:var(--sub)}
+.log .e.good{border-left-color:var(--good);background:var(--good-bg)}
+.log .e.warn{border-left-color:var(--warn);background:var(--warn-bg)}
+.log .e.bad{border-left-color:var(--bad);background:var(--bad-bg)}
+.log .e.todo{border-left-color:var(--todo);background:var(--todo-bg)}
+.flag{display:inline-block;font-size:10px;font-weight:700;border-radius:4px;padding:0 5px;margin-left:6px;color:#fff;vertical-align:1px}
+.flag.good{background:var(--good)}.flag.warn{background:var(--warn)}.flag.bad{background:var(--bad)}.flag.todo{background:var(--todo)}
+.empty{color:var(--sub);font-size:13px}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:top}
+thead th{color:var(--sub);font-size:12px;font-weight:600}
+tr.hit td{background:var(--hl)}
+td.bad{color:var(--bad);font-weight:700}
+td.todo{color:var(--todo);font-weight:700}
+td.na{color:var(--sub)}
+.tw{overflow-x:auto}
+.cmp{margin-top:16px}
 .foot{color:var(--sub);font-size:12px;margin-top:14px}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>비연동 앱 환자 조회 · 폰 두 대로 비교 <span class="tag">검토용 초안 · v0.1</span></h1>
-  <p class="lead">같은 환자가 같은 순서로 신청할 때, 데스크 시절과 비연동(굿닥 서버가 차트 역할)에서 앱 화면이 어떻게 달라지는지 한 단계씩 넘겨 봅니다. 주민번호 13자리를 받는 병원 기준입니다.</p>
+  <h1>비연동 병원 · 앱 환자 조회 체험판 <span class="tag">검토용 초안 · v0.2</span></h1>
+  <p class="lead">폰을 직접 눌러 접수·예약을 신청해 보세요. 같은 사람으로 병원 방식만 바꿔 다시 해 보면, 데스크 시절과 비연동(굿닥 서버가 차트 역할)의 차이가 아래 결과 기록에 쌓입니다. 주민번호 13자리를 받는 병원 기준이며, 가상 데이터만 사용합니다.</p>
 
-  <div class="ctrl">
-    <div class="r"><div class="k">상황</div><div class="seg" id="scn"></div></div>
-    <p class="desc" id="scnDesc"></p>
-    <div class="r"><div class="k">신청 종류</div><div class="seg" id="kind"></div></div>
-    <div class="r"><div class="k">휴대폰에 저장된 주민번호 뒷자리</div><div class="seg" id="saved"></div></div>
-    <div class="r"><div class="k">오른쪽 폰</div><div class="seg" id="mode"></div></div>
-  </div>
-
-  <div class="stepper">
-    <button class="nav" id="prev" type="button">이전</button>
-    <div class="dots" id="dots"></div>
-    <button class="nav primary" id="next" type="button">다음</button>
-  </div>
-
-  <div class="phones">
-    <div class="col">
-      <h2>데스크 시절 <span class="tag">브릿지 → 데스크 PC</span></h2>
-      <div class="phone"><div class="scr" id="lp"></div></div>
-      <div class="srv" id="ls"></div>
+  <div class="grid">
+    <div class="ctl-col">
+      <div class="card"><h3>로그인한 사람</h3><div class="opt" id="persona"></div></div>
+      <div class="card"><h3>병원 방식</h3><div class="opt" id="mode"></div></div>
+      <div class="card stack">
+        <div class="sw"><span>이 휴대폰에 주민번호 뒷자리가 저장돼 있음</span><button type="button" id="savedSw" aria-label="휴대폰 저장값"></button></div>
+        <button class="reset" type="button" id="reset">처음부터 다시</button>
+      </div>
     </div>
-    <div class="col">
-      <h2 id="rTitle"></h2>
-      <div class="phone"><div class="scr" id="rp"></div></div>
-      <div class="srv" id="rs"></div>
+
+    <div class="phonecol">
+      <span class="modebar" id="modebar"></span>
+      <div class="phone"><div class="scr" id="scr"></div></div>
+      <div class="hint" id="hint"></div>
+    </div>
+
+    <div class="stack">
+      <div class="card"><h3>뒤에서 일어나는 일</h3><div class="log" id="log"></div></div>
+      <div class="card"><h3 id="dbTitle"></h3><div class="tw"><table id="db"></table></div></div>
+      <div class="card"><h3>휴대폰에 저장된 주민번호 뒷자리</h3><div class="tw"><table id="store"></table></div></div>
+      <div class="card"><h3>병원이 받은 신청</h3><div id="inbox"></div></div>
     </div>
   </div>
 
-  <div class="cmpbox">
-    <h3>결과 비교</h3>
-    <table id="cmp"></table>
+  <div class="card cmp">
+    <h3>결과 기록 · <span id="cmpWho"></span></h3>
+    <div class="tw"><table id="cmp"></table></div>
   </div>
-  <p class="foot">화면 문구는 굿닥 앱 코드(환자 선택 화면, 주민번호 입력 바텀시트, 번호 선택 바텀시트) 기준입니다. 마지막 '신청' 화면만 결과를 보여 주려고 만든 요약 화면입니다. 가상 데이터만 사용합니다. 예시 환자: 김굿닥(010-1111-2222, 900101-1234567), 이영호(010-9999-0000, 900101-1876543).</p>
+  <p class="foot">앱 화면 문구는 굿닥 앱 코드(환자 선택, 주민번호 입력 바텀시트, 번호 선택 바텀시트) 기준입니다. 병원 상세·신청 확인·완료 화면은 체험을 위한 요약 화면입니다. '지금 코드'는 앱·서버를 고치지 않고 비연동 병원을 열었을 때의 동작이며, 실제로는 앱이 비연동 병원 접수를 막고 있어 열었다고 가정합니다.</p>
 </div>
 
 <script>
-const SCN = {
-  s1:{label:"재진 · 같은 휴대폰", desc:"전에 이 병원에 왔고, 그때와 같은 휴대폰번호로 로그인했다.",
-      user:{name:"김굿닥", phone:"010-1111-2222", rrn:"900101-1234567"}},
-  s2:{label:"재진 · 휴대폰번호 바뀜", desc:"전에 이 병원에 왔지만 그때와 다른 휴대폰번호(010-5555-6666)로 로그인했다.",
-      user:{name:"김굿닥", phone:"010-5555-6666", rrn:"900101-1234567"}},
-  s3:{label:"처음 방문 · 생일·성별 같은 다른 환자 있음", desc:"처음 가는 병원인데, 생년월일·성별이 같은 다른 사람(이영호)이 이미 있다.",
-      user:{name:"박신규", phone:"010-7777-8888", rrn:"900101-1999999"}},
-  s4:{label:"처음 방문 · 이름까지 같은 다른 환자 있음", desc:"처음 가는 병원인데, 이름·생년월일·성별이 모두 같은 다른 사람(기존 김굿닥)이 이미 있다.",
-      user:{name:"김굿닥", phone:"010-8888-0000", rrn:"900101-1222222"}},
-};
-const STAGES = [["lookup","1차 조회"],["list","진료 받을 분"],["rrn","주민번호 입력"],["lookup2","2차 조회"],["phone","번호 선택"],["done","신청"]];
-const state = {scn:"s1", kind:"rcpt", saved:"yes", mode:"new", i:0};
 const HOSP = "굿닥의원";
-const mask = p => p.replace(/(\d{3})-(\d{4})-(\d{4})/, "$1-****-$3");
-const back = r => r.split("-")[1];
+const PERSONAS = {
+  s1:{label:"김굿닥 · 재진, 같은 휴대폰", desc:"전에 온 환자. 그때와 같은 번호로 로그인", name:"김굿닥", phone:"010-1111-2222", rrn:"900101-1234567"},
+  s2:{label:"김굿닥 · 재진, 휴대폰번호 바뀜", desc:"전에 온 환자. 번호를 바꾼 뒤 로그인", name:"김굿닥", phone:"010-5555-6666", rrn:"900101-1234567"},
+  s3:{label:"박신규 · 처음 방문", desc:"생년월일·성별이 같은 이영호가 이미 있음", name:"박신규", phone:"010-7777-8888", rrn:"900101-1999999"},
+  s4:{label:"김굿닥(동명이인) · 처음 방문", desc:"이름·생년월일·성별이 같은 기존 김굿닥이 있음", name:"김굿닥", phone:"010-8888-0000", rrn:"900101-1222222"},
+};
+const DB = [
+  {id:"P1", name:"김굿닥", phone:"010-1111-2222", rrn:"900101-1234567"},
+  {id:"P2", name:"이영호", phone:"010-9999-0000", rrn:"900101-1876543"},
+];
+const MODES = {
+  desk:{label:"데스크 시절", desc:"브릿지 → 데스크 PC(차트)가 조회에 답함", cls:"m-desk"},
+  new:{label:"비연동 · 개선 후", desc:"굿닥 서버가 차트 역할, 개선 규칙 적용", cls:"m-new"},
+  now:{label:"비연동 · 지금 코드", desc:"앱·서버를 고치지 않고 연 경우", cls:"m-now"},
+};
+const cfg = {p:"s1", mode:"desk", saved:true};
+const results = {};
+let R;
 
-/* frame: {s:screen|null(skip), srv, flag, note}  skip 단계는 직전 화면 위에 '건너뜀' 표시 */
-function F(s, srv, flag){ return {s, srv, flag}; }
-function skip(srv, flag){ return {s:null, srv, flag}; }
-const L = (items, extra) => Object.assign({t:"list", items}, extra||{});
-const I = (name, sub, o) => Object.assign({name, sub}, o||{});
-
-function desk(){
-  const u=SCN[state.scn].user, sc=state.scn, saved=state.saved==="yes";
-  const f={}, r={};
-  if(sc==="s1"){
-    f.lookup=F({t:"loading",name:u.name},"데스크 PC가 휴대폰번호 "+u.phone+"로 찾음 → 김굿닥 · 900101-1234567 (13자리)");
-    f.list=F(L([I(u.name,"phone",{phone:u.phone,sel:true})]),"차트 환자번호가 있어 재진");
-    f.rrn=skip("응답이 13자리라 주민번호 입력 창이 뜨지 않음");
-    f.lookup2=skip("1차에서 찾아 2차 조회 없음");
-    f.phone=skip("등록 번호와 로그인 번호가 같음");
-    Object.assign(r,{who:"김굿닥 (본인)",judge:"재진",input:"0번",rrn:"900101-1234567"});
-  } else {
-    f.lookup=F({t:"loading",name:u.name},"데스크 PC가 휴대폰번호 "+u.phone+"로 찾음 → 없음");
-    f.list=F(L([I(u.name,"need")]),"못 찾아서 본인 정보로 표시. 누르면 주민번호 입력 창");
-    f.rrn=F({t:"rrn",name:u.name,back:back(u.rrn),pre:saved,bg:L([I(u.name,"need")])}, saved?"휴대폰에 저장된 주민번호 뒷자리가 미리 채워짐":"주민번호 뒷자리 7자리를 직접 입력");
-    if(sc==="s2"){
-      f.lookup2=F(L([I(u.name,"phone",{phone:"010-1111-2222",sel:true})]),"주민번호 13자리 전체로 찾음 → 김굿닥 한 명");
-      f.phone=F({t:"phone",prev:"010-1111-2222",cur:u.phone},"예전 번호와 로그인 번호가 달라 고르게 함");
-      Object.assign(r,{who:"김굿닥 (본인)",judge:"재진"});
-    } else {
-      const o=sc==="s3"?"이영호":"기존 김굿닥";
-      f.lookup2=F(L([I(u.name,"phone",{phone:u.phone,sel:true})]),"주민번호 13자리 전체로 못 찾음 → 신환. "+o+"는 뒷자리가 달라 나오지 않음");
-      f.phone=skip("새로 등록하는 환자라 번호를 고를 일 없음");
-      Object.assign(r,{who:u.name+" (본인)",judge:"신환"});
-    }
-    Object.assign(r,{input:saved?"0번 (저장값)":"1번",rrn:u.rrn});
-  }
-  f.done=F({t:"done",r},"병원은 주민번호 13자리를 받음");
-  return {f,r};
-}
-
-function srvNew(){
-  const u=SCN[state.scn].user, sc=state.scn, saved=state.saved==="yes";
-  const f={}, r={};
-  if(sc==="s1"){
-    f.lookup=F({t:"loading",name:u.name},"서버 환자 정보에서 휴대폰번호 "+u.phone+"로 찾음 → 김굿닥 · 900101-1 (7자리). 주민번호 뒷자리는 서버에 없음");
-    if(saved){
-      f.list=F(L([I(u.name,"phone",{phone:u.phone,sel:true,hl:"good"})]),"휴대폰에 저장된 주민번호 뒷자리를 자동 입력 (성별 자리가 응답과 같음). 서버 환자 ID가 있어 재진","good");
-      f.rrn=skip("저장값으로 채워서 입력 없이 넘어감","good");
-    } else {
-      f.list=F(L([I(u.name,"need",{hl:"warn"})]),"응답이 7자리라 주민번호 뒷자리 입력 필요. 서버 환자 ID가 있어 재진","warn");
-      f.rrn=F({t:"rrn",name:u.name,back:back(u.rrn),pre:false,bg:L([I(u.name,"need")])},"한 번 입력하면 휴대폰에 저장. 다음부터는 자동 입력","warn");
-    }
-    f.lookup2=skip("1차에서 찾아 2차 조회 없음");
-    f.phone=skip("등록 번호와 로그인 번호가 같음");
-    Object.assign(r,{who:"김굿닥 (본인)",judge:"재진",input:saved?"0번 (저장값)":"1번",rrn:"900101-1234567"});
-  } else {
-    f.lookup=F({t:"loading",name:u.name},"서버 환자 정보에서 휴대폰번호 "+u.phone+"로 찾음 → 없음");
-    f.list=F(L([I(u.name,"need")]),"못 찾아서 본인 정보로 표시. 누르면 주민번호 입력 창");
-    f.rrn=F({t:"rrn",name:u.name,back:back(u.rrn),pre:saved,bg:L([I(u.name,"need")])}, saved?"휴대폰에 저장된 주민번호 뒷자리가 미리 채워짐":"주민번호 뒷자리 7자리를 직접 입력");
-    const q="이름 "+u.name+" + 900101-1로 찾음 → ";
-    if(sc==="s2"){
-      f.lookup2=F(L([I(u.name,"phone",{phone:"010-1111-2222",sel:true,hl:"good"})]),q+"김굿닥(본인). 재진, 입력한 13자리는 그대로 유지","good");
-      f.phone=F({t:"phone",prev:"010-1111-2222",cur:u.phone},"예전 번호와 로그인 번호가 달라 고르게 함. 고른 번호로 서버 환자 정보 갱신",state.kind==="appt"?"good":null);
-      Object.assign(r,{who:"김굿닥 (본인)",judge:"재진"});
-    } else if(sc==="s3"){
-      f.lookup2=F(L([I(u.name,"phone",{phone:u.phone,sel:true,hl:"good"})]),q+"없음. 이영호는 이름이 달라 제외 → 신환","good");
-      f.phone=skip("새로 등록하는 환자라 번호를 고를 일 없음");
-      Object.assign(r,{who:"박신규 (본인)",judge:"신환"});
-    } else {
-      f.lookup2=F(L([I(u.name,"phone",{phone:"010-1111-2222",sel:true,hl:"todo"})]),q+"기존 김굿닥(다른 사람)이 나옴. 신환으로 받을지, 목록에서 고르게 할지 정해야 함","todo");
-      f.phone=skip("2차 조회 처리 방법을 정한 뒤 결정","todo");
-      Object.assign(r,{who:"정해야 함",judge:"정해야 함",todo:true});
-    }
-    Object.assign(r,{input:saved?"0번 (저장값)":"1번",rrn:u.rrn});
-  }
-  f.done=F({t:"done",r},"접수·예약 건에 13자리 저장 → 진료 종료 또는 36시간 뒤 삭제");
-  return {f,r};
-}
-
-function srvNow(){
-  const u=SCN[state.scn].user, sc=state.scn, saved=state.saved==="yes", rcpt=state.kind==="rcpt";
-  const f={}, r={};
-  const pre = rcpt?"(지금 앱은 비연동 접수를 막고 있음. 열었다고 가정) ":"";
-  if(sc==="s1"){
-    f.lookup=F({t:"loading",name:u.name},pre+"서버가 휴대폰번호로 찾음 → 김굿닥 · 900101-1 (7자리)");
-    if(rcpt){
-      f.list=F(L([I(u.name,"phone",{phone:u.phone,sel:true,hl:"bad"})]),"차트 환자번호가 없어 신환으로 봄. 재진만 받는 병원이면 막힘","bad");
-      f.rrn=skip("응답에 값이 있으면 자리수와 관계없이 그대로 씀 → 입력 창이 뜨지 않음","bad");
-      Object.assign(r,{who:"김굿닥 (본인)",judge:"신환으로 봄",input:"0번",rrn:"900101-1 (뒷자리 없음)",bad:["judge","rrn"]});
-    } else {
-      f.list=F(L([I(u.name,"need",{hl:"warn"})]),"응답이 7자리라 입력 필요. 1차 응답의 동의 내역·주소·내원 경로는 버림","warn");
-      f.rrn=F({t:"rrn",name:u.name,back:back(u.rrn),pre:false,bg:L([I(u.name,"need")]),note:saved?"warn":null},saved?"휴대폰에 저장값이 있어도 채우지 않음 (응답이 6자리 이하일 때만 씀). 예약할 때마다 입력":"주민번호 뒷자리 7자리를 직접 입력","warn");
-      Object.assign(r,{who:"김굿닥 (본인)",judge:"재진 차단 꺼짐",input:"매번 1번",rrn:"900101-1234567",warn:["input","judge"]});
-    }
-    f.lookup2=skip("1차에서 찾아 2차 조회 없음");
-    f.phone=skip("등록 번호와 로그인 번호가 같음");
-  } else {
-    f.lookup=F({t:"loading",name:u.name},pre+"서버가 휴대폰번호 "+u.phone+"로 찾음 → 없음");
-    f.list=F(L([I(u.name,"need")]),"못 찾아서 본인 정보로 표시. 누르면 주민번호 입력 창");
-    f.rrn=F({t:"rrn",name:u.name,back:back(u.rrn),pre:saved,bg:L([I(u.name,"need")])}, saved?"휴대폰에 저장된 주민번호 뒷자리가 미리 채워짐":"주민번호 뒷자리 7자리를 직접 입력");
-    const q="13자리를 보냄(이름 없음) → 900101-1인 김굿닥·이영호를 모두 돌려줌. ";
-    if(rcpt){
-      const who = sc==="s2"?"김굿닥 또는 이영호":sc==="s3"?"김굿닥 또는 이영호":"기존 김굿닥 또는 이영호";
-      f.lookup2=F(L([I(who,"custom",{text:"응답 첫 번째 사람으로 바뀜",sel:true,hl:"bad"})]),q+"앱은 이름 확인 없이 첫 번째 사람으로 바꾸고, 주민번호도 7자리로 바꿈","bad");
-      f.phone=F({t:"phone",prev:"010-****-2222 또는 010-****-0000",cur:u.phone,bad:true},"바뀐 사람의 번호가 '이전 번호'로 뜸","bad");
-      Object.assign(r,{who:who+" (응답 순서에 따라)",judge:"신환으로 봄",input:saved?"0번 (저장값)":"1번",rrn:"900101-1 (뒷자리 없음)",bad:["who","judge","rrn"]});
-    } else {
-      f.lookup2=F(L([I(u.name,"none",{sel:true,hl:"warn"})]),q+"앱은 브릿지가 없으면 응답을 쓰지 않고 입력한 이름·13자리로 진행. 환자 ID·동의 내역 없음","warn");
-      if(sc==="s2"){
-        f.phone=skip("브릿지 없고 환자 번호도 없어 번호 선택을 건너뜀 → 서버엔 예전 번호가 남음","warn");
-        Object.assign(r,{who:"김굿닥 (본인)",judge:"재진 정보 못 이어씀",warn:["judge"]});
-      } else {
-        f.phone=skip("새로 등록하는 환자라 번호를 고를 일 없음");
-        Object.assign(r,{who:u.name+" (본인)",judge:"신환"});
-      }
-      Object.assign(r,{input:saved?"0번 (저장값)":"1번",rrn:u.rrn});
-    }
-  }
-  f.done=F({t:"done",r},r.bad&&r.bad.includes("rrn")?"병원은 900101-1만 받음 (주민번호 뒷자리 없음)":"병원은 13자리를 받음", r.bad?"bad":null);
-  return {f,r};
-}
-
-/* ===== 화면 그리기 ===== */
+const mask = p => p ? p.replace(/(\d{3})-(\d{4})-(\d{4})/, "$1-****-$3") : "";
+const front7 = r => r.slice(0,8);
+const norm = s => s.trim().toLowerCase();
 const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const AV = '<svg width="22" height="22" viewBox="0 0 24 24" fill="#CACED8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6z"/></svg>';
-const CK = on => '<svg class="ck" width="28" height="28" viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9" fill="none" stroke="'+(on?'#0073FA':'#CACED8')+'" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-const SB = '<div class="sb"><span>9:41</span><span>●●● ▮</span></div>';
-const HD = '<div class="hdr"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="#16181D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>';
-const SHIELD = '<svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z" fill="#479DFF"/><path d="M9 12l2 2 4-4" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>';
+const me = () => PERSONAS[cfg.p];
+const skey = () => me().name+"|"+me().rrn.slice(0,6);
+const dbp = id => DB.find(p=>p.id===id);
+const reduce = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+const wait = ms => new Promise(r=>setTimeout(r, reduce()?0:ms));
+const SRC = () => cfg.mode==="desk" ? "데스크 PC" : "굿닥 서버";
 
-function itemHTML(it){
-  let sub="";
-  if(it.sub==="phone") sub='<div class="st">'+esc(mask(it.phone))+'</div>';
-  else if(it.sub==="need") sub='<div class="st need">주민번호 입력이 필요해요</div>';
-  else if(it.sub==="custom") sub='<div class="st badtx">'+esc(it.text)+'</div>';
-  return '<div class="item'+(it.sel?' sel':'')+(it.hl?' hl-'+it.hl:'')+'"><div class="av">'+AV+'</div><div class="inf"><div class="nm">'+esc(it.name)+'</div>'+sub+'</div>'+CK(!!it.sel)+'</div>';
+function newRun(){
+  R = {screen:"hosp", kind:null, items:[], sheet:null, typing:"", typErr:"", prefilled:false, target:null,
+       phonePick:"cur", logs:[], shown:0, hits:[], inputs:0, usedSaved:false, sent:null, busy:false, todo:false, noPrefill:false, showAll:false,
+       store: cfg.saved ? {[skey()]: me().rrn.slice(7)} : {}};
+  render();
 }
-function listHTML(s){
-  const anySel = s.items.some(x=>x.sel);
-  return SB+HD+'<div class="body"><div class="ttl">진료 받을 분은 누구인가요?</div>'+s.items.map(itemHTML).join("")+
-    '<div class="addbtn">+ 자녀 추가하기</div><div class="cta"><div class="btn'+(anySel?'':' off')+'">다음</div></div></div>';
+function log(who, t, flag){ R.logs.push({who,t,flag:flag||""}); }
+
+/* ===== 조회 엔진 ===== */
+function lookup1(){
+  const u=me(), found=DB.filter(p=>p.phone===u.phone);
+  R.hits=found.map(p=>p.id);
+  log("굿닥 앱","1차 조회: 로그인한 휴대폰번호 "+u.phone+"로 요청");
+  if(cfg.mode==="desk") log("굿닥 서버","브릿지를 거쳐 데스크 PC에 전달");
+  if(cfg.mode==="now" && R.kind==="rcpt") log("굿닥 앱","실제로는 브릿지가 없어 앱이 접수를 막음 (체험을 위해 열어 둠)","warn");
+  if(!found.length){
+    log(SRC(),"이 휴대폰번호로 찾은 환자 없음");
+    log("굿닥 앱","본인 정보로 표시하고 '주민번호 입력이 필요해요'");
+    R.items=[{name:u.name, phone:u.phone, rrn:"", from:"none"}];
+    return;
+  }
+  const p=found[0];
+  if(cfg.mode==="desk"){
+    log(SRC(),"휴대폰번호로 "+p.name+" 찾음 → 주민번호 13자리 "+p.rrn+" 응답");
+    log("굿닥 앱","응답이 13자리라 입력 없이 진행. 차트 환자번호가 있어 재진");
+    R.items=[{name:p.name, phone:p.phone, rrn:p.rrn, pid:p.id, revisit:true, from:"l1"}];
+    return;
+  }
+  log(SRC(),"휴대폰번호로 "+p.name+" 찾음 → 주민번호 7자리 "+front7(p.rrn)+" 응답 (뒷자리는 서버에 없음)");
+  const it={name:p.name, phone:p.phone, rrn:"", pid:p.id, revisit:cfg.mode==="new", from:"l1"};
+  if(cfg.mode==="new"){
+    const s=R.store[skey()];
+    if(s && s[0]===p.rrn[7]){ it.rrn=front7(p.rrn)+s.slice(1); R.usedSaved=true; log("굿닥 앱","휴대폰에 저장된 주민번호 뒷자리를 자동 입력 (성별 자리가 응답과 같음). 서버 환자 ID가 있어 재진","good"); }
+    else log("굿닥 앱","응답이 7자리라 주민번호 뒷자리 입력 필요 (한 번 입력하면 휴대폰에 저장). 서버 환자 ID가 있어 재진","warn");
+  } else if(R.kind==="rcpt"){
+    it.rrn=front7(p.rrn); it.revisit=false;
+    log("굿닥 앱","응답에 주민번호 값이 있어 7자리를 그대로 씀 → 입력 창이 뜨지 않음","bad");
+    log("굿닥 앱","차트 환자번호가 없어 신환으로 봄. 재진만 받는 병원이면 막힘","bad");
+  } else {
+    it.revisit=false; R.noPrefill=true;
+    log("굿닥 앱","응답이 7자리라 입력 필요. 휴대폰 저장값은 응답이 6자리 이하일 때만 써서 채우지 않음. 동의 내역·주소도 버림","warn");
+  }
+  R.items=[it];
 }
-function screenHTML(s){
-  if(s.t==="loading") return SB+HD+'<div class="loading"><div class="spin"></div><div class="a">이전 방문 기록 조회중</div><div class="b">'+esc(HOSP)+'에서 '+esc(s.name)+'님의 정보를 조회하고 있어요</div></div>';
-  if(s.t==="list") return listHTML(s);
-  if(s.t==="rrn"){
-    const note = s.pre?'<div class="pnote good">휴대폰에 저장된 값으로 채워짐</div>':(s.note==="warn"?'<div class="pnote warn">저장값이 있어도 비어 있음</div>':'');
-    return listHTML(s.bg)+'<div class="dim"></div><div class="sheet"><div class="ttl">'+esc(s.name)+'님의\n주민번호를 입력해 주세요</div>'+note+
-      '<div class="rrn"><div class="inp ro">900101</div><div class="hy"></div><div class="inp fill">'+esc(s.back)+'</div></div>'+
-      '<div class="safe"><b>'+SHIELD+'안심하세요</b><p>입력한 정보는 병원에 전달하기 위해 필요하며, 굿닥에서 보관하지 않고 고객님 휴대폰에만 저장돼요.</p></div><div class="btn">확인</div></div>';
+
+async function lookup2(it, full){
+  log("굿닥 앱","2차 조회 요청: "+(cfg.mode==="new" ? "이름 "+it.name+" + "+front7(full) : "주민번호 13자리 (이름 없음)"));
+  R.busy=true; render(); await wait(900); R.busy=false;
+  if(cfg.mode==="desk"){
+    const m=DB.filter(p=>p.rrn===full); R.hits=m.map(p=>p.id);
+    if(m.length){ const p=m[0]; Object.assign(it,{name:p.name, phone:p.phone, rrn:full, pid:p.id, revisit:true}); log(SRC(),"주민번호 13자리 전체로 "+p.name+" 한 명 찾음 → 재진"); }
+    else { Object.assign(it,{rrn:full, revisit:false}); log(SRC(),"13자리가 같은 환자 없음 → 신환. 생년월일·성별만 같은 사람은 나오지 않음"); }
+    return;
   }
-  if(s.t==="phone"){
-    const prev = s.bad? s.prev : mask(s.prev);
-    return listHTML(s.bg||{items:[]})+'<div class="dim"></div><div class="sheet"><div class="ttl" style="margin-bottom:6px">어떤 번호로 접수하시겠어요?</div>'+
-      '<p style="margin:0 0 14px;color:#5D6474;font-size:14px">이전 접수 기록과 현재 사용할 휴대전화번호가 달라요.\n접수에 사용할 번호를 선택해 주세요.</p>'+
-      '<div class="toggle">전체 번호 보기</div>'+
-      '<div class="pick'+(s.bad?' badv':'')+'"><div class="lb">이전 번호</div><div class="v">'+esc(prev)+'</div></div>'+
-      '<div class="pick sel"><div class="lb">현재 번호</div><div class="v">'+esc(mask(s.cur))+'</div></div>'+
-      '<div class="btn" style="margin-top:10px">이 번호로 접수하기</div></div>';
+  if(cfg.mode==="new"){
+    const m=DB.filter(p=>norm(p.name)===norm(it.name) && front7(p.rrn)===front7(full)); R.hits=m.map(p=>p.id);
+    const near=DB.filter(p=>front7(p.rrn)===front7(full) && norm(p.name)!==norm(it.name));
+    if(m.length){
+      const p=m[0];
+      Object.assign(it,{phone:p.phone, rrn:full, pid:p.id, revisit:true});
+      if(p.rrn!==full){ R.todo=true; log(SRC(),"이름·생년월일·성별이 모두 같은 "+p.name+"(다른 사람)을 찾음. 신환으로 받을지, 목록에서 고르게 할지 정해야 함 (지금은 이 환자로 이어짐)","todo"); }
+      else log(SRC(),"이름+생년월일+성별로 "+p.name+" 찾음 → 재진. 입력한 13자리는 그대로 유지","good");
+    } else {
+      Object.assign(it,{rrn:full, revisit:false});
+      log(SRC(),"이름까지 같은 환자 없음 → 신환"+(near.length?". "+near.map(p=>p.name).join("·")+"은(는) 이름이 달라 제외":""),"good");
+    }
+    return;
   }
-  if(s.t==="done"){
-    const r=s.r, cls=k=> r.todo&&(k==="who"||k==="judge")?"todo":(r.bad&&r.bad.includes(k))?"bad":(r.warn&&r.warn.includes(k))?"warn":"";
-    const row=(k,l)=>'<div><span>'+l+'</span><span class="'+cls(k)+'">'+esc(r[k])+'</span></div>';
-    return SB+HD+'<div class="body"><div class="sum">결과를 보여 주는 요약 화면 (실제 앱 화면 아님)</div><div class="done"><div class="ic"><svg width="28" height="28" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="a">'+(state.kind==="rcpt"?"접수":"예약")+' 신청 완료</div></div>'+
-      '<div class="rows">'+row("who","신청된 사람")+row("judge","재진·신환")+row("input","주민번호 입력")+row("rrn","병원이 받는 주민번호")+'</div></div>';
+  const m=DB.filter(p=>front7(p.rrn)===front7(full)); R.hits=m.map(p=>p.id);
+  if(!m.length){ Object.assign(it,{rrn:full, revisit:false}); log(SRC(),"앞 7자리가 같은 환자 없음 → 신환"); return; }
+  log(SRC(),"이름을 보지 않고 앞 7자리 "+front7(full)+"인 "+m.map(p=>p.name).join("·")+"을(를) 모두 돌려줌","bad");
+  if(R.kind==="rcpt"){
+    const p=m[0];
+    Object.assign(it,{name:p.name, phone:p.phone, rrn:front7(p.rrn), pid:p.id, revisit:false});
+    log("굿닥 앱","이름 확인 없이 응답 첫 번째 사람("+p.name+")으로 바꾸고, 주민번호도 7자리로 바꿈. 응답 순서에 따라 다른 사람이 될 수 있음","bad");
+  } else {
+    Object.assign(it,{rrn:full, phone:"", revisit:false, ignored:m.some(p=>p.rrn===full)});
+    log("굿닥 앱","브릿지가 없으면 응답을 쓰지 않고 입력한 이름·13자리로 진행. 환자 ID·동의 내역 없음","warn");
   }
+}
+
+/* ===== 앱 동작 ===== */
+async function start(kind){
+  R.kind=kind; R.screen="loading"; render();
+  await wait(1100);
+  lookup1(); R.screen="list";
+  if(R.items[0].rrn) R.items[0].sel=true;
+  render();
+}
+function tapItem(it){
+  if(R.busy) return;
+  if(!it.rrn){
+    R.target=it; R.sheet="rrn"; R.typErr="";
+    const s=R.store[skey()];
+    R.prefilled = !!(s && !R.noPrefill);
+    R.typing = R.prefilled ? s : "";
+    render(); return;
+  }
+  it.sel=!it.sel; render();
+}
+async function rrnConfirm(){
+  const d=R.typing;
+  if(d.length<7 || !/^[1-4]/.test(d)){ R.typErr="주민등록번호를 다시 확인해주세요."; render(); return; }
+  const it=R.target, full=me().rrn.slice(0,7)+d;
+  if(R.prefilled){ R.usedSaved=true; log("굿닥 앱","휴대폰에 저장된 값으로 확인"); }
+  else { R.inputs++; log("굿닥 앱","주민번호 뒷자리를 입력받아 휴대폰에 저장"); }
+  R.store[skey()]=d; R.sheet=null;
+  if(it.from==="l1"){ it.rrn=full; it.sel=true; render(); return; }
+  await lookup2(it, full);
+  it.from="l2"; it.sel=true; render();
+}
+function next(){
+  const it=R.items.find(x=>x.sel); if(!it) return;
+  if(it.phone && it.phone!==me().phone){
+    R.sheet="phone"; R.phonePick="cur"; R.showAll=false;
+    if(cfg.mode==="now") log("굿닥 앱","번호 선택 시트에 바뀐 사람("+it.name+")의 번호가 '이전 번호'로 보임","bad");
+    else log("굿닥 앱","등록된 번호와 로그인 번호가 달라 번호 선택 시트를 띄움", cfg.mode==="new"&&R.kind==="appt"?"good":"");
+    render(); return;
+  }
+  if(it.ignored && me().phone!==dbp("P1").phone) log("굿닥 앱","브릿지가 없고 환자 번호도 없어 번호 선택을 건너뜀 → 서버엔 예전 번호가 남음","warn");
+  R.screen="confirm"; render();
+}
+function phoneDone(){
+  const it=R.items.find(x=>x.sel);
+  it.usePhone = R.phonePick==="cur" ? me().phone : it.phone;
+  log("굿닥 앱",(R.phonePick==="cur"?"현재 번호":"이전 번호")+"로 신청"+(cfg.mode==="new"?". 고른 번호로 서버 환자 정보 갱신":""));
+  R.sheet=null; R.screen="confirm"; render();
+}
+async function submit(){
+  const it=R.items.find(x=>x.sel), u=me();
+  R.screen="sending"; render(); await wait(900);
+  const short=it.rrn.length<14;
+  const wrong = it.name!==u.name || (it.pid && dbp(it.pid).rrn!==u.rrn);
+  const realRevisit = DB.some(p=>p.rrn===u.rrn);
+  const judge = R.todo ? "미정" : it.revisit ? "재진" : (realRevisit && cfg.mode==="now" ? "신환으로 봄" : "신환");
+  const f = {name: R.todo?"todo":wrong?"bad":"", rrn: short?"bad":"", judge: R.todo?"todo":(realRevisit&&!it.revisit)?"bad":""};
+  R.sent={name:it.name, rrn: short ? it.rrn+" (뒷자리 없음)" : it.rrn, phone: it.usePhone||u.phone, judge, f};
+  log(SRC(), cfg.mode==="desk" ? "신청을 데스크로 전달. 병원은 13자리를 받음" : (short ? "신청 저장. 병원은 앞 7자리만 받음" : "신청 저장. 주민번호 13자리는 진료 종료 또는 36시간 뒤 삭제"), short?"bad":"");
+  const k=cfg.p+"|"+R.kind; results[k]=results[k]||{};
+  results[k][cfg.mode]={name:it.name+(wrong&&!R.todo?" (다른 사람)":""), judge,
+    input: R.inputs ? R.inputs+"번" : (R.usedSaved ? "0번 (저장값)" : "0번"), rrn:R.sent.rrn, f};
+  R.screen="done"; render();
+}
+
+/* ===== 앱 화면 ===== */
+const AV='<svg width="22" height="22" viewBox="0 0 24 24" fill="#CACED8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6z"/></svg>';
+const CK=on=>'<svg width="28" height="28" viewBox="0 0 24 24" style="flex:none"><path d="M6 12.5l4 4 8-9" fill="none" stroke="'+(on?'#0073FA':'#CACED8')+'" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const SB='<div class="sb"><span>9:41</span><span>●●● ▮</span></div>';
+const BACK='<svg width="24" height="24" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="#16181D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const SHIELD='<svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z" fill="#479DFF"/><path d="M9 12l2 2 4-4" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>';
+const hdr = (t, back) => '<div class="hdr">'+(back?'<button type="button" data-act="back" aria-label="처음으로">'+BACK+'</button>':'<span style="width:36px"></span>')+'<span>'+(t||"")+'</span></div>';
+
+function screen(){
+  const u=me();
+  if(R.screen==="hosp") return SB+hdr("",false)+'<div class="body"><div class="hosp-hero">'+HOSP+'</div><div class="hname">'+HOSP+'</div><div class="hmeta">내과 · 진료 중</div><div><span class="badge">접수 가능</span><span class="badge">예약 가능</span></div><p class="mini" style="text-align:left;margin-top:16px">체험용 병원 상세 요약 화면</p><div class="cta"><div class="row2"><button class="btn line" data-act="rcpt">접수하기</button><button class="btn" data-act="appt">예약하기</button></div></div></div>';
+  if(R.screen==="loading") return SB+hdr("",false)+'<div class="loading"><div class="spin"></div><div class="a">이전 방문 기록 조회중</div><div class="b">'+HOSP+'에서 '+esc(u.name)+'님의 정보를 조회하고 있어요</div></div>';
+  if(R.screen==="list"){
+    const items=R.items.map((it,i)=>{
+      const sub = !it.rrn ? '<div class="st need">주민번호 입력이 필요해요</div>' : (it.phone ? '<div class="st">'+mask(it.phone)+'</div>' : '');
+      return '<button type="button" class="item'+(it.sel?' sel':'')+'" data-item="'+i+'"><div class="av">'+AV+'</div><div class="inf"><div class="nm">'+esc(it.name)+'</div>'+sub+'</div>'+CK(!!it.sel)+'</button>';
+    }).join("");
+    let h=SB+hdr("",true)+'<div class="body"><div class="ttl">진료 받을 분은 누구인가요?</div>'+items+'<div class="addbtn">+ 자녀 추가하기</div><div class="cta"><button class="btn" data-act="next"'+(R.items.some(x=>x.sel)?'':' disabled')+'>다음</button></div></div>';
+    if(R.busy) h+='<div class="ovl"><div class="spin"></div></div>';
+    if(R.sheet==="rrn") h+=rrnSheet();
+    if(R.sheet==="phone") h+=phoneSheet();
+    return h;
+  }
+  if(R.screen==="confirm"){
+    const it=R.items.find(x=>x.sel);
+    return SB+hdr(R.kind==="rcpt"?"접수 정보 확인":"예약 정보 확인",true)+'<div class="body"><p class="mini">체험용 요약 화면 (진료실·증상·동의 단계 생략)</p><div class="kv"><div><span>병원</span><span>'+HOSP+'</span></div><div><span>진료 받을 분</span><span>'+esc(it.name)+'</span></div><div><span>연락처</span><span>'+mask(it.usePhone||u.phone)+'</span></div></div><div class="cta"><button class="btn" data-act="submit">'+(R.kind==="rcpt"?"접수하기":"예약 신청하기")+'</button></div></div>';
+  }
+  if(R.screen==="sending") return SB+hdr("",false)+'<div class="loading"><div class="spin"></div><div class="b">신청하고 있어요</div></div>';
+  if(R.screen==="done") return SB+hdr("",false)+'<div class="body"><div class="done"><div class="ic"><svg width="30" height="30" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="a">'+(R.kind==="rcpt"?"접수가 완료되었어요":"예약을 신청했어요")+'</div></div><p class="mini">체험용 요약 화면</p><div class="cta"><button class="btn line" data-act="again">처음부터 다시</button></div></div>';
+  return "";
+}
+function rrnSheet(){
+  const d=R.typing;
+  return '<div class="dim" data-act="close"></div><div class="sheet"><div class="ttl">'+esc(R.target.name)+'님의\n주민번호를 입력해 주세요</div>'+
+    '<div class="rrn"><div class="inp ro">'+me().rrn.slice(0,6)+'</div><div class="hy"></div><div class="inp focus">'+esc(d)+'<span class="cur"></span>'+(d?'':'<span class="ph">7자리</span>')+'</div></div>'+
+    (R.prefilled?'<div class="prefill">휴대폰에 저장된 값으로 채워짐</div>':'')+
+    (R.typErr?'<div class="err">'+R.typErr+'</div>':'')+
+    '<div class="safe"><b>'+SHIELD+'안심하세요</b><p>입력한 정보는 병원에 전달하기 위해 필요하며, 굿닥에서 보관하지 않고 고객님 휴대폰에만 저장돼요.</p></div>'+
+    '<button class="btn" data-act="rrnok">확인</button>'+
+    '<div class="kp">'+[1,2,3,4,5,6,7,8,9].map(n=>'<button type="button" data-k="'+n+'">'+n+'</button>').join("")+'<button type="button" class="fn" data-act="fill">예시 입력</button><button type="button" data-k="0">0</button><button type="button" class="fn" data-act="del" aria-label="지우기">지우기</button></div></div>';
+}
+function phoneSheet(){
+  const it=R.items.find(x=>x.sel), f=p=>R.showAll?p:mask(p);
+  return '<div class="dim" data-act="close"></div><div class="sheet"><div class="ttl" style="margin-bottom:6px">어떤 번호로 접수하시겠어요?</div><p style="margin:0 0 12px;color:#5D6474;font-size:14px">이전 접수 기록과 현재 사용할 휴대전화번호가 달라요.<br>접수에 사용할 번호를 선택해 주세요.</p>'+
+    '<button type="button" class="lnk" data-act="showall">'+(R.showAll?"가운데 번호 가리기":"전체 번호 보기")+'</button>'+
+    '<button type="button" class="pick'+(R.phonePick==="prev"?" sel":"")+'" data-pick="prev"><div class="lb">이전 번호</div><div class="v">'+f(it.phone)+'</div></button>'+
+    '<button type="button" class="pick'+(R.phonePick==="cur"?" sel":"")+'" data-pick="cur"><div class="lb">현재 번호</div><div class="v">'+f(me().phone)+'</div></button>'+
+    '<button class="btn" style="margin-top:8px" data-act="phoneok">이 번호로 접수하기</button></div>';
+}
+function hint(){
+  if(R.screen==="hosp") return "접수하기 또는 예약하기를 눌러 시작하세요.";
+  if(R.screen==="list"){
+    if(R.sheet==="rrn") return "키패드로 뒷자리 7자리를 넣거나 '예시 입력'을 누르세요. 이 사람의 주민번호는 "+me().rrn+"입니다.";
+    if(R.sheet==="phone") return "신청에 쓸 번호를 고르세요.";
+    return R.items.some(x=>!x.rrn) ? "'주민번호 입력이 필요해요'가 있는 분을 눌러 보세요." : "선택한 뒤 다음을 누르세요.";
+  }
+  if(R.screen==="done") return "왼쪽에서 병원 방식을 바꿔 같은 사람으로 다시 해 보세요.";
   return "";
 }
 
-/* 단계별로 보이는 화면: 건너뛴 단계는 직전 화면 + '건너뜀' */
-function frameAt(f, i){
-  const key=STAGES[i][0], fr=f[key];
-  if(fr.s) return {html:screenHTML(fr.s), fr, skipped:false};
-  let j=i-1; while(j>=0 && !f[STAGES[j][0]].s) j--;
-  const base = j>=0 ? f[STAGES[j][0]].s : null;
-  let html = base ? screenHTML(base.t==="rrn"?base.bg:base) : "";
-  return {html, fr, skipped:true};
+/* ===== 오른쪽·아래 ===== */
+function drawBack(){
+  const L=document.getElementById("log");
+  L.innerHTML = R.logs.length ? R.logs.map((e,i)=>{
+    const ft={good:"개선",warn:"불편",bad:"잘못된 결과",todo:"미정"}[e.flag];
+    return '<div class="e '+e.flag+(i>=R.shown?' new':'')+'"><div class="w">'+esc(e.who)+(ft?'<span class="flag '+e.flag+'">'+ft+'</span>':'')+'</div>'+esc(e.t)+'</div>';
+  }).join("") : '<div class="empty">폰에서 접수하기나 예약하기를 누르면 조회 과정이 여기에 나옵니다.</div>';
+  L.scrollTop=L.scrollHeight; R.shown=R.logs.length;
+  const desk=cfg.mode==="desk";
+  document.getElementById("dbTitle").textContent = desk ? "데스크 PC 차트의 환자 목록" : "굿닥 서버 환자 정보 (주민번호 뒷자리 없음)";
+  document.getElementById("db").innerHTML = '<thead><tr><th>이름</th><th>휴대폰</th><th>주민번호</th></tr></thead><tbody>'+
+    DB.map(p=>'<tr class="'+(R.hits.includes(p.id)?"hit":"")+'"><td>'+p.name+'</td><td>'+p.phone+'</td><td>'+(desk?p.rrn:front7(p.rrn))+'</td></tr>').join("")+'</tbody>';
+  const st=Object.entries(R.store);
+  document.getElementById("store").innerHTML = st.length ? '<thead><tr><th>이름 · 생년월일</th><th>뒷자리</th></tr></thead><tbody>'+st.map(([k,v])=>'<tr><td>'+esc(k.replace("|"," · "))+'</td><td>'+v+'</td></tr>').join("")+'</tbody>' : '<tbody><tr><td class="na">저장된 값 없음</td></tr></tbody>';
+  const s=R.sent;
+  document.getElementById("inbox").innerHTML = s ? '<div class="tw"><table><thead><tr><th>구분</th><th>이름</th><th>주민번호</th><th>연락처</th></tr></thead><tbody><tr><td class="'+s.f.judge+'">'+s.judge+'</td><td class="'+s.f.name+'">'+esc(s.name)+'</td><td class="'+s.f.rrn+'">'+esc(s.rrn)+'</td><td>'+s.phone+'</td></tr></tbody></table></div>' : '<div class="empty">아직 들어온 신청이 없습니다.</div>';
 }
-
-function drawSide(scrId, srvId, who, f){
-  const {html, fr, skipped} = frameAt(f, state.i);
-  const scr=document.getElementById(scrId);
-  scr.innerHTML = html + (skipped?'<div class="skip"><span>이 단계 없이 넘어가요</span></div>':'');
-  const el=document.getElementById(srvId);
-  el.className="srv"+(fr.flag?" "+fr.flag:"");
-  const ft={good:"개선",warn:"불편",bad:"잘못된 결과",todo:"미정"}[fr.flag];
-  el.innerHTML='<div class="who">'+esc(who)+' · '+esc(STAGES[state.i][1])+(ft?'<span class="flag '+fr.flag+'">'+ft+'</span>':'')+'</div><div class="t"></div>';
-  el.querySelector(".t").textContent = fr.srv;
-}
-
-function drawCmp(Lr,Rr){
-  const rows=[["who","신청된 사람"],["judge","재진·신환 판정"],["input","주민번호 입력"],["rrn","병원이 받는 주민번호"]];
-  let h='<thead><tr><th></th><th>데스크 시절</th><th>'+(state.mode==="new"?"비연동 · 개선 후":"비연동 · 지금 코드 그대로")+'</th></tr></thead><tbody>';
-  rows.forEach(([k,l])=>{
-    let c="";
-    if(Rr.todo&&(k==="who"||k==="judge")) c="todo";
-    else if(Rr.bad&&Rr.bad.includes(k)) c="bad";
-    else if((Rr.warn&&Rr.warn.includes(k))||Lr[k]!==Rr[k]) c="diff";
-    h+='<tr><th>'+l+'</th><td>'+esc(Lr[k])+'</td><td class="'+c+'">'+esc(Rr[k])+'</td></tr>';
+function drawCmp(){
+  const kind=R.kind||"rcpt", r=results[cfg.p+"|"+kind]||{};
+  document.getElementById("cmpWho").textContent = PERSONAS[cfg.p].label+" · "+(kind==="rcpt"?"접수":"예약");
+  const rows=[["name","신청된 사람","name"],["judge","재진·신환","judge"],["input","주민번호 입력",""],["rrn","병원이 받은 주민번호","rrn"]];
+  let h='<thead><tr><th></th>'+Object.values(MODES).map(v=>'<th>'+v.label+'</th>').join("")+'</tr></thead><tbody>';
+  rows.forEach(([key,l,fk])=>{
+    h+='<tr><th>'+l+'</th>'+Object.keys(MODES).map(m=>{
+      const x=r[m]; if(!x) return '<td class="na">아직 안 해 봄</td>';
+      return '<td class="'+(fk&&x.f[fk]||"")+'">'+esc(x[key])+'</td>';
+    }).join("")+'</tr>';
   });
   document.getElementById("cmp").innerHTML=h+'</tbody>';
 }
-
-function seg(id, opts, key){
+function opts(id, src, key){
   const el=document.getElementById(id); el.innerHTML="";
-  opts.forEach(([v,l])=>{
-    const b=document.createElement("button"); b.type="button"; b.textContent=l;
-    b.setAttribute("aria-pressed", String(state[key]===v));
-    b.onclick=()=>{state[key]=v; if(key!=="mode") state.i=0; render();};
+  Object.entries(src).forEach(([v,o])=>{
+    const b=document.createElement("button"); b.type="button";
+    b.innerHTML='<b>'+esc(o.label)+'</b><span>'+esc(o.desc)+'</span>';
+    b.setAttribute("aria-pressed", String(cfg[key]===v));
+    b.onclick=()=>{ cfg[key]=v; newRun(); };
     el.appendChild(b);
   });
 }
-
 function render(){
-  seg("scn", Object.entries(SCN).map(([k,v])=>[k,v.label]), "scn");
-  seg("kind", [["rcpt","접수"],["appt","예약"]], "kind");
-  seg("saved", [["yes","있음"],["no","없음"]], "saved");
-  seg("mode", [["new","비연동 · 개선 후"],["now","비연동 · 지금 코드 그대로"]], "mode");
-  document.getElementById("scnDesc").textContent=SCN[state.scn].desc;
-  document.getElementById("rTitle").innerHTML = (state.mode==="new"?"비연동 · 개선 후":"비연동 · 지금 코드")+' <span class="tag">굿닥 서버 = 차트</span>';
-  const dots=document.getElementById("dots"); dots.innerHTML="";
-  STAGES.forEach(([k,l],i)=>{
-    const b=document.createElement("button"); b.type="button";
-    b.className="dot"+(i===state.i?" on":i<state.i?" past":"");
-    b.textContent=(i+1)+". "+l; b.onclick=()=>{state.i=i; render();};
-    dots.appendChild(b);
-  });
-  document.getElementById("prev").disabled = state.i===0;
-  document.getElementById("next").disabled = state.i===STAGES.length-1;
-  const Ld=desk(), Rd= state.mode==="new"?srvNew():srvNow();
-  [Ld,Rd].forEach(d=>{ if(d.f.phone.s && d.f.lookup2.s) d.f.phone.s.bg=d.f.lookup2.s; });
-  drawSide("lp","ls","데스크 시절",Ld.f);
-  drawSide("rp","rs",state.mode==="new"?"개선 후":"지금 코드",Rd.f);
-  drawCmp(Ld.r, Rd.r);
+  opts("persona", PERSONAS, "p"); opts("mode", MODES, "mode");
+  document.getElementById("savedSw").setAttribute("aria-pressed", String(cfg.saved));
+  const mb=document.getElementById("modebar"); mb.className="modebar "+MODES[cfg.mode].cls; mb.textContent=MODES[cfg.mode].label;
+  document.getElementById("scr").innerHTML = screen();
+  document.getElementById("hint").textContent = hint();
+  drawBack(); drawCmp();
 }
-document.getElementById("prev").onclick=()=>{ if(state.i>0){state.i--; render();} };
-document.getElementById("next").onclick=()=>{ if(state.i<STAGES.length-1){state.i++; render();} };
-document.addEventListener("keydown",e=>{ if(e.key==="ArrowRight") document.getElementById("next").click(); if(e.key==="ArrowLeft") document.getElementById("prev").click(); });
-render();
+
+document.getElementById("savedSw").onclick=()=>{ cfg.saved=!cfg.saved; newRun(); };
+document.getElementById("reset").onclick=newRun;
+document.getElementById("scr").addEventListener("click", e=>{
+  const t=e.target.closest("[data-act],[data-item],[data-k],[data-pick]"); if(!t) return;
+  if(t.dataset.item!==undefined) return tapItem(R.items[+t.dataset.item]);
+  if(t.dataset.k!==undefined){ if(R.typing.length<7){ if(R.prefilled){R.typing="";R.prefilled=false;} R.typing+=t.dataset.k; R.typErr=""; } return render(); }
+  if(t.dataset.pick){ R.phonePick=t.dataset.pick; return render(); }
+  const a=t.dataset.act;
+  if(a==="rcpt"||a==="appt") return start(a);
+  if(a==="back"||a==="again") return newRun();
+  if(a==="next") return next();
+  if(a==="close"){ R.sheet=null; return render(); }
+  if(a==="del"){ R.typing=R.typing.slice(0,-1); R.prefilled=false; return render(); }
+  if(a==="fill"){ R.typing=me().rrn.slice(7); R.prefilled=false; R.typErr=""; return render(); }
+  if(a==="rrnok") return rrnConfirm();
+  if(a==="showall"){ R.showAll=!R.showAll; return render(); }
+  if(a==="phoneok") return phoneDone();
+  if(a==="submit") return submit();
+});
+newRun();
 </script>
 </body>
 </html>

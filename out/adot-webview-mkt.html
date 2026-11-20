@@ -747,7 +747,8 @@ a {
 .mk-only-acc { margin-top: 24px; }
 .mk-only-row { cursor: pointer; }
 .mk-only-acc .aw-consent-body-wrap { margin-left: 0; }
-.aw-sheet-body > .mk-added { margin-top: 0; } /* M2: 헤더~제목 간격을 M1과 같게(16) */
+.aw-sheet-body > .mk-added:first-child { margin-top: 0; } /* M2: 헤더~제목 간격을 M1과 같게(16) */
+.aw-sheet-body > .mk-added:not(:first-child) { margin-top: 32px; } /* M1: 병원 약관 섹션과 간격 32(원본 섹션 간격) */
 
 /* v0.7 스펙 제거 표시 */
 .mk-removed { display: inline-block; margin-left: 6px; padding: 0 6px; font-size: 10.5px; line-height: 18px; font-weight: 700; border-radius: var(--radius-sm); color: var(--red-70); background: var(--alpha-red-10); vertical-align: middle; }

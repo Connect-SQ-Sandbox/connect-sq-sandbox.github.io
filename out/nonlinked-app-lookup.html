@@ -1,0 +1,435 @@
+<!doctype html>
+<!--
+  이름: 비연동 앱 환자 조회 · 폰 두 대 비교 (nonlinked-app-lookup)
+  상태: 검토용 초안 · v0.1 · 2026-11-20
+  원본: Desktop/Source/1064-decisions/lookup-phones.html (자체완결 정적 HTML, 빌드 없음)
+  배포: https://connect-sq-sandbox.github.io/out/nonlinked-app-lookup.html
+  화면구성: 조건(상황 4 · 접수/예약 · 휴대폰 저장값 · 오른쪽 폰 개선 후/지금 코드) → 6단계 재생(1차 조회·진료 받을 분·주민번호 입력·2차 조회·번호 선택·신청) → 결과 비교 표
+  기준: 앱 문구·색은 goodoc-mobile 420 환자 선택·주민번호 바텀시트·번호 선택 바텀시트 코드. 마지막 '신청'은 요약 화면.
+  핵심 결정: [확정] 비연동만 적용 · 이름 없는 2차 조회는 지금처럼 · 이름은 앞뒤 공백·대소문자 무시 · 저장값 성별 자리 다르면 입력 · 비연동 예약도 번호 선택 시트
+  보류: 이름·생년월일·성별 모두 같은 환자 2차 조회 처리(미정 표시)
+  변경 이력: v0.1 첫 게시
+-->
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>비연동 앱 환자 조회 · 폰 비교</title>
+<style>
+:root{
+  --bg:#F2F4F7; --panel:#FFFFFF; --text:#16181D; --sub:#5D6474; --line:#E1E4EA;
+  --accent:#0073FA; --good:#0E8A52; --good-bg:#E7F6EE; --warn:#B26A00; --warn-bg:#FFF4DE;
+  --bad:#D92D3B; --bad-bg:#FFECEE; --todo:#6B47D6; --todo-bg:#F0EBFF; --chip:#F2F4F7;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#111317; --panel:#1B1E24; --text:#EEF0F4; --sub:#A3A9B6; --line:#2C3038;
+    --accent:#479DFF; --good:#4CC98A; --good-bg:#16301F; --warn:#F2B34B; --warn-bg:#33270F;
+    --bad:#FF7A85; --bad-bg:#3A1A1E; --todo:#B39BFF; --todo-bg:#2A2342; --chip:#262A31;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111317; --panel:#1B1E24; --text:#EEF0F4; --sub:#A3A9B6; --line:#2C3038;
+  --accent:#479DFF; --good:#4CC98A; --good-bg:#16301F; --warn:#F2B34B; --warn-bg:#33270F;
+  --bad:#FF7A85; --bad-bg:#3A1A1E; --todo:#B39BFF; --todo-bg:#2A2342; --chip:#262A31;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Pretendard,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;font-size:14px;line-height:1.5}
+.wrap{max-width:1040px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:20px;margin:0 0 4px}
+.lead{color:var(--sub);margin:0 0 16px}
+.ctrl{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;gap:10px}
+.ctrl .r{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap}
+.ctrl .k{width:96px;flex:none;color:var(--sub);font-weight:600;padding-top:6px}
+.seg{display:flex;flex-wrap:wrap;gap:6px;flex:1;min-width:0}
+.seg button{border:1px solid var(--line);background:var(--chip);color:var(--text);border-radius:999px;padding:5px 12px;font:inherit;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.desc{color:var(--sub);margin:0}
+.stepper{display:flex;align-items:center;gap:10px;margin:16px 0 12px;flex-wrap:wrap}
+.stepper .nav{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:10px;padding:8px 14px;font:inherit;font-weight:600;cursor:pointer}
+.stepper .nav.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.stepper .nav:disabled{opacity:.4;cursor:default}
+.dots{display:flex;gap:4px;flex:1;min-width:240px}
+.dot{flex:1;border:none;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 4px;font:inherit;font-size:12px;color:var(--sub);cursor:pointer;text-align:center}
+.dot.on{border-color:var(--accent);color:var(--accent);font-weight:700}
+.dot.past{color:var(--text)}
+.phones{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media (max-width:760px){.phones{grid-template-columns:1fr}}
+.col{display:flex;flex-direction:column;align-items:center;gap:10px;min-width:0}
+.col h2{font-size:15px;margin:0;display:flex;gap:8px;align-items:center}
+.tag{font-size:11px;font-weight:600;color:var(--sub);background:var(--chip);border-radius:6px;padding:2px 6px}
+.srv{width:100%;max-width:340px;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--line);border-radius:10px;padding:10px 12px}
+.srv .who{font-size:11px;font-weight:700;color:var(--sub)}
+.srv .t{font-weight:600}
+.srv.good{border-left-color:var(--good);background:var(--good-bg)}
+.srv.warn{border-left-color:var(--warn);background:var(--warn-bg)}
+.srv.bad{border-left-color:var(--bad);background:var(--bad-bg)}
+.srv.todo{border-left-color:var(--todo);background:var(--todo-bg)}
+.flag{display:inline-block;font-size:11px;font-weight:700;border-radius:5px;padding:1px 6px;margin-left:6px;color:#fff}
+.flag.good{background:var(--good)}.flag.warn{background:var(--warn)}.flag.bad{background:var(--bad)}.flag.todo{background:var(--todo)}
+
+/* ===== phone (앱 화면은 라이트 고정) ===== */
+.phone{width:320px;max-width:100%;aspect-ratio:320/660;background:#16181D;border-radius:40px;padding:10px;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.scr{position:relative;width:100%;height:100%;background:#fff;border-radius:31px;overflow:hidden;color:#16181D;font-size:14px;display:flex;flex-direction:column}
+.sb{height:34px;flex:none;display:flex;justify-content:space-between;align-items:center;padding:0 22px;font-size:12px;font-weight:600}
+.hdr{height:44px;flex:none;display:flex;align-items:center;padding:0 12px}
+.body{flex:1;overflow:hidden;padding:8px 20px 0;display:flex;flex-direction:column}
+.ttl{font-size:20px;font-weight:700;line-height:28px;margin:4px 0 16px;white-space:pre-line}
+.item{border:1px solid #F2F4F7;border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;margin-bottom:8px;background:#fff}
+.item.sel{border-color:#0073FA;background:#F5FAFF}
+.item.hl-bad{box-shadow:0 0 0 3px rgba(217,45,59,.35)}
+.item.hl-good{box-shadow:0 0 0 3px rgba(14,138,82,.35)}
+.item.hl-warn{box-shadow:0 0 0 3px rgba(178,106,0,.35)}
+.item.hl-todo{box-shadow:0 0 0 3px rgba(107,71,214,.4)}
+.av{width:40px;height:40px;border-radius:50%;background:#F2F4F7;display:grid;place-items:center;flex:none}
+.inf{flex:1;min-width:0}
+.nm{font-size:16px;font-weight:600;color:#16181D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st{font-size:13px;font-weight:500;color:#808799}
+.st.need{color:#0073FA}
+.st.badtx{color:#D92D3B}
+.ck{flex:none}
+.addbtn{border:1px dashed #CACED8;border-radius:12px;padding:12px;text-align:center;color:#5D6474;font-weight:600;font-size:14px}
+.cta{margin:auto 0 0;padding:12px 0 22px}
+.btn{background:#0073FA;color:#fff;border-radius:12px;text-align:center;font-weight:700;padding:14px;font-size:16px}
+.btn.off{background:#CACED8}
+.dim{position:absolute;inset:0;background:rgba(22,24,29,.55)}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;padding:24px 20px 22px}
+.sheet .ttl{font-size:20px;margin:0 0 16px}
+.rrn{display:flex;align-items:center;gap:8px}
+.inp{flex:1;border:1px solid #CACED8;border-radius:10px;height:48px;display:flex;align-items:center;padding:0 12px;font-size:16px;letter-spacing:1px;background:#fff;min-width:0}
+.inp.ro{background:#F2F4F7;color:#5D6474}
+.inp.ph{color:#CACED8;letter-spacing:0}
+.inp.fill{border-color:#0073FA}
+.hy{width:8px;height:2px;background:#5D6474;flex:none}
+.safe{background:#F9F9FB;border-radius:12px;padding:12px;margin:16px 0}
+.safe b{display:flex;gap:6px;align-items:center;font-size:14px;color:#31353F}
+.safe p{margin:4px 0 0;font-size:13px;color:#5D6474;line-height:1.5}
+.pnote{font-size:12px;font-weight:600;border-radius:6px;padding:4px 8px;margin:-6px 0 10px;display:inline-block}
+.pnote.good{color:#0E8A52;background:#E7F6EE}.pnote.warn{color:#B26A00;background:#FFF4DE}
+.pick{border:1px solid #F2F4F7;border-radius:12px;padding:14px;margin-bottom:8px}
+.pick.sel{border-color:#0073FA;background:#F5FAFF}
+.pick .lb{font-size:12px;color:#808799;font-weight:600}
+.pick .v{font-size:16px;font-weight:600}
+.pick.badv .v{color:#D92D3B}
+.toggle{font-size:13px;color:#5D6474;text-decoration:underline;margin:-8px 0 12px}
+.loading{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;padding:0 24px}
+.spin{width:36px;height:36px;border-radius:50%;border:4px solid #F2F4F7;border-top-color:#0073FA;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+.loading .a{font-size:18px;font-weight:700}
+.loading .b{font-size:14px;color:#5D6474}
+.skip{position:absolute;inset:0;background:rgba(255,255,255,.72);display:grid;place-items:center}
+.skip span{background:#16181D;color:#fff;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:700}
+.sum{font-size:12px;color:#808799;text-align:center;margin:-8px 0 14px}
+.done{display:flex;flex-direction:column;align-items:center;margin:8px 0 18px;gap:8px}
+.done .ic{width:56px;height:56px;border-radius:50%;background:#0073FA;display:grid;place-items:center}
+.done .a{font-size:20px;font-weight:700}
+.rows{border-top:1px solid #F2F4F7}
+.rows div{display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid #F2F4F7;font-size:14px}
+.rows span:first-child{color:#808799;flex:none}
+.rows span:last-child{font-weight:600;text-align:right}
+.rows .bad{color:#D92D3B}.rows .warn{color:#B26A00}.rows .todo{color:#6B47D6}.rows .good{color:#0E8A52}
+
+.cmpbox{margin-top:24px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;overflow-x:auto}
+.cmpbox h3{margin:0 0 8px;font-size:15px}
+table{border-collapse:collapse;width:100%;min-width:420px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+thead th{color:var(--sub);font-size:12px}
+td.diff{background:var(--warn-bg)}td.bad{background:var(--bad-bg);color:var(--bad);font-weight:600}td.todo{background:var(--todo-bg);color:var(--todo);font-weight:600}
+.foot{color:var(--sub);font-size:12px;margin-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>비연동 앱 환자 조회 · 폰 두 대로 비교 <span class="tag">검토용 초안 · v0.1</span></h1>
+  <p class="lead">같은 환자가 같은 순서로 신청할 때, 데스크 시절과 비연동(굿닥 서버가 차트 역할)에서 앱 화면이 어떻게 달라지는지 한 단계씩 넘겨 봅니다. 주민번호 13자리를 받는 병원 기준입니다.</p>
+
+  <div class="ctrl">
+    <div class="r"><div class="k">상황</div><div class="seg" id="scn"></div></div>
+    <p class="desc" id="scnDesc"></p>
+    <div class="r"><div class="k">신청 종류</div><div class="seg" id="kind"></div></div>
+    <div class="r"><div class="k">휴대폰에 저장된 주민번호 뒷자리</div><div class="seg" id="saved"></div></div>
+    <div class="r"><div class="k">오른쪽 폰</div><div class="seg" id="mode"></div></div>
+  </div>
+
+  <div class="stepper">
+    <button class="nav" id="prev" type="button">이전</button>
+    <div class="dots" id="dots"></div>
+    <button class="nav primary" id="next" type="button">다음</button>
+  </div>
+
+  <div class="phones">
+    <div class="col">
+      <h2>데스크 시절 <span class="tag">브릿지 → 데스크 PC</span></h2>
+      <div class="phone"><div class="scr" id="lp"></div></div>
+      <div class="srv" id="ls"></div>
+    </div>
+    <div class="col">
+      <h2 id="rTitle"></h2>
+      <div class="phone"><div class="scr" id="rp"></div></div>
+      <div class="srv" id="rs"></div>
+    </div>
+  </div>
+
+  <div class="cmpbox">
+    <h3>결과 비교</h3>
+    <table id="cmp"></table>
+  </div>
+  <p class="foot">화면 문구는 굿닥 앱 코드(환자 선택 화면, 주민번호 입력 바텀시트, 번호 선택 바텀시트) 기준입니다. 마지막 '신청' 화면만 결과를 보여 주려고 만든 요약 화면입니다. 가상 데이터만 사용합니다. 예시 환자: 김굿닥(010-1111-2222, 900101-1234567), 이영호(010-9999-0000, 900101-1876543).</p>
+</div>
+
+<script>
+const SCN = {
+  s1:{label:"재진 · 같은 휴대폰", desc:"전에 이 병원에 왔고, 그때와 같은 휴대폰번호로 로그인했다.",
+      user:{name:"김굿닥", phone:"010-1111-2222", rrn:"900101-1234567"}},
+  s2:{label:"재진 · 휴대폰번호 바뀜", desc:"전에 이 병원에 왔지만 그때와 다른 휴대폰번호(010-5555-6666)로 로그인했다.",
+      user:{name:"김굿닥", phone:"010-5555-6666", rrn:"900101-1234567"}},
+  s3:{label:"처음 방문 · 생일·성별 같은 다른 환자 있음", desc:"처음 가는 병원인데, 생년월일·성별이 같은 다른 사람(이영호)이 이미 있다.",
+      user:{name:"박신규", phone:"010-7777-8888", rrn:"900101-1999999"}},
+  s4:{label:"처음 방문 · 이름까지 같은 다른 환자 있음", desc:"처음 가는 병원인데, 이름·생년월일·성별이 모두 같은 다른 사람(기존 김굿닥)이 이미 있다.",
+      user:{name:"김굿닥", phone:"010-8888-0000", rrn:"900101-1222222"}},
+};
+const STAGES = [["lookup","1차 조회"],["list","진료 받을 분"],["rrn","주민번호 입력"],["lookup2","2차 조회"],["phone","번호 선택"],["done","신청"]];
+const state = {scn:"s1", kind:"rcpt", saved:"yes", mode:"new", i:0};
+const HOSP = "굿닥의원";
+const mask = p => p.replace(/(\d{3})-(\d{4})-(\d{4})/, "$1-****-$3");
+const back = r => r.split("-")[1];
+
+/* frame: {s:screen|null(skip), srv, flag, note}  skip 단계는 직전 화면 위에 '건너뜀' 표시 */
+function F(s, srv, flag){ return {s, srv, flag}; }
+function skip(srv, flag){ return {s:null, srv, flag}; }
+const L = (items, extra) => Object.assign({t:"list", items}, extra||{});
+const I = (name, sub, o) => Object.assign({name, sub}, o||{});
+
+function desk(){
+  const u=SCN[state.scn].user, sc=state.scn, saved=state.saved==="yes";
+  const f={}, r={};
+  if(sc==="s1"){
+    f.lookup=F({t:"loading",name:u.name},"데스크 PC가 휴대폰번호 "+u.phone+"로 찾음 → 김굿닥 · 900101-1234567 (13자리)");
+    f.list=F(L([I(u.name,"phone",{phone:u.phone,sel:true})]),"차트 환자번호가 있어 재진");
+    f.rrn=skip("응답이 13자리라 주민번호 입력 창이 뜨지 않음");
+    f.lookup2=skip("1차에서 찾아 2차 조회 없음");
+    f.phone=skip("등록 번호와 로그인 번호가 같음");
+    Object.assign(r,{who:"김굿닥 (본인)",judge:"재진",input:"0번",rrn:"900101-1234567"});
+  } else {
+    f.lookup=F({t:"loading",name:u.name},"데스크 PC가 휴대폰번호 "+u.phone+"로 찾음 → 없음");
+    f.list=F(L([I(u.name,"need")]),"못 찾아서 본인 정보로 표시. 누르면 주민번호 입력 창");
+    f.rrn=F({t:"rrn",name:u.name,back:back(u.rrn),pre:saved,bg:L([I(u.name,"need")])}, saved?"휴대폰에 저장된 주민번호 뒷자리가 미리 채워짐":"주민번호 뒷자리 7자리를 직접 입력");
+    if(sc==="s2"){
+      f.lookup2=F(L([I(u.name,"phone",{phone:"010-1111-2222",sel:true})]),"주민번호 13자리 전체로 찾음 → 김굿닥 한 명");
+      f.phone=F({t:"phone",prev:"010-1111-2222",cur:u.phone},"예전 번호와 로그인 번호가 달라 고르게 함");
+      Object.assign(r,{who:"김굿닥 (본인)",judge:"재진"});
+    } else {
+      const o=sc==="s3"?"이영호":"기존 김굿닥";
+      f.lookup2=F(L([I(u.name,"phone",{phone:u.phone,sel:true})]),"주민번호 13자리 전체로 못 찾음 → 신환. "+o+"는 뒷자리가 달라 나오지 않음");
+      f.phone=skip("새로 등록하는 환자라 번호를 고를 일 없음");
+      Object.assign(r,{who:u.name+" (본인)",judge:"신환"});
+    }
+    Object.assign(r,{input:saved?"0번 (저장값)":"1번",rrn:u.rrn});
+  }
+  f.done=F({t:"done",r},"병원은 주민번호 13자리를 받음");
+  return {f,r};
+}
+
+function srvNew(){
+  const u=SCN[state.scn].user, sc=state.scn, saved=state.saved==="yes";
+  const f={}, r={};
+  if(sc==="s1"){
+    f.lookup=F({t:"loading",name:u.name},"서버 환자 정보에서 휴대폰번호 "+u.phone+"로 찾음 → 김굿닥 · 900101-1 (7자리). 주민번호 뒷자리는 서버에 없음");
+    if(saved){
+      f.list=F(L([I(u.name,"phone",{phone:u.phone,sel:true,hl:"good"})]),"휴대폰에 저장된 주민번호 뒷자리를 자동 입력 (성별 자리가 응답과 같음). 서버 환자 ID가 있어 재진","good");
+      f.rrn=skip("저장값으로 채워서 입력 없이 넘어감","good");
+    } else {
+      f.list=F(L([I(u.name,"need",{hl:"warn"})]),"응답이 7자리라 주민번호 뒷자리 입력 필요. 서버 환자 ID가 있어 재진","warn");
+      f.rrn=F({t:"rrn",name:u.name,back:back(u.rrn),pre:false,bg:L([I(u.name,"need")])},"한 번 입력하면 휴대폰에 저장. 다음부터는 자동 입력","warn");
+    }
+    f.lookup2=skip("1차에서 찾아 2차 조회 없음");
+    f.phone=skip("등록 번호와 로그인 번호가 같음");
+    Object.assign(r,{who:"김굿닥 (본인)",judge:"재진",input:saved?"0번 (저장값)":"1번",rrn:"900101-1234567"});
+  } else {
+    f.lookup=F({t:"loading",name:u.name},"서버 환자 정보에서 휴대폰번호 "+u.phone+"로 찾음 → 없음");
+    f.list=F(L([I(u.name,"need")]),"못 찾아서 본인 정보로 표시. 누르면 주민번호 입력 창");
+    f.rrn=F({t:"rrn",name:u.name,back:back(u.rrn),pre:saved,bg:L([I(u.name,"need")])}, saved?"휴대폰에 저장된 주민번호 뒷자리가 미리 채워짐":"주민번호 뒷자리 7자리를 직접 입력");
+    const q="이름 "+u.name+" + 900101-1로 찾음 → ";
+    if(sc==="s2"){
+      f.lookup2=F(L([I(u.name,"phone",{phone:"010-1111-2222",sel:true,hl:"good"})]),q+"김굿닥(본인). 재진, 입력한 13자리는 그대로 유지","good");
+      f.phone=F({t:"phone",prev:"010-1111-2222",cur:u.phone},"예전 번호와 로그인 번호가 달라 고르게 함. 고른 번호로 서버 환자 정보 갱신",state.kind==="appt"?"good":null);
+      Object.assign(r,{who:"김굿닥 (본인)",judge:"재진"});
+    } else if(sc==="s3"){
+      f.lookup2=F(L([I(u.name,"phone",{phone:u.phone,sel:true,hl:"good"})]),q+"없음. 이영호는 이름이 달라 제외 → 신환","good");
+      f.phone=skip("새로 등록하는 환자라 번호를 고를 일 없음");
+      Object.assign(r,{who:"박신규 (본인)",judge:"신환"});
+    } else {
+      f.lookup2=F(L([I(u.name,"phone",{phone:"010-1111-2222",sel:true,hl:"todo"})]),q+"기존 김굿닥(다른 사람)이 나옴. 신환으로 받을지, 목록에서 고르게 할지 정해야 함","todo");
+      f.phone=skip("2차 조회 처리 방법을 정한 뒤 결정","todo");
+      Object.assign(r,{who:"정해야 함",judge:"정해야 함",todo:true});
+    }
+    Object.assign(r,{input:saved?"0번 (저장값)":"1번",rrn:u.rrn});
+  }
+  f.done=F({t:"done",r},"접수·예약 건에 13자리 저장 → 진료 종료 또는 36시간 뒤 삭제");
+  return {f,r};
+}
+
+function srvNow(){
+  const u=SCN[state.scn].user, sc=state.scn, saved=state.saved==="yes", rcpt=state.kind==="rcpt";
+  const f={}, r={};
+  const pre = rcpt?"(지금 앱은 비연동 접수를 막고 있음. 열었다고 가정) ":"";
+  if(sc==="s1"){
+    f.lookup=F({t:"loading",name:u.name},pre+"서버가 휴대폰번호로 찾음 → 김굿닥 · 900101-1 (7자리)");
+    if(rcpt){
+      f.list=F(L([I(u.name,"phone",{phone:u.phone,sel:true,hl:"bad"})]),"차트 환자번호가 없어 신환으로 봄. 재진만 받는 병원이면 막힘","bad");
+      f.rrn=skip("응답에 값이 있으면 자리수와 관계없이 그대로 씀 → 입력 창이 뜨지 않음","bad");
+      Object.assign(r,{who:"김굿닥 (본인)",judge:"신환으로 봄",input:"0번",rrn:"900101-1 (뒷자리 없음)",bad:["judge","rrn"]});
+    } else {
+      f.list=F(L([I(u.name,"need",{hl:"warn"})]),"응답이 7자리라 입력 필요. 1차 응답의 동의 내역·주소·내원 경로는 버림","warn");
+      f.rrn=F({t:"rrn",name:u.name,back:back(u.rrn),pre:false,bg:L([I(u.name,"need")]),note:saved?"warn":null},saved?"휴대폰에 저장값이 있어도 채우지 않음 (응답이 6자리 이하일 때만 씀). 예약할 때마다 입력":"주민번호 뒷자리 7자리를 직접 입력","warn");
+      Object.assign(r,{who:"김굿닥 (본인)",judge:"재진 차단 꺼짐",input:"매번 1번",rrn:"900101-1234567",warn:["input","judge"]});
+    }
+    f.lookup2=skip("1차에서 찾아 2차 조회 없음");
+    f.phone=skip("등록 번호와 로그인 번호가 같음");
+  } else {
+    f.lookup=F({t:"loading",name:u.name},pre+"서버가 휴대폰번호 "+u.phone+"로 찾음 → 없음");
+    f.list=F(L([I(u.name,"need")]),"못 찾아서 본인 정보로 표시. 누르면 주민번호 입력 창");
+    f.rrn=F({t:"rrn",name:u.name,back:back(u.rrn),pre:saved,bg:L([I(u.name,"need")])}, saved?"휴대폰에 저장된 주민번호 뒷자리가 미리 채워짐":"주민번호 뒷자리 7자리를 직접 입력");
+    const q="13자리를 보냄(이름 없음) → 900101-1인 김굿닥·이영호를 모두 돌려줌. ";
+    if(rcpt){
+      const who = sc==="s2"?"김굿닥 또는 이영호":sc==="s3"?"김굿닥 또는 이영호":"기존 김굿닥 또는 이영호";
+      f.lookup2=F(L([I(who,"custom",{text:"응답 첫 번째 사람으로 바뀜",sel:true,hl:"bad"})]),q+"앱은 이름 확인 없이 첫 번째 사람으로 바꾸고, 주민번호도 7자리로 바꿈","bad");
+      f.phone=F({t:"phone",prev:"010-****-2222 또는 010-****-0000",cur:u.phone,bad:true},"바뀐 사람의 번호가 '이전 번호'로 뜸","bad");
+      Object.assign(r,{who:who+" (응답 순서에 따라)",judge:"신환으로 봄",input:saved?"0번 (저장값)":"1번",rrn:"900101-1 (뒷자리 없음)",bad:["who","judge","rrn"]});
+    } else {
+      f.lookup2=F(L([I(u.name,"none",{sel:true,hl:"warn"})]),q+"앱은 브릿지가 없으면 응답을 쓰지 않고 입력한 이름·13자리로 진행. 환자 ID·동의 내역 없음","warn");
+      if(sc==="s2"){
+        f.phone=skip("브릿지 없고 환자 번호도 없어 번호 선택을 건너뜀 → 서버엔 예전 번호가 남음","warn");
+        Object.assign(r,{who:"김굿닥 (본인)",judge:"재진 정보 못 이어씀",warn:["judge"]});
+      } else {
+        f.phone=skip("새로 등록하는 환자라 번호를 고를 일 없음");
+        Object.assign(r,{who:u.name+" (본인)",judge:"신환"});
+      }
+      Object.assign(r,{input:saved?"0번 (저장값)":"1번",rrn:u.rrn});
+    }
+  }
+  f.done=F({t:"done",r},r.bad&&r.bad.includes("rrn")?"병원은 900101-1만 받음 (주민번호 뒷자리 없음)":"병원은 13자리를 받음", r.bad?"bad":null);
+  return {f,r};
+}
+
+/* ===== 화면 그리기 ===== */
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const AV = '<svg width="22" height="22" viewBox="0 0 24 24" fill="#CACED8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6z"/></svg>';
+const CK = on => '<svg class="ck" width="28" height="28" viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9" fill="none" stroke="'+(on?'#0073FA':'#CACED8')+'" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const SB = '<div class="sb"><span>9:41</span><span>●●● ▮</span></div>';
+const HD = '<div class="hdr"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="#16181D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>';
+const SHIELD = '<svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z" fill="#479DFF"/><path d="M9 12l2 2 4-4" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>';
+
+function itemHTML(it){
+  let sub="";
+  if(it.sub==="phone") sub='<div class="st">'+esc(mask(it.phone))+'</div>';
+  else if(it.sub==="need") sub='<div class="st need">주민번호 입력이 필요해요</div>';
+  else if(it.sub==="custom") sub='<div class="st badtx">'+esc(it.text)+'</div>';
+  return '<div class="item'+(it.sel?' sel':'')+(it.hl?' hl-'+it.hl:'')+'"><div class="av">'+AV+'</div><div class="inf"><div class="nm">'+esc(it.name)+'</div>'+sub+'</div>'+CK(!!it.sel)+'</div>';
+}
+function listHTML(s){
+  const anySel = s.items.some(x=>x.sel);
+  return SB+HD+'<div class="body"><div class="ttl">진료 받을 분은 누구인가요?</div>'+s.items.map(itemHTML).join("")+
+    '<div class="addbtn">+ 자녀 추가하기</div><div class="cta"><div class="btn'+(anySel?'':' off')+'">다음</div></div></div>';
+}
+function screenHTML(s){
+  if(s.t==="loading") return SB+HD+'<div class="loading"><div class="spin"></div><div class="a">이전 방문 기록 조회중</div><div class="b">'+esc(HOSP)+'에서 '+esc(s.name)+'님의 정보를 조회하고 있어요</div></div>';
+  if(s.t==="list") return listHTML(s);
+  if(s.t==="rrn"){
+    const note = s.pre?'<div class="pnote good">휴대폰에 저장된 값으로 채워짐</div>':(s.note==="warn"?'<div class="pnote warn">저장값이 있어도 비어 있음</div>':'');
+    return listHTML(s.bg)+'<div class="dim"></div><div class="sheet"><div class="ttl">'+esc(s.name)+'님의\n주민번호를 입력해 주세요</div>'+note+
+      '<div class="rrn"><div class="inp ro">900101</div><div class="hy"></div><div class="inp fill">'+esc(s.back)+'</div></div>'+
+      '<div class="safe"><b>'+SHIELD+'안심하세요</b><p>입력한 정보는 병원에 전달하기 위해 필요하며, 굿닥에서 보관하지 않고 고객님 휴대폰에만 저장돼요.</p></div><div class="btn">확인</div></div>';
+  }
+  if(s.t==="phone"){
+    const prev = s.bad? s.prev : mask(s.prev);
+    return listHTML(s.bg||{items:[]})+'<div class="dim"></div><div class="sheet"><div class="ttl" style="margin-bottom:6px">어떤 번호로 접수하시겠어요?</div>'+
+      '<p style="margin:0 0 14px;color:#5D6474;font-size:14px">이전 접수 기록과 현재 사용할 휴대전화번호가 달라요.\n접수에 사용할 번호를 선택해 주세요.</p>'+
+      '<div class="toggle">전체 번호 보기</div>'+
+      '<div class="pick'+(s.bad?' badv':'')+'"><div class="lb">이전 번호</div><div class="v">'+esc(prev)+'</div></div>'+
+      '<div class="pick sel"><div class="lb">현재 번호</div><div class="v">'+esc(mask(s.cur))+'</div></div>'+
+      '<div class="btn" style="margin-top:10px">이 번호로 접수하기</div></div>';
+  }
+  if(s.t==="done"){
+    const r=s.r, cls=k=> r.todo&&(k==="who"||k==="judge")?"todo":(r.bad&&r.bad.includes(k))?"bad":(r.warn&&r.warn.includes(k))?"warn":"";
+    const row=(k,l)=>'<div><span>'+l+'</span><span class="'+cls(k)+'">'+esc(r[k])+'</span></div>';
+    return SB+HD+'<div class="body"><div class="sum">결과를 보여 주는 요약 화면 (실제 앱 화면 아님)</div><div class="done"><div class="ic"><svg width="28" height="28" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="a">'+(state.kind==="rcpt"?"접수":"예약")+' 신청 완료</div></div>'+
+      '<div class="rows">'+row("who","신청된 사람")+row("judge","재진·신환")+row("input","주민번호 입력")+row("rrn","병원이 받는 주민번호")+'</div></div>';
+  }
+  return "";
+}
+
+/* 단계별로 보이는 화면: 건너뛴 단계는 직전 화면 + '건너뜀' */
+function frameAt(f, i){
+  const key=STAGES[i][0], fr=f[key];
+  if(fr.s) return {html:screenHTML(fr.s), fr, skipped:false};
+  let j=i-1; while(j>=0 && !f[STAGES[j][0]].s) j--;
+  const base = j>=0 ? f[STAGES[j][0]].s : null;
+  let html = base ? screenHTML(base.t==="rrn"?base.bg:base) : "";
+  return {html, fr, skipped:true};
+}
+
+function drawSide(scrId, srvId, who, f){
+  const {html, fr, skipped} = frameAt(f, state.i);
+  const scr=document.getElementById(scrId);
+  scr.innerHTML = html + (skipped?'<div class="skip"><span>이 단계 없이 넘어가요</span></div>':'');
+  const el=document.getElementById(srvId);
+  el.className="srv"+(fr.flag?" "+fr.flag:"");
+  const ft={good:"개선",warn:"불편",bad:"잘못된 결과",todo:"미정"}[fr.flag];
+  el.innerHTML='<div class="who">'+esc(who)+' · '+esc(STAGES[state.i][1])+(ft?'<span class="flag '+fr.flag+'">'+ft+'</span>':'')+'</div><div class="t"></div>';
+  el.querySelector(".t").textContent = fr.srv;
+}
+
+function drawCmp(Lr,Rr){
+  const rows=[["who","신청된 사람"],["judge","재진·신환 판정"],["input","주민번호 입력"],["rrn","병원이 받는 주민번호"]];
+  let h='<thead><tr><th></th><th>데스크 시절</th><th>'+(state.mode==="new"?"비연동 · 개선 후":"비연동 · 지금 코드 그대로")+'</th></tr></thead><tbody>';
+  rows.forEach(([k,l])=>{
+    let c="";
+    if(Rr.todo&&(k==="who"||k==="judge")) c="todo";
+    else if(Rr.bad&&Rr.bad.includes(k)) c="bad";
+    else if((Rr.warn&&Rr.warn.includes(k))||Lr[k]!==Rr[k]) c="diff";
+    h+='<tr><th>'+l+'</th><td>'+esc(Lr[k])+'</td><td class="'+c+'">'+esc(Rr[k])+'</td></tr>';
+  });
+  document.getElementById("cmp").innerHTML=h+'</tbody>';
+}
+
+function seg(id, opts, key){
+  const el=document.getElementById(id); el.innerHTML="";
+  opts.forEach(([v,l])=>{
+    const b=document.createElement("button"); b.type="button"; b.textContent=l;
+    b.setAttribute("aria-pressed", String(state[key]===v));
+    b.onclick=()=>{state[key]=v; if(key!=="mode") state.i=0; render();};
+    el.appendChild(b);
+  });
+}
+
+function render(){
+  seg("scn", Object.entries(SCN).map(([k,v])=>[k,v.label]), "scn");
+  seg("kind", [["rcpt","접수"],["appt","예약"]], "kind");
+  seg("saved", [["yes","있음"],["no","없음"]], "saved");
+  seg("mode", [["new","비연동 · 개선 후"],["now","비연동 · 지금 코드 그대로"]], "mode");
+  document.getElementById("scnDesc").textContent=SCN[state.scn].desc;
+  document.getElementById("rTitle").innerHTML = (state.mode==="new"?"비연동 · 개선 후":"비연동 · 지금 코드")+' <span class="tag">굿닥 서버 = 차트</span>';
+  const dots=document.getElementById("dots"); dots.innerHTML="";
+  STAGES.forEach(([k,l],i)=>{
+    const b=document.createElement("button"); b.type="button";
+    b.className="dot"+(i===state.i?" on":i<state.i?" past":"");
+    b.textContent=(i+1)+". "+l; b.onclick=()=>{state.i=i; render();};
+    dots.appendChild(b);
+  });
+  document.getElementById("prev").disabled = state.i===0;
+  document.getElementById("next").disabled = state.i===STAGES.length-1;
+  const Ld=desk(), Rd= state.mode==="new"?srvNew():srvNow();
+  [Ld,Rd].forEach(d=>{ if(d.f.phone.s && d.f.lookup2.s) d.f.phone.s.bg=d.f.lookup2.s; });
+  drawSide("lp","ls","데스크 시절",Ld.f);
+  drawSide("rp","rs",state.mode==="new"?"개선 후":"지금 코드",Rd.f);
+  drawCmp(Ld.r, Rd.r);
+}
+document.getElementById("prev").onclick=()=>{ if(state.i>0){state.i--; render();} };
+document.getElementById("next").onclick=()=>{ if(state.i<STAGES.length-1){state.i++; render();} };
+document.addEventListener("keydown",e=>{ if(e.key==="ArrowRight") document.getElementById("next").click(); if(e.key==="ArrowLeft") document.getElementById("prev").click(); });
+render();
+</script>
+</body>
+</html>

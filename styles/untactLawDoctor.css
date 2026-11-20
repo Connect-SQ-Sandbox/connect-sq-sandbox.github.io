@@ -1033,3 +1033,63 @@
   font-size: 14px;
   color: #fa4655;
 }
+
+/* 실거주 증명 첨부 열람 (D8, 신규) */
+.uld-proof {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 16px 24px;
+  border: 1px solid #e3e6ed;
+  border-radius: 8px;
+}
+.uld-proof-k {
+  width: 120px;
+  flex-shrink: 0;
+  align-self: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #434956;
+}
+.uld-proof-none {
+  align-self: center;
+  font-size: 14px;
+  color: #a8aebd;
+}
+.uld-proof-thumb {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  overflow: hidden;
+  border-radius: 6px;
+  outline: 1px solid rgba(93, 100, 116, 0.2);
+  outline-offset: -0.5px;
+  background: #fff;
+}
+.uld-mini-doc {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 8px 0;
+}
+.uld-mini-doc b {
+  font-size: 6px;
+  line-height: 8px;
+  text-align: center;
+  color: #31353f;
+}
+.uld-mini-doc i {
+  display: block;
+  height: 5px;
+  border-radius: 1px;
+  background: #16181d;
+}
+.uld-mini-doc i.is-keep {
+  width: 40%;
+  background: transparent;
+  outline: 1px solid #12b76a;
+}
+.uld-mini-doc i.is-short {
+  width: 25%;
+}

@@ -594,3 +594,153 @@
 .ula-btn.outlined-gray:disabled .ula-btn-sub {
   color: var(--gray-60);
 }
+
+/* ───────── ② 실거주 증명 (D8) ───────── */
+.ula-preset.is-small {
+  padding: 6px 12px;
+  font-size: 13px;
+  line-height: 19px;
+}
+.ula-doc {
+  border: 1px solid var(--gray-30);
+  border-radius: 6px;
+  background: var(--white);
+  padding: 14px 14px 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--gray-80);
+}
+.ula-doc-title {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--gray-90);
+  padding-bottom: 8px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--gray-30);
+}
+.ula-doc-row {
+  display: flex;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px dotted var(--gray-30);
+}
+.ula-doc-row:last-child {
+  border-bottom: 0;
+}
+.ula-doc-k {
+  width: 72px;
+  flex-shrink: 0;
+  color: var(--gray-60);
+}
+.ula-doc-v {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+.ula-doc-v .is-keep {
+  outline: 1.5px solid #12b76a;
+  outline-offset: 1px;
+  border-radius: 2px;
+  padding: 0 2px;
+  color: var(--gray-100);
+  font-weight: 600;
+}
+.ula-doc-hide {
+  display: inline-block;
+  background: var(--gray-100);
+  color: transparent;
+  border-radius: 2px;
+  user-select: none;
+}
+.ula-doc.is-mini {
+  padding: 4px;
+  font-size: 4px;
+  line-height: 6px;
+  border: 0;
+  box-shadow: none;
+}
+.ula-doc.is-mini .ula-doc-title {
+  font-size: 5px;
+  letter-spacing: 0;
+  padding-bottom: 2px;
+  margin-bottom: 2px;
+}
+.ula-doc.is-mini .ula-doc-row {
+  padding: 1px 0;
+  gap: 2px;
+}
+.ula-doc.is-mini .ula-doc-k {
+  width: 18px;
+}
+.ula-legend {
+  display: flex;
+  gap: 14px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--gray-70);
+}
+.ula-legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ula-legend i {
+  width: 14px;
+  height: 10px;
+  border-radius: 2px;
+}
+.ula-legend i.is-keep {
+  outline: 1.5px solid #12b76a;
+  outline-offset: -1.5px;
+}
+.ula-legend i.is-mask {
+  background: var(--gray-100);
+}
+.ula-upload {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 56px;
+  border: 1px dashed var(--gray-40);
+  border-radius: 8px;
+  background: var(--white);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--gray-80);
+  cursor: pointer;
+}
+.ula-proof-file {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--gray-30);
+  border-radius: 8px;
+}
+.ula-proof-thumb {
+  width: 56px;
+  height: 72px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 1px solid var(--gray-30);
+  border-radius: 4px;
+  background: var(--white);
+}
+.ula-proof-del {
+  display: flex;
+  border: 0;
+  background: transparent;
+  padding: 4px;
+  cursor: pointer;
+}
+.ula-seg button:disabled {
+  color: var(--gray-40);
+  background: var(--gray-10);
+  cursor: not-allowed;
+}

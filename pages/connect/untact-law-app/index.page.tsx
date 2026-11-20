@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : untact-law-app — 굿닥 앱(환자용) 비대면진료 신청 흐름 · 비대면진료 제도화(의료법 개정) 대응
- * 상태      : 검토용 초안 · v0.3 · 최종수정 2026-11-20 · 샌드박스 배포
+ * 상태      : 검토용 초안 · v0.4 · 최종수정 2026-11-20 · 샌드박스 배포
  * PRD       : 없음(제도화 대응 기획 초안). 사내 문서 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/untact-law-app.html
  * 피그마    : 없음. 현행 화면은 goodoc-mobile origin/staging(b45968ada, 2026-11-19) 코드 기준 재현.
@@ -16,7 +16,11 @@
  *  - [확정·요청] 담당 범위는 신청서 진입부터. 환자 선택(가족 선택) 화면은 생략하고 패널 토글 '진료 받는 사람'으로 대신한다.
  *  - [확정·요청] 초진 안내(화상만 · 같은 시·도 의원만 · 처방 7일 · 이소트레티노인·트라마돌 불가)는 ① 한 곳에만 둔다. ②에서 반복하지 않는다.
  *  - [확정·요청] 재진·예외 대상을 고르면 초진 안내는 나오지 않는다. 재신청이면 초진 안내를 한 줄 요약으로 접는다.
- *  - [확정·요청] 거주지·대면 이력은 플랫폼이 검증하지 않는다. 주소 입력·비교·차단 화면 없음.
+ *  - [확정·요청] 실거주 증명은 환자가 서류를 첨부해 병원에 전달한다(D8). 플랫폼은 주소를 입력받거나 비교·차단하지 않는다.
+ *  - [확정·요청] 첨부 전 가림 안내(고정): 제목 '첨부 전에 꼭 가려 주세요' + 주민등록번호·가족 정보·금액·계좌번호·연락처 가림 / 이름과 주소의 '시'는 꼭 보이게 남김(예: 서울특별시, 경기도 수원시) / 구·동·번지 등 나머지 주소는 가림 / 가리지 않으면 병원이 다시 요청할 수 있음.
+ *  - [확정·요청] 가림 예시는 서류 3종(임대차계약서·재직/재학증명서·공공요금 납부자료)을 가상 서류로 그리고 남길 곳·가릴 곳을 표시한다. 주소는 시 단위만 남김.
+ *  - [제안] 실거주 증명 첨부는 ①에서 초진을 고른 경우에만 ② 신청서에 선택 항목으로 둔다(필수로 막지 않음). 위치·선택 여부는 기획 세션 제안.
+ *  - [제안] 첨부 후 '주민등록번호·가족 정보·금액·계좌번호·연락처를 가렸어요' 체크를 해야 첨부가 완료된다. 체크 전에는 ② 다음 버튼 비활성(첨부를 지우면 다시 진행 가능).
  *  - [확정·요청] ② 진료 방식은 화상 진료 기본 선택. 전화 진료는 재진만 선택 가능(초진·예외는 비활성 + '재진만 선택 가능').
  *    13세 미만이거나 전화 숨김 과(피부·안과·이비인후·외상·정신)면 전화 진료 항목 자체를 숨긴다.
  *  - [확정·요청] ② 처방 불가 약 안내(PrescriptionGuide)는 현행 문구 그대로.
@@ -43,8 +47,10 @@
  *  - [보류] ② 의사의 videoTreatmentEnabled=false(화상 진료 불가 의사)와 '초진은 화상만'이 겹치면 초진 환자는 신청 경로가 없다. 의사 목록 단계 처리 필요(범위 밖).
  *  - [보류] 나이 13세 미만 + 진료 받는 사람 본인 조합은 막지 않았다(토글 독립).
  *  - [보류] ③ 법정 설명 4가지 문구 미확정(자리표시).
+ *  - [보류] ② 가림 예시 재직증명서의 '소속'·'재직 기간'은 남김/가림 표시 없이 둠. 표시 여부 확인 중.
  *
  * 변경 이력
+ *  - v0.4 (2026-11-20) D8 변경 반영: ② 초진 실거주 증명 첨부(선택) · 가림 안내 · 서류 3종 가림 예시 · 가림 확인 체크, 패널 토글 '실거주 증명'.
  *  - v0.3 (2026-11-20) ④ 상단 제목·보조 문구를 사유 표시에 맞게 교체.
  *  - v0.2 (2026-11-20) 검수 반영: ② 비활성 전화 보조 문구 대비, ③ 책임 문구·대리인 안내를 설명 위로, ① 대상 변경 시 펼침 초기화, URL 오타 값 기본값 처리.
  *  - v0.1 (2026-11-20) 최초 작성. 의사 상세 → ①②③ → 결제 → 완료 → ④, 상태 토글 패널.
@@ -61,6 +67,8 @@ type Count = 'first' | 'again';
 type Dept = 'general' | 'nophone';
 type Age = 'over13' | 'under13';
 type Method = 'video' | 'phone';
+type Proof = 'none' | 'attached';
+type ProofDoc = 'lease' | 'work' | 'bill';
 type CancelReason = 'notTarget' | 'needVisit' | 'noContact';
 
 const STEPS: { key: Step; label: string; kind: 'cur' | 'new' | 'mod' }[] = [
@@ -257,6 +265,66 @@ const NavBar = ({
   </div>
 );
 
+/* ---------- 실거주 증명 가림 예시 (가상 서류, 실제 개인정보 없음) ---------- */
+type DocSeg = { t: string; k?: 'keep' | 'mask' };
+type ProofDocDef = { key: ProofDoc; tab: string; title: string; rows: { label: string; segs: DocSeg[] }[] };
+const PROOF_DOCS: ProofDocDef[] = [
+  {
+    key: 'lease',
+    tab: '임대차계약서',
+    title: '부동산 임대차 계약서',
+    rows: [
+      { label: '소재지', segs: [{ t: '서울특별시', k: 'keep' }, { t: '○○구 ○○동 000-00', k: 'mask' }] },
+      { label: '보증금·월세', segs: [{ t: '0,000만 원 / 00만 원', k: 'mask' }] },
+      { label: '임차인 성명', segs: [{ t: '김굿닥', k: 'keep' }] },
+      { label: '주민등록번호', segs: [{ t: '000000-0000000', k: 'mask' }] },
+      { label: '연락처', segs: [{ t: '010-0000-0000', k: 'mask' }] },
+      { label: '계좌번호', segs: [{ t: '○○은행 000-000-000000', k: 'mask' }] },
+    ],
+  },
+  {
+    key: 'work',
+    tab: '재직·재학증명서',
+    title: '재직증명서',
+    rows: [
+      { label: '성명', segs: [{ t: '김굿닥', k: 'keep' }] },
+      { label: '주민등록번호', segs: [{ t: '000000-0000000', k: 'mask' }] },
+      { label: '주소', segs: [{ t: '경기도 수원시', k: 'keep' }, { t: '○○구 ○○로 00', k: 'mask' }] },
+      { label: '소속', segs: [{ t: '{회사·학교명}' }] },
+      { label: '재직 기간', segs: [{ t: '0000.00.00 ~ 현재' }] },
+    ],
+  },
+  {
+    key: 'bill',
+    tab: '공공요금 납부자료',
+    title: '공공요금 납부 확인서',
+    rows: [
+      { label: '납부자', segs: [{ t: '김굿닥', k: 'keep' }] },
+      { label: '사용 장소', segs: [{ t: '서울특별시', k: 'keep' }, { t: '○○구 ○○동 000-00', k: 'mask' }] },
+      { label: '세대원', segs: [{ t: '○○○ 외 0명', k: 'mask' }] },
+      { label: '납부 금액', segs: [{ t: '00,000원', k: 'mask' }] },
+      { label: '납부 계좌', segs: [{ t: '○○은행 000-000-000000', k: 'mask' }] },
+    ],
+  },
+];
+const ProofDocMock = ({ doc, mini }: { doc: ProofDocDef; mini?: boolean }) => (
+  <div className={`ula-doc ${mini ? 'is-mini' : ''}`}>
+    <div className="ula-doc-title">{doc.title}</div>
+    {doc.rows.map(r => (
+      <div key={r.label} className="ula-doc-row">
+        <span className="ula-doc-k">{r.label}</span>
+        <span className="ula-doc-v">
+          {r.segs.map((g, i) => (
+            <span key={i} className={g.k ? `is-${g.k}` : ''}>
+              {g.k === 'mask' ? <span className="ula-doc-hide">{g.t}</span> : g.t}
+            </span>
+          ))}
+        </span>
+      </div>
+    ))}
+  </div>
+);
+
 /* ---------- 상태 ---------- */
 type State = {
   step: Step;
@@ -266,10 +334,11 @@ type State = {
   dept: Dept;
   age: Age;
   cancel: CancelReason;
+  proof: Proof;
 };
 
 export default function UntactLawApp() {
-  /* 검토용 URL 파라미터: ?step=form&target=first&who=child&count=again&dept=nophone&age=under13&cancel=needVisit */
+  /* 검토용 URL 파라미터: ?step=form&target=first&who=child&count=again&dept=nophone&age=under13&cancel=needVisit&proof=attached */
   const [s, setS] = useState<State>(() => {
     const init: State = {
       step: 'doctor',
@@ -279,6 +348,7 @@ export default function UntactLawApp() {
       dept: 'general',
       age: 'over13',
       cancel: 'notTarget',
+      proof: 'none',
     };
     try {
       const q = new URLSearchParams(window.location.search);
@@ -290,6 +360,7 @@ export default function UntactLawApp() {
       if (!STEPS.some(x => x.key === init.step)) init.step = 'doctor' as State['step'];
       if (!(init.dept in DEPTS)) init.dept = 'general';
       if (!CANCEL_REASONS.some(r => r.key === init.cancel)) init.cancel = 'notTarget' as State['cancel'];
+      if (init.proof !== 'attached' || init.target !== 'first') init.proof = 'none';
     } catch {
       /* 파라미터 없음 */
     }
@@ -305,6 +376,25 @@ export default function UntactLawApp() {
   const [terms, setTerms] = useState<boolean[]>(PAYMENT_TERMS.map(() => false));
   const [firstOpen, setFirstOpen] = useState(false);
   const [tab, setTab] = useState<'hospital' | 'pharmacy'>('hospital');
+  /* 실거주 증명: 파일 있음 · 가림 확인 체크. 패널 토글 '첨부함' = 파일 + 체크 완료 */
+  const [proofFile, setProofFile] = useState(s.proof === 'attached');
+  const [proofChecked, setProofChecked] = useState(s.proof === 'attached');
+  const [proofDoc, setProofDoc] = useState<ProofDoc>('lease');
+  /* 첨부 상태는 이 함수로만 바꾼다(패널 토글·첨부·삭제·체크·대상 변경이 같은 값을 가리키게) */
+  const setProof = (file: boolean, checked: boolean) => {
+    setProofFile(file);
+    setProofChecked(checked);
+    set({ proof: file && checked ? 'attached' : 'none' });
+  };
+  /* 대상이 초진이 아니게 바뀌면 첨부를 비운다 */
+  const setTarget = (k: Target) => set(k === 'first' ? { target: k } : { target: k, proof: 'none' });
+  useEffect(() => {
+    if (s.target !== 'first') {
+      setProofFile(false);
+      setProofChecked(false);
+    }
+  }, [s.target]);
+  const proofPending = s.target === 'first' && proofFile && !proofChecked;
 
   const phoneHidden = s.age === 'under13' || s.dept === 'nophone';
   const phoneEnabled = !phoneHidden && s.target === 'revisit';
@@ -428,7 +518,7 @@ export default function UntactLawApp() {
             const on = s.target === t.key;
             return (
               <React.Fragment key={t.key}>
-                <button className="ula-radio-row" onClick={() => set({ target: t.key })}>
+                <button className="ula-radio-row" onClick={() => setTarget(t.key)}>
                   <span className={`ula-radio ${on ? 'is-on' : ''}`} />
                   <span className="ula-col" style={{ gap: 2, flex: 1 }}>
                     <T s="b1" w={on ? 7 : 5} c="gray-90">
@@ -449,6 +539,94 @@ export default function UntactLawApp() {
         다음
       </button>
     </>
+  );
+
+  /* ② 실거주 증명 첨부 (신규, 초진만) — D8 */
+  const ProofSection = (
+    <div className="ula-col ula-changed" style={{ gap: 16, padding: '24px 20px 28px', borderBottom: '8px solid var(--gray-20)' }}>
+      <div className="ula-col" style={{ gap: 4 }}>
+        <T s="h5" w={7} c="gray-90">
+          실거주 증명(선택)
+        </T>
+        <T s="b2" c="gray-80">
+          주소를 확인할 수 있는 서류를 첨부해 주세요.
+        </T>
+      </div>
+      <div className="ula-guide">
+        <div className="ula-guide-title">
+          <IconCaution color="#FB7480" />
+          <T s="b2" w={6} c="gray-80">
+            첨부 전에 꼭 가려 주세요
+          </T>
+        </div>
+        {[
+          '주민등록번호, 가족 정보, 금액·계좌번호, 연락처는 가린 뒤 올려 주세요.',
+          "이름과 주소의 '시'는 꼭 보이게 남겨 주세요. (예: 서울특별시, 경기도 수원시)",
+          '구·동·번지 등 나머지 주소는 가려 주세요.',
+          '가리지 않은 서류는 병원이 다시 요청할 수 있어요.',
+        ].map(t => (
+          <div key={t} className="ula-bullet">
+            <T s="b2" c="gray-70">
+              {'  •'}
+            </T>
+            <T s="b2" c="gray-70">
+              {t}
+            </T>
+          </div>
+        ))}
+      </div>
+      <div className="ula-col" style={{ gap: 10 }}>
+        <T s="b2" w={6} c="gray-80">
+          이렇게 가려 주세요
+        </T>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {PROOF_DOCS.map(d => (
+            <button key={d.key} className={`ula-preset is-small ${proofDoc === d.key ? 'is-on' : ''}`} onClick={() => setProofDoc(d.key)}>
+              {d.tab}
+            </button>
+          ))}
+        </div>
+        <ProofDocMock doc={PROOF_DOCS.find(d => d.key === proofDoc)!} />
+        <div className="ula-legend">
+          <span>
+            <i className="is-keep" />
+            남길 곳
+          </span>
+          <span>
+            <i className="is-mask" />
+            가릴 곳
+          </span>
+        </div>
+      </div>
+      <div className="ula-col" style={{ gap: 12 }}>
+        {!proofFile ? (
+          <button className="ula-upload" onClick={() => setProof(true, false)}>
+            <IconCamera />
+            <span>서류 첨부하기</span>
+          </button>
+        ) : (
+          <div className="ula-proof-file">
+            <span className="ula-proof-thumb">
+              <ProofDocMock doc={PROOF_DOCS.find(d => d.key === proofDoc)!} mini />
+            </span>
+            <T s="b2" c="gray-80" style={{ flex: 1 }}>
+              실거주 증명 서류 1장
+            </T>
+            <button className="ula-proof-del" onClick={() => setProof(false, false)} aria-label="첨부 삭제">
+              <IconClose />
+            </button>
+          </div>
+        )}
+        {proofFile && (
+          <button className="ula-check" onClick={() => setProof(true, !proofChecked)}>
+            <IconCheckRound on={proofChecked} />
+            <T s="b1" w={proofChecked ? 6 : 5} c={proofChecked ? 'gray-90' : 'gray-70'}>
+              주민등록번호·가족 정보·금액·계좌번호·연락처를 가렸어요
+            </T>
+          </button>
+        )}
+      </div>
+    </div>
   );
 
   /* ② 신청서 (현행 + 진료 방식 수정) — SymptomScreen.tsx:226-342 */
@@ -604,6 +782,7 @@ export default function UntactLawApp() {
             </div>
           </div>
         </div>
+        {s.target === 'first' && ProofSection}
         {/* RRNAgreementTerm/index.tsx:13-110 (SymptomScreen.tsx:289, paddingHorizontal 40 → marginHorizontal -20 상쇄) */}
         <div className="ula-col" style={{ background: 'var(--gray-20)', marginTop: 32, padding: '16px 20px' }}>
           <T s="b2" c="gray-60">
@@ -639,7 +818,7 @@ export default function UntactLawApp() {
           </T>
         </div>
       </div>
-      <button className="ula-btn filled-blue ula-cta" onClick={() => go('consent')}>
+      <button className="ula-btn filled-blue ula-cta" disabled={proofPending} onClick={() => go('consent')}>
         다음
       </button>
     </>
@@ -930,13 +1109,14 @@ export default function UntactLawApp() {
         '신청서 앞에 새로 들어가는 화면.',
         '초진을 고르면 바로 아래에 초진 안내 한 블록. 재진·예외 대상이면 안내 없음.',
         '재신청이면 초진 안내를 한 줄로 접는다(눌러서 펼침).',
-        '거주지·대면 이력은 플랫폼이 확인하지 않는다(주소 입력 없음).',
+        '실거주 증명은 초진일 때 ② 신청서에서 서류로 첨부한다(D8). 플랫폼은 주소를 입력받거나 비교하지 않는다.',
       ],
       form: [
-        '바뀐 곳은 진료 방식(점선) 한 곳. 화상 진료 기본 선택.',
+        '바뀐 곳은 진료 방식과 실거주 증명(초진만, 점선). 화상 진료 기본 선택.',
         '전화 진료: 재진만 선택 가능. 초진·예외는 비활성.',
         '13세 미만 또는 전화 숨김 과면 전화 진료 버튼 자체가 없다.',
         '처방 불가 약 안내는 현행 그대로. 초진 제한은 ①에만.',
+        '실거주 증명(선택, 제안): 가림 안내 고정 + 서류 3종 가림 예시. 첨부하면 가림 확인 체크를 해야 첨부 완료, 그 전에는 다음 비활성.',
       ],
       consent: [
         '신청서 다음, 결제 앞에 새로 들어가는 화면.',
@@ -964,7 +1144,7 @@ export default function UntactLawApp() {
   }: {
     label: string;
     value: K | null;
-    options: { k: K; t: string }[];
+    options: { k: K; t: string; disabled?: boolean }[];
     onChange: (k: K) => void;
     col?: boolean;
   }) => (
@@ -972,7 +1152,7 @@ export default function UntactLawApp() {
       <span className="ula-ctl-label">{label}</span>
       <div className={`ula-seg ${col ? 'ula-seg-col' : ''}`}>
         {options.map(o => (
-          <button key={o.k} className={value === o.k ? 'is-on' : ''} onClick={() => onChange(o.k)}>
+          <button key={o.k} className={value === o.k ? 'is-on' : ''} disabled={o.disabled} onClick={() => onChange(o.k)}>
             {o.t}
           </button>
         ))}
@@ -987,7 +1167,7 @@ export default function UntactLawApp() {
       <aside className="ula-panel">
         <div className="ula-panel-card">
           <p className="ula-panel-title">비대면진료 신청 · 제도화 대응</p>
-          <p className="ula-panel-sub">굿닥 앱(환자용) · 검토용 초안 v0.3 · 현행 화면은 앱 코드 기준 재현, 동적 값은 {'{중괄호}'}</p>
+          <p className="ula-panel-sub">굿닥 앱(환자용) · 검토용 초안 v0.4 · 현행 화면은 앱 코드 기준 재현, 동적 값은 {'{중괄호}'}</p>
         </div>
         <div className="ula-panel-card">
           <p className="ula-panel-h">화면 바로 가기</p>
@@ -1012,7 +1192,7 @@ export default function UntactLawApp() {
               { k: 'first', t: '초진' },
               { k: 'exception', t: '예외' },
             ]}
-            onChange={k => set({ target: k })}
+            onChange={k => setTarget(k)}
           />
           <Seg
             label="진료 받는 사람"
@@ -1049,6 +1229,15 @@ export default function UntactLawApp() {
               { k: 'under13', t: '13세 미만' },
             ]}
             onChange={k => set({ age: k })}
+          />
+          <Seg
+            label="② 실거주 증명(초진)"
+            value={s.proof}
+            options={[
+              { k: 'none', t: '첨부 없음' },
+              { k: 'attached', t: '첨부함', disabled: s.target !== 'first' },
+            ]}
+            onChange={k => setProof(k === 'attached', k === 'attached')}
           />
           <Seg
             label="④ 취소 사유"

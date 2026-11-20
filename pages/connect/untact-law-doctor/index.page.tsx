@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : untact-law-doctor — 굿닥 온라인진료실(의사용) · 비대면진료 제도화(의료법 개정) 대응
- * 상태      : 검토용 초안 · v0.2 · 최종수정 2026-11-20 · 샌드박스 배포
+ * 상태      : 검토용 초안 · v0.3 · 최종수정 2026-11-20 · 샌드박스 배포
  * PRD       : 없음(제도화 대응 기획 초안). 사내 문서 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/untact-law-doctor.html
  * 피그마    : 없음. 기준은 대응 보드 커넥트 섹션(진료실-1~3) + 현행 온라인진료실 개발 코드.
@@ -23,6 +23,7 @@
  *  - [보드 기준] 진료실-1 접수 전 확인 체크 2개를 모두 체크해야 접수완료 활성. 재진은 두 번째 체크가 '차트에서 대면 이력을 확인했어요'.
  *  - [보드 기준] 진료실-1 재진은 '환자 응답(확인 필요)' 상자로 환자가 고른 내용을 보여 준다.
  *  - [보드 기준] 진료실-1 '본인확인 의무가 없는 미성년자 환자입니다.' 문구 자리에 법정대리인 동의 완료 · {동의자} · {동의일시}.
+ *  - [확정·요청] 진료실-1 초진이면 접수 전 확인 상자 아래에 실거주 증명 첨부 열람 영역(첨부 없음 / 있음). 환자가 앱 ② 신청서에서 가림 처리해 올린 서류(D8).
  *  - [보드 기준] 진료실-2 전화로 진행·전환할 때 사유 모달. 초진은 첫 번째 사유(대면진료 받은 환자) 선택 불가.
  *  - [보드 기준] 진료실-2 화상진료 끄기 확인창 본문: '화상진료를 끄면 초진 환자는 배정되지 않아요. 재진 환자만 전화로 진료할 수 있어요.' 버튼은 현행 '취소 / 확인'.
  *  - [보드 기준] 진료실-3 취소 사유: 환자 월 2회 삭제, 건수 사유는 '의사별 비대면진료 가능 건수(월평균 500건)'로 교체. 직접 입력 안내·검증은 현행 그대로.
@@ -30,7 +31,9 @@
  *  - [유지·자체] 앱에서 전화 진료는 재진만 고를 수 있으므로 패널 '신청 진료 방식'은 재진일 때만 전화 선택 가능.
  *
  * 보류·TODO (기획 확인 필요)
- *  - [보류] 보드 진료실-1의 '주소지 서울 · 병원 서울 ✓' 비교 배지는 넣지 않았다. D8(주소 수집·비교 없음)과 맞지 않음. 대신 체크 문구에 '같은 시·도'만 둠.
+ *  - [보류] 보드 진료실-1의 '주소지 서울 · 병원 서울 ✓' 비교 배지는 넣지 않았다. 플랫폼은 주소를 입력받거나 비교하지 않고, 의사가 첨부 서류로 확인한다(D8).
+ *  - [보류] 실거주 증명을 '가림 필요'로 환자에게 다시 요청하는 반려 흐름은 미결이라 만들지 않았다.
+ *  - [보류] 첨부된 실거주 증명 서류의 파기 시점은 미결.
  *  - [확정·요청] 굿닥 비대면진료에는 병원급 의료기관이 없으므로 의료기관 구분·병원급 접수 제한(보드 진료실-1)은 넣지 않는다.
  *  - [보류] 화상으로 신청한 환자를 전화로 바꾸는 '전화로 진료하기' 버튼(진료대기 띠 안) 배치는 임의.
  *  - [보류] 진료실-2 예외 대상의 첫 번째 사유 선택 가능 여부(보드는 초진만 막음).
@@ -40,6 +43,7 @@
  *  - [보류] 보드 그레이존(엄격/완화) 카드는 법무 검토 전이라 반영하지 않음.
  *
  * 변경 이력
+ *  - v0.3 (2026-11-20) D8 변경 반영: 진료실-1 초진 실거주 증명 첨부 열람 영역, 패널 토글 '실거주 증명'.
  *  - v0.2 (2026-11-20) 현행 화면을 실제 개발 코드 기준으로 다시 그림(GNB·목록·작업 띠·대기 타이머·환자정보·첨부사진·다이얼로그·프로필 메뉴).
  *    의료기관 구분(의원급/병원급) 토글과 병원급 접수 제한 제거.
  *    진료취소한 행은 현행대로 접수대기·접수완료 표에서 빠진다(진료완료 탭은 그리지 않음, 패널에 사유 표시).
@@ -188,12 +192,12 @@ const COLS = [
   { label: '진료상태', w: 1, right: true },
 ];
 
-type State = { jump: Jump; target: Target; who: Who; method: Method };
+type State = { jump: Jump; target: Target; who: Who; method: Method; proof: 'none' | 'attached' };
 
 export default function UntactLawDoctor() {
-  /* 검토용 URL 파라미터: ?jump=r1&target=first&who=child&method=phone */
+  /* 검토용 URL 파라미터: ?jump=r1&target=first&who=child&method=phone&proof=none */
   const [s, setS] = useState<State>(() => {
-    const init: State = { jump: 'r1', target: 'first', who: 'self', method: 'video' };
+    const init: State = { jump: 'r1', target: 'first', who: 'self', method: 'video', proof: 'attached' };
     try {
       const q = new URLSearchParams(window.location.search);
       (Object.keys(init) as (keyof State)[]).forEach(k => {
@@ -204,6 +208,7 @@ export default function UntactLawDoctor() {
       if (!(init.target in TARGET_BADGE)) init.target = 'first';
       if (init.who !== 'child') init.who = 'self';
       if (init.method !== 'phone' || init.target !== 'revisit') init.method = 'video';
+      if (init.proof !== 'none') init.proof = 'attached';
     } catch {
       /* 파라미터 없음 */
     }
@@ -414,6 +419,31 @@ export default function UntactLawDoctor() {
           <Check on={checks[1]} onClick={() => setChecks(c => [c[0], !c[1]])}>
             {secondCheck}
           </Check>
+        </div>
+      )}
+      {s.target === 'first' && (
+        <div className="uld-proof is-changed">
+          <span className="uld-proof-k">실거주 증명 첨부</span>
+          {s.proof === 'attached' ? (
+            <div className="uld-photos">
+              <span className="uld-proof-thumb">
+                <span className="uld-mini-doc">
+                  <b>부동산 임대차 계약서</b>
+                  <i className="is-keep" />
+                  <i />
+                  <i className="is-keep is-short" />
+                  <i />
+                  <i />
+                </span>
+                <img className="uld-photo-dl" src={IC_DOWNLOAD} alt="" />
+              </span>
+              <Btn v="secondary" className="uld-photo-btn">
+                내려받기
+              </Btn>
+            </div>
+          ) : (
+            <span className="uld-proof-none">첨부 없음</span>
+          )}
         </div>
       )}
 
@@ -666,6 +696,7 @@ export default function UntactLawDoctor() {
         '현행 빨간 시범사업 안내 대신 진료 대상 배지·가족 대리 신청 배지.',
         '접수 전 확인 2개를 모두 체크해야 접수완료가 켜진다. 재진은 두 번째가 대면 이력 확인.',
         '재진이면 환자 응답 상자, 자녀면 본인확인 문구 자리에 법정대리인 동의 기록',
+        '초진이면 접수 전 확인 아래에 실거주 증명 첨부(앱에서 가림 처리해 올린 서류). 없으면 "첨부 없음". 다시 요청(반려)·파기 시점은 보류.',
         '접수완료를 누르면 현행 예상 대기 시간 설정 → 진료대기.',
       ],
       r2a: [
@@ -736,7 +767,7 @@ export default function UntactLawDoctor() {
         <div className="uld-panel-card">
           <p className="uld-panel-title">온라인진료실 · 제도화 대응</p>
           <p className="uld-panel-sub">
-            굿닥 온라인진료실(의사용) · 검토용 초안 v0.2 · 현행 화면은 개발 코드 기준 재현, 동적 값은 {'{중괄호}'}
+            굿닥 온라인진료실(의사용) · 검토용 초안 v0.3 · 현행 화면은 개발 코드 기준 재현, 동적 값은 {'{중괄호}'}
           </p>
         </div>
         <div className="uld-panel-card">
@@ -776,6 +807,15 @@ export default function UntactLawDoctor() {
               { k: 'child', t: '자녀(미성년)' },
             ]}
             onChange={k => set({ who: k })}
+          />
+          <Seg
+            label="실거주 증명(초진)"
+            value={s.target === 'first' ? s.proof : 'none'}
+            options={[
+              { k: 'none', t: '첨부 없음' },
+              { k: 'attached', t: '첨부함', disabled: s.target !== 'first' },
+            ]}
+            onChange={k => set({ proof: k })}
           />
           <Seg
             label="신청 진료 방식"

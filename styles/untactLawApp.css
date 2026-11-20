@@ -1,0 +1,596 @@
+/* untact-law-app — 굿닥 앱 비대면진료 신청 흐름 · 제도화 대응
+   색 값은 goodoc-mobile src/constants/color.ts = goodoc-design colors_and_type.css 와 같은 값.
+   글자 크기·줄 높이는 GoodocText styles.ts 그대로(heading3 24/36 … caption2 12/18). */
+
+.ula-root {
+  --gray-10: #f9f9fb;
+  --gray-15: #f6f7f9;
+  --gray-20: #f2f4f7;
+  --gray-30: #e3e6ed;
+  --gray-40: #caced8;
+  --gray-50: #a8aebd;
+  --gray-60: #808799;
+  --gray-70: #5d6474;
+  --gray-80: #434956;
+  --gray-90: #31353f;
+  --gray-100: #16181d;
+  --blue-10: #f5faff;
+  --blue-20: #e5f2ff;
+  --blue-60: #0073fa;
+  --blue-70: #066ae5;
+  --blue-90: #1057c1;
+  --red-10: #fff6f6;
+  --red-50: #fb7480;
+  --red-60: #fa4655;
+  --white: #ffffff;
+  --note: #7a4ff0;
+
+  min-height: 100vh;
+  background: #d9dce3;
+  font-family: Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--gray-100);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 32px;
+  padding: 24px 16px 48px;
+  box-sizing: border-box;
+}
+.ula-root *,
+.ula-root *::before,
+.ula-root *::after {
+  box-sizing: border-box;
+}
+
+/* ───────── 좌측 상태 패널 (프로토 메타) ───────── */
+.ula-panel {
+  width: 300px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: sticky;
+  top: 24px;
+}
+.ula-panel-card {
+  background: var(--white);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.ula-panel-title {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 24px;
+  color: var(--gray-100);
+  margin: 0 0 4px;
+}
+.ula-panel-sub {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--gray-60);
+  margin: 0;
+  word-break: keep-all;
+}
+.ula-panel-h {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 18px;
+  color: var(--gray-70);
+  margin: 0 0 8px;
+}
+.ula-jumps {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ula-jump {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--gray-80);
+  cursor: pointer;
+}
+.ula-jump:hover {
+  background: var(--gray-15);
+}
+.ula-jump.is-on {
+  background: var(--blue-10);
+  border-color: var(--blue-60);
+  color: var(--blue-60);
+  font-weight: 600;
+}
+.ula-badge {
+  flex-shrink: 0;
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+.ula-badge.is-new {
+  background: #efe9fe;
+  color: var(--note);
+}
+.ula-badge.is-mod {
+  background: #fff3e0;
+  color: #c26a00;
+}
+.ula-badge.is-cur {
+  background: var(--gray-20);
+  color: var(--gray-60);
+}
+.ula-ctl {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ula-ctl-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ula-ctl-label {
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 600;
+  color: var(--gray-70);
+}
+.ula-seg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.ula-seg button {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--gray-30);
+  background: var(--white);
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--gray-70);
+  cursor: pointer;
+  word-break: keep-all;
+}
+.ula-seg button.is-on {
+  border-color: var(--gray-80);
+  background: var(--gray-80);
+  color: var(--white);
+  font-weight: 600;
+}
+.ula-seg-col {
+  flex-direction: column;
+}
+.ula-seg-col button {
+  text-align: left;
+}
+.ula-note {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--gray-70);
+  margin: 0;
+  padding-left: 14px;
+  word-break: keep-all;
+}
+.ula-note li {
+  list-style: disc;
+  margin-bottom: 4px;
+}
+
+/* ───────── 폰 ───────── */
+.ula-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.ula-stage-cap {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--gray-70);
+}
+.ula-phone {
+  position: relative;
+  width: 375px;
+  height: 812px;
+  background: var(--white);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(22, 24, 29, 0.12);
+}
+.ula-statusbar {
+  height: 47px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: 0 28px 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--gray-100);
+  background: var(--white);
+}
+.ula-homebar {
+  height: 34px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 8px;
+  background: var(--white);
+}
+.ula-homebar::after {
+  content: '';
+  width: 134px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--gray-100);
+}
+.ula-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  scrollbar-width: none;
+}
+.ula-scroll::-webkit-scrollbar {
+  display: none;
+}
+.ula-scroll > * {
+  flex-shrink: 0;
+}
+.ula-col {
+  display: flex;
+  flex-direction: column;
+}
+
+/* NavigationBar: height 56, marginHorizontal 8, 버튼 padding 10 */
+.ula-nav {
+  height: 56px;
+  flex-shrink: 0;
+  margin: 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ula-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.ula-nav-text {
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--gray-70);
+  margin: 0 8px;
+}
+
+/* GoodocText */
+.t {
+  display: block;
+  margin: 0;
+  white-space: pre-line;
+  word-break: keep-all;
+}
+.t-h3 { font-size: 24px; line-height: 36px; }
+.t-h4 { font-size: 20px; line-height: 30px; }
+.t-h5 { font-size: 18px; line-height: 27px; }
+.t-b1 { font-size: 16px; line-height: 24px; }
+.t-b2 { font-size: 14px; line-height: 21px; }
+.t-c1 { font-size: 13px; line-height: 20px; }
+.t-c2 { font-size: 12px; line-height: 18px; }
+.w4 { font-weight: 400; }
+.w5 { font-weight: 500; }
+.w6 { font-weight: 600; }
+.w7 { font-weight: 700; }
+
+/* Button (buttonUtils sizeLarge: h56 r8 / filled·outlined·tonal) */
+.ula-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 56px;
+  min-width: 112px;
+  padding: 0 20px;
+  border-radius: 8px;
+  border: 0;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ula-btn.is-flex {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+}
+.ula-btn.filled-blue { background: var(--blue-60); color: var(--white); }
+.ula-btn.filled-blue:active { background: var(--blue-70); }
+.ula-btn.filled-gray { background: var(--gray-80); color: var(--white); }
+.ula-btn.outlined-gray {
+  background: var(--white);
+  border: 1px solid var(--gray-30);
+  color: var(--gray-70);
+}
+.ula-btn.tonal-blue { background: var(--blue-20); color: var(--blue-60); }
+.ula-btn.is-disabled,
+.ula-btn:disabled {
+  cursor: default;
+}
+.ula-btn.filled-blue:disabled,
+.ula-btn.filled-gray:disabled,
+.ula-btn.tonal-blue:disabled {
+  background: var(--gray-20);
+  color: var(--gray-50);
+}
+.ula-btn.outlined-gray:disabled {
+  background: var(--white);
+  color: var(--gray-40);
+}
+.ula-btn-sub {
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 500;
+}
+.ula-cta {
+  flex-shrink: 0;
+  margin: 12px 20px;
+}
+
+/* 프리셋 칩 (PresetItem) */
+.ula-preset {
+  flex-shrink: 0;
+  border: 1px solid var(--gray-30);
+  border-radius: 6px;
+  padding: 12px 20px;
+  background: var(--white);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 21px;
+  font-weight: 700;
+  color: var(--gray-80);
+  cursor: pointer;
+}
+.ula-preset.is-on {
+  background: var(--gray-80);
+  border-color: var(--gray-80);
+  color: var(--white);
+}
+.ula-hscroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ula-hscroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* RoundTextInput */
+.ula-textarea {
+  margin: 0 20px;
+  min-height: 160px;
+  border: 1px solid var(--gray-30);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.ula-textarea textarea {
+  border: 0;
+  outline: 0;
+  resize: none;
+  flex: 1;
+  min-height: 96px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 21px;
+  color: var(--gray-100);
+  padding: 0;
+}
+.ula-textarea textarea::placeholder {
+  color: var(--gray-50);
+}
+
+/* 라디오 (CancelReasonOptionRow) */
+.ula-radio-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px 20px;
+  background: none;
+  border: 0;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+}
+.ula-radio {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  border: 1px solid var(--gray-40);
+  background: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ula-radio.is-on {
+  border-color: var(--blue-60);
+}
+.ula-radio.is-on::after {
+  content: '';
+  width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  background: var(--blue-60);
+}
+
+/* 안내 상자 (PrescriptionGuide 형식) */
+.ula-guide {
+  background: var(--gray-10);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ula-guide-title {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+}
+.ula-bullet {
+  display: flex;
+  gap: 8px;
+}
+
+/* 체크박스 행 (CheckBox) */
+.ula-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 0;
+  padding: 0;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+/* 자리표시 */
+.ula-ph {
+  border: 1.5px dashed var(--note);
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: #faf8ff;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ula-ph-tag {
+  align-self: flex-start;
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 700;
+  color: var(--note);
+  background: #efe9fe;
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+.ula-srv {
+  background: var(--gray-30);
+  color: var(--gray-60);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  line-height: 14px;
+  text-align: center;
+}
+
+/* 진료내역 상세 진행 바 (StatusProgress) */
+.ula-progress {
+  display: flex;
+  gap: 6px;
+}
+.ula-progress-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.ula-progress-line-wrap {
+  position: relative;
+  height: 16px;
+  display: flex;
+}
+.ula-progress-line {
+  flex: 1;
+  height: 6px;
+  margin-top: 5px;
+  border-radius: 3px;
+  background: var(--gray-20);
+}
+.ula-progress-dot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 16px;
+  border: 3px solid var(--white);
+  background: var(--blue-70);
+  box-shadow: 0 2px 1px rgba(0, 0, 0, 0.05), 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.ula-tabbar {
+  display: flex;
+  height: 56px;
+  border-bottom: 1px solid var(--gray-30);
+  background: var(--white);
+}
+.ula-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  background: none;
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+}
+.ula-tab.is-on {
+  border-bottom: 2px solid var(--gray-100);
+}
+.ula-info-row {
+  display: flex;
+}
+.ula-info-row > .t:first-child {
+  width: 100px;
+  flex-shrink: 0;
+}
+.ula-changed {
+  outline: 2px dashed var(--note);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+@media (max-width: 760px) {
+  .ula-root {
+    flex-direction: column;
+    align-items: center;
+  }
+  .ula-panel {
+    position: static;
+    width: 100%;
+    max-width: 375px;
+  }
+}
+/* 비활성 전화 버튼의 제약 안내는 읽혀야 함 — 라벨만 흐리게, 보조 문구는 GRAY_60 */
+.ula-btn.outlined-gray:disabled .ula-btn-sub {
+  color: var(--gray-60);
+}

@@ -28,6 +28,8 @@ export const SCREEN_CSS = {
   'application-unified': ['styles/applicationUnified.css'],
   'adot-clinic-linking': ['styles/adotClinicLinking.css'],
   'tablet-patient-select': ['styles/tabletPatientSelect.css'],
+  'untact-law-app': ['styles/untactLawApp.css'],
+  'untact-law-doctor': ['styles/untactLawDoctor.css'],
   'desk-web': ['styles/connectUnified.css', 'styles/deskWeb.css'],
   'desk-web-v2': ['styles/connectUnified.css', 'styles/deskWebV2.css'],
   'partners-connect-preview': ['styles/partnersConnectSource.css', 'styles/partnersConnectPreview.css'],

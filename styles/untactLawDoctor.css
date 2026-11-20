@@ -1,0 +1,786 @@
+/* untact-law-doctor — 굿닥 온라인진료실(의사용) · 제도화 대응
+   색 값은 goodoc-design colors_and_type.css 와 같은 값. 화면 치수는 현행 캡처(1600px 폭 기준 1/2 축척) 재현. */
+
+.uld-root {
+  --gray-10: #f9f9fb;
+  --gray-15: #f6f7f9;
+  --gray-20: #f2f4f7;
+  --gray-30: #e3e6ed;
+  --gray-40: #caced8;
+  --gray-50: #a8aebd;
+  --gray-60: #808799;
+  --gray-70: #5d6474;
+  --gray-80: #434956;
+  --gray-90: #31353f;
+  --gray-100: #16181d;
+  --blue-10: #f5faff;
+  --blue-20: #e5f2ff;
+  --blue-60: #0073fa;
+  --blue-70: #066ae5;
+  --red-10: #fff6f6;
+  --red-60: #fa4655;
+  --green-60: #12b76a;
+  --white: #ffffff;
+  --note: #7a4ff0;
+
+  min-height: 100vh;
+  background: #d9dce3;
+  font-family: Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--gray-100);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 24px;
+  padding: 24px 16px 48px;
+  box-sizing: border-box;
+}
+.uld-root *,
+.uld-root *::before,
+.uld-root *::after {
+  box-sizing: border-box;
+}
+.uld-root button {
+  font-family: inherit;
+}
+
+/* ───────── 좌측 상태 패널 (프로토 메타) ───────── */
+.uld-panel {
+  width: 280px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: sticky;
+  top: 24px;
+}
+.uld-panel-card {
+  background: var(--white);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.uld-panel-title {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 24px;
+  margin: 0 0 4px;
+}
+.uld-panel-sub {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--gray-60);
+  margin: 0;
+  word-break: keep-all;
+}
+.uld-panel-h {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 18px;
+  color: var(--gray-70);
+  margin: 0 0 8px;
+}
+.uld-panel-result {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--gray-15);
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--gray-80);
+  word-break: keep-all;
+}
+.uld-jumps {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.uld-jump {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--gray-80);
+  cursor: pointer;
+}
+.uld-jump:hover {
+  background: var(--gray-15);
+}
+.uld-jump.is-on {
+  background: var(--blue-10);
+  border-color: var(--blue-60);
+  color: var(--blue-60);
+  font-weight: 600;
+}
+.uld-badge {
+  flex-shrink: 0;
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+.uld-badge.is-new {
+  background: #efe9fe;
+  color: var(--note);
+}
+.uld-badge.is-mod {
+  background: #fff3e0;
+  color: #c26a00;
+}
+.uld-ctl {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.uld-ctl-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.uld-ctl-label {
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 600;
+  color: var(--gray-70);
+}
+.uld-seg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.uld-seg button {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--gray-30);
+  background: var(--white);
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--gray-70);
+  cursor: pointer;
+  word-break: keep-all;
+}
+.uld-seg button.is-on {
+  border-color: var(--gray-80);
+  background: var(--gray-80);
+  color: var(--white);
+  font-weight: 600;
+}
+.uld-seg button:disabled {
+  color: var(--gray-40);
+  background: var(--gray-10);
+  cursor: not-allowed;
+}
+.uld-note {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--gray-70);
+  margin: 0;
+  padding-left: 14px;
+  word-break: keep-all;
+}
+.uld-note li {
+  list-style: disc;
+  margin-bottom: 4px;
+}
+
+/* ───────── 온라인진료실 프레임 ───────── */
+.uld-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.uld-stage-cap {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--gray-70);
+}
+.uld-frame {
+  position: relative;
+  width: 1040px;
+  min-height: 860px;
+  background: var(--gray-15);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+.uld-gnb {
+  position: relative;
+  height: 56px;
+  background: var(--white);
+  border-bottom: 1px solid var(--gray-30);
+  display: flex;
+  align-items: center;
+  padding: 0 40px;
+}
+.uld-brand {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 220px;
+}
+.uld-brand img {
+  height: 24px;
+}
+.uld-brand span {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--blue-60);
+}
+.uld-tabs {
+  display: flex;
+  gap: 32px;
+  height: 100%;
+}
+.uld-tabs span {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  color: var(--gray-60);
+}
+.uld-tabs span.is-on {
+  color: var(--gray-100);
+  font-weight: 600;
+  box-shadow: inset 0 -2px 0 var(--gray-100);
+}
+.uld-me {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gray-90);
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 6px;
+}
+.uld-me:hover {
+  background: var(--gray-20);
+}
+.uld-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  background: var(--gray-30);
+  flex-shrink: 0;
+}
+
+/* 프로필 메뉴 (C06 재현) */
+.uld-menu {
+  position: absolute;
+  top: 46px;
+  right: 24px;
+  z-index: 5;
+  width: 176px;
+  background: var(--white);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14);
+  padding: 8px 0;
+  font-size: 12px;
+  color: var(--gray-90);
+}
+.uld-menu-me {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px 8px;
+  font-weight: 600;
+}
+.uld-menu-chip {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--gray-20);
+  color: var(--gray-70);
+}
+.uld-menu-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+}
+.uld-menu-btn {
+  display: block;
+  width: calc(100% - 24px);
+  margin: 4px 12px 8px;
+  padding: 5px 0;
+  border: 1px solid var(--gray-30);
+  border-radius: 4px;
+  background: var(--white);
+  font-size: 11px;
+  color: var(--gray-80);
+}
+.uld-menu-sep {
+  height: 1px;
+  background: var(--gray-30);
+  margin: 4px 0;
+}
+
+.uld-toggle {
+  width: 28px;
+  height: 16px;
+  border-radius: 8px;
+  border: none;
+  background: var(--gray-40);
+  position: relative;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+.uld-toggle span {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--white);
+  transition: left 0.15s;
+}
+.uld-toggle.is-on {
+  background: var(--blue-60);
+}
+.uld-toggle.is-on span {
+  left: 14px;
+}
+
+/* 본문 */
+.uld-main {
+  padding: 16px 40px 40px;
+}
+.uld-sec-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 20px 0 8px;
+}
+.uld-sec-head h2 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+}
+.uld-sec-toggles {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--gray-80);
+}
+.uld-thead,
+.uld-row {
+  display: grid;
+  grid-template-columns: 116px 116px 120px 110px 64px 1fr 72px 24px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+}
+.uld-thead {
+  height: 32px;
+  font-size: 11px;
+  color: var(--gray-60);
+}
+.uld-r {
+  text-align: right;
+}
+.uld-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.uld-row-card {
+  background: var(--white);
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.uld-row {
+  width: 100%;
+  height: 40px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-size: 12px;
+  color: var(--gray-90);
+  cursor: pointer;
+}
+.uld-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.uld-st {
+  text-align: right;
+  font-weight: 600;
+}
+.uld-st.is-blue {
+  color: var(--blue-60);
+}
+.uld-st.is-green {
+  color: var(--green-60);
+}
+.uld-st.is-gray {
+  color: var(--gray-50);
+}
+
+/* 상세 */
+.uld-detail {
+  padding: 4px 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.uld-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px 10px 16px;
+  border-radius: 6px;
+  background: var(--blue-20);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-90);
+}
+.uld-banner > span {
+  flex: 1;
+}
+.uld-banner.is-quiet {
+  background: var(--gray-20);
+  font-weight: 500;
+  padding: 12px 16px;
+}
+.uld-btn-primary,
+.uld-btn-line {
+  height: 32px;
+  padding: 0 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.uld-btn-primary {
+  border: none;
+  background: var(--blue-60);
+  color: var(--white);
+}
+.uld-btn-primary:disabled {
+  background: var(--gray-30);
+  color: var(--gray-50);
+  cursor: not-allowed;
+}
+.uld-btn-line {
+  border: 1px solid var(--gray-30);
+  background: var(--white);
+  color: var(--gray-80);
+  align-self: flex-start;
+}
+.uld-banner .uld-btn-line {
+  align-self: center;
+}
+
+/* 바뀐 곳 표시 (점선) */
+.uld-root .is-changed {
+  outline: 1.5px dashed var(--note);
+  outline-offset: 3px;
+}
+
+.uld-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px;
+  border: 1px solid var(--gray-30);
+  border-radius: 6px;
+}
+.uld-confirm-h {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gray-80);
+}
+.uld-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 13px;
+  color: var(--gray-90);
+  cursor: pointer;
+  text-align: left;
+}
+.uld-check-box {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1.5px solid var(--gray-40);
+  background: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.uld-check.is-on .uld-check-box {
+  border-color: var(--blue-60);
+  background: var(--blue-60);
+}
+.uld-alert {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--red-60);
+}
+.uld-info-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+.uld-info-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+.uld-chips {
+  display: inline-flex;
+  gap: 6px;
+}
+.uld-chip {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.uld-chip.is-first {
+  background: var(--blue-20);
+  color: var(--blue-70);
+}
+.uld-chip.is-revisit {
+  background: #fff3e0;
+  color: #c26a00;
+}
+.uld-chip.is-exception {
+  background: #efe9fe;
+  color: var(--note);
+}
+.uld-chip.is-family {
+  background: var(--gray-20);
+  color: var(--gray-80);
+}
+.uld-answer {
+  padding: 12px 16px;
+  border-radius: 6px;
+  background: #fff8ec;
+  font-size: 13px;
+  color: var(--gray-90);
+}
+.uld-answer p {
+  margin: 0;
+}
+.uld-answer-h {
+  font-weight: 700;
+  color: #c26a00;
+  margin-bottom: 4px !important;
+}
+.uld-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+.uld-fields,
+.uld-side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.uld-field {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  align-items: center;
+  gap: 12px;
+}
+.uld-field.is-top {
+  align-items: flex-start;
+}
+.uld-field-k {
+  font-size: 12px;
+  color: var(--gray-60);
+}
+.uld-field-v,
+.uld-symptom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--gray-30);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--gray-90);
+}
+.uld-symptom {
+  align-items: flex-start;
+  min-height: 64px;
+  padding: 8px 12px;
+}
+.uld-consent {
+  margin-left: 88px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--blue-10);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--blue-70);
+  word-break: keep-all;
+}
+.uld-cert-h {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.uld-cert-v {
+  margin: 0;
+  font-size: 12px;
+  color: var(--gray-70);
+}
+.uld-cert-v b {
+  margin-left: 6px;
+  color: var(--gray-90);
+}
+
+/* 모달 */
+.uld-dim {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: rgba(22, 24, 29, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.uld-modal {
+  width: 400px;
+  background: var(--white);
+  border-radius: 10px;
+  padding: 20px 20px 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+.uld-modal.is-small {
+  width: 360px;
+}
+.uld-modal-title {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 700;
+}
+.uld-modal-desc {
+  margin: -4px 0 14px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--gray-70);
+  word-break: keep-all;
+}
+.uld-radios {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.uld-radio {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--gray-90);
+  text-align: left;
+  cursor: pointer;
+  word-break: keep-all;
+}
+.uld-radio > span:last-child {
+  display: flex;
+  flex-direction: column;
+}
+.uld-radio:disabled {
+  color: var(--gray-40);
+  cursor: not-allowed;
+}
+.uld-radio-dot {
+  width: 14px;
+  height: 14px;
+  margin-top: 2px;
+  border-radius: 50%;
+  border: 1.5px solid var(--gray-40);
+  flex-shrink: 0;
+  position: relative;
+}
+.uld-radio.is-on .uld-radio-dot {
+  border-color: var(--blue-60);
+}
+.uld-radio.is-on .uld-radio-dot::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: var(--blue-60);
+}
+.uld-radio-sub {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--gray-60);
+}
+.uld-textarea {
+  width: 100%;
+  min-height: 64px;
+  padding: 8px 10px;
+  border: 1px solid var(--gray-30);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 12px;
+  resize: vertical;
+}
+.uld-modal-btns {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
+.uld-modal-btns .uld-btn-line {
+  align-self: auto;
+}
+
+.uld-photo {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+.uld-thumb {
+  width: 46px;
+  height: 46px;
+  border-radius: 4px;
+  border: 1px solid var(--gray-30);
+  background: var(--blue-10);
+}
+.uld-photo .uld-btn-line {
+  align-self: flex-end;
+}

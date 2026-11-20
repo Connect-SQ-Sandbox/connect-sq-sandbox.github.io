@@ -1,5 +1,5 @@
 /* untact-law-doctor — 굿닥 온라인진료실(의사용) · 제도화 대응
-   색 값은 goodoc-design colors_and_type.css 와 같은 값. 화면 치수는 현행 캡처(1600px 폭 기준 1/2 축척) 재현. */
+   치수·색은 goodoc-web-platform apps/partners online-clinic(tailwind 클래스) 값을 그대로 옮김. */
 
 .uld-root {
   --gray-10: #f9f9fb;
@@ -195,7 +195,7 @@
   margin-bottom: 4px;
 }
 
-/* ───────── 온라인진료실 프레임 ───────── */
+/* ───────── 온라인진료실 프레임 (partners online-clinic 값) ───────── */
 .uld-stage {
   display: flex;
   flex-direction: column;
@@ -209,578 +209,827 @@
 }
 .uld-frame {
   position: relative;
-  width: 1040px;
-  min-height: 860px;
-  background: var(--gray-15);
+  width: 1172px;
+  min-height: 900px;
+  background: #f6f7f9;
   border-radius: 8px;
-  overflow: hidden;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  color: #16181d;
+  font-size: 14px;
 }
-.uld-gnb {
-  position: relative;
-  height: 56px;
-  background: var(--white);
-  border-bottom: 1px solid var(--gray-30);
-  display: flex;
-  align-items: center;
-  padding: 0 40px;
-}
-.uld-brand {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  width: 220px;
-}
-.uld-brand img {
-  height: 24px;
-}
-.uld-brand span {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--blue-60);
-}
-.uld-tabs {
-  display: flex;
-  gap: 32px;
-  height: 100%;
-}
-.uld-tabs span {
-  display: flex;
-  align-items: center;
-  font-size: 13px;
-  color: var(--gray-60);
-}
-.uld-tabs span.is-on {
-  color: var(--gray-100);
-  font-weight: 600;
-  box-shadow: inset 0 -2px 0 var(--gray-100);
-}
-.uld-me {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border: none;
-  background: transparent;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--gray-90);
-  cursor: pointer;
-  padding: 6px 8px;
-  border-radius: 6px;
-}
-.uld-me:hover {
-  background: var(--gray-20);
-}
-.uld-avatar {
-  width: 22px;
-  height: 22px;
-  border-radius: 4px;
-  background: var(--gray-30);
-  flex-shrink: 0;
-}
-
-/* 프로필 메뉴 (C06 재현) */
-.uld-menu {
-  position: absolute;
-  top: 46px;
-  right: 24px;
-  z-index: 5;
-  width: 176px;
-  background: var(--white);
-  border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14);
-  padding: 8px 0;
-  font-size: 12px;
-  color: var(--gray-90);
-}
-.uld-menu-me {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px 8px;
-  font-weight: 600;
-}
-.uld-menu-chip {
-  margin-left: auto;
-  font-size: 10px;
-  font-weight: 500;
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: var(--gray-20);
-  color: var(--gray-70);
-}
-.uld-menu-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 12px;
-}
-.uld-menu-btn {
-  display: block;
-  width: calc(100% - 24px);
-  margin: 4px 12px 8px;
-  padding: 5px 0;
-  border: 1px solid var(--gray-30);
-  border-radius: 4px;
-  background: var(--white);
-  font-size: 11px;
-  color: var(--gray-80);
-}
-.uld-menu-sep {
-  height: 1px;
-  background: var(--gray-30);
-  margin: 4px 0;
-}
-
-.uld-toggle {
-  width: 28px;
-  height: 16px;
-  border-radius: 8px;
-  border: none;
-  background: var(--gray-40);
-  position: relative;
-  padding: 0;
-  cursor: pointer;
-  flex-shrink: 0;
-  vertical-align: middle;
-}
-.uld-toggle span {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--white);
-  transition: left 0.15s;
-}
-.uld-toggle.is-on {
-  background: var(--blue-60);
-}
-.uld-toggle.is-on span {
-  left: 14px;
-}
-
-/* 본문 */
-.uld-main {
-  padding: 16px 40px 40px;
-}
-.uld-sec-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: 20px 0 8px;
-}
-.uld-sec-head h2 {
-  font-size: 16px;
-  font-weight: 700;
-  margin: 0;
-}
-.uld-sec-toggles {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  color: var(--gray-80);
-}
-.uld-thead,
-.uld-row {
-  display: grid;
-  grid-template-columns: 116px 116px 120px 110px 64px 1fr 72px 24px;
-  align-items: center;
-  gap: 8px;
-  padding: 0 16px;
-}
-.uld-thead {
-  height: 32px;
-  font-size: 11px;
-  color: var(--gray-60);
-}
-.uld-r {
-  text-align: right;
-}
-.uld-rows {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.uld-row-card {
-  background: var(--white);
-  border-radius: 6px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-.uld-row {
-  width: 100%;
-  height: 40px;
-  border: none;
-  background: transparent;
-  text-align: left;
-  font-size: 12px;
-  color: var(--gray-90);
-  cursor: pointer;
-}
-.uld-name {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.uld-st {
-  text-align: right;
-  font-weight: 600;
-}
-.uld-st.is-blue {
-  color: var(--blue-60);
-}
-.uld-st.is-green {
-  color: var(--green-60);
-}
-.uld-st.is-gray {
-  color: var(--gray-50);
-}
-
-/* 상세 */
-.uld-detail {
-  padding: 4px 16px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-.uld-banner {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px 10px 16px;
-  border-radius: 6px;
-  background: var(--blue-20);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--gray-90);
-}
-.uld-banner > span {
-  flex: 1;
-}
-.uld-banner.is-quiet {
-  background: var(--gray-20);
-  font-weight: 500;
-  padding: 12px 16px;
-}
-.uld-btn-primary,
-.uld-btn-line {
-  height: 32px;
-  padding: 0 16px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-.uld-btn-primary {
-  border: none;
-  background: var(--blue-60);
-  color: var(--white);
-}
-.uld-btn-primary:disabled {
-  background: var(--gray-30);
-  color: var(--gray-50);
-  cursor: not-allowed;
-}
-.uld-btn-line {
-  border: 1px solid var(--gray-30);
-  background: var(--white);
-  color: var(--gray-80);
-  align-self: flex-start;
-}
-.uld-banner .uld-btn-line {
-  align-self: center;
-}
-
-/* 바뀐 곳 표시 (점선) */
 .uld-root .is-changed {
   outline: 1.5px dashed var(--note);
   outline-offset: 3px;
 }
 
-.uld-confirm {
+/* GNB — workspace.tsx */
+.uld-gnb {
+  background: #fff;
+  border-bottom: 1px solid #e3e6ed;
+  border-radius: 8px 8px 0 0;
+}
+.uld-gnb-inner {
+  max-width: 1140px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+}
+.uld-logo {
+  display: block;
+  margin: 18px 80px 18px 0;
+}
+.uld-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 48px;
+  padding: 0 24px;
+  align-self: stretch;
+}
+.uld-tabs span {
+  display: flex;
+  align-items: center;
+  min-height: 64px;
+  border-bottom: 2px solid transparent;
+  font-size: 16px;
+  line-height: 150%;
+  color: #808799;
+}
+.uld-tabs span.is-on {
+  border-color: #5d6474;
+  font-weight: 700;
+  color: #16181d;
+}
+.uld-me-wrap {
+  position: relative;
+  margin-left: auto;
+}
+.uld-me {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: #434956;
+  cursor: pointer;
+}
+.uld-me:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+.uld-me-caret {
+  margin-left: 4px;
+}
+.uld-avatar {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.uld-avatar img {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  object-fit: cover;
+}
+.uld-avatar-dot {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: #a8aebd;
+}
+
+/* 프로필 메뉴 — profile-menu.tsx */
+.uld-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% - 4px);
+  z-index: 40;
+  width: 240px;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 2px 1px rgba(22, 24, 29, 0.02), 0 2px 8px rgba(22, 24, 29, 0.1);
+}
+.uld-menu-top {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+.uld-menu-me {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #434956;
+}
+.uld-menu-chip {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(128, 135, 153, 0.1);
+  font-size: 12px;
+  font-weight: 700;
+  color: #5d6474;
+}
+.uld-menu-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 150%;
+  color: #5d6474;
+}
+.uld-menu-select {
+  height: 32px;
+  width: 100%;
+  padding: 0 12px;
+  border: 1px solid #e3e6ed;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  color: #5d6474;
+}
+.uld-menu-links {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid #f2f4f7;
+  padding: 8px 16px;
+}
+.uld-menu-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9.5px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #5d6474;
+}
+.uld-menu-logout {
+  display: block;
+  border-top: 1px solid #f2f4f7;
+  padding: 17.5px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #5d6474;
+}
+
+/* 스위치 — Switch.Root h-5 w-9 */
+.uld-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 36px;
+  height: 20px;
+  padding: 2px;
+  border: 0;
+  border-radius: 999px;
+  background: #e3e6ed;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.uld-switch span {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.25);
+  transition: transform 0.4s;
+}
+.uld-switch.is-on {
+  background: #0073fa;
+}
+.uld-switch.is-on span {
+  transform: translateX(16px);
+}
+
+/* 본문 — main max-w 1140 p-4 */
+.uld-main {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 0 40px;
+}
+.uld-page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 32px 0 16px;
+}
+.uld-page-head h1,
+.uld-h2 {
+  margin: 0;
+  padding: 3px 0;
+  font-size: 20px;
+  line-height: 150%;
+  font-weight: 700;
+  color: #434956;
+}
+.uld-h2 {
+  margin: 32px 0 16px;
+}
+.uld-page-toggles {
+  display: flex;
+  gap: 12px;
+}
+.uld-page-toggles span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #5d6474;
+}
+
+/* 표 — treatment-table.tsx */
+.uld-thead {
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  font-size: 13px;
+  color: #808799;
+}
+.uld-thead > span {
+  min-width: 0;
+  padding: 10px 12px;
+  font-weight: 500;
+}
+.uld-rows {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 12px 16px;
-  border: 1px solid var(--gray-30);
+}
+.uld-row-card {
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid transparent;
+  box-shadow: 0 1px 0 rgba(22, 24, 29, 0.03), 0 2px 4px rgba(22, 24, 29, 0.05);
+}
+.uld-row-card.is-open {
+  border-color: #e3e6ed;
+}
+.uld-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0 16px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #5d6474;
+  cursor: pointer;
+}
+.uld-cell {
+  min-width: 0;
+  padding: 10px 12px;
+  line-height: 150%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.uld-caret {
+  padding: 20px 8px;
+  text-align: right;
+  transition: transform 0.15s;
+}
+.uld-caret.is-up {
+  transform: rotate(180deg);
+}
+.uld-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.uld-name b {
+  font-weight: 700;
+  color: #5d6474;
+}
+.uld-gender {
+  position: relative;
+  display: inline-flex;
+  padding: 4px;
+  border-radius: 4px;
+}
+.uld-gender.is-f {
+  background: rgba(241, 82, 130, 0.1);
+}
+.uld-gender.is-m {
+  background: rgba(0, 115, 250, 0.1);
+}
+.uld-gender img {
+  width: 16px;
+  height: 16px;
+}
+.uld-gender-dot {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: #a8aebd;
+}
+
+/* 상세 — treatment-details.tsx (bg-white px-8) */
+.uld-detail {
+  padding: 0 32px;
+  text-align: left;
+  color: #31353f;
+}
+.uld-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding: 0 18px 0 24px;
+  border: 1px solid;
+  border-radius: 8px;
+}
+.uld-bar-msg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 0;
+}
+.uld-bar-msg img {
+  width: 28px;
+  height: 28px;
+}
+.uld-bar-msg strong {
+  font-size: 16px;
+  font-weight: 700;
+}
+.uld-bar-btns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* 버튼 — packages/ui button.tsx */
+.uld-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  min-width: 64px;
+  padding: 9px 22px;
+  border: 0;
   border-radius: 6px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 21px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.uld-btn.is-primary {
+  background: #0073fa;
+  color: #fff;
+}
+.uld-btn.is-primary:hover {
+  background: #056be1;
+}
+.uld-btn.is-secondary {
+  border: 1px solid rgba(128, 135, 153, 0.2);
+  background: transparent;
+  color: #5d6474;
+}
+.uld-btn.is-secondary:hover {
+  background: rgba(128, 135, 153, 0.05);
+}
+.uld-btn:disabled,
+.uld-btn:disabled:hover {
+  background: rgba(128, 135, 153, 0.05);
+  color: rgba(128, 135, 153, 0.4);
+  cursor: not-allowed;
+}
+.uld-btn.is-secondary:disabled {
+  background: transparent;
+  border-color: rgba(128, 135, 153, 0.1);
+}
+.uld-btn.uld-on-blue {
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #fff;
+}
+.uld-btn.uld-on-blue:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.uld-bar .uld-btn.is-primary:disabled {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+/* 접수 전 확인 (신규, 모양 임의) */
+.uld-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 16px 24px;
+  border: 1px solid #e3e6ed;
+  border-radius: 8px;
 }
 .uld-confirm-h {
   margin: 0;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
-  color: var(--gray-80);
+  color: #434956;
 }
 .uld-check {
   display: flex;
   align-items: center;
   gap: 8px;
-  border: none;
-  background: transparent;
   padding: 0;
-  font-size: 13px;
-  color: var(--gray-90);
-  cursor: pointer;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: #31353f;
   text-align: left;
+  cursor: pointer;
 }
 .uld-check-box {
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
-  border: 1.5px solid var(--gray-40);
-  background: var(--white);
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid #caced8;
+  border-radius: 4px;
+  background: #fff;
   flex-shrink: 0;
 }
 .uld-check.is-on .uld-check-box {
-  border-color: var(--blue-60);
-  background: var(--blue-60);
+  border-color: #0073fa;
+  background: #0073fa;
 }
-.uld-alert {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--red-60);
+
+
+/* DetailSection */
+.uld-section {
+  padding-bottom: 24px;
+  color: #31353f;
 }
-.uld-info-head {
+.uld-section-head {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-top: 4px;
+  gap: 8px;
+  height: 64px;
 }
-.uld-info-title {
-  font-size: 15px;
+.uld-section-head h3 {
+  margin: 0;
+  flex-shrink: 0;
+  font-size: 18px;
   font-weight: 700;
+}
+.uld-identity {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 150%;
+  color: #056be1;
 }
 .uld-chips {
   display: inline-flex;
   gap: 6px;
 }
 .uld-chip {
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 18px;
   padding: 2px 8px;
   border-radius: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 19px;
 }
 .uld-chip.is-first {
-  background: var(--blue-20);
-  color: var(--blue-70);
+  background: rgba(0, 115, 250, 0.1);
+  color: #0073fa;
 }
 .uld-chip.is-revisit {
-  background: #fff3e0;
-  color: #c26a00;
+  background: rgba(252, 125, 34, 0.12);
+  color: #e86a10;
 }
 .uld-chip.is-exception {
   background: #efe9fe;
   color: var(--note);
 }
 .uld-chip.is-family {
-  background: var(--gray-20);
-  color: var(--gray-80);
+  background: rgba(128, 135, 153, 0.1);
+  color: #5d6474;
 }
 .uld-answer {
-  padding: 12px 16px;
-  border-radius: 6px;
-  background: #fff8ec;
-  font-size: 13px;
-  color: var(--gray-90);
+  margin-bottom: 20px;
+  padding: 14px 20px;
+  border-radius: 8px;
+  background: rgba(252, 125, 34, 0.08);
+  font-size: 14px;
+  line-height: 150%;
+  color: #31353f;
 }
 .uld-answer p {
   margin: 0;
 }
 .uld-answer-h {
-  font-weight: 700;
-  color: #c26a00;
   margin-bottom: 4px !important;
+  font-weight: 700;
+  color: #e86a10;
 }
-.uld-info-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 32px;
-}
-.uld-fields,
-.uld-side {
+
+/* PatientInformation + SymptomAttachments */
+.uld-info {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  gap: 48px;
 }
-.uld-field {
+.uld-dl {
   display: grid;
-  grid-template-columns: 76px 1fr;
+  grid-template-columns: 88px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 24px;
+  width: 600px;
+  min-width: 0;
+  margin: 0;
+  font-size: 14px;
+  line-height: 150%;
+}
+.uld-dl dt {
+  color: #808799;
+}
+.uld-dl dd {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  padding: 12px 16px;
+  border: 1px solid #f2f4f7;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #31353f;
+}
+.uld-dl dd > span:first-child {
+  flex: 1;
+  min-width: 0;
+}
+.uld-copy {
+  display: inline-flex;
+  color: #5d6474;
+  opacity: 0.4;
+}
+.uld-symptom-col {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+.uld-symptom-row {
+  display: flex;
+  gap: 8px;
+}
+.uld-symptom-row label {
+  width: 88px;
+  height: 48px;
+  flex-shrink: 0;
+  font-size: 14px;
+  color: #808799;
+}
+.uld-symptom {
+  position: relative;
+  width: 400px;
+  max-width: 100%;
+  height: 120px;
+  padding: 12px 40px 12px 16px;
+  border: 1px solid #f2f4f7;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #31353f;
+}
+.uld-copy-abs {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+.uld-photos {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin-top: 2px;
+}
+.uld-photo {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 6px;
+  outline: 1px solid rgba(93, 100, 116, 0.2);
+  outline-offset: -0.5px;
+  background: linear-gradient(135deg, #e5f2ff, #f2f4f7);
+}
+.uld-photo-dl {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 20px;
+  height: 20px;
+}
+.uld-photo-btn {
+  margin-left: 34px;
+}
+.uld-avatar-dot.is-on {
+  background: #41d293;
+}
+.uld-menu-chip.is-on {
+  background: rgba(37, 187, 122, 0.1);
+  color: #18ac6c;
+}
+.uld-bar-timer {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #056be1;
+}
+
+/* CertificateRequests */
+.uld-cert {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+.uld-cert h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.uld-cert > div {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
 }
-.uld-field.is-top {
-  align-items: flex-start;
-}
-.uld-field-k {
-  font-size: 12px;
-  color: var(--gray-60);
-}
-.uld-field-v,
-.uld-symptom {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 34px;
-  padding: 0 12px;
-  border: 1px solid var(--gray-30);
-  border-radius: 6px;
-  font-size: 13px;
-  color: var(--gray-90);
-}
-.uld-symptom {
-  align-items: flex-start;
-  min-height: 64px;
-  padding: 8px 12px;
-}
-.uld-consent {
-  margin-left: 88px;
-  padding: 10px 12px;
-  border-radius: 6px;
-  background: var(--blue-10);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--blue-70);
-  word-break: keep-all;
-}
-.uld-cert-h {
-  margin: 0 0 4px;
-  font-size: 12px;
+.uld-cert-k {
   font-weight: 700;
+  color: #808799;
 }
-.uld-cert-v {
+.uld-cert b {
+  font-weight: 700;
+  color: #16181d;
+}
+.uld-memo {
+  height: 96px;
+  padding: 12px 16px;
+  border: 1px solid #e3e6ed;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #a8aebd;
+}
+.uld-cancel-wrap {
+  padding: 8px 0 32px;
+}
+.uld-cancel-reason {
   margin: 0;
-  font-size: 12px;
-  color: var(--gray-70);
-}
-.uld-cert-v b {
-  margin-left: 6px;
-  color: var(--gray-90);
+  padding: 8px 0 24px;
+  font-size: 14px;
+  color: #fa4655;
 }
 
-/* 모달 */
-.uld-dim {
+/* 다이얼로그 — packages/ui dialog.tsx (max-w-md, small 360) */
+.uld-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 10;
+  z-index: 50;
   background: rgba(22, 24, 29, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 16px;
 }
-.uld-modal {
-  width: 400px;
-  background: var(--white);
-  border-radius: 10px;
-  padding: 20px 20px 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+.uld-dialog {
+  width: 440px;
+  max-width: 448px;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  padding: 20px;
+  border: 1px solid #e3e6ed;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  font-size: 14px;
+  color: #16181d;
 }
-.uld-modal.is-small {
+.uld-dialog.is-small {
   width: 360px;
 }
-.uld-modal-title {
-  margin: 0 0 12px;
-  font-size: 15px;
+.uld-dialog-title {
+  margin: 0;
+  font-size: 18px;
   font-weight: 700;
+  white-space: pre-line;
 }
-.uld-modal-desc {
-  margin: -4px 0 14px;
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--gray-70);
+.uld-dialog-desc {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: #5d6474;
+  white-space: pre-line;
   word-break: keep-all;
+}
+.uld-dialog-body {
+  margin-top: 16px;
+}
+.uld-dialog-btns {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+.uld-wait {
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+}
+.uld-wait select {
+  padding: 8px;
+  border: 1px solid #e3e6ed;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 14px;
 }
 .uld-radios {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 16px;
 }
 .uld-radio {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  border: none;
-  background: transparent;
-  padding: 0;
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--gray-90);
-  text-align: left;
-  cursor: pointer;
+  font-size: 14px;
+  line-height: 20px;
   word-break: keep-all;
+  cursor: pointer;
 }
-.uld-radio > span:last-child {
+.uld-radio input {
+  margin: 3px 0 0;
+  flex-shrink: 0;
+}
+.uld-radio > span {
   display: flex;
   flex-direction: column;
 }
-.uld-radio:disabled {
-  color: var(--gray-40);
+.uld-radio.is-off {
+  color: #a8aebd;
   cursor: not-allowed;
 }
-.uld-radio-dot {
-  width: 14px;
-  height: 14px;
-  margin-top: 2px;
-  border-radius: 50%;
-  border: 1.5px solid var(--gray-40);
-  flex-shrink: 0;
-  position: relative;
-}
-.uld-radio.is-on .uld-radio-dot {
-  border-color: var(--blue-60);
-}
-.uld-radio.is-on .uld-radio-dot::after {
-  content: '';
-  position: absolute;
-  inset: 2px;
-  border-radius: 50%;
-  background: var(--blue-60);
-}
-.uld-radio-sub {
+.uld-radio em {
   font-style: normal;
-  font-size: 11px;
-  color: var(--gray-60);
-}
-.uld-textarea {
-  width: 100%;
-  min-height: 64px;
-  padding: 8px 10px;
-  border: 1px solid var(--gray-30);
-  border-radius: 6px;
-  font-family: inherit;
   font-size: 12px;
+  color: #808799;
+}
+.uld-textarea-wrap {
+  display: grid;
+  gap: 6px;
+}
+.uld-textarea-label {
+  font-size: 14px;
+  font-weight: 600;
+}
+.uld-textarea-wrap textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e3e6ed;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
   resize: vertical;
 }
-.uld-modal-btns {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 18px;
+.uld-hint {
+  margin: 0;
+  font-size: 14px;
+  color: #808799;
 }
-.uld-modal-btns .uld-btn-line {
-  align-self: auto;
-}
-
-.uld-photo {
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
-}
-.uld-thumb {
-  width: 46px;
-  height: 46px;
-  border-radius: 4px;
-  border: 1px solid var(--gray-30);
-  background: var(--blue-10);
-}
-.uld-photo .uld-btn-line {
-  align-self: flex-end;
+.uld-error {
+  margin: 0;
+  font-size: 14px;
+  color: #fa4655;
 }

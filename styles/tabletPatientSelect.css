@@ -1,6 +1,6 @@
 /* =============================================================
    tablet-patient-select — 태블릿 접수 '1. 환자 선택' 오탭 UX 개선 체험판
-   프레임 내부 값은 피그마 POC_대상선택(8640:47875 / 8642:71647)의 px 그대로.
+   프레임 내부 값은 DEV 피그마 POC_대상선택 V2 의 px 그대로(B안 최종).
    1920×1200 프레임을 transform: scale 로 축소해 보여준다.
    클래스 접두사 tps- 로 다른 화면과 충돌하지 않는다.
    ============================================================= */
@@ -42,30 +42,9 @@ body {
 .tps-bar-title span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tps-bar-title strong { font-size: 16px; font-weight: 700; color: #16181d; }
 .tps-bar-title span { font-size: 12px; color: #6b7280; }
-.tps-bar-now { flex: 0 0 auto; font-size: 13px; font-weight: 700; color: #066ae5; white-space: nowrap; }
 @media (max-width: 540px) {
   .tps-bar { flex-wrap: wrap; }
 }
-
-/* ---- 시안 선택(좌측 패널) ---- */
-.tps-presets { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px; }
-.tps-preset {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid #d9dde5;
-  background: #fff;
-  text-align: left;
-}
-.tps-preset strong { font-size: 13px; font-weight: 700; color: #434956; }
-.tps-preset span { font-size: 11px; line-height: 1.35; color: #808799; word-break: keep-all; }
-.tps-preset.is-on { background: #066ae5; border-color: #066ae5; }
-.tps-preset.is-on strong { color: #fff; }
-.tps-preset.is-on span { color: rgba(255, 255, 255, 0.8); }
-.tps-preset-custom { font-size: 11px; color: #066ae5; margin: -4px 0 10px; }
 
 /* ---- 본문 ---- */
 .tps-body {
@@ -174,7 +153,7 @@ body {
   letter-spacing: 0;
 }
 
-/* 탑바 */
+/* 탑바 — POC_Topbar */
 .tps-topbar {
   position: relative;
   z-index: 3;
@@ -182,7 +161,7 @@ body {
   height: 140px;
   display: flex;
   background: #f9f9fb; /* Gray/10 */
-  box-shadow: 0 4px 5px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
 }
 .tps-home {
   width: 400px;
@@ -233,23 +212,17 @@ body {
 }
 .tps-pin svg { transform: rotate(45deg); }
 
-/* 본문 */
+/* 본문 — content 876 = cardList pad 64/0/64/0 · gap 40 (list 628 + newEntry 80) */
 .tps-content {
   position: relative;
   z-index: 2;
-  flex: 1;
-  min-height: 0;
+  flex: 0 0 876px;
+  height: 876px;
   display: flex;
   flex-direction: column;
+  gap: 40px;
   padding: 64px 0;
-}
-.tps-instruction {
-  flex: 0 0 auto;
-  padding: 0 40px 24px;
-  font-size: 48px;
-  font-weight: 500;
-  line-height: 1.4;
-  color: #5d6474; /* Gray/70 */
+  box-sizing: border-box;
 }
 .tps-list {
   flex: 1;
@@ -260,10 +233,11 @@ body {
   overflow: visible;
   align-items: stretch;
 }
+/* 카드 3장(2424)은 화면보다 넓어 가로 스크롤. 그림자가 잘리지 않게 아래 16 여유 */
 .tps-list.is-scroll { overflow-x: auto; overflow-y: hidden; padding-bottom: 16px; margin-bottom: -16px; }
 .tps-list::-webkit-scrollbar { display: none; }
 
-/* 카드 공통 */
+/* 카드 공통 — POC_Item_환자 760×628 · pad 56/64 · radius 36 */
 .tps-card {
   position: relative;
   flex: 0 0 760px;
@@ -271,13 +245,14 @@ body {
   height: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 10px;
   padding: 56px 64px;
   border-radius: 36px;
   text-align: left;
   color: #31353f;
   box-sizing: border-box;
+  overflow: hidden;
 }
 .tps-card-patient {
   background: #fff;
@@ -289,16 +264,7 @@ body {
   background: #e5f2ff; /* Blue/20 */
   box-shadow: inset 0 0 0 8px #479dff, 4px 4px 8px rgba(0, 0, 0, 0.07); /* Blue/50 */
 }
-.tps-card-new {
-  background: rgba(128, 135, 153, 0.1); /* GrayAlpha/10 */
-  border: 0;
-}
-.tps-card-empty {
-  background: transparent;
-  border: 3px dashed #caced8;
-  justify-content: flex-start;
-}
-.tps-card-info { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.tps-card-info { flex: 1 1 auto; display: flex; flex-direction: column; gap: 20px; min-width: 0; min-height: 0; }
 .tps-name {
   font-size: 82px;
   font-weight: 700;
@@ -318,14 +284,10 @@ body {
   color: #5d6474; /* Gray/70 */
 }
 .tps-line { display: flex; align-items: center; gap: 12px; }
-.tps-dot { width: 6px; height: 6px; border-radius: 50%; background: #caced8; } /* Gray/40 */
-.tps-desc {
-  font-size: 48px;
-  font-weight: 500;
-  line-height: 1.4;
-  color: #5d6474;
-}
+.tps-dot { flex: 0 0 6px; width: 6px; height: 6px; border-radius: 50%; background: #caced8; } /* Gray/40 */
+/* 마지막 방문 */
 .tps-extra {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -333,16 +295,6 @@ body {
   font-weight: 600;
   line-height: 1.4;
   color: #808799; /* Gray/60 */
-}
-.tps-extra-end { justify-content: flex-end; }
-.tps-plus {
-  width: 120px;
-  height: 120px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 24px;
-  background: rgba(128, 135, 153, 0.15); /* GrayAlpha/15 */
 }
 
 /* 선택완료 뱃지 */
@@ -363,43 +315,56 @@ body {
 }
 .tps-badge-text { padding-top: 2px; }
 
-/* 하단 링크 행 (변수 ② 링크) */
-.tps-linkrow {
-  flex: 0 0 auto;
+/* 목록 아래 진입점 — newEntry h80 · pad 0/40 · gap 16 */
+.tps-entry {
+  flex: 0 0 80px;
+  height: 80px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 16px;
-  padding: 32px 40px 0;
+  padding: 0 40px;
+  box-sizing: border-box;
+}
+.tps-entry-label {
   font-size: 40px;
   font-weight: 500;
   line-height: 1.4;
-  color: #808799;
+  color: #808799; /* Gray/60 */
+  white-space: nowrap;
 }
-.tps-linkrow-btn {
+/* POC_Btn Text — 보이는 크기는 피그마 그대로(텍스트+화살표, 높이 80),
+   터치 영역만 왼쪽 16 · 오른쪽 24 확장: 투명 padding + 같은 크기 음수 margin */
+.tps-entry-btn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 8px 12px;
+  gap: 8px;
+  height: 80px;
+  padding: 12px 24px 12px 16px;
+  margin: 0 -24px 0 -16px;
   border: 0;
+  border-radius: 24px;
   background: transparent;
-  color: #066ae5;
+  -webkit-tap-highlight-color: transparent;
+  color: #115fd4; /* Blue/80 */
   font-size: 40px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.4;
-  text-decoration: underline;
-  text-underline-offset: 8px;
+  white-space: nowrap;
+  box-sizing: border-box;
 }
+.tps-entry-btn svg { flex: 0 0 48px; }
 
-/* CTA */
+/* CTA — POC_CTA pad 0/40/40 · 버튼 1840×144 */
 .tps-cta {
   position: relative;
   z-index: 1;
-  flex: 0 0 auto;
+  flex: 0 0 184px;
   display: flex;
   flex-direction: column;
   gap: 24px;
   padding: 0 40px 40px;
+  box-sizing: border-box;
 }
 .tps-btn {
   display: flex;
@@ -408,7 +373,7 @@ body {
   gap: 10px;
   width: 100%;
   height: 144px;
-  padding: 12px 40px;
+  padding: 0 40px;
   border: 0;
   border-radius: 24px;
   font-size: 56px;
@@ -427,13 +392,7 @@ body {
   border-bottom: 3px solid #115fd4; /* Blue/80 */
   border-left: 1px solid #115fd4;
   border-right: 1px solid #115fd4;
-  box-shadow: 4px 4px 4px rgba(16, 72, 162, 0.1);
-}
-.tps-btn-bar {
-  height: 112px;
-  background: rgba(128, 135, 153, 0.1);
-  color: #434956;
-  font-size: 44px;
+  box-shadow: 4px 4px 8px rgba(16, 72, 162, 0.1);
 }
 .tps-btn-secondary {
   background: #fff;
@@ -458,7 +417,7 @@ body {
 .tps-ph-desc { font-size: 44px; font-weight: 500; line-height: 1.5; color: #5d6474; max-width: 1400px; word-break: keep-all; }
 .tps-placeholder .tps-btn-secondary { width: auto; min-width: 720px; margin-top: 24px; }
 
-/* 확인 시트 (변수 ⑤) */
+/* 새 진료 접수 → 재조회 오버레이 */
 .tps-dim {
   position: absolute;
   inset: 0;
@@ -468,21 +427,19 @@ body {
   justify-content: center;
   background: rgba(49, 53, 63, 0.5);
 }
-.tps-sheet {
-  width: 1120px;
-  padding: 72px 64px 64px;
-  border-radius: 40px;
-  background: #fff;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.2);
+.tps-overlay-box {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 24px;
-  box-sizing: border-box;
+  padding: 64px 80px;
+  border-radius: 40px;
+  background: #fff;
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #5d6474;
 }
-.tps-sheet-title { font-size: 72px; font-weight: 700; line-height: 1.3; color: #31353f; }
-.tps-sheet-desc { font-size: 44px; font-weight: 500; line-height: 1.5; color: #5d6474; word-break: keep-all; }
-.tps-sheet-actions { display: flex; flex-direction: column; gap: 20px; margin-top: 24px; }
-.tps-sheet .tps-btn-next { font-size: 52px; }
 
 @media (max-width: 900px) {
   .tps-body { flex-direction: column; }
@@ -491,7 +448,7 @@ body {
 }
 
 /* =============================================================
-   대기화면 — POC_대기화면_환자조회 (8643:72136 입력 전 / 8643:72137 조회 중)
+   대기화면 — POC_대기화면_환자조회 (입력 전 / 조회 중)
    ============================================================= */
 .tps-home-screen { flex-direction: row; background: #fff; }
 .tps-home-left {
@@ -683,52 +640,25 @@ body {
 .tps-spinner { animation: tps-spin 1s linear infinite; }
 @keyframes tps-spin { to { transform: rotate(360deg); } }
 
-/* ---- 시안 바뀐 것 · 고급 영역 ---- */
-.tps-panel-changes h3 { font-size: 14px; color: #066ae5; }
-.tps-changes-label { font-size: 11px; font-weight: 600; color: #808799; margin-bottom: 6px; }
-.tps-changes { margin: 0; padding-left: 16px; display: flex; flex-direction: column; gap: 6px; }
-.tps-changes li { font-size: 12px; line-height: 1.5; color: #31353f; word-break: keep-all; }
-.tps-changes-none { font-size: 12px; line-height: 1.5; color: #5d6474; word-break: keep-all; }
-.tps-advanced { padding: 0; overflow: hidden; }
-.tps-advanced-head {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 14px;
-  border: 0;
-  background: #fff;
-  text-align: left;
-}
-.tps-advanced-head h3 { margin: 0; color: #5d6474; }
-.tps-advanced-caret { font-size: 16px; color: #808799; line-height: 1; }
-.tps-advanced-body { padding: 0 14px 14px; border-top: 1px solid #eef0f3; }
-.tps-advanced-body > .tps-field-hint { margin: 10px 0 12px; }
-
 /* =============================================================
-   도착확인 — 도착 환자 선택 카드 (태블릿 4.2 현행 코드 값)
+   도착확인 — 도착 환자 선택 카드 (POC_Item_환자 Property 1=도착확인)
+   Extra 86(칩 62 + 아래 24) · 환자정보 fill · 진료실정보 179(위 48 + 이름 67 + 8 + 정보 56)
    ============================================================= */
-.tps-card-arrival { justify-content: flex-start; gap: 0; }
-.tps-arr-badge-row { flex: 0 1 86px; min-height: 66px; display: flex; align-items: flex-start; }
-.tps-card-arrival .tps-card-info { flex: 0 0 auto; }
-.tps-arr-badge {
+.tps-card-arrival { gap: 0; }
+.tps-arr-chip-row { flex: 0 0 86px; height: 86px; padding-bottom: 24px; box-sizing: border-box; display: flex; align-items: flex-start; }
+.tps-arr-chip {
+  height: 62px;
   padding: 6px 16px;
   border-radius: 12px;
-  background: rgba(0, 115, 250, 0.1); /* #0073FA1A */
+  background: rgba(0, 115, 250, 0.1); /* #0073FA 10% */
   color: #479dff; /* Blue/50 */
   font-size: 36px;
   font-weight: 600;
   line-height: 1.4;
   white-space: nowrap;
+  box-sizing: border-box;
 }
-.tps-card-arrival .tps-card-info { min-height: 120px; }
-.tps-arr-divider { display: block; flex: 0 0 2px; height: 2px; margin: 20px 0; background: #f6f7f9; } /* Gray/15 */
-.tps-card-arrival.is-selected .tps-arr-divider { background: rgba(128, 135, 153, 0.12); }
-.tps-arr-room { flex: 1 0 auto; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; }
-.tps-arr-room-name,
-.tps-arr-room-sub { flex: 0 0 auto; }
-/* 안내 문구를 켜면 카드 영역이 줄어 도착확인 카드 내용이 들어가지 않는다 — 위아래 여백을 줄여 확보 */
-.tps-content.is-compact { padding: 24px 0; }
+.tps-arr-room { flex: 0 0 auto; display: flex; flex-direction: column; gap: 8px; padding-top: 48px; }
 .tps-arr-room-name {
   font-size: 48px;
   font-weight: 700;
@@ -739,24 +669,13 @@ body {
   text-overflow: ellipsis;
 }
 .tps-arr-room-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
   font-size: 40px;
   font-weight: 500;
   line-height: 1.4;
   color: #808799; /* Gray/60 */
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.tps-overlay-box {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 24px;
-  padding: 64px 80px;
-  border-radius: 40px;
-  background: #fff;
-  font-size: 48px;
-  font-weight: 700;
-  line-height: 1.4;
-  color: #5d6474;
 }

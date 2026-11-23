@@ -25,16 +25,21 @@
  *  - [확정·요청] 가림 예시는 가상 서류로 그리고 남길 곳·가릴 곳을 표시한다. 주민등록상 주소지 = 주민등록표 등본, 실거주지 = 임대차계약서·재직/재학증명서·공공요금 납부자료. 주소는 시 단위만 남김.
  *  - [확정·요청] 거주지 서류 첨부는 ①에서 초진을 고른 경우 ② 신청서에서 필수다. 첨부 + 가림 확인 체크 전에는 다음 버튼 비활성(D14). 위치는 기획 세션 제안.
  *  - [제안] 첨부 후 '주민등록번호 뒷자리·가족 정보·금액·계좌번호·연락처를 가렸어요' 체크를 해야 첨부가 완료된다.
- *  - [확정·요청] ② 진료 방식은 화상 진료 기본 선택. 전화 진료는 재진만 선택 가능(초진·예외는 비활성 + '재진만 선택 가능').
- *    13세 미만이거나 전화 숨김 과(피부·안과·이비인후·외상·정신)면 전화 진료 항목 자체를 숨긴다.
+ *  - [확정·요청] ② 진료 방식은 전화를 고를 수 있을 때(재진 + 13세 이상 + 전화 숨김 과 아님)만 선택 칸(화상 기본)을 보여 준다.
+ *    그 밖(초진·예외·13세 미만·피부·안과·이비인후·외상·정신)은 선택 칸 없이 안내(D15).
+ *    안내(가안): '화상 진료로 진행돼요' + '신청하면 바로 연결되지 않아요. 의사가 진료를 시작하면 알림을 보내드리니, 진료내역에서 '진료실 입장하기'를 눌러 주세요.'
+ *    (현행 앱: 진료 시작 시 진료내역 '진료실로 입장해 주세요' + '진료실 입장하기' 버튼)
  *  - [확정·요청] ② 처방 불가 약 안내(PrescriptionGuide)는 현행 문구 그대로.
  *  - [확정·요청] ③ 첫 신청 = 제목 + 법정 설명 4가지(자리표시) + 책임 문구 1곳 + 동의 체크(체크 전 CTA 비활성).
  *    재신청 = 한 줄 재확인(책임 문구) + 체크. 자녀 진료 = 법정대리인 동의 안내 한 줄 추가.
  *  - [확정·요청] ④ 병원 취소 상태에서 취소 사유를 환자에게 보여 준다. 현행 진료 정보(DetailInfoRow) 목록에 '취소사유' 줄을 추가한다.
- *  - [유지·자체] ① 라디오는 현행 앱의 라디오 행(CancelReasonOptionRow) 모양을 쓰고, 좌우 여백만 화면 기준 20으로 맞췄다(원본 24).
+ *  - [확정·요청] ② 거주지 종류는 세그먼트 '등본상 주소지 / 실거주지'(홈 ShortcutSegmentedTab 모양: 트랙 GRAY_20 r4 p3, 칸 높이 36, 선택 칸 흰 바탕·body2_700 GRAY_90, 미선택 body2_500 GRAY_50).
+ *    세그먼트 아래에 '제출 가능한 서류' 제목 + 선택한 종류의 서류 + 안내 한 줄.
+ *  - [제안] ① 박스 제목은 쉬운 말('최근 6개월 안에 다녀왔어요' 등) + 회색 태그(재진/초진/예외 대상). 화면 제목 '나에게 해당하는 항목을 골라 주세요'.
+ *  - [제안] ④ 취소 사유는 병원이 고른 문장(어드민) 대신 앱 표시용 문구(환자 말투 + 다음 행동)를 보여 준다.
+ *  - [확정·요청] ① 대상 선택은 라디오 대신 박스형(앱이 대상 선택에 라디오를 쓰지 않음). 모양은 Receipt420 PatientListItem·ReceiptExamRoomItem:
+ *    r8 · 테두리 GRAY_30 · 오른쪽 체크(ic_checkbox 32, GRAY_40) / 선택 시 테두리 BLUE_60 · 배경 ALPHA_BLUE_05 · 체크 BLUE_60. 초진 안내는 선택한 박스 아래.
  *  - [유지·자체] ① 초진 안내 상자는 ② 처방 안내(PrescriptionGuide) 상자 모양(GRAY_10 · r8 · p16 · 불릿)을 그대로 쓴다.
- *  - [유지·자체] ② 전화 진료 비활성은 outlined 버튼 비활성 색(GRAY_40) + 버튼 안 두 번째 줄 '재진만 선택 가능'(caption2_500).
- *    전화 진료를 숨기면 화상 진료 버튼 하나가 한 줄을 채운다.
  *  - [유지·자체] ② 진료 대상을 바꿔 전화 진료가 막히면 선택을 화상 진료로 되돌린다.
  *  - [유지·자체] ③ 책임 문구·법정대리인 안내는 ② 처방 안내 상자와 같은 GRAY_10 상자 안에 둔다. 동의 체크는 CheckBox(icon_check_select) 모양.
  *  - [유지·자체] ④ 취소사유 줄은 진료 정보 첫 줄(요청일시 위)에 둔다. 하단 버튼은 현행대로 없음(Cancel → actionButton []).
@@ -47,7 +52,6 @@
  *  - [보류] ③ 재신청 화면의 제목은 첫 신청과 같은 문구를 썼다. 재신청 전용 제목 필요 여부.
  *  - [보류] ① 재신청 한 줄 요약 문구('화상 진료 · 같은 시·도 의원 · 처방 7일까지')와 펼치기 동작은 임의. 확정 필요.
  *  - [보류] ① 초진 안내 3줄은 요청 문구를 해요체로 맞췄다('화상 진료만 가능해요' 등).
- *  - [보류] ② '재진만 선택 가능'을 버튼 안 두 번째 줄로 둔 배치는 임의. 버튼 아래 캡션(현행 '※ 현재 의사 선생님 사정으로…' 자리)도 가능.
  *  - [보류] ② 의사의 videoTreatmentEnabled=false(화상 진료 불가 의사)와 '초진은 화상만'이 겹치면 초진 환자는 신청 경로가 없다. 의사 목록 단계 처리 필요(범위 밖).
  *  - [보류] 나이 13세 미만 + 진료 받는 사람 본인 조합은 막지 않았다(토글 독립).
  *  - [보류] ③ 법정 설명 4가지는 가안. 앱 표시가 의료인 설명 의무(31조의9 주체는 의료인)를 대신하는지, 재신청 축약이 되는지 법무 확인.
@@ -59,6 +63,11 @@
  *  - [보류] ② 가림 예시 재직증명서의 '소속'·'재직 기간'은 남김/가림 표시 없이 둠. 표시 여부 확인 중.
  *
  * 변경 이력
+ *  - v0.5 (2026-11-23) UX 문구·흐름 다듬기(Fable 검토, 처음 이용하는 환자 기준): ① 쉬운 말 제목 + 재진/초진/예외 태그, 초진 안내에 병원 시·도·서류 예고,
+ *    ② 화상 안내(바로 연결 안 됨·알림·진료실 입장하기), 거주지 이유·서류 발급처, 다음 비활성 이유 한 줄, ③ 책임 문구 대상별·취소 알림, 다음=결제 안내(후불),
+ *    설명 카드·동의 체크 다듬기, ④ 취소 사유 앱 표시용 문구(제안), 용어 통일(비대면진료·병원·처방받을 수 없어요).
+ *  - v0.5 (2026-11-23) ② 전화를 고를 수 없으면 진료 방식 선택 칸 대신 화상 진료 안내(이유 + 준비할 것)(D15).
+ *  - v0.5 (2026-11-23) ① 진료 대상을 라디오 → 박스형 선택(접수 환자·진료실 선택 박스와 같은 모양). ② 거주지 종류는 세그먼트 '등본상 주소지 / 실거주지'.
  *  - v0.5 (2026-11-23) 폰 화면 전체 한글 단어 단위 줄바꿈(keep-all, 앱 lineBreakStrategyIOS='hangul-word'와 같은 효과).
  *  - v0.5 (2026-11-23) 초진 거주지 서류 필수(D14). 주민등록번호는 뒷자리만 가림(D8), 등본·초본 '뒷자리 미포함' 발급 안내.
  *  - v0.5 (2026-11-23) 법령 기준 보강: ① 재진·초진 설명(마지막 대면진료 후 6개월), ② '거주지'로 바꾸고 주민등록상 주소지/실거주지 선택·서류 안내·등본 예시·부정 이용 방지 안내, ③ 법정 설명 4가지 가안.
@@ -95,16 +104,17 @@ const STEPS: { key: Step; label: string; kind: 'cur' | 'new' | 'mod' }[] = [
 ];
 const KIND_LABEL = { cur: '현행', new: '신규', mod: '수정' } as const;
 
-const TARGETS: { key: Target; title: string; desc: string }[] = [
-  { key: 'revisit', title: '재진', desc: '이 병원에서 마지막으로 대면진료를 받은 지 6개월이 안 됐고, 같은 증상이에요' },
-  { key: 'first', title: '초진', desc: '이 병원이 처음이거나, 마지막 대면진료 후 6개월이 지났거나, 증상이 달라요' },
-  { key: 'exception', title: '예외 대상', desc: '희귀질환·제1형 당뇨·등록장애인·장기요양수급자 등' },
+const TARGETS: { key: Target; title: string; plain: string; desc: string }[] = [
+  { key: 'revisit', title: '재진', plain: '최근 6개월 안에 다녀왔어요', desc: '이 병원에 직접 가서 진료받았고, 그때와 같은 증상이에요' },
+  { key: 'first', title: '초진', plain: '처음이거나 6개월이 지났어요', desc: '이 병원이 처음이거나, 다녀온 지 6개월이 지났거나, 그때와 다른 증상이에요' },
+  { key: 'exception', title: '예외 대상', plain: '아래 대상에 해당해요', desc: '희귀질환자, 제1형 당뇨병 환자, 등록장애인, 장기요양 수급자 등' },
 ];
 
-const CANCEL_REASONS: { key: CancelReason; text: string }[] = [
-  { key: 'notTarget', text: '비대면 진료 대상 환자가 아닙니다' },
-  { key: 'needVisit', text: '대면 진료가 필요한 증상입니다' },
-  { key: 'noContact', text: '환자와 연락이 되지 않습니다' },
+/* text = 병원이 고른 사유(어드민), app = 앱 표시용 문구(제안: 환자 말투 + 다음 행동) */
+const CANCEL_REASONS: { key: CancelReason; text: string; app: string }[] = [
+  { key: 'notTarget', text: '비대면 진료 대상 환자가 아닙니다', app: '비대면진료 대상에 해당하지 않아요. 진료 대상과 거주지 조건을 다시 확인해 신청하거나, 병원에 방문해 주세요.' },
+  { key: 'needVisit', text: '대면 진료가 필요한 증상입니다', app: '대면진료가 필요한 증상이에요. 병원에 방문해 진료받아 주세요.' },
+  { key: 'noContact', text: '환자와 연락이 되지 않습니다', app: '연락이 닿지 않아 취소됐어요. 알림과 전화를 받을 수 있을 때 다시 신청해 주세요.' },
 ];
 
 /* 진료과: 일반은 실제 캡처(UNT-FRM-01) 값, 전화 숨김 과는 이름만 임의 */
@@ -116,13 +126,17 @@ const DEPTS: Record<Dept, { name: string; presets: string[] }> = {
 /* 법이 정한 설명 4가지 — 문구 미확정 자리표시 */
 /* 시행규칙안 31조의9 설명 4가지를 앱 문구로 옮긴 가안 */
 const LAW_EXPLAINS: { title: string; body: string }[] = [
-  { title: '진단에 한계가 있어요', body: '직접 보거나 만지고 검사할 수 없어서, 대면진료보다 진단 정확도에 한계가 있을 수 있어요.' },
-  { title: '진료를 하지 않거나 중단할 수 있어요', body: '법에서 정한 경우, 의사는 비대면진료를 하지 않거나 진료 중에 멈출 수 있어요.' },
-  { title: '사실대로 알려 주세요', body: '주된 증상, 앓고 있는 병, 병력·가족력, 먹고 있는 약을 의사에게 사실대로 알려야 해요.' },
-  { title: '금지된 행위는 처벌받을 수 있어요', body: '법으로 금지된 행위를 하면 형사처벌 대상이 될 수 있어요. {금지 행위 목록 — 법 원문 확인 후 기재}' },
+  { title: '직접 진찰할 수 없어 진단에 한계가 있어요', body: '의사가 직접 보거나 만지고 검사할 수 없어서, 대면진료보다 진단이 덜 정확할 수 있어요.' },
+  { title: '의사가 진료를 하지 않거나 중간에 멈출 수 있어요', body: '법에서 정한 경우에 해당하면 의사가 비대면진료를 하지 않거나 진료 중에 멈출 수 있어요.' },
+  { title: '사실대로 알려 주세요', body: '주된 증상, 지금 앓고 있는 병, 병력·가족력, 먹고 있는 약을 의사에게 사실대로 알려 주세요.' },
+  { title: '이런 행위는 법으로 금지돼 있어요', body: '{금지 행위 목록 — 법 원문 확인 후 기재} 이런 행위를 하면 형사처벌을 받을 수 있어요.' },
 ];
-const RESPONSIBILITY =
-  '거주지·대면 이력은 진료 전에 의료기관이 확인하며, 조건에 맞지 않으면 진료가 취소될 수 있어요';
+/* ③ 책임 문구 — 진료 대상별(가안). 고시 24조 '의료기관이 본인·대상 여부를 확인' 안내 포함 */
+const RESPONSIBILITY: Record<Target, string> = {
+  first: '병원이 진료 전에 거주지 서류를 확인해요. 신청 내용이 사실과 다르면 진료가 취소될 수 있으니, 동의하기 전에 한 번 더 확인해 주세요. 취소되면 알림을 보내드리고, 진료내역에서 사유를 볼 수 있어요.',
+  revisit: '병원이 진료 전에 대면진료 기록을 확인해요. 마지막 대면진료 후 6개월이 지났거나 증상이 다르면 진료가 취소될 수 있어요. 취소되면 알림을 보내드리고, 진료내역에서 사유를 볼 수 있어요.',
+  exception: '병원이 진료 전에 예외 대상에 해당하는지 확인해요. 해당하지 않으면 진료가 취소될 수 있어요. 취소되면 알림을 보내드리고, 진료내역에서 사유를 볼 수 있어요.',
+};
 
 /* 결제 필수 약관 — SymptomScreen/components/Modal/AgreementModal/text.ts:12 */
 const PAYMENT_TERMS = [
@@ -218,6 +232,12 @@ const IconCheckRound = ({ on }: { on: boolean }) =>
 /* 결제 약관 체크: ic_checkbox (24, BLUE_60 / GRAY_40) */
 const IconCheckSharp = ({ on }: { on: boolean }) => (
   <svg width={24} height={24} viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+    <path fillRule="evenodd" clipRule="evenodd" d="M19.1778 8.73474L9.8329 17.3608L4.82129 12.7347L6.17785 11.2651L9.8329 14.639L17.8213 7.26514L19.1778 8.73474Z" fill={on ? '#0073FA' : '#CACED8'} />
+  </svg>
+);
+/* ic_checkbox.svg (32) — Receipt420 PatientListItem·ReceiptExamRoomItem 선택 박스의 체크 */
+const IconCheckBox = ({ on }: { on: boolean }) => (
+  <svg width={32} height={32} viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
     <path fillRule="evenodd" clipRule="evenodd" d="M19.1778 8.73474L9.8329 17.3608L4.82129 12.7347L6.17785 11.2651L9.8329 14.639L17.8213 7.26514L19.1778 8.73474Z" fill={on ? '#0073FA' : '#CACED8'} />
   </svg>
 );
@@ -503,9 +523,10 @@ export default function UntactLawApp() {
 
   /* ① 진료 대상 확인 (신규) */
   const firstGuideLines = [
-    '화상 진료만 가능해요',
-    '내 거주지와 같은 시·도의 의원에서만 진료받을 수 있어요',
-    '처방은 7일까지예요. 먹는 여드름약(이소트레티노인)·트라마돌은 처방 안 돼요',
+    '화상 진료만 받을 수 있어요',
+    '이 병원은 {서울특별시}에 있어요. {서울특별시}에 사는 분만 진료받을 수 있어요',
+    '거주지를 확인할 서류가 필요해요(등본이나 초본 등)',
+    '약은 7일분까지 처방받을 수 있어요. 먹는 여드름약(이소트레티노인)·트라마돌은 처방받을 수 없어요',
   ];
   const FirstGuide =
     s.count === 'again' && !firstOpen ? (
@@ -515,7 +536,7 @@ export default function UntactLawApp() {
         onClick={() => setFirstOpen(true)}>
         <IconInformation color="#808799" size={18} />
         <T s="c1" c="gray-70" style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          화상 진료 · 같은 시·도 의원 · 처방 7일까지
+          {'화상 진료 · {서울특별시} 거주 · 거주지 서류 · 처방 7일까지'}
         </T>
         <IconArrowForward rotate={90} />
       </button>
@@ -551,29 +572,32 @@ export default function UntactLawApp() {
         {/* 제목 영역: TreatmentStatus.tsx:91-102 와 같은 heading3_700 + body1_400 GRAY_70, gap 8, padding 20 */}
         <div className="ula-col" style={{ padding: '24px 20px 20px', gap: 8 }}>
           <T s="h3" w={7}>
-            어떤 진료를 받으시나요?
+            나에게 해당하는 항목을 골라 주세요
           </T>
           <T s="b1" c="gray-70">
-            진료 대상에 따라 연결할 수 있는 의원이 달라요
+            선택에 따라 진료 방식과 준비할 서류가 달라요. 선택한 내용은 병원이 진료 전에 확인해요.
           </T>
         </div>
-        <div className="ula-col">
+        <div className="ula-col" style={{ padding: '0 20px', gap: 12 }}>
           {TARGETS.map(t => {
             const on = s.target === t.key;
             return (
               <React.Fragment key={t.key}>
-                <button className="ula-radio-row" onClick={() => setTarget(t.key)}>
-                  <span className={`ula-radio ${on ? 'is-on' : ''}`} />
+                <button className={`ula-choice ${on ? 'is-on' : ''}`} onClick={() => setTarget(t.key)}>
                   <span className="ula-col" style={{ gap: 2, flex: 1 }}>
-                    <T s="b1" w={on ? 7 : 5} c="gray-90">
-                      {t.title}
-                    </T>
-                    <T s="b2" c="gray-60">
+                    <span className="ula-choice-head">
+                      <T s="b1" w={6} c="gray-100">
+                        {t.plain}
+                      </T>
+                      <span className="ula-tag">{t.title}</span>
+                    </span>
+                    <T s="b2" c="gray-70">
                       {t.desc}
                     </T>
                   </span>
+                  <IconCheckBox on={on} />
                 </button>
-                {t.key === 'first' && on && <div style={{ padding: '0 20px 8px 54px' }}>{FirstGuide}</div>}
+                {t.key === 'first' && on && FirstGuide}
               </React.Fragment>
             );
           })}
@@ -586,10 +610,11 @@ export default function UntactLawApp() {
   );
 
   /* ② 거주지 (신규, 초진만) — D8 · D12 */
-  const RESID_OPTIONS: { key: Resid; title: string; desc: string }[] = [
-    { key: 'resident', title: '주민등록상 주소지', desc: "주민등록표 등본 또는 초본\n발급할 때 '주민등록번호 뒷자리 미포함'을 선택하면 가리지 않아도 돼요" },
-    { key: 'actual', title: '실거주지', desc: '주민등록 주소와 실제 사는 곳이 다를 때\n임대차계약서, 재직·재학증명서, 공공요금 납부자료 등' },
+  const RESID_OPTIONS: { key: Resid; title: string; docs: string; note: string }[] = [
+    { key: 'resident', title: '등본상 주소지', docs: '주민등록표 등본 또는 초본', note: "정부24나 주민센터에서 발급받을 수 있어요. 발급할 때 '주민등록번호 뒷자리 미포함'을 선택하면 뒷자리는 따로 가리지 않아도 돼요." },
+    { key: 'actual', title: '실거주지', docs: '임대차계약서, 재직·재학증명서, 공공요금 납부자료 등', note: '주민등록 주소와 지금 사는 곳이 다를 때 고르는 항목이에요. 지금 사는 주소가 적힌 서류면 돼요.' },
   ];
+  const residOpt = RESID_OPTIONS.find(o => o.key === resid)!;
   const ProofSection = (
     <div className="ula-col ula-changed" style={{ gap: 16, padding: '24px 20px 28px', borderBottom: '8px solid var(--gray-20)' }}>
       <div className="ula-col" style={{ gap: 4 }}>
@@ -597,23 +622,29 @@ export default function UntactLawApp() {
           거주지(필수)
         </T>
         <T s="b2" c="gray-80">
-          거주지를 확인할 수 있는 서류를 첨부해 주세요.
+          처음 진료받는 병원은 내가 사는 시·도 안에 있어야 해요. 병원이 서류로 확인할 수 있게 1장을 첨부해 주세요.
         </T>
       </div>
-      <div className="ula-col" style={{ gap: 8 }}>
-        {RESID_OPTIONS.map(o => (
-          <button key={o.key} className={`ula-resid ${resid === o.key ? 'is-on' : ''}`} onClick={() => setResid(o.key)}>
-            <span className={`ula-radio ${resid === o.key ? 'is-on' : ''}`} />
-            <span className="ula-col" style={{ gap: 2, flex: 1 }}>
-              <T s="b1" w={resid === o.key ? 7 : 5} c="gray-90">
-                {o.title}
-              </T>
-              <T s="b2" c="gray-60">
-                {o.desc}
-              </T>
-            </span>
-          </button>
-        ))}
+      {/* ShortcutSegmentedTab(홈 바로가기) 세그먼트 모양 */}
+      <div className="ula-col" style={{ gap: 12 }}>
+        <div className="ula-segtab" role="tablist">
+          {RESID_OPTIONS.map(o => (
+            <button key={o.key} role="tab" aria-selected={resid === o.key} className={resid === o.key ? 'is-on' : ''} onClick={() => setResid(o.key)}>
+              {o.title}
+            </button>
+          ))}
+        </div>
+        <div className="ula-col" style={{ gap: 4 }}>
+          <T s="c1" w={6} c="gray-60">
+            제출 가능한 서류
+          </T>
+          <T s="b1" w={6} c="gray-90">
+            {residOpt.docs}
+          </T>
+          <T s="b2" c="gray-60">
+            {residOpt.note}
+          </T>
+        </div>
       </div>
       <div className="ula-guide">
         <div className="ula-guide-title">
@@ -641,7 +672,7 @@ export default function UntactLawApp() {
       <div className="ula-abuse">
         <IconCaution color="#FA4655" size={18} />
         <T s="b2" w={6} c="gray-80" style={{ flex: 1 }}>
-          다른 사람의 명의나 서류를 이용하는 것은 법으로 금지돼 있어요. 거주지를 사실과 다르게 알리면 병원이 진료를 하지 않을 수 있어요.
+          진료받는 분의 서류만 첨부해 주세요. 다른 사람의 명의나 서류를 쓰는 것은 법으로 금지돼 있어요.
         </T>
       </div>
       <div className="ula-col" style={{ gap: 10 }}>
@@ -679,7 +710,7 @@ export default function UntactLawApp() {
               <ProofDocMock doc={PROOF_DOCS.find(d => d.key === (RESID_DOCS[resid].includes(attachedDoc) ? attachedDoc : proofDoc))!} mini />
             </span>
             <T s="b2" c="gray-80" style={{ flex: 1 }}>
-              {resid === 'resident' ? '주민등록표 1장' : '실거주지 서류 1장'}
+              {resid === 'resident' ? '주민등록표 등본·초본 1장' : '실거주지 서류 1장'}
             </T>
             <button className="ula-proof-del" onClick={() => setProof(false, false)} aria-label="첨부 삭제">
               <IconClose />
@@ -716,30 +747,39 @@ export default function UntactLawApp() {
               이미지
             </div>
           </div>
-          <div className="ula-col ula-changed" style={{ gap: 20, paddingBottom: 20 }}>
-            <div className="ula-col" style={{ gap: 4 }}>
-              <T s="h5" w={7} c="gray-90">
-                진료 방식(필수)
-              </T>
-              <T s="b2" c="gray-80">
-                선호하는 방식을 선택해 주세요.
-              </T>
-            </div>
-            <div style={{ display: 'flex', gap: 16 }}>
-              {!phoneHidden && (
-                <button
-                  className={`ula-btn is-flex ${methodBtnClass('phone')}`}
-                  disabled={!phoneEnabled}
-                  onClick={() => setMethod('phone')}>
+          {phoneEnabled ? (
+            <div className="ula-col ula-changed" style={{ gap: 20, paddingBottom: 20 }}>
+              <div className="ula-col" style={{ gap: 4 }}>
+                <T s="h5" w={7} c="gray-90">
+                  진료 방식(필수)
+                </T>
+                <T s="b2" c="gray-80">
+                  선호하는 방식을 선택해 주세요.
+                </T>
+              </div>
+              <div style={{ display: 'flex', gap: 16 }}>
+                <button className={`ula-btn is-flex ${methodBtnClass('phone')}`} onClick={() => setMethod('phone')}>
                   전화 진료
-                  {!phoneEnabled && <span className="ula-btn-sub">재진만 선택 가능</span>}
                 </button>
-              )}
-              <button className={`ula-btn is-flex ${methodBtnClass('video')}`} onClick={() => setMethod('video')}>
-                화상 진료
-              </button>
+                <button className={`ula-btn is-flex ${methodBtnClass('video')}`} onClick={() => setMethod('video')}>
+                  화상 진료
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            /* 전화를 고를 수 없으면(초진·예외·13세 미만·전화 숨김 과) 선택 칸 대신 안내 한 줄 */
+            <div className="ula-method-info ula-changed">
+              <IconInformation color="#808799" size={18} />
+              <div className="ula-col" style={{ gap: 2, flex: 1 }}>
+                <T s="b2" w={6} c="gray-80">
+                  화상 진료로 진행돼요
+                </T>
+                <T s="b2" c="gray-70">
+                  신청하면 바로 연결되지 않아요. 의사가 진료를 시작하면 알림을 보내드리니, 진료내역에서 '진료실 입장하기'를 눌러 주세요.
+                </T>
+              </div>
+            </div>
+          )}
           <div className="ula-col" style={{ gap: 4, paddingTop: 20, paddingBottom: 8 }}>
             <T s="h5" w={7}>
               상세 증상
@@ -887,6 +927,9 @@ export default function UntactLawApp() {
           </T>
         </div>
       </div>
+      {proofPending && (
+        <p className="ula-cta-hint">{proofFile ? "가릴 곳을 가린 뒤 위의 '…가렸어요'에 체크해 주세요" : '거주지 서류를 첨부해 주세요'}</p>
+      )}
       <button className="ula-btn filled-blue ula-cta" disabled={proofPending} onClick={() => go('consent')}>
         다음
       </button>
@@ -909,14 +952,14 @@ export default function UntactLawApp() {
             <div className="ula-guide-title">
               <IconCaution color="#FB7480" />
               <T s="b2" w={6} c="gray-80" style={{ flex: 1 }}>
-                {RESPONSIBILITY}
+                {RESPONSIBILITY[s.target ?? 'first']}
               </T>
             </div>
             {s.who === 'child' && (
               <div className="ula-guide-title">
                 <IconInformation color="#808799" />
                 <T s="b2" c="gray-70" style={{ flex: 1 }}>
-                  가족 등록 때 받은 법정대리인 동의로 진행돼요
+                  자녀의 진료는 가족 등록 때 받은 법정대리인 동의로 진행돼요
                 </T>
               </div>
             )}
@@ -942,10 +985,15 @@ export default function UntactLawApp() {
         <button className="ula-check" onClick={() => setConsent(v => !v)}>
           <IconCheckRound on={consent} />
           <T s="b1" w={consent ? 6 : 5} c={consent ? 'gray-90' : 'gray-70'}>
-            위 내용을 확인했고 동의해요
+            위 내용을 모두 확인했고, 비대면진료를 받는 데 동의해요
           </T>
         </button>
       </div>
+      <p className="ula-cta-hint is-gray">
+        다음 화면에서 결제 수단을 선택해요.
+        <br />
+        진료비는 진료가 끝난 뒤 결제돼요.
+      </p>
       <button className="ula-btn filled-blue ula-cta" disabled={!consent} onClick={() => go('payment')}>
         다음
       </button>
@@ -1072,7 +1120,7 @@ export default function UntactLawApp() {
   /* ④ 진료내역 상세 · 병원 취소 (수정) — UntactTreatmentDetailScreen.tsx:105-137 */
   const symptomsText =
     presets.length > 0 ? `증상: ${presets.join(', ')}${symptom ? `\n${symptom}` : ''}` : symptom || '';
-  const cancelText = CANCEL_REASONS.find(r => r.key === s.cancel)!.text;
+  const cancelText = CANCEL_REASONS.find(r => r.key === s.cancel)!.app;
   const InfoRow = ({ title, children, bold }: { title: string; children: React.ReactNode; bold?: boolean }) => (
     <div className="ula-info-row">
       <T s="b1" c="gray-60">
@@ -1184,10 +1232,9 @@ export default function UntactLawApp() {
       ],
       form: [
         '바뀐 곳은 진료 방식과 거주지(초진만, 점선). 화상 진료 기본 선택.',
-        '전화 진료: 재진만 선택 가능. 초진·예외는 비활성.',
-        '13세 미만 또는 전화 숨김 과면 전화 진료 버튼 자체가 없다.',
+        '진료 방식 선택 칸은 재진 + 13세 이상 + 일반 과일 때만. 그 밖은 화상 진료 안내(바로 연결 안 됨 · 알림 · 진료실 입장하기).',
         '처방 불가 약 안내는 현행 그대로. 초진 제한은 ①에만.',
-        '거주지(초진 필수): 주민등록상 주소지(등본·초본) / 실거주지(임대차계약서·재직·재학증명서·공공요금 납부자료). 가림 안내·부정 이용 방지 안내·서류별 가림 예시. 첨부 + 가림 확인 체크 전에는 다음 비활성.',
+        '거주지(초진 필수): 세그먼트 등본상 주소지(등본·초본) / 실거주지(임대차계약서·재직·재학증명서·공공요금 납부자료). 가림 안내·부정 이용 방지 안내·서류별 가림 예시. 첨부 + 가림 확인 체크 전에는 다음 비활성.',
       ],
       consent: [
         '신청서 다음, 결제 앞에 새로 들어가는 화면.',

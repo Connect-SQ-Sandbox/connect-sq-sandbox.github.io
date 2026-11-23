@@ -415,39 +415,6 @@
 }
 
 /* 라디오 (CancelReasonOptionRow) */
-.ula-radio-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 16px 20px;
-  background: none;
-  border: 0;
-  width: 100%;
-  text-align: left;
-  font-family: inherit;
-  cursor: pointer;
-}
-.ula-radio {
-  flex-shrink: 0;
-  width: 24px;
-  height: 24px;
-  border-radius: 12px;
-  border: 1px solid var(--gray-40);
-  background: var(--white);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.ula-radio.is-on {
-  border-color: var(--blue-60);
-}
-.ula-radio.is-on::after {
-  content: '';
-  width: 16px;
-  height: 16px;
-  border-radius: 8px;
-  background: var(--blue-60);
-}
 
 /* 안내 상자 (PrescriptionGuide 형식) */
 .ula-guide {
@@ -746,25 +713,6 @@
 }
 
 /* ───────── v0.5 거주지 · 법정 설명 가안 ───────── */
-.ula-resid {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 14px 16px;
-  border: 1px solid var(--gray-30);
-  border-radius: 8px;
-  background: var(--white);
-  text-align: left;
-  font-family: inherit;
-  cursor: pointer;
-}
-.ula-resid.is-on {
-  border-color: var(--blue-60);
-}
-.ula-resid .ula-radio {
-  margin-top: 2px;
-  flex-shrink: 0;
-}
 .ula-abuse {
   display: flex;
   gap: 6px;
@@ -810,4 +758,92 @@
 .ula-phone {
   word-break: keep-all;
   overflow-wrap: anywhere;
+}
+
+/* 박스형 선택 — Receipt420 PatientListItem·ReceiptExamRoomItem */
+.ula-choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 16px 18px 16px 20px;
+  border: 1px solid var(--gray-30);
+  border-radius: 8px;
+  background: var(--white);
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+}
+.ula-choice.is-on {
+  border-color: var(--blue-60);
+  background: rgba(0, 115, 250, 0.05);
+}
+
+/* 세그먼트 — 홈 ShortcutSegmentedTab */
+.ula-segtab {
+  display: flex;
+  padding: 3px;
+  border-radius: 4px;
+  background: var(--gray-20);
+}
+.ula-segtab button {
+  flex: 1;
+  height: 36px;
+  min-width: 56px;
+  padding: 4px 12px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 21px;
+  font-weight: 500;
+  color: var(--gray-50);
+  cursor: pointer;
+  transition: background 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.ula-segtab button.is-on {
+  background: var(--white);
+  font-weight: 700;
+  color: var(--gray-90);
+}
+
+/* ② 진료 방식 안내 한 줄(선택 칸 대신) */
+.ula-method-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-bottom: 20px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--gray-10);
+}
+
+/* ② 다음 버튼이 꺼진 이유 한 줄 */
+.ula-cta-hint {
+  margin: 10px 20px -4px;
+  font-size: 13px;
+  line-height: 19px;
+  font-weight: 500;
+  color: var(--blue-60);
+  text-align: center;
+}
+.ula-choice-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.ula-tag {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--gray-20);
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 600;
+  color: var(--gray-60);
+}
+.ula-cta-hint.is-gray {
+  color: var(--gray-60);
+  font-weight: 400;
 }

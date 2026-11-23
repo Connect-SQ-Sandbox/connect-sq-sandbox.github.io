@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : untact-law-doctor — 굿닥 온라인진료실(의사용) · 비대면진료 제도화(의료법 개정) 대응
- * 상태      : 검토용 초안 · v0.7 · 최종수정 2026-11-23 · 샌드박스 배포
+ * 상태      : 검토용 초안 · v0.8 · 최종수정 2026-11-23 · 샌드박스 배포
  * PRD       : 없음(제도화 대응 기획 초안). 사내 문서 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/untact-law-doctor.html
  * 피그마    : 없음. 기준은 대응 보드 커넥트 섹션(진료실-1~3) + 현행 온라인진료실 개발 코드.
@@ -43,7 +43,7 @@
  *  - [보류] 보드 진료실-1의 '주소지 서울 · 병원 서울 ✓' 비교 배지는 넣지 않았다. 플랫폼은 주소를 입력받거나 비교하지 않고, 의사가 첨부 서류로 확인한다(D8).
  *  - [보류] 거주지 서류를 '가림 필요'로 환자에게 다시 요청하는 반려 흐름은 미결이라 만들지 않았다. 반려가 없으면 출구가 진료취소뿐이라 취소 사유 '제출한 서류로 본인 또는 거주지를 확인할 수 없습니다' 추가 검토.
  *  - [보류] 거주지 서류의 보존·파기 시점(내려받기 허용 여부와 연결).
- *  - [보류] 본인확인 체크 시점: 시스템이 없으면 신분증 대조는 화상 연결 뒤에만 가능한데 체크가 접수완료 앞에 있다. 진료 시작 시 확인으로 옮길지.
+ *  - [확정·D18] 본인 확인은 화상 진료 시작 뒤 신분증 대조(진료 중 확인). 접수 전에는 통신사 본인확인 결과만. 전화 진료의 본인 확인 방법은 미결(보류).
  *  - [보류] 재진으로 신청했는데 차트상 6개월 초과·다른 증상인 경우 의사 행동(취소 후 초진 재신청 안내 등).
  *  - [보류] 접수 전 확인 체크한 의사·시각 저장(스펙). 앱 첨부의 PDF(정부24 등본) 허용 여부 — 현행 확대 보기는 이미지 전용.
  *  - [확정·요청] 굿닥 비대면진료에는 병원급 의료기관이 없으므로 의료기관 구분·병원급 접수 제한(보드 진료실-1)은 넣지 않는다.
@@ -55,6 +55,7 @@
  *  - [보류] 보드 그레이존(엄격/완화) 카드는 법무 검토 전이라 반영하지 않음.
  *
  * 변경 이력
+ *  - v0.8 (2026-11-23) D18: 접수 전 확인에서 본인 확인 체크를 빼고(접수완료는 대상 요건 체크만), 화상 진료 중 '진료 중 확인'에 신분증 대조 체크.
  *  - v0.7 (2026-11-23) 패널 '바뀐 곳 점선 표시' 토글(기본 켜짐). 근거 법령 보기(패널 스위치, 기본 켜짐): 접수 전 확인(31조의5⑦·⑧3, 본인 ②③, 대상별 31조의2①②③·31조의5⑤),
  *    거주지 서류(31조의2②·31조의15②·부칙6조), 예외 대상(31조의5⑤3⑥·부칙6조), 재진 응답, 법정대리인(31조의5④), 안내문 동의(31조의9),
  *    전화 진료 사유(31조의5①·⑧2), 진료 취소(31조의5⑧4). 캡처 5장 추가(identity-check, after-check, record-check/phone/stop).
@@ -469,7 +470,8 @@ export default function UntactLawDoctor() {
   }, [viewerOpen]);
 
   const viewDoc = s.target === 'exception' ? exDoc : residDoc;
-  const canAccept = checks[0] && checks[1];
+  /* D18: 본인 확인은 화상 진료 시작 뒤로 옮겨 접수 조건에서 뺀다 */
+  const canAccept = checks[1];
   const methodLabel = (m: Method) => (m === 'video' ? '화상' : '전화');
   const secondCheck =
     s.target === 'revisit'
@@ -624,10 +626,6 @@ export default function UntactLawDoctor() {
       {status === 'request' && (
         <div className="uld-confirm is-changed">
           <p className="uld-confirm-h">접수 전 확인 (의료인){law(['after-check', 'record-check'])}</p>
-          <Check on={checks[0]} onClick={() => setChecks(c => [!c[0], c[1]])}>
-            환자 본인 여부를 확인했어요 (건강보험증·신분증)
-            {law(['identity-check'])}
-          </Check>
           <Check on={checks[1]} onClick={() => setChecks(c => [c[0], !c[1]])}>
             {secondCheck}
             {law(s.target === 'first' ? ['first-region'] : s.target === 'revisit' ? ['revisit-period', 'revisit-check'] : ['exception-list', 'exception-check'])}
@@ -638,6 +636,17 @@ export default function UntactLawDoctor() {
               {s.ex === 'query' ? '수진자 조회로 예외 대상인지 확인해 주세요.' : '아래 첨부 서류로 예외 대상인지 확인해 주세요.'}
             </p>
           )}
+          <p className="uld-confirm-sub">본인 확인은 진료를 시작한 뒤 화상으로 신분증을 대조해요.</p>
+        </div>
+      )}
+      {status === 'ontreatment' && treatMethod === 'video' && (
+        <div className="uld-confirm is-changed">
+          <p className="uld-confirm-h">진료 중 확인 (의료인){law(['after-check', 'record-check'])}</p>
+          <Check on={checks[0]} onClick={() => setChecks(c => [!c[0], c[1]])}>
+            화상으로 건강보험증 또는 신분증을 대조해 환자 본인임을 확인했어요
+            {law(['identity-check'])}
+          </Check>
+          <p className="uld-confirm-sub">접수 전에는 통신사 본인확인 결과만 받아요.</p>
         </div>
       )}
       {s.target === 'first' && (
@@ -953,7 +962,7 @@ export default function UntactLawDoctor() {
         '접수 전 확인 2개를 모두 체크해야 접수완료가 켜진다. 재진은 두 번째가 대면 이력 확인.',
         '재진이면 환자 응답 상자, 자녀면 본인확인 문구 자리에 법정대리인 동의 기록',
         '초진이면 접수 전 확인 아래에 거주지 서류(앱에서 가림 처리해 올린 서류, 주민등록상/실거주지). 썸네일을 누르면 크게 본다(내려받기 없음). 서류 없음 상태도 있음.',
-        '환자정보에 앱 안내문 확인·동의 사실(제안). 반려·파기 시점·본인확인 시점은 보류.',
+        '환자정보에 앱 안내문 확인·동의 사실(제안). 반려·파기 시점은 보류. 본인 확인은 진료 중 화상으로(D18).',
         '접수완료를 누르면 현행 예상 대기 시간 설정 → 진료대기.',
       ],
       r2a: [
@@ -1024,7 +1033,7 @@ export default function UntactLawDoctor() {
         <div className="uld-panel-card">
           <p className="uld-panel-title">온라인진료실 · 제도화 대응</p>
           <p className="uld-panel-sub">
-            굿닥 온라인진료실(의사용) · 검토용 초안 v0.7 · 현행 화면은 운영 코드 기준 재현, 동적 값은 {'{중괄호}'}
+            굿닥 온라인진료실(의사용) · 검토용 초안 v0.8 · 현행 화면은 운영 코드 기준 재현, 동적 값은 {'{중괄호}'}
           </p>
         </div>
         <div className="uld-panel-card uld-lawcard">

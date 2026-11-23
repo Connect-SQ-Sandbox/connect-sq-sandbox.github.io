@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : untact-law-app — 굿닥 앱(환자용) 비대면진료 신청 흐름 · 비대면진료 제도화(의료법 개정) 대응
- * 상태      : 검토용 초안 · v0.7 · 최종수정 2026-11-23 · 샌드박스 배포
+ * 상태      : 검토용 초안 · v0.8 · 최종수정 2026-11-23 · 샌드박스 배포
  * PRD       : 없음(제도화 대응 기획 초안). 사내 문서 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/untact-law-app.html
  * 피그마    : 없음. 현행 화면은 goodoc-mobile origin/staging(b45968ada, 2026-11-19) 코드 기준 재현.
@@ -63,10 +63,11 @@
  *  - [보류] 주민등록상 서류로 초본(본인만 기재)을 권할지(등본은 세대원 정보가 실림).
  *  - [보류] 수진자(건강보험 자격) 조회로 확인되는 예외 대상 범위(희귀질환 산정특례 포함 여부 등) — EMR·개발 확인 필요. 지금은 등록장애인·장기요양 수급자만 조회로 둠.
  *  - [보류] 예외 대상별 확인 서류 이름(가안)과 가림 안내 강도.
- *  - [보류] 본인확인은 건강보험증·신분증명서 제출(31조의5③). 시스템이 없으니 병원에 직접 제출(진료 시 화면으로 보여 주기 또는 첨부) 안내 필요 여부.
+ *  - [확정·D18] 본인 확인은 화상 진료 중 신분증 대조. 화상 진료면 ② 진료 방식 영역에 신분증 준비 안내. 전화 진료의 본인 확인은 보류.
  *  - [보류] ② 가림 예시 재직증명서의 '소속'·'재직 기간'은 남김/가림 표시 없이 둠. 표시 여부 확인 중.
  *
  * 변경 이력
+ *  - v0.8 (2026-11-23) D18: 화상 진료일 때 ② 진료 방식 영역에 '진료가 시작되면 의사에게 신분증이나 건강보험증을 화면으로 보여 주세요.'
  *  - v0.7 (2026-11-23) '근거 법령 보기' 토글 기본값 켜짐. 패널 '바뀐 곳 점선 표시' 토글(기본 켜짐).
  *  - v0.6 (2026-11-23) 패널 '근거 법령 보기' 토글: 켜면 정보 옆 '법령' → 문서명·조항·쪽 + 조문 캡처(assets/untact-law-app/law, 입법예고안 원문).
  *  - v0.6 (2026-11-23) 예외 대상 확인 흐름(D17): ① 안내·전체 대상 보기, ② 대상 선택 + 조회/서류 첨부.
@@ -396,6 +397,7 @@ const LAW: Record<string, { doc: string; article: string; page: string; img: str
   'no-identity-theft': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의15제6항', page: '27쪽', img: require('../../../assets/untact-law-app/law/no-identity-theft.png') },
   'explain-4': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의9', page: '15쪽', img: require('../../../assets/untact-law-app/law/explain-4.png') },
   'guardian': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의5제4항', page: '9~10쪽', img: require('../../../assets/untact-law-app/law/guardian.png') },
+  'identity-check': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의5제2항·제3항', page: '9쪽', img: require('../../../assets/untact-law-app/law/identity-check.png') },
   'platform-notice': { doc: '비대면진료 실시 및 관리에 관한 고시(안)', article: '제24조', page: '16쪽', img: require('../../../assets/untact-law-app/law/platform-notice.png') },
 };
 
@@ -975,6 +977,12 @@ export default function UntactLawApp() {
                   화상 진료
                 </button>
               </div>
+              {method === 'video' && (
+                <T s="b2" c="gray-70">
+                  진료가 시작되면 의사에게 신분증이나 건강보험증을 화면으로 보여 주세요.
+                  {law(['identity-check'])}
+                </T>
+              )}
             </div>
           ) : (
             /* 전화를 고를 수 없으면(초진·예외·13세 미만·전화 숨김 과) 선택 칸 대신 안내 한 줄 */
@@ -987,6 +995,10 @@ export default function UntactLawApp() {
                 </T>
                 <T s="b2" c="gray-70">
                   신청하면 바로 연결되지 않아요. 의사가 진료를 시작하면 알림을 보내드리니, 진료내역에서 '진료실 입장하기'를 눌러 주세요.
+                </T>
+                <T s="b2" c="gray-70">
+                  진료가 시작되면 의사에게 신분증이나 건강보험증을 화면으로 보여 주세요.
+                  {law(['identity-check'])}
                 </T>
               </div>
             </div>
@@ -1499,7 +1511,7 @@ export default function UntactLawApp() {
       <aside className="ula-panel">
         <div className="ula-panel-card">
           <p className="ula-panel-title">비대면진료 신청 · 제도화 대응</p>
-          <p className="ula-panel-sub">굿닥 앱(환자용) · 검토용 초안 v0.7 · 현행 화면은 앱 코드 기준 재현, 동적 값은 {'{중괄호}'}</p>
+          <p className="ula-panel-sub">굿닥 앱(환자용) · 검토용 초안 v0.8 · 현행 화면은 앱 코드 기준 재현, 동적 값은 {'{중괄호}'}</p>
         </div>
         <div className="ula-panel-card ula-lawcard">
           <div>

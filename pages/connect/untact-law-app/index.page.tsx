@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : untact-law-app — 굿닥 앱(환자용) 비대면진료 신청 흐름 · 비대면진료 제도화(의료법 개정) 대응
- * 상태      : 검토용 초안 · v0.6 · 최종수정 2026-11-23 · 샌드박스 배포
+ * 상태      : 검토용 초안 · v0.7 · 최종수정 2026-11-23 · 샌드박스 배포
  * PRD       : 없음(제도화 대응 기획 초안). 사내 문서 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/untact-law-app.html
  * 피그마    : 없음. 현행 화면은 goodoc-mobile origin/staging(b45968ada, 2026-11-19) 코드 기준 재현.
@@ -67,6 +67,7 @@
  *  - [보류] ② 가림 예시 재직증명서의 '소속'·'재직 기간'은 남김/가림 표시 없이 둠. 표시 여부 확인 중.
  *
  * 변경 이력
+ *  - v0.7 (2026-11-23) '근거 법령 보기' 토글 기본값 켜짐. 패널 '바뀐 곳 점선 표시' 토글(기본 켜짐).
  *  - v0.6 (2026-11-23) 패널 '근거 법령 보기' 토글: 켜면 정보 옆 '법령' → 문서명·조항·쪽 + 조문 캡처(assets/untact-law-app/law, 입법예고안 원문).
  *  - v0.6 (2026-11-23) 예외 대상 확인 흐름(D17): ① 안내·전체 대상 보기, ② 대상 선택 + 조회/서류 첨부.
  *  - v0.5 (2026-11-23) ① 순서 초진 > 재진 > 예외 대상, 제목 '어디에 해당하나요?'(D16).
@@ -458,7 +459,8 @@ export default function UntactLawApp() {
   });
   const set = (p: Partial<State>) => setS(prev => ({ ...prev, ...p }));
   /* 근거 법령 보기 */
-  const [lawOn, setLawOn] = useState(false);
+  const [lawOn, setLawOn] = useState(true);
+  const [marksOn, setMarksOn] = useState(true);
   const [lawView, setLawView] = useState<{ ids: string[]; note?: string } | null>(null);
   useEffect(() => {
     if (!lawView) return;
@@ -1493,11 +1495,22 @@ export default function UntactLawApp() {
   const stepMeta = STEPS.find(x => x.key === s.step)!;
 
   return (
-    <div className="ula-root">
+    <div className={`ula-root${marksOn ? '' : ' is-marks-off'}`}>
       <aside className="ula-panel">
         <div className="ula-panel-card">
           <p className="ula-panel-title">비대면진료 신청 · 제도화 대응</p>
-          <p className="ula-panel-sub">굿닥 앱(환자용) · 검토용 초안 v0.6 · 현행 화면은 앱 코드 기준 재현, 동적 값은 {'{중괄호}'}</p>
+          <p className="ula-panel-sub">굿닥 앱(환자용) · 검토용 초안 v0.7 · 현행 화면은 앱 코드 기준 재현, 동적 값은 {'{중괄호}'}</p>
+        </div>
+        <div className="ula-panel-card ula-lawcard">
+          <div>
+            <p className="ula-panel-h" style={{ margin: 0 }}>
+              바뀐 곳 점선 표시
+            </p>
+            <p className="ula-panel-sub">끄면 화면의 보라 점선을 숨겨요.</p>
+          </div>
+          <button type="button" role="switch" aria-checked={marksOn} className={`ula-switch ${marksOn ? 'is-on' : ''}`} onClick={() => setMarksOn(v => !v)}>
+            <span />
+          </button>
         </div>
         <div className="ula-panel-card ula-lawcard">
           <div>

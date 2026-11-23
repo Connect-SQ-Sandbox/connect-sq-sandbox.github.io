@@ -1008,3 +1008,11 @@
   line-height: 19px;
   color: var(--gray-80);
 }
+/* 바뀐 곳 점선 표시 끄기 */
+.ula-root.is-marks-off .ula-changed {
+  outline: none;
+}
+.ula-root.is-marks-off .ula-ph {
+  border-color: transparent;
+  background: transparent;
+}

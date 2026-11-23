@@ -103,5 +103,40 @@
     "article": "제24조",
     "page": "16쪽",
     "file": "platform-notice.png"
+  },
+  {
+    "id": "identity-check",
+    "doc": "의료법 시행규칙 일부개정령안(입법예고안)",
+    "article": "제31조의5제2항·제3항",
+    "page": "9쪽",
+    "file": "identity-check.png"
+  },
+  {
+    "id": "after-check",
+    "doc": "의료법 시행규칙 일부개정령안(입법예고안)",
+    "article": "제31조의5제7항",
+    "page": "11쪽",
+    "file": "after-check.png"
+  },
+  {
+    "id": "record-check",
+    "doc": "의료법 시행규칙 일부개정령안(입법예고안)",
+    "article": "제31조의5제8항제3호",
+    "page": "11쪽",
+    "file": "record-check.png"
+  },
+  {
+    "id": "record-phone",
+    "doc": "의료법 시행규칙 일부개정령안(입법예고안)",
+    "article": "제31조의5제8항제2호",
+    "page": "11쪽",
+    "file": "record-phone.png"
+  },
+  {
+    "id": "record-stop",
+    "doc": "의료법 시행규칙 일부개정령안(입법예고안)",
+    "article": "제31조의5제8항제4호",
+    "page": "11쪽",
+    "file": "record-stop.png"
   }
 ]

@@ -1,11 +1,12 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : untact-law-doctor — 굿닥 온라인진료실(의사용) · 비대면진료 제도화(의료법 개정) 대응
- * 상태      : 검토용 초안 · v0.5 · 최종수정 2026-11-23 · 샌드박스 배포
+ * 상태      : 검토용 초안 · v0.7 · 최종수정 2026-11-23 · 샌드박스 배포
  * PRD       : 없음(제도화 대응 기획 초안). 사내 문서 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/untact-law-doctor.html
  * 피그마    : 없음. 기준은 대응 보드 커넥트 섹션(진료실-1~3) + 현행 온라인진료실 개발 코드.
- * 현행 기준 : goodoc-web-platform origin/main(38379841, 2026-10-22) apps/partners/src/features/online-clinic
+ * 현행 기준 : goodoc-web-hospital-admin production(54aa1ebf, 2026-10-29) pages/untact — 운영 화면.
+ *             (참고) goodoc-web-platform apps/partners/src/features/online-clinic 은 이관본이라 운영과 다른 곳이 있음
  *             workspace.tsx(GNB·화상진료 확인창) · treatment-table.tsx(목록) · treatment-details.tsx(상세·다이얼로그)
  *             patient-information.tsx · symptom-attachments.tsx · clinical-notices.tsx · profile-menu.tsx · packages/ui button·dialog
  *             소스는 복사하지 않고 치수·색·문구만 옮겨 다시 작성(공개 저장소).
@@ -54,6 +55,13 @@
  *  - [보류] 보드 그레이존(엄격/완화) 카드는 법무 검토 전이라 반영하지 않음.
  *
  * 변경 이력
+ *  - v0.7 (2026-11-23) 패널 '바뀐 곳 점선 표시' 토글(기본 켜짐). 근거 법령 보기(패널 스위치, 기본 켜짐): 접수 전 확인(31조의5⑦·⑧3, 본인 ②③, 대상별 31조의2①②③·31조의5⑤),
+ *    거주지 서류(31조의2②·31조의15②·부칙6조), 예외 대상(31조의5⑤3⑥·부칙6조), 재진 응답, 법정대리인(31조의5④), 안내문 동의(31조의9),
+ *    전화 진료 사유(31조의5①·⑧2), 진료 취소(31조의5⑧4). 캡처 5장 추가(identity-check, after-check, record-check/phone/stop).
+ *  - v0.6 (2026-11-23) 운영 코드(hospital-admin production) 기준 재대조: 키/몸무게 줄 제거(입력값 있을 때만, 현행 앱은 입력 화면 없음), 증상 '증상: 태그' 줄,
+ *    첨부사진 2장·사진별 내려받기(24px)·전체 '내려받기'(xSmall 회색)→'받기완료'·확대 보기 내려받기, 입력칸 600, 작업 띠 문구 18px·타이머 버튼 왼쪽 흰색,
+ *    진료시작·완료대기 진료완료 흰 바탕, 완료대기 테두리 #0D56B5, '다시 진료시작' 툴팁, 제증명·메모 치수, 섹션 제목 20px, GNB '진료대기', '푸시 알림',
+ *    다이얼로그 취소 회색 채움, 진료취소 직접 입력 라벨 제거·빈칸 무시·토스트, 목록 진료일시 경과/오늘 시작 표기.
  *  - v0.5 (2026-11-23) 예외 대상 확인 영역(조회형/서류형), 패널 토글 '예외 대상 종류'(D17).
  *  - v0.4 (2026-11-23) 화면 전체 한글 단어 단위 줄바꿈(keep-all).
  *  - v0.4 (2026-11-23) 앱 v0.5 반영: 거주지 서류(종류·확대 보기·서류 없음), 초진 체크 보조 줄, 재진 응답 문구, 안내문 동의 사실 표시. 내려받기 제외.
@@ -65,7 +73,7 @@
  *  - v0.1 (2026-11-20) 최초 작성. 진료실-1~3, 상태 토글 패널.
  * ─────────────────────────────────────────────────────────────
  */
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 const IMG_LOGO = require('../../../assets/untact-law-doctor/img_logo_untact.svg');
 const IMG_DOCTOR = require('../../../assets/untact-law-doctor/img_doctor_avatar.svg');
@@ -74,6 +82,13 @@ const IMG_MALE = require('../../../assets/untact-law-doctor/male.svg');
 const IC_RECEPTION = require('../../../assets/untact-law-doctor/ic_task_reception.svg');
 const IC_TREATMENT = require('../../../assets/untact-law-doctor/ic_task_treatment.svg');
 const IC_DOWNLOAD = require('../../../assets/untact-law-doctor/ic_download.svg');
+const IC_DOWNLOAD_DONE = require('../../../assets/untact-law-doctor/ic_download_complete.svg');
+const IC_DOWNLOAD_BIG = require('../../../assets/untact-law-doctor/ic_download_big.svg');
+const IC_DOWNLOAD_DONE_BIG = require('../../../assets/untact-law-doctor/ic_download_complete_big.svg');
+const SYMPTOM_PHOTOS: string[] = [
+  require('../../../assets/untact-law-doctor/symptom_sample_1.svg'),
+  require('../../../assets/untact-law-doctor/symptom_sample_2.svg'),
+];
 
 /* ---------- 타입 ---------- */
 type Jump = 'r1' | 'r2a' | 'r2b' | 'r3';
@@ -161,6 +176,35 @@ const IconCopy = () => (
   </svg>
 );
 
+const IconCheckSm = () => (
+  <svg aria-hidden="true" width={20} height={20} viewBox="0 0 24 24" fill="none">
+    <path d="M5 12.5l4.5 4.5L19 7.5" stroke="#0073FA" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+/* 근거 법령(입법예고안 조문 캡처, 앱과 같은 assets/untact-law-app/law) */
+const LAW: Record<string, { doc: string; article: string; page: string; img: string }> = {
+  'revisit-period': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의2제1항', page: '4쪽', img: require('../../../assets/untact-law-app/law/revisit-period.png') },
+  'revisit-check': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의5제5항제1호', page: '10쪽', img: require('../../../assets/untact-law-app/law/revisit-check.png') },
+  'first-region': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의2제2항', page: '4쪽', img: require('../../../assets/untact-law-app/law/first-region.png') },
+  'exception-list': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의2제3항', page: '5~6쪽', img: require('../../../assets/untact-law-app/law/exception-list.png') },
+  'exception-check': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의5제5항제3호·제6항', page: '10~11쪽', img: require('../../../assets/untact-law-app/law/exception-check.png') },
+  'phone-condition': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의5제1항', page: '8~9쪽', img: require('../../../assets/untact-law-app/law/phone-condition.png') },
+  'visual-diseases': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의11제1항', page: '16~17쪽', img: require('../../../assets/untact-law-app/law/visual-diseases.png') },
+  'rx-7days': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의3제1항~제4항', page: '6~7쪽', img: require('../../../assets/untact-law-app/law/rx-7days.png') },
+  'rx-banned': { doc: '비대면진료 실시 및 관리에 관한 고시(안)', article: '제4조', page: '5~6쪽', img: require('../../../assets/untact-law-app/law/rx-banned.png') },
+  'resid-actual': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의15제2항', page: '25~26쪽', img: require('../../../assets/untact-law-app/law/resid-actual.png') },
+  'resid-before-system': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '부칙 제6조제1항·제2항', page: '41쪽', img: require('../../../assets/untact-law-app/law/resid-before-system.png') },
+  'no-identity-theft': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의15제6항', page: '27쪽', img: require('../../../assets/untact-law-app/law/no-identity-theft.png') },
+  'explain-4': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의9', page: '15쪽', img: require('../../../assets/untact-law-app/law/explain-4.png') },
+  'guardian': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의5제4항', page: '9~10쪽', img: require('../../../assets/untact-law-app/law/guardian.png') },
+  'platform-notice': { doc: '비대면진료 실시 및 관리에 관한 고시(안)', article: '제24조', page: '16쪽', img: require('../../../assets/untact-law-app/law/platform-notice.png') },
+  'identity-check': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의5제2항·제3항', page: '9쪽', img: require('../../../assets/untact-law-app/law/identity-check.png') },
+  'after-check': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의5제7항', page: '11쪽', img: require('../../../assets/untact-law-app/law/after-check.png') },
+  'record-check': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의5제8항제3호', page: '11쪽', img: require('../../../assets/untact-law-app/law/record-check.png') },
+  'record-phone': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의5제8항제2호', page: '11쪽', img: require('../../../assets/untact-law-app/law/record-phone.png') },
+  'record-stop': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의5제8항제4호', page: '11쪽', img: require('../../../assets/untact-law-app/law/record-stop.png') },
+};
 const Switch = ({ on, onClick }: { on: boolean; onClick?: () => void }) => (
   <button type="button" role="switch" aria-checked={on} className={`uld-switch ${on ? 'is-on' : ''}`} onClick={onClick}>
     <span />
@@ -267,6 +311,44 @@ export default function UntactLawDoctor() {
   const [cancelPick, setCancelPick] = useState(CANCEL_REASONS[0]);
   const [cancelText, setCancelText] = useState('');
   const [cancelError, setCancelError] = useState('');
+  const [toast, setToast] = useState('');
+  const [lawOn, setLawOn] = useState(true);
+  const [marksOn, setMarksOn] = useState(true);
+  const [lawView, setLawView] = useState<{ ids: string[]; note?: string } | null>(null);
+  useEffect(() => {
+    if (!lawView) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setLawView(null);
+    window.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [lawView]);
+  /* 앞 글자와 떨어지지 않게 단어 결합 문자 + 인라인 span (앱과 같은 방식) */
+  const law = (ids: string[], note?: string) =>
+    lawOn ? (
+      <>
+        {'\u2060'}
+        <span
+          role="button"
+          tabIndex={0}
+          className="uld-law"
+          onClick={e => {
+            e.stopPropagation();
+            setLawView({ ids, note });
+          }}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              e.stopPropagation();
+              setLawView({ ids, note });
+            }
+          }}>
+          법령
+        </span>
+      </>
+    ) : null;
   const [cancelDone, setCancelDone] = useState('');
   const [phonePick, setPhonePick] = useState<number | null>(null);
   const [phoneText, setPhoneText] = useState('');
@@ -275,6 +357,28 @@ export default function UntactLawDoctor() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [videoOn, setVideoOn] = useState(true);
   const [viewerOpen, setViewerOpen] = useState(false);
+  // 현행 SymptomInformation: 사진별 내려받기 아이콘 → 0.5초 완료 아이콘, 전체 '내려받기' → '받기완료'(secondarySolid) 0.5초
+  const [photoView, setPhotoView] = useState<number | null>(null);
+  const [photoDone, setPhotoDone] = useState<number[]>([]);
+  const [photoAllDone, setPhotoAllDone] = useState(false);
+  const [viewerDlDone, setViewerDlDone] = useState(false);
+  const flashTimers = useRef<Record<string, number>>({});
+  const flash = (key: string, fn: (on: boolean) => void) => {
+    window.clearTimeout(flashTimers.current[key]);
+    fn(true);
+    flashTimers.current[key] = window.setTimeout(() => fn(false), 500);
+  };
+  useEffect(() => {
+    if (photoView === null) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setPhotoView(null);
+    window.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [photoView]);
 
   /* 전화 진료는 재진만 신청 가능(앱과 같음) */
   useEffect(() => {
@@ -401,13 +505,12 @@ export default function UntactLawDoctor() {
       setStatus('ontreatment');
     }
     if (dialog === 'cancel') {
-      /* 현행 treatment-details.tsx confirm(): 직접 입력 빈칸이면 안내 */
-      if (cancelPick === CANCEL_DIRECT && !cancelText.trim()) {
-        setCancelError('취소 사유를 입력해 주세요.');
-        return;
-      }
+      /* 운영 context/Untact/waitingTreatment: 직접 입력 빈칸이면 안내 없이 무시, 성공 시 토스트 */
+      if (cancelPick === CANCEL_DIRECT && !cancelText.trim()) return;
       setCancelDone(cancelPick === CANCEL_DIRECT ? cancelText.trim() : cancelPick);
       setStatus('cancel');
+      setToast('진료를 취소했습니다.');
+      window.setTimeout(() => setToast(''), 2500);
     }
     if (dialog === 'video') setVideoOn(false);
     setDialog(null);
@@ -415,8 +518,19 @@ export default function UntactLawDoctor() {
 
   /* 현행 treatment-list-model.ts treatmentListWaitingTime · timing-model.ts waitingTimeLabel */
   const diff = waitAt === null ? null : waitAt - now;
-  const waitLabel =
-    diff === null || diff < 0 ? '' : diff < 60_000 ? `진료 ${Math.floor(diff / 1000)}초 전` : `진료 ${Math.floor(diff / 60_000)}분 전`;
+  /* 운영 WaitingTreatmentCard/WaitingTime: 지나면 'n분 경과', 15분 넘게 남으면 '오늘 hh:mm 시작' */
+  const waitLabel = (() => {
+    if (diff === null || waitAt === null) return '';
+    if (diff < 0) {
+      const m = Math.floor(-diff / 60_000);
+      return m < 60 ? `${m}분 경과` : `${Math.floor(m / 60)}시간 경과`;
+    }
+    if (diff > 15 * 60_000) {
+      const d = new Date(waitAt);
+      return `오늘 ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} 시작`;
+    }
+    return diff < 60_000 ? `진료 ${Math.floor(diff / 1000)}초 전` : `진료 ${Math.floor(diff / 60_000)}분 전`;
+  })();
   const barTimer = (() => {
     if (diff === null) return '';
     const sec = Math.floor(Math.abs(diff) / 1000);
@@ -468,7 +582,7 @@ export default function UntactLawDoctor() {
   const barStyle: Record<'request' | 'waiting' | 'ontreatment', React.CSSProperties> = {
     request: { color: '#0073FA', background: 'rgba(0,115,250,.1)', borderColor: 'rgba(0,115,250,.15)' },
     waiting: { color: 'white', background: 'rgba(0,115,250,.9)', borderColor: '#0073FA' },
-    ontreatment: { color: 'white', background: '#0961CE', borderColor: '#056BE1' },
+    ontreatment: { color: 'white', background: '#0961CE', borderColor: '#0D56B5' },
   };
   const barMsg = { request: '환자를 접수해 주세요.', waiting: '진료를 시작해 주세요.', ontreatment: '진료를 완료해 주세요.' };
   const actionBar = status !== 'cancel' && (
@@ -477,10 +591,10 @@ export default function UntactLawDoctor() {
         <img src={status === 'request' ? IC_RECEPTION : IC_TREATMENT} alt="" />
         <div>
           <strong>{barMsg[status]}</strong>
-          {status === 'waiting' && barTimer && <p className="uld-bar-timer">{barTimer}</p>}
         </div>
       </div>
       <div className="uld-bar-btns">
+        {status === 'waiting' && barTimer && <span className="uld-bar-timer">{barTimer}</span>}
         {status === 'request' && (
           <Btn disabled={!canAccept} onClick={() => setDialog('reception')}>
             접수완료
@@ -492,14 +606,14 @@ export default function UntactLawDoctor() {
           </Btn>
         )}
         {status === 'waiting' && (
-          <Btn onClick={() => (s.method === 'phone' ? openPhone() : setDialog('start'))}>진료시작</Btn>
+          <Btn className="is-reverse" onClick={() => (s.method === 'phone' ? openPhone() : setDialog('start'))}>진료시작</Btn>
         )}
         {status === 'ontreatment' && (
-          <Btn v="secondary" className="uld-on-blue" onClick={() => (treatMethod === 'phone' ? openPhone() : setDialog('start'))}>
+          <Btn v="secondary" className="uld-on-blue" title="의도치 않은 진료 종료 시 다시 진료를 시작해 주세요" onClick={() => (treatMethod === 'phone' ? openPhone() : setDialog('start'))}>
             다시 진료시작
           </Btn>
         )}
-        {(status === 'waiting' || status === 'ontreatment') && <Btn>진료완료</Btn>}
+        {(status === 'waiting' || status === 'ontreatment') && <Btn className={status === 'ontreatment' ? 'is-reverse' : undefined}>진료완료</Btn>}
       </div>
     </div>
   );
@@ -509,12 +623,14 @@ export default function UntactLawDoctor() {
       {actionBar}
       {status === 'request' && (
         <div className="uld-confirm is-changed">
-          <p className="uld-confirm-h">접수 전 확인 (의료인)</p>
+          <p className="uld-confirm-h">접수 전 확인 (의료인){law(['after-check', 'record-check'])}</p>
           <Check on={checks[0]} onClick={() => setChecks(c => [!c[0], c[1]])}>
             환자 본인 여부를 확인했어요 (건강보험증·신분증)
+            {law(['identity-check'])}
           </Check>
           <Check on={checks[1]} onClick={() => setChecks(c => [c[0], !c[1]])}>
             {secondCheck}
+            {law(s.target === 'first' ? ['first-region'] : s.target === 'revisit' ? ['revisit-period', 'revisit-check'] : ['exception-list', 'exception-check'])}
           </Check>
           {s.target === 'first' && <p className="uld-confirm-sub">아래 거주지 서류로 같은 시·도인지 확인해 주세요.</p>}
           {s.target === 'exception' && (
@@ -528,6 +644,7 @@ export default function UntactLawDoctor() {
         <div className="uld-proof is-changed">
           <div className="uld-proof-k">
             거주지 서류
+            {law(['first-region', 'resid-actual', 'resid-before-system'])}
             {s.resid !== 'none' && <span>{s.resid === 'resident' ? '주민등록상 주소지' : '실거주지'}</span>}
           </div>
           {s.resid !== 'none' ? (
@@ -546,6 +663,7 @@ export default function UntactLawDoctor() {
         <div className="uld-proof is-changed">
           <div className="uld-proof-k">
             예외 대상 확인
+            {law(['exception-check', 'resid-before-system'])}
             <span>{s.ex === 'query' ? '등록장애인' : '선원'}</span>
           </div>
           {s.ex === 'query' ? (
@@ -572,6 +690,7 @@ export default function UntactLawDoctor() {
             <p className="uld-identity is-changed">
               <IconVerified />
               미성년 환자 법정대리인 동의 완료 · {'{동의자}'} · {'{동의일시}'}
+              {law(['guardian'])}
             </p>
           ) : (
             <p className="uld-identity">
@@ -580,10 +699,10 @@ export default function UntactLawDoctor() {
             </p>
           )}
         </div>
-        <p className="uld-consent-fact is-changed">환자가 앱에서 비대면진료 안내문 4가지를 확인하고 동의함 · {'{동의일시}'}</p>
+        <p className="uld-consent-fact is-changed">환자가 앱에서 비대면진료 안내문 4가지를 확인하고 동의함 · {'{동의일시}'}{law(['explain-4'])}</p>
         {s.target === 'revisit' && (
           <div className="uld-answer is-changed">
-            <p className="uld-answer-h">재진 · 환자 응답 (확인 필요)</p>
+            <p className="uld-answer-h">재진 · 환자 응답 (확인 필요){law(['revisit-period', 'revisit-check'])}</p>
             <p>
               환자가 "이 병원에서 마지막 대면진료 후 6개월 이내, 같은 증상"을 골랐어요.
               <br />
@@ -597,7 +716,6 @@ export default function UntactLawDoctor() {
               ['환자명', '가상환자 A'],
               ['주민등록번호', isChild ? '1201014000000' : '9001012000000'],
               ['전화번호', '010-0000-0000'],
-              ['키/몸무게', '165cm / 55kg'],
             ].map(([k, v]) => (
               <React.Fragment key={k}>
                 <dt>{k}</dt>
@@ -614,6 +732,8 @@ export default function UntactLawDoctor() {
             <div className="uld-symptom-row">
               <label>환자 증상</label>
               <div className="uld-symptom">
+                증상: 기침, 콧물
+                <br />
                 샘플 증상 설명입니다. 실제 진료 요청이 아닙니다.
                 <span className="uld-copy uld-copy-abs">
                   <IconCopy />
@@ -623,12 +743,31 @@ export default function UntactLawDoctor() {
             <div className="uld-symptom-row">
               <label>환자 첨부사진</label>
               <div className="uld-photos">
-                <span className="uld-photo">
-                  <img className="uld-photo-dl" src={IC_DOWNLOAD} alt="" />
-                </span>
-                <Btn v="secondary" className="uld-photo-btn">
-                  내려받기
-                </Btn>
+                {SYMPTOM_PHOTOS.map((src, i) => {
+                  const done = photoAllDone || photoDone.includes(i);
+                  return (
+                    <span key={i} className="uld-photo">
+                      <button type="button" className="uld-photo-img" aria-label={`첨부사진 ${i + 1} 확대`} onClick={() => setPhotoView(i)}>
+                        <img src={src} alt="" />
+                      </button>
+                      <button
+                        type="button"
+                        className="uld-photo-dl"
+                        aria-label={`첨부사진 ${i + 1} 내려받기`}
+                        onClick={() => flash(`p${i}`, on => setPhotoDone(d => (on ? (d.includes(i) ? d : [...d, i]) : d.filter(x => x !== i))))}
+                      >
+                        <img src={done ? IC_DOWNLOAD_DONE : IC_DOWNLOAD} alt="" />
+                      </button>
+                    </span>
+                  );
+                })}
+                <button
+                  type="button"
+                  className={`uld-photo-btn${photoAllDone ? ' is-done' : ''}`}
+                  onClick={() => flash('all', setPhotoAllDone)}
+                >
+                  {photoAllDone ? '받기완료' : '내려받기'}
+                </button>
               </div>
             </div>
           </div>
@@ -640,9 +779,9 @@ export default function UntactLawDoctor() {
           <h4>제증명 발급 요청</h4>
           <div>
             <span className="uld-cert-k">환자 요청</span>
-            <b>✓ 진료비 세부내역서</b>
-            <b>✓ 진료비 영수증</b>
-            <b>✓ 진료확인서</b>
+            <b><IconCheckSm />진료비 세부내역서</b>
+            <b><IconCheckSm />진료비 영수증</b>
+            <b><IconCheckSm />진료확인서</b>
           </div>
         </div>
       ) : (
@@ -678,7 +817,11 @@ export default function UntactLawDoctor() {
         className={`uld-dialog ${dialog === 'reception' ? 'is-small' : ''} ${['phone', 'cancel', 'video'].includes(dialog) ? 'is-changed' : ''}`}
         onClick={e => e.stopPropagation()}
       >
-        <p className="uld-dialog-title">{DIALOG_TITLE[dialog]}</p>
+        <p className="uld-dialog-title">
+          {DIALOG_TITLE[dialog]}
+          {dialog === 'phone' && law(['phone-condition', 'record-phone'])}
+          {dialog === 'cancel' && law(['record-stop'])}
+        </p>
         {dialog === 'start' && <p className="uld-dialog-desc">진료실에서 진료를 시작합니다.</p>}
         {dialog === 'phone' && <p className="uld-dialog-desc">화상진료가 원칙이에요. 전화로 진료하는 이유를 골라 주세요.</p>}
         {dialog === 'video' && (
@@ -708,7 +851,6 @@ export default function UntactLawDoctor() {
                 ))}
                 {cancelPick === CANCEL_DIRECT && (
                   <div className="uld-textarea-wrap">
-                    <span className="uld-textarea-label">취소 사유</span>
                     <textarea
                       rows={5}
                       value={cancelText}
@@ -718,7 +860,6 @@ export default function UntactLawDoctor() {
                     <p className="uld-hint">* 입력한 취소 사유가 환자에게 전달되오니 작성 시 유의해 주세요.</p>
                   </div>
                 )}
-                {cancelError && <p className="uld-error">{cancelError}</p>}
               </div>
             )}
             {dialog === 'phone' && (
@@ -771,7 +912,7 @@ export default function UntactLawDoctor() {
           </span>
         </div>
         <div className="uld-menu-toggle">
-          브라우저 알림 <Switch on={false} />
+          푸시 알림 <Switch on={false} />
         </div>
         <div className="uld-menu-toggle">
           소리 알림 <Switch on={false} />
@@ -878,13 +1019,35 @@ export default function UntactLawDoctor() {
   );
 
   return (
-    <div className="uld-root">
+    <div className={`uld-root${marksOn ? '' : ' is-marks-off'}`}>
       <aside className="uld-panel">
         <div className="uld-panel-card">
           <p className="uld-panel-title">온라인진료실 · 제도화 대응</p>
           <p className="uld-panel-sub">
-            굿닥 온라인진료실(의사용) · 검토용 초안 v0.5 · 현행 화면은 개발 코드 기준 재현, 동적 값은 {'{중괄호}'}
+            굿닥 온라인진료실(의사용) · 검토용 초안 v0.7 · 현행 화면은 운영 코드 기준 재현, 동적 값은 {'{중괄호}'}
           </p>
+        </div>
+        <div className="uld-panel-card uld-lawcard">
+          <div>
+            <p className="uld-panel-h" style={{ margin: 0 }}>
+              바뀐 곳 점선 표시
+            </p>
+            <p className="uld-panel-sub">끄면 화면의 보라 점선을 숨겨요.</p>
+          </div>
+          <button type="button" role="switch" aria-checked={marksOn} className={`uld-lawswitch ${marksOn ? 'is-on' : ''}`} onClick={() => setMarksOn(v => !v)}>
+            <span />
+          </button>
+        </div>
+        <div className="uld-panel-card uld-lawcard">
+          <div>
+            <p className="uld-panel-h" style={{ margin: 0 }}>
+              근거 법령 보기
+            </p>
+            <p className="uld-panel-sub">켜면 정보 옆 '법령'을 눌러 근거 조문을 볼 수 있어요(입법예고안 기준).</p>
+          </div>
+          <button type="button" role="switch" aria-checked={lawOn} className={`uld-lawswitch ${lawOn ? 'is-on' : ''}`} onClick={() => setLawOn(v => !v)}>
+            <span />
+          </button>
         </div>
         <div className="uld-panel-card">
           <p className="uld-panel-h">화면 바로 가기</p>
@@ -972,13 +1135,13 @@ export default function UntactLawDoctor() {
       </aside>
 
       <div className="uld-stage">
-        <span className="uld-stage-cap">{JUMPS.find(j => j.key === s.jump)!.label} · 보라 점선 = 바뀐 곳</span>
+        <span className="uld-stage-cap">{JUMPS.find(j => j.key === s.jump)!.label}{marksOn ? ' · 보라 점선 = 바뀐 곳' : ''}</span>
         <section className="uld-frame" onClick={() => setMenuOpen(false)}>
           <header className="uld-gnb">
             <div className="uld-gnb-inner">
               <img className="uld-logo" src={IMG_LOGO} alt="굿닥 온라인 진료실" />
               <nav className="uld-tabs">
-                <span className="is-on">접수대기</span>
+                <span className="is-on">진료대기</span>
                 <span>진료완료</span>
                 <span>운영관리</span>
                 <span>공지사항</span>
@@ -1037,6 +1200,34 @@ export default function UntactLawDoctor() {
         </section>
       </div>
       {dialogEl}
+      {toast && <div className="uld-toast" role="status">{toast}</div>}
+      {lawView && (
+        <div className="uld-lawmodal" onClick={() => setLawView(null)}>
+          <div className="uld-lawmodal-box" role="dialog" aria-label="근거 법령" onClick={e => e.stopPropagation()}>
+            <div className="uld-lawmodal-head">
+              <p>근거 법령</p>
+              <button type="button" aria-label="닫기" onClick={() => setLawView(null)}>
+                ×
+              </button>
+            </div>
+            <div className="uld-lawmodal-body">
+              {lawView.note && <p className="uld-lawnote">{lawView.note}</p>}
+              {lawView.ids.map(id => {
+                const l = LAW[id];
+                return (
+                  <div key={id} className="uld-lawitem">
+                    <p className="uld-lawitem-doc">{l.doc}</p>
+                    <p className="uld-lawitem-art">
+                      {l.article} · {l.page}
+                    </p>
+                    <img src={l.img} alt={`${l.doc} ${l.article}`} />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
       {viewerOpen && ((s.target === 'first' && s.resid !== 'none') || (s.target === 'exception' && s.ex === 'doc')) && (
         <div className="uld-viewer" role="dialog" aria-modal="true" aria-label={s.target === 'exception' ? '예외 대상 서류' : '거주지 서류'} onClick={() => setViewerOpen(false)}>
           <div className="uld-viewer-main" onClick={e => e.stopPropagation()}>
@@ -1048,6 +1239,26 @@ export default function UntactLawDoctor() {
             </span>
           </div>
           <button type="button" className="uld-viewer-close" aria-label="닫기" autoFocus onClick={() => setViewerOpen(false)}>
+            ×
+          </button>
+        </div>
+      )}
+      {photoView !== null && (
+        <div className="uld-viewer" role="dialog" aria-modal="true" aria-label="환자 첨부사진" onClick={() => setPhotoView(null)}>
+          <div className="uld-viewer-main uld-photo-main" onClick={e => e.stopPropagation()}>
+            <img src={SYMPTOM_PHOTOS[photoView]} alt={`첨부사진 ${photoView + 1}`} />
+            <button type="button" className="uld-viewer-dl" aria-label="첨부사진 내려받기" onClick={() => flash('viewer', setViewerDlDone)}>
+              <img src={viewerDlDone ? IC_DOWNLOAD_DONE_BIG : IC_DOWNLOAD_BIG} alt="" />
+            </button>
+          </div>
+          <div className="uld-viewer-thumbs" onClick={e => e.stopPropagation()}>
+            {SYMPTOM_PHOTOS.map((src, i) => (
+              <button key={i} type="button" className={`uld-viewer-thumb uld-photo-thumb${i === photoView ? ' is-on' : ''}`} aria-label={`첨부사진 ${i + 1}`} onClick={() => { setPhotoView(i); setViewerDlDone(false); }}>
+                <img src={src} alt="" />
+              </button>
+            ))}
+          </div>
+          <button type="button" className="uld-viewer-close" aria-label="닫기" autoFocus onClick={() => setPhotoView(null)}>
             ×
           </button>
         </div>

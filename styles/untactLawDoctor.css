@@ -783,7 +783,7 @@
   border: 1px solid #f2f4f7;
   border-radius: 8px;
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 600;
   color: #31353f;
 }
 .uld-dl dd > span:first-child {
@@ -836,6 +836,7 @@
   gap: 8px;
   margin-top: 2px;
 }
+/* 현행 SymptomInformation·ThumbnailImage(small 80px)·Button xSmall secondarySmooth 기준 */
 .uld-photo {
   position: relative;
   width: 80px;
@@ -843,17 +844,104 @@
   border-radius: 6px;
   outline: 1px solid rgba(93, 100, 116, 0.2);
   outline-offset: -0.5px;
-  background: linear-gradient(135deg, #e5f2ff, #f2f4f7);
+}
+.uld-photo-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  background: none;
+  cursor: zoom-in;
+}
+.uld-photo-img img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .uld-photo-dl {
   position: absolute;
   right: 4px;
   bottom: 4px;
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.uld-photo-dl img {
+  display: block;
+  width: 24px;
+  height: 24px;
 }
 .uld-photo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+  height: 36px;
   margin-left: 34px;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 4px;
+  background: rgba(128, 135, 153, 0.1);
+  color: #5d6474;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 19.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.uld-photo-btn:hover {
+  background: rgba(128, 135, 153, 0.15);
+}
+.uld-photo-btn.is-done {
+  background: #5d6474;
+  color: #fff;
+}
+.uld-photo-main {
+  position: relative;
+}
+.uld-photo-main > img {
+  display: block;
+  max-width: min(960px, calc(100vw - 80px));
+  max-height: calc(100dvh - 280px);
+  object-fit: contain;
+  border-radius: 6px;
+}
+.uld-viewer-dl {
+  position: absolute;
+  right: 6px;
+  bottom: 12px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.uld-viewer-dl img {
+  display: block;
+  width: 48px;
+  height: 48px;
+}
+.uld-viewer-thumb.uld-photo-thumb {
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  outline: 1px solid rgba(93, 100, 116, 0.2);
+}
+.uld-viewer-thumb.uld-photo-thumb.is-on {
+  outline: 2.5px solid #0073fa;
+}
+.uld-viewer-thumb.uld-photo-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .uld-avatar-dot.is-on {
   background: #41d293;
@@ -1233,4 +1321,216 @@
 .uld-viewer {
   word-break: keep-all;
   overflow-wrap: anywhere;
+}
+
+/* ── 운영(goodoc-web-hospital-admin production) 기준 보정 v0.6 ── */
+.uld-bar-msg strong {
+  font-size: 18px;
+}
+.uld-bar-timer {
+  margin: 0 8px 0 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+}
+/* primaryReverseSolid: 흰 바탕 파란 글씨 */
+.uld-bar .uld-btn.is-reverse {
+  background: #fff;
+  color: #0073fa;
+}
+.uld-bar .uld-btn.is-reverse:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+.uld-section-head h3 {
+  font-size: 20px;
+}
+/* DocumentRequest */
+.uld-cert {
+  gap: 0;
+  margin-bottom: 24px;
+}
+.uld-cert h4 {
+  display: flex;
+  align-items: center;
+  height: 64px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #31353f;
+}
+.uld-cert > div {
+  gap: 32px;
+}
+.uld-cert-k {
+  font-size: 14px;
+  font-weight: 400;
+  color: #808799;
+}
+.uld-cert b {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 16px;
+  color: #31353f;
+}
+/* TreatmentNote */
+.uld-memo {
+  height: 120px;
+  border-color: #f2f4f7;
+  font-size: 16px;
+  font-weight: 600;
+}
+/* 다이얼로그 '취소' = secondarySmooth */
+.uld-dialog .uld-btn.is-secondary {
+  border: 0;
+  background: rgba(128, 135, 153, 0.1);
+  color: #5d6474;
+}
+.uld-dialog .uld-btn.is-secondary:hover {
+  background: rgba(128, 135, 153, 0.15);
+}
+.uld-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 40px;
+  z-index: 60;
+  transform: translateX(-50%);
+  padding: 12px 20px;
+  border-radius: 8px;
+  background: rgba(22, 24, 29, 0.9);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* 근거 법령 보기(앱 untactLawApp.css 와 같은 모양) */
+.uld-lawcard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.uld-lawcard > div {
+  flex: 1;
+}
+.uld-lawswitch {
+  position: relative;
+  flex-shrink: 0;
+  width: 40px;
+  height: 24px;
+  padding: 2px;
+  border: 0;
+  border-radius: 12px;
+  background: #e3e6ed;
+  cursor: pointer;
+}
+.uld-lawswitch span {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s;
+}
+.uld-lawswitch.is-on {
+  background: var(--note);
+}
+.uld-lawswitch.is-on span {
+  transform: translateX(16px);
+}
+.uld-law {
+  display: inline;
+  margin-left: 6px;
+  padding: 0 6px;
+  border: 1px solid var(--note);
+  border-radius: 9px;
+  background: #f5f1ff;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 16px;
+  color: var(--note);
+  vertical-align: 2px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.uld-lawmodal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(22, 24, 29, 0.6);
+}
+.uld-lawmodal-box {
+  display: flex;
+  flex-direction: column;
+  width: min(760px, 100%);
+  max-height: calc(100vh - 48px);
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+.uld-lawmodal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid #e3e6ed;
+}
+.uld-lawmodal-head p {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #16181d;
+}
+.uld-lawmodal-head button {
+  border: 0;
+  background: none;
+  font-size: 22px;
+  line-height: 1;
+  color: #808799;
+  cursor: pointer;
+}
+.uld-lawmodal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 18px;
+  overflow-y: auto;
+}
+.uld-lawitem p {
+  margin: 0;
+}
+.uld-lawitem img {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  border: 1px solid #e3e6ed;
+  border-radius: 6px;
+}
+.uld-lawitem-doc {
+  font-size: 14px;
+  font-weight: 700;
+  color: #31353f;
+}
+.uld-lawitem-art {
+  margin-top: 2px !important;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--note);
+}
+.uld-lawnote {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f5f1ff;
+  font-size: 13px;
+  line-height: 19px;
+}
+/* 바뀐 곳 점선 표시 끄기 */
+.uld-root.is-marks-off .is-changed {
+  outline: none;
 }

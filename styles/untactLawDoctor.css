@@ -1226,3 +1226,11 @@
   opacity: 0.9;
   cursor: pointer;
 }
+
+/* 한글 단어 단위 줄바꿈(앱과 같게). 긴 영문·숫자 덩어리는 칸을 넘지 않게 끊는다. */
+.uld-frame,
+.uld-dialog,
+.uld-viewer {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}

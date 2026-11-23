@@ -704,3 +704,59 @@ body {
 .tps-advanced-caret { font-size: 16px; color: #808799; line-height: 1; }
 .tps-advanced-body { padding: 0 14px 14px; border-top: 1px solid #eef0f3; }
 .tps-advanced-body > .tps-field-hint { margin: 10px 0 12px; }
+
+/* =============================================================
+   도착확인 — 도착 환자 선택 카드 (태블릿 4.2 현행 코드 값)
+   ============================================================= */
+.tps-card-arrival { justify-content: flex-start; gap: 0; }
+.tps-arr-badge-row { flex: 0 1 86px; min-height: 66px; display: flex; align-items: flex-start; }
+.tps-card-arrival .tps-card-info { flex: 0 0 auto; }
+.tps-arr-badge {
+  padding: 6px 16px;
+  border-radius: 12px;
+  background: rgba(0, 115, 250, 0.1); /* #0073FA1A */
+  color: #479dff; /* Blue/50 */
+  font-size: 36px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.tps-card-arrival .tps-card-info { min-height: 120px; }
+.tps-arr-divider { display: block; flex: 0 0 2px; height: 2px; margin: 20px 0; background: #f6f7f9; } /* Gray/15 */
+.tps-card-arrival.is-selected .tps-arr-divider { background: rgba(128, 135, 153, 0.12); }
+.tps-arr-room { flex: 1 0 auto; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; }
+.tps-arr-room-name,
+.tps-arr-room-sub { flex: 0 0 auto; }
+/* 안내 문구를 켜면 카드 영역이 줄어 도착확인 카드 내용이 들어가지 않는다 — 위아래 여백을 줄여 확보 */
+.tps-content.is-compact { padding: 24px 0; }
+.tps-arr-room-name {
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #434956; /* Gray/80 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tps-arr-room-sub {
+  font-size: 40px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: #808799; /* Gray/60 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tps-overlay-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 64px 80px;
+  border-radius: 40px;
+  background: #fff;
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #5d6474;
+}

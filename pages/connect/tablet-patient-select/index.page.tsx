@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : tablet-patient-select — 태블릿 접수 '환자 조회 → 1. 환자 선택' · 새 환자 등록 오탭 UX 개선 체험판
- * 상태      : 검토용 초안 · v0.6 · 최종수정 2026-11-19
+ * 상태      : 검토용 초안 · v0.7 · 최종수정 2026-11-23
  * PRD       : 없음(VOC 기반). 병원 VOC: 조회된 본인 카드가 떠도 환자가 '새 환자 등록'을 눌러 정보를 처음부터 다시 입력(고령 재진 환자 중심, 하루 3명).
  *             사내 논의 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/tablet-patient-select.html
@@ -14,6 +14,11 @@
  *             (대기화면 키패드 → 조회 중 → 환자 선택 → 다음/등록 자리표시 · 확인 시트)
  *
  * 핵심 결정(why)
+ *  - [확정·세화] 도착확인(앱에서 미리 접수·예약한 환자가 병원에서 도착을 알리는 흐름) 화면도 같은 체험판에 둔다. 좌측 '접수 유형'으로 현장접수/도착확인 전환.
+ *    도착 환자 선택 화면은 피그마 없이 태블릿 4.2 현행 코드의 문구·치수로 재현(접수/예약 뱃지, 진료실 정보, '새 진료 접수' 카드, '도착 확인' 버튼, 복수 선택).
+ *    '새 진료 접수'를 누르면 현행대로 같은 번호의 차트 환자를 다시 조회해 현장접수 환자 선택으로 이어진다(같은 모양 카드를 연달아 만나는 지점).
+ *  - [유지·자체] 도착확인의 진입점 문구는 현행이 이미 배제 조건형이라 카피 변수(③)와 무관하게 같다. 링크·바로 내릴 때만 한 줄로 줄인다.
+ *    확인 시트(⑤)의 도착확인용 문구('{이름}님 접수 건이 있어요')는 체험판 자체 문안.
  *  - [확정·세화] As-is 화면은 피그마 POC_대기화면_환자조회·POC_대상선택을 값 그대로 재현한다(탑바 140, 카드 760×748, radius 36, CTA 144 등).
  *  - [확정·세화] 초기 환자 조회 시퀀스(대기화면 → 조회 중 → 결과)부터 체험한다.
  *  - [확정·세화] 키패드는 실제 번호 입력을 구현하지 않는다. 아무 키나 누르면 시나리오의 번호가 자동으로 채워지고 조회 중 모션 뒤 결과로 넘어간다.
@@ -40,6 +45,7 @@
  *  - [보류] 주민등록번호 조회 경로는 미포함(대기화면 피그마가 휴대전화번호 입력만 있음).
  *
  * 변경 이력
+ *  - v0.7 (2026-11-23) 도착확인 화면 추가(접수 유형 전환, 도착 환자 선택·도착 확인 결과 자리표시, 새 진료 접수 → 현장접수 환자 선택 연결). 시안 A/B/C를 두 화면에 같이 적용.
  *  - v0.6 (2026-11-19) 태블릿 프레임 표시 크기 상한(배율 0.6, 1152×720). 큰 모니터에서 과하게 커지던 것 방지.
  *  - v0.5 (2026-10-02) 조회 시나리오에서 '없음 → 등록 직행' 제거(세화님 요청). 결과 없음 분기 코드 정리.
  *  - v0.4 (2026-10-02) 시안 선택을 상단 바에서 좌측 패널 첫 카드로 합침(바뀐 것 목록과 한 카드). 상단 바는 제목 + 현재 시안 이름.
@@ -73,6 +79,22 @@ const PATIENTS: Patient[] = [
 ];
 const HOSPITAL_NAME = '베스트굿닥병원';
 
+/* 도착확인 대상(앱에서 미리 접수·예약한 건) */
+type Arrival = { id: string; p: Patient; badge: string; room: string; sub: string };
+const ARRIVALS: Arrival[] = [
+  { id: 'a1', p: PATIENTS[0], badge: '오전 9:57 굿닥 접수', room: '제1진료실', sub: '류현아 · 가정의학과' },
+  { id: 'a2', p: PATIENTS[1], badge: '오후 2:30 굿닥 예약', room: '토끼방', sub: '1진료실 · 류현아 · 소아청소년과' }
+];
+const ARRIVAL_STEPS = ['1. 도착 환자 선택', '2. 도착 확인 결과'];
+/* 도착확인 화면의 새 접수 진입점 — 현행 문구가 이미 배제 조건형이라 카피 변수와 무관하게 같다 */
+const ARRIVAL_COPY = {
+  title: '새 진료 접수',
+  desc: ['원하는 사람이 목록에 없으시다면,', '새롭게 진료 접수해 주세요.'],
+  linkPrefix: '원하는 사람이 목록에 없으신가요?',
+  linkLabel: '새 진료 접수',
+  bar: '원하는 사람이 목록에 없다면 · 새 진료 접수'
+} as const;
+
 /* ---------- 체험 조건 ---------- */
 type Placement = 'card' | 'link' | 'bar';
 type CopyMode = 'asis' | 'exclusive';
@@ -86,7 +108,8 @@ type Variables = {
   instruction: boolean;
   intercept: boolean;
 };
-type Scenario = { start: Start; lookup: Lookup };
+type Flow = 'walkin' | 'arrival';
+type Scenario = { flow: Flow; start: Start; lookup: Lookup };
 
 type PresetKey = 'asis' | 'A' | 'B' | 'C';
 
@@ -119,6 +142,17 @@ const PRESETS: Record<PresetKey, { label: string; title: string; changes: string
     changes: ['화면 구조는 현행 그대로입니다.', '조회 결과가 있는데 ‘새 환자 등록’을 누르면 ‘{이름}님이 아니신가요?’ 시트로 한 번 묻습니다.'],
     vars: { autoSelect: false, placement: 'card', copy: 'asis', instruction: false, intercept: true }
   }
+};
+
+const ARRIVAL_CHANGES: Record<PresetKey, string[]> = {
+  asis: [],
+  A: ['도착확인 대상이 1건이면 그 건이 선택된 상태로 진입하고, 도착 확인 버튼이 바로 활성됩니다.', '2건 이상이면 현행처럼 직접 고릅니다.'],
+  B: [
+    'A안의 자동 선택을 포함합니다.',
+    '‘새 진료 접수’ 카드를 없애고 카드 아래 텍스트 링크로 내립니다.',
+    '문구는 현행과 같은 뜻으로 한 줄로 줄입니다: ‘원하는 사람이 목록에 없으신가요? 새 진료 접수’'
+  ],
+  C: ['화면 구조는 현행 그대로입니다.', '도착확인 대상이 있는데 ‘새 진료 접수’를 누르면 ‘{이름}님 접수 건이 있어요’ 시트로 한 번 묻습니다.']
 };
 
 const VARIABLE_LABELS = {
@@ -236,7 +270,7 @@ const Pin = () => (
 /* ---------- 태블릿 프레임 ---------- */
 const STEPS = ['1. 환자 선택', '2. 진료실 선택', '3. 내원 목적', '4. 접수 결과'];
 
-function Topbar({ active, onHome }: { active: number; onHome: () => void }) {
+function Topbar({ active, onHome, steps = STEPS }: { active: number; onHome: () => void; steps?: string[] }) {
   return (
     <header className="tps-topbar">
       <button type="button" className="tps-home" onClick={onHome}>
@@ -244,7 +278,7 @@ function Topbar({ active, onHome }: { active: number; onHome: () => void }) {
         <span>처음으로</span>
       </button>
       <nav className="tps-tabs">
-        {STEPS.map((label, i) => (
+        {steps.map((label, i) => (
           <div key={label} className={`tps-tab${i === active ? ' is-active' : ''}`}>
             <span>{label}</span>
             {i === active && <Pin />}
@@ -285,8 +319,42 @@ function PatientCard({ p, selected, onTap }: { p: Patient; selected: boolean; on
   );
 }
 
-function NewPatientCard({ copy, onTap }: { copy: CopyMode; onTap: () => void }) {
-  const c = COPY[copy];
+function ArrivalCard({ a, selected, onTap }: { a: Arrival; selected: boolean; onTap: () => void }) {
+  const { p } = a;
+  return (
+    <button type="button" className={`tps-card tps-card-patient tps-card-arrival${selected ? ' is-selected' : ''}`} onClick={onTap} aria-pressed={selected}>
+      {selected && (
+        <span className="tps-badge">
+          <IcCheck />
+          <span className="tps-badge-text">선택완료</span>
+        </span>
+      )}
+      <div className="tps-arr-badge-row">
+        <span className="tps-arr-badge">{a.badge}</span>
+      </div>
+      <div className="tps-card-info">
+        <div className="tps-name">{p.name}</div>
+        <div className="tps-detail">
+          <div className="tps-line">
+            <span>{p.gender}</span>
+            <i className="tps-dot" />
+            <span>
+              만 {p.age}세 ({p.birth})
+            </span>
+          </div>
+          <div>{p.phone}</div>
+        </div>
+      </div>
+      <i className="tps-arr-divider" />
+      <div className="tps-arr-room">
+        <div className="tps-arr-room-name">{a.room}</div>
+        <div className="tps-arr-room-sub">{a.sub}</div>
+      </div>
+    </button>
+  );
+}
+
+function NewPatientCard({ c, onTap }: { c: { title: string; desc: readonly string[] }; onTap: () => void }) {
   return (
     <button type="button" className="tps-card tps-card-new" onClick={onTap}>
       <div className="tps-card-info">
@@ -390,7 +458,7 @@ function HomeScreen({ digits, loading, onKey }: { digits: string; loading: boole
   );
 }
 
-type Screen = 'home' | 'select' | 'next' | 'register';
+type Screen = 'home' | 'select' | 'next' | 'register' | 'arrival' | 'arrivalDone';
 type LogItem = { t: string; msg: string };
 
 function nowLabel() {
@@ -402,13 +470,18 @@ function Tablet({ vars, scenario, onLog, resetKey }: { vars: Variables; scenario
   const results = useMemo(() => PATIENTS.slice(0, scenario.lookup === 'one' ? 1 : 2), [scenario.lookup]);
   const phone = KNOWN_PHONE;
   const initialSelected = vars.autoSelect && results.length === 1 ? results[0].id : null;
-  const startScreen: Screen = scenario.start === 'select' ? 'select' : 'home';
+  const isArrival = scenario.flow === 'arrival';
+  const arrivals = useMemo(() => ARRIVALS.slice(0, scenario.lookup === 'one' ? 1 : 2), [scenario.lookup]);
+  const initialArr = vars.autoSelect && arrivals.length === 1 ? [arrivals[0].id] : [];
+  const startScreen: Screen = scenario.start === 'select' ? (isArrival ? 'arrival' : 'select') : 'home';
 
   const [screen, setScreen] = useState<Screen>(startScreen);
   const [digits, setDigits] = useState(scenario.start === 'select' ? phone : '');
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<string | null>(initialSelected);
   const [sheet, setSheet] = useState(false);
+  const [arrSel, setArrSel] = useState<string[]>(initialArr);
+  const [overlay, setOverlay] = useState(false);
   const timers = useRef<number[]>([]);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -423,13 +496,15 @@ function Tablet({ vars, scenario, onLog, resetKey }: { vars: Variables; scenario
     setLoading(false);
     setSelected(initialSelected);
     setSheet(false);
+    setArrSel(initialArr);
+    setOverlay(false);
   };
 
   // 시안·시나리오가 바뀌면 처음 진입 상태로 되돌린다
   useEffect(() => {
     resetAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scenario.start, scenario.lookup, vars.autoSelect, vars.placement, vars.copy, vars.instruction, vars.intercept, resetKey]);
+  }, [scenario.flow, scenario.start, scenario.lookup, vars.autoSelect, vars.placement, vars.copy, vars.instruction, vars.intercept, resetKey]);
   useEffect(() => clearTimers, []);
 
   // 세로 휠 → 가로 스크롤 (passive 리스너라 React onWheel로는 preventDefault 불가)
@@ -460,6 +535,8 @@ function Tablet({ vars, scenario, onLog, resetKey }: { vars: Variables; scenario
     setLoading(false);
     setSelected(initialSelected);
     setSheet(false);
+    setArrSel(initialArr);
+    setOverlay(false);
     onLog(`${via} → 대기화면`);
   };
 
@@ -480,6 +557,12 @@ function Tablet({ vars, scenario, onLog, resetKey }: { vars: Variables; scenario
       window.setTimeout(() => {
         timers.current = [];
         setLoading(false);
+        if (isArrival) {
+          setArrSel(initialArr);
+          setScreen('arrival');
+          onLog(`도착확인 대상 ${arrivals.length}건 → 도착 환자 선택${initialArr.length ? ' (자동 선택 상태)' : ''}`);
+          return;
+        }
         setSelected(initialSelected);
         setScreen('select');
         onLog(`조회 결과 ${results.length}명 → 환자 선택${initialSelected ? ' (자동 선택 상태)' : ''}`);
@@ -525,6 +608,156 @@ function Tablet({ vars, scenario, onLog, resetKey }: { vars: Variables; scenario
     return <HomeScreen digits={digits} loading={loading} onKey={onKey} />;
   }
 
+  /* ---------- 도착확인 ---------- */
+  const tapArrival = (a: Arrival) => {
+    const wasOn = arrSel.includes(a.id);
+    setArrSel((prev) => (prev.includes(a.id) ? prev.filter((id) => id !== a.id) : [...prev, a.id]));
+    onLog(`${a.p.name} 카드 탭 → ${wasOn ? '선택 해제' : '선택완료'}`);
+  };
+  // 새 진료 접수: 같은 번호로 차트 환자를 다시 조회해 현장접수의 환자 선택으로 넘어간다(현행 동작)
+  const goNewReceipt = (via: string) => {
+    if (timers.current.length > 0) return;
+    setSheet(false);
+    setOverlay(true);
+    onLog(`${via} → 진료 기록 조회 중`);
+    timers.current.push(
+      window.setTimeout(() => {
+        timers.current = [];
+        setOverlay(false);
+        setSelected(initialSelected);
+        setScreen('select');
+        onLog(`조회 결과 ${results.length}명 → 현장접수 환자 선택${initialSelected ? ' (자동 선택 상태)' : ''}`);
+      }, 900)
+    );
+  };
+  const tapNewReceipt = (via: string) => {
+    if (vars.intercept) {
+      setSheet(true);
+      onLog(`${via} 탭 → 확인 시트 노출`);
+      return;
+    }
+    goNewReceipt(`${via} 탭`);
+  };
+  const tapArrive = () => {
+    if (arrSel.length === 0) {
+      onLog('도착 확인 탭 → 비활성(선택 없음)');
+      return;
+    }
+    setScreen('arrivalDone');
+    onLog(`도착 확인 탭 → ${arrSel.length}건 도착 확인 진행`);
+  };
+  const arrNames = arrivals.filter((a) => arrSel.includes(a.id)).map((a) => a.p.name);
+
+  if (screen === 'arrival') {
+    const ac = ARRIVAL_COPY;
+    const arrCardCount = arrivals.length + (vars.placement === 'card' ? 1 : 0);
+    return (
+      <div className="tps-screen">
+        <Topbar active={0} steps={ARRIVAL_STEPS} onHome={() => home()} />
+        <div className={`tps-content${vars.instruction ? ' is-compact' : ''}`}>
+          {vars.instruction && <div className="tps-instruction">도착 확인할 접수를 선택하고 ‘도착 확인’을 눌러 주세요.</div>}
+          <div className={`tps-list${arrCardCount > 2 ? ' is-scroll' : ''}`} ref={listRef}>
+            {arrivals.map((a) => (
+              <ArrivalCard key={a.id} a={a} selected={arrSel.includes(a.id)} onTap={() => tapArrival(a)} />
+            ))}
+            {vars.placement === 'card' && <NewPatientCard c={ac} onTap={() => tapNewReceipt(`'${ac.title}' 카드`)} />}
+          </div>
+          {vars.placement === 'link' && (
+            <div className="tps-linkrow">
+              <span className="tps-linkrow-prefix">{ac.linkPrefix}</span>
+              <button type="button" className="tps-linkrow-btn" onClick={() => tapNewReceipt(`'${ac.linkLabel}' 링크`)}>
+                {ac.linkLabel}
+                <IcChevron />
+              </button>
+            </div>
+          )}
+        </div>
+        <div className={`tps-cta${vars.placement === 'bar' ? ' has-bar' : ''}`}>
+          {vars.placement === 'bar' && (
+            <button type="button" className="tps-btn tps-btn-bar" onClick={() => tapNewReceipt(`'${ac.bar}' 바`)}>
+              <IcAdd size={48} color="#434956" />
+              <span>{ac.bar}</span>
+            </button>
+          )}
+          <button type="button" className={`tps-btn tps-btn-next${arrSel.length > 0 ? ' is-active' : ''}`} onClick={tapArrive} aria-disabled={arrSel.length === 0}>
+            도착 확인
+          </button>
+        </div>
+
+        {overlay && (
+          <div className="tps-dim" role="status">
+            <div className="tps-overlay-box">
+              <Spinner />
+              <div>진료 기록을 조회하고 있습니다.</div>
+            </div>
+          </div>
+        )}
+
+        {sheet && (
+          <div
+            className="tps-dim"
+            role="dialog"
+            aria-modal="true"
+            onClick={() => {
+              setSheet(false);
+              onLog('시트 바깥 탭 → 닫힘, 도착 환자 선택 유지');
+            }}
+          >
+            <div className="tps-sheet" onClick={(e) => e.stopPropagation()}>
+              <div className="tps-sheet-title">{arrivals.length === 1 ? `${arrivals[0].p.name}님 접수 건이 있어요` : '접수하신 건이 목록에 있어요'}</div>
+              <div className="tps-sheet-desc">미리 접수·예약하신 건은 도착 확인만 하시면 돼요.</div>
+              <div className="tps-sheet-actions">
+                {arrivals.length === 1 ? (
+                  <button
+                    type="button"
+                    className="tps-btn tps-btn-next is-active"
+                    onClick={() => {
+                      setArrSel([arrivals[0].id]);
+                      setSheet(false);
+                      setScreen('arrivalDone');
+                      onLog("시트 '네, 도착 확인할게요' → 도착 확인 진행");
+                    }}
+                  >
+                    네, 도착 확인할게요
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="tps-btn tps-btn-next is-active"
+                    onClick={() => {
+                      setSheet(false);
+                      onLog("시트 '목록에서 고를게요' → 도착 환자 선택으로 복귀");
+                    }}
+                  >
+                    목록에서 고를게요
+                  </button>
+                )}
+                <button type="button" className="tps-btn tps-btn-secondary" onClick={() => goNewReceipt("시트 '아니요, 새로 접수할게요'")}>
+                  아니요, 새로 접수할게요
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (screen === 'arrivalDone') {
+    return (
+      <div className="tps-screen">
+        <Topbar active={1} steps={ARRIVAL_STEPS} onHome={() => home()} />
+        <div className="tps-placeholder">
+          <div className="tps-ph-title">2. 도착 확인 결과</div>
+          <div className="tps-ph-desc">{arrNames.join(' · ')}님 도착 확인을 진행합니다. 이 체험판에서는 결과 화면을 재현하지 않습니다.</div>
+          <button type="button" className="tps-btn tps-btn-secondary" onClick={() => home("'처음으로 돌아가기'")}>
+            처음으로 돌아가기
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (screen === 'next') {
     return (
       <div className="tps-screen">
@@ -564,7 +797,7 @@ function Tablet({ vars, scenario, onLog, resetKey }: { vars: Variables; scenario
           {results.map((p) => (
             <PatientCard key={p.id} p={p} selected={selected === p.id} onTap={() => tapPatient(p)} />
           ))}
-          {vars.placement === 'card' && <NewPatientCard copy={vars.copy} onTap={() => tapNew(`'${copy.title}' 카드`)} />}
+          {vars.placement === 'card' && <NewPatientCard c={copy} onTap={() => tapNew(`'${copy.title}' 카드`)} />}
         </div>
         {vars.placement === 'link' && (
           <div className="tps-linkrow">
@@ -710,7 +943,7 @@ function sameVars(a: Variables, b: Variables) {
 
 function App() {
   const [vars, setVars] = useState<Variables>(PRESETS.asis.vars);
-  const [scenario, setScenario] = useState<Scenario>({ start: 'home', lookup: 'one' });
+  const [scenario, setScenario] = useState<Scenario>({ flow: 'walkin', start: 'home', lookup: 'one' });
   const [log, setLog] = useState<LogItem[]>([]);
   const [resetKey, setResetKey] = useState(0);
   const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -735,15 +968,16 @@ function App() {
   };
   const addLog = (msg: string) => setLog((l) => [{ t: nowLabel(), msg }, ...l]);
 
-  const changes = activePreset ? PRESETS[activePreset].changes : describeVars(vars);
+  const isArrivalFlow = scenario.flow === 'arrival';
+  const changes = activePreset ? (isArrivalFlow ? ARRIVAL_CHANGES[activePreset] : PRESETS[activePreset].changes) : describeVars(vars);
   const headTitle = activePreset ? `${PRESETS[activePreset].label} · ${PRESETS[activePreset].title}` : '사용자 조합';
 
   return (
     <div className="tps-root bb">
       <div className="tps-bar">
         <div className="tps-bar-title">
-          <strong>태블릿 접수 · 환자 조회 → 환자 선택</strong>
-          <span>‘새 환자 등록’ 오탭 UX 개선 체험판 · 검토용 초안 v0.6</span>
+          <strong>태블릿 접수 · 도착확인 · 환자 조회 → 환자 선택</strong>
+          <span>‘새 환자 등록’ 오탭 UX 개선 체험판 · 검토용 초안 v0.7</span>
         </div>
         <div className="tps-bar-now">{headTitle}</div>
       </div>
@@ -775,6 +1009,16 @@ function App() {
 
           <section className="tps-panel-card">
             <h3>조회 시나리오</h3>
+            <Field label="접수 유형" hint="현장접수는 병원에서 바로 접수하는 흐름, 도착확인은 앱에서 미리 접수·예약한 환자가 병원에 와서 도착을 알리는 흐름입니다.">
+              <Seg<Flow>
+                value={scenario.flow}
+                options={[
+                  { v: 'walkin', label: '현장접수' },
+                  { v: 'arrival', label: '도착확인' }
+                ]}
+                onChange={(v) => setScn('flow', v)}
+              />
+            </Field>
             <Field label="시작 화면" hint="대기화면에서는 키패드 아무 키나 누르면 번호가 자동으로 채워지고 조회 중 → 결과로 이어집니다(실제 입력은 재현하지 않음).">
               <Seg<Start>
                 value={scenario.start}
@@ -785,13 +1029,23 @@ function App() {
                 onChange={(v) => setScn('start', v)}
               />
             </Field>
-            <Field label="조회 결과" hint="전화번호 조회는 가족이 함께 나올 수 있어 2명 케이스를 둡니다.">
+            <Field
+              label={isArrivalFlow ? '도착확인 대상' : '조회 결과'}
+              hint={isArrivalFlow ? '같은 번호로 가족 예약이 함께 뜰 수 있어 2건 케이스를 둡니다. ‘새 진료 접수’를 누르면 현장접수의 환자 선택으로 이어집니다.' : '전화번호 조회는 가족이 함께 나올 수 있어 2명 케이스를 둡니다.'}
+            >
               <Seg<Lookup>
                 value={scenario.lookup}
-                options={[
-                  { v: 'one', label: '1명(본인)' },
-                  { v: 'two', label: '2명(본인+가족)' }
-                ]}
+                options={
+                  isArrivalFlow
+                    ? [
+                        { v: 'one', label: '1건(본인 접수)' },
+                        { v: 'two', label: '2건(본인 접수+가족 예약)' }
+                      ]
+                    : [
+                        { v: 'one', label: '1명(본인)' },
+                        { v: 'two', label: '2명(본인+가족)' }
+                      ]
+                }
                 onChange={(v) => setScn('lookup', v)}
               />
             </Field>
@@ -838,7 +1092,7 @@ function App() {
                     onChange={(v) => setVar('autoSelect', v)}
                   />
                 </Field>
-                <Field label="② 새 환자 등록 위치" hint="카드는 환자 카드와 같은 무게. 링크·바는 보조 동선으로 내립니다.">
+                <Field label={isArrivalFlow ? '② 새 진료 접수 위치' : '② 새 환자 등록 위치'} hint="카드는 환자 카드와 같은 무게. 링크·바는 보조 동선으로 내립니다.">
                   <Seg<Placement>
                     value={vars.placement}
                     options={[
@@ -849,7 +1103,14 @@ function App() {
                     onChange={(v) => setVar('placement', v)}
                   />
                 </Field>
-                <Field label="③ 카피" hint="현행 설명문은 ‘본인’·‘진료 접수’가 들어 있어 본인 접수 경로로 읽힙니다. 배제 조건형은 ‘조회된 분이 아닐 때만’으로 바꿉니다.">
+                <Field
+                  label="③ 카피"
+                  hint={
+                    isArrivalFlow
+                      ? '도착확인 화면에는 적용되지 않습니다. 현행 문구가 이미 ‘목록에 없으시다면’으로 쓰여 있습니다. ‘새 진료 접수’로 넘어간 현장접수 화면에만 적용됩니다.'
+                      : '현행 설명문은 ‘본인’·‘진료 접수’가 들어 있어 본인 접수 경로로 읽힙니다. 배제 조건형은 ‘조회된 분이 아닐 때만’으로 바꿉니다.'
+                  }
+                >
                   <Seg<CopyMode>
                     value={vars.copy}
                     options={[
@@ -869,7 +1130,10 @@ function App() {
                     onChange={(v) => setVar('instruction', v)}
                   />
                 </Field>
-                <Field label="⑤ 잘못 눌렀을 때 확인 시트" hint="조회 결과가 있는데 새 환자 등록을 누르면 ‘{이름}님이 아니신가요?’로 가로챕니다.">
+                <Field
+                  label="⑤ 잘못 눌렀을 때 확인 시트"
+                  hint={isArrivalFlow ? '도착확인 대상이 있는데 새 진료 접수를 누르면 ‘{이름}님 접수 건이 있어요’로 한 번 묻습니다.' : '조회 결과가 있는데 새 환자 등록을 누르면 ‘{이름}님이 아니신가요?’로 가로챕니다.'}
+                >
                   <Seg<boolean>
                     value={vars.intercept}
                     options={[

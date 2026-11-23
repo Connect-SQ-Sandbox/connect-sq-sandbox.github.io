@@ -1225,6 +1225,13 @@ a {
   vertical-align: 2px;
 }
 
+/* 한글 단어 단위 줄바꿈 — 앱의 lineBreakStrategyIOS="hangul-word"와 같은 효과.
+   긴 영문·숫자 덩어리는 칸을 넘지 않게 끊는다. */
+.ula-phone {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
 </style>
 <div id="root"></div>
 <script>

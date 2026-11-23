@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : untact-law-app — 굿닥 앱(환자용) 비대면진료 신청 흐름 · 비대면진료 제도화(의료법 개정) 대응
- * 상태      : 검토용 초안 · v0.8 · 최종수정 2026-11-23 · 샌드박스 배포
+ * 상태      : 검토용 초안 · v0.9 · 최종수정 2026-11-23 · 샌드박스 배포
  * PRD       : 없음(제도화 대응 기획 초안). 사내 문서 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/untact-law-app.html
  * 피그마    : 없음. 현행 화면은 goodoc-mobile origin/staging(b45968ada, 2026-11-19) 코드 기준 재현.
@@ -63,11 +63,12 @@
  *  - [보류] 주민등록상 서류로 초본(본인만 기재)을 권할지(등본은 세대원 정보가 실림).
  *  - [보류] 수진자(건강보험 자격) 조회로 확인되는 예외 대상 범위(희귀질환 산정특례 포함 여부 등) — EMR·개발 확인 필요. 지금은 등록장애인·장기요양 수급자만 조회로 둠.
  *  - [보류] 예외 대상별 확인 서류 이름(가안)과 가림 안내 강도.
- *  - [확정·D18] 본인 확인은 화상 진료 중 신분증 대조. 화상 진료면 ② 진료 방식 영역에 신분증 준비 안내. 전화 진료의 본인 확인은 보류.
+ *  - [확정·D18] 본인 확인 서류(주민등록증·운전면허증·여권·건강보험증 중 1장) 필수 첨부, 전 대상, 뒷자리 가림 체크. 초진·등본상 주소지면 '신분증 주소가 지금 주소와 같아요' 체크로 거주지 서류 겸용. 자녀 신청이면 아이 서류는 건강보험증·여권만.
  *  - [보류] ② 가림 예시 재직증명서의 '소속'·'재직 기간'은 남김/가림 표시 없이 둠. 표시 여부 확인 중.
  *
  * 변경 이력
- *  - v0.8 (2026-11-23) D18: 화상 진료일 때 ② 진료 방식 영역에 '진료가 시작되면 의사에게 신분증이나 건강보험증을 화면으로 보여 주세요.'
+ *  - v0.9 (2026-11-23) D18 변경: ② 본인 확인 서류(필수) 영역 추가(전 대상), 초진은 신분증으로 거주지 겸용 가능. v0.8의 화상 신분증 안내 문구 삭제. 서류 종류 칩(자녀는 건강보험증·여권만), 겸용은 주소 있는 서류만.
+ *  - v0.8 (2026-11-23) D18(이전안): 화상 진료일 때 신분증 화면 제시 안내.
  *  - v0.7 (2026-11-23) '근거 법령 보기' 토글 기본값 켜짐. 패널 '바뀐 곳 점선 표시' 토글(기본 켜짐).
  *  - v0.6 (2026-11-23) 패널 '근거 법령 보기' 토글: 켜면 정보 옆 '법령' → 문서명·조항·쪽 + 조문 캡처(assets/untact-law-app/law, 입법예고안 원문).
  *  - v0.6 (2026-11-23) 예외 대상 확인 흐름(D17): ① 안내·전체 대상 보기, ② 대상 선택 + 조회/서류 첨부.
@@ -98,7 +99,7 @@ type Dept = 'general' | 'nophone';
 type Age = 'over13' | 'under13';
 type Method = 'video' | 'phone';
 type Proof = 'none' | 'attached';
-type ProofDoc = 'resident' | 'lease' | 'work' | 'bill';
+type ProofDoc = 'resident' | 'lease' | 'work' | 'bill' | 'idcard';
 type Resid = 'resident' | 'actual';
 type CancelReason = 'notTarget' | 'needVisit' | 'noContact';
 
@@ -363,6 +364,31 @@ const PROOF_DOCS: ProofDocDef[] = [
     ],
   },
 ];
+/* 본인 확인 서류 가림 예시(D18) — 주소는 거주지 서류로 함께 쓸 때를 위해 '시'까지 남긴다(D8) */
+type IdType = 'idcard' | 'license' | 'passport' | 'insurance';
+/* hasAddr: 주소가 적혀 있어 거주지 서류로 함께 쓸 수 있는 서류 */
+const ID_TYPES: { key: IdType; label: string; hasAddr: boolean }[] = [
+  { key: 'idcard', label: '주민등록증', hasAddr: true },
+  { key: 'license', label: '운전면허증', hasAddr: true },
+  { key: 'passport', label: '여권', hasAddr: false },
+  { key: 'insurance', label: '건강보험증', hasAddr: false },
+];
+const idDocOf = (t: IdType): ProofDocDef => {
+  const label = ID_TYPES.find(x => x.key === t)!.label;
+  const rrn = { label: '주민등록번호', segs: [{ t: '900101-', k: 'keep' as const }, { t: '0000000', k: 'mask' as const }] };
+  const rows =
+    t === 'insurance'
+      ? [{ label: '성명', segs: [{ t: '김굿닥', k: 'keep' as const }] }, rrn, { label: '자격 취득일', segs: [{ t: '0000.00.00' }] }]
+      : t === 'passport'
+        ? [{ label: '사진', segs: [{ t: '{얼굴 사진}', k: 'keep' as const }] }, { label: '성명', segs: [{ t: '김굿닥', k: 'keep' as const }] }, { label: '여권 번호', segs: [{ t: 'M00000000', k: 'keep' as const }] }]
+        : [
+            { label: '사진', segs: [{ t: '{얼굴 사진}', k: 'keep' as const }] },
+            { label: '성명', segs: [{ t: '김굿닥', k: 'keep' as const }] },
+            rrn,
+            { label: '주소', segs: [{ t: '서울특별시', k: 'keep' as const }, { t: '○○구 ○○로 00, 000호', k: 'mask' as const }] },
+          ];
+  return { key: 'idcard', tab: label, title: label, rows };
+};
 const ProofDocMock = ({ doc, mini }: { doc: ProofDocDef; mini?: boolean }) => (
   <div className={`ula-doc ${mini ? 'is-mini' : ''}`}>
     <div className="ula-doc-title">{doc.title}</div>
@@ -532,8 +558,35 @@ export default function UntactLawApp() {
       setProofChecked(false);
     }
   }, [s.target]);
-  /* 초진은 거주지 서류 필수: 첨부 + 가림 확인 체크까지 해야 다음으로 */
-  const proofPending = s.target === 'first' && !(proofFile && proofChecked);
+  /* 본인 확인 서류(D18) — 진료 대상과 관계없이 필수: 첨부 + 뒷자리 가림 체크 */
+  /* 패널 '첨부함'·?proof=attached 바로가기면 본인 확인 서류도 첨부된 상태로 연다 */
+  const [idFile, setIdFile] = useState(s.proof === 'attached');
+  const [idChecked, setIdChecked] = useState(s.proof === 'attached');
+  /* 자녀 신청이면 아이 서류는 건강보험증·여권만(D18) */
+  const idTypes = s.who === 'child' ? ID_TYPES.filter(x => x.key === 'insurance' || x.key === 'passport') : ID_TYPES;
+  const [idType, setIdType] = useState<IdType>(s.who === 'child' ? 'insurance' : 'idcard');
+  useEffect(() => {
+    if (!idTypes.some(x => x.key === idType)) {
+      setIdType(idTypes[0].key);
+      setIdFile(false);
+      setIdChecked(false);
+    }
+  }, [s.who]);
+  const idHasAddr = ID_TYPES.find(x => x.key === idType)!.hasAddr;
+  useEffect(() => {
+    if (s.proof === 'attached') {
+      setIdFile(true);
+      setIdChecked(true);
+    }
+  }, [s.proof]);
+  /* 초진 + 등본상 주소지: 신분증 주소가 지금 주소와 같으면 거주지 서류로 함께 쓴다 */
+  const [idAsResid, setIdAsResid] = useState(false);
+  const idPending = !(idFile && idChecked);
+  useEffect(() => {
+    if (!idFile || !idHasAddr || s.target !== 'first' || resid !== 'resident') setIdAsResid(false);
+  }, [idFile, idHasAddr, s.target, resid]);
+  /* 초진은 거주지 서류 필수: 첨부 + 가림 확인 체크까지 해야 다음으로(신분증 겸용이면 통과) */
+  const proofPending = s.target === 'first' && !idAsResid && !(proofFile && proofChecked);
   /* 예외 대상 확인 — 대상 고르기 + (조회 대상이 아니면) 서류 첨부 */
   const [exCat, setExCat] = useState<ExCat | null>(null);
   const [exFile, setExFile] = useState(false);
@@ -547,8 +600,12 @@ export default function UntactLawApp() {
   }, [s.target]);
   const exInfo = EX_CATS.find(c => c.key === exCat);
   const exPending = s.target === 'exception' && (!exInfo || (!exInfo.query && !exFile));
-  const formPending = proofPending || exPending;
-  const formHint = proofPending
+  const formPending = idPending || proofPending || exPending;
+  const formHint = idPending
+    ? idFile
+      ? "주민등록번호 뒷자리를 가린 뒤 위의 '…가렸어요'에 체크해 주세요"
+      : '본인 확인 서류를 첨부해 주세요'
+    : proofPending
     ? proofFile
       ? "가릴 곳을 가린 뒤 위의 '…가렸어요'에 체크해 주세요"
       : '거주지 서류를 첨부해 주세요'
@@ -817,6 +874,90 @@ export default function UntactLawApp() {
     </div>
   );
 
+  /* ② 본인 확인 서류 (신규, 전 대상) — D18 */
+  const IdSection = (
+    <div className="ula-col ula-changed" style={{ gap: 16, padding: '24px 20px 28px', borderBottom: '8px solid var(--gray-20)' }}>
+      <div className="ula-col" style={{ gap: 4 }}>
+        <T s="h5" w={7} c="gray-90">
+          본인 확인 서류(필수)
+          {law(['identity-check'])}
+        </T>
+        <T s="b2" c="gray-80">
+          {s.who === 'child'
+            ? '병원이 진료받는 자녀가 맞는지 확인할 수 있게 자녀의 서류 1장을 첨부해 주세요.'
+            : '병원이 진료받는 분이 맞는지 확인할 수 있게 1장을 첨부해 주세요.'}
+        </T>
+      </div>
+      <div className="ula-col" style={{ gap: 4 }}>
+        <T s="c1" w={6} c="gray-60">
+          제출 가능한 서류
+        </T>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+          {idTypes.map(t => (
+            <button
+              key={t.key}
+              className={`ula-preset is-small ${idType === t.key ? 'is-on' : ''}`}
+              onClick={() => {
+                if (idType === t.key) return;
+                setIdType(t.key);
+                setIdFile(false);
+                setIdChecked(false);
+              }}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <T s="b2" c="gray-60">
+          주민등록번호 뒷자리는 가리고, 이름과 사진은 보이게 남겨 주세요.
+        </T>
+      </div>
+      <div className="ula-col" style={{ gap: 10 }}>
+        <T s="b2" w={6} c="gray-80">
+          이렇게 가려 주세요
+        </T>
+        <ProofDocMock doc={idDocOf(idType)} />
+        <div className="ula-legend">
+          <span>
+            <i className="is-keep" />
+            남길 곳
+          </span>
+          <span>
+            <i className="is-mask" />
+            가릴 곳
+          </span>
+        </div>
+      </div>
+      <div className="ula-col" style={{ gap: 12 }}>
+        {!idFile ? (
+          <button className="ula-upload" onClick={() => { setIdFile(true); setIdChecked(false); }}>
+            <IconCamera />
+            <span>서류 첨부하기</span>
+          </button>
+        ) : (
+          <div className="ula-proof-file">
+            <span className="ula-proof-thumb">
+              <ProofDocMock doc={idDocOf(idType)} mini />
+            </span>
+            <T s="b2" c="gray-80" style={{ flex: 1 }}>
+              {`${ID_TYPES.find(x => x.key === idType)!.label} 1장`}
+            </T>
+            <button className="ula-proof-del" onClick={() => { setIdFile(false); setIdChecked(false); }} aria-label="첨부 삭제">
+              <IconClose />
+            </button>
+          </div>
+        )}
+        {idFile && (
+          <button className="ula-check" onClick={() => setIdChecked(v => !v)}>
+            <IconCheckRound on={idChecked} />
+            <T s="b1" w={idChecked ? 6 : 5} c={idChecked ? 'gray-90' : 'gray-70'}>
+              주민등록번호 뒷자리를 가렸어요
+            </T>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
   /* ② 거주지 (신규, 초진만) — D8 · D12 */
   const RESID_OPTIONS: { key: Resid; title: string; docs: string; note: string }[] = [
     { key: 'resident', title: '등본상 주소지', docs: '주민등록표 등본 또는 초본', note: "정부24나 주민센터에서 발급받을 수 있어요. 발급할 때 '주민등록번호 뒷자리 미포함'을 선택하면 뒷자리는 따로 가리지 않아도 돼요." },
@@ -855,7 +996,22 @@ export default function UntactLawApp() {
             {residOpt.note}
           </T>
         </div>
+        {resid === 'resident' && idFile && idHasAddr && (
+          <>
+            <button className="ula-check" onClick={() => setIdAsResid(v => !v)}>
+              <IconCheckRound on={idAsResid} />
+              <T s="b1" w={idAsResid ? 6 : 5} c={idAsResid ? 'gray-90' : 'gray-70'}>
+                첨부한 신분증의 주소가 지금 주소와 같아요
+              </T>
+            </button>
+            <T s="b2" c="gray-60">
+              따로 서류를 올리지 않고 첨부한 신분증으로 거주지도 확인해요. 주소의 '시'가 보여야 해요.
+            </T>
+          </>
+        )}
       </div>
+      {!idAsResid && (
+      <>
       <div className="ula-guide">
         <div className="ula-guide-title">
           <IconCaution color="#FB7480" />
@@ -937,6 +1093,8 @@ export default function UntactLawApp() {
           </button>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 
@@ -977,12 +1135,6 @@ export default function UntactLawApp() {
                   화상 진료
                 </button>
               </div>
-              {method === 'video' && (
-                <T s="b2" c="gray-70">
-                  진료가 시작되면 의사에게 신분증이나 건강보험증을 화면으로 보여 주세요.
-                  {law(['identity-check'])}
-                </T>
-              )}
             </div>
           ) : (
             /* 전화를 고를 수 없으면(초진·예외·13세 미만·전화 숨김 과) 선택 칸 대신 안내 한 줄 */
@@ -995,10 +1147,6 @@ export default function UntactLawApp() {
                 </T>
                 <T s="b2" c="gray-70">
                   신청하면 바로 연결되지 않아요. 의사가 진료를 시작하면 알림을 보내드리니, 진료내역에서 '진료실 입장하기'를 눌러 주세요.
-                </T>
-                <T s="b2" c="gray-70">
-                  진료가 시작되면 의사에게 신분증이나 건강보험증을 화면으로 보여 주세요.
-                  {law(['identity-check'])}
                 </T>
               </div>
             </div>
@@ -1115,6 +1263,7 @@ export default function UntactLawApp() {
             </div>
           </div>
         </div>
+        {IdSection}
         {s.target === 'first' && ProofSection}
         {s.target === 'exception' && ExSection}
         {/* RRNAgreementTerm/index.tsx:13-110 (SymptomScreen.tsx:289, paddingHorizontal 40 → marginHorizontal -20 상쇄) */}
@@ -1511,7 +1660,7 @@ export default function UntactLawApp() {
       <aside className="ula-panel">
         <div className="ula-panel-card">
           <p className="ula-panel-title">비대면진료 신청 · 제도화 대응</p>
-          <p className="ula-panel-sub">굿닥 앱(환자용) · 검토용 초안 v0.8 · 현행 화면은 앱 코드 기준 재현, 동적 값은 {'{중괄호}'}</p>
+          <p className="ula-panel-sub">굿닥 앱(환자용) · 검토용 초안 v0.9 · 현행 화면은 앱 코드 기준 재현, 동적 값은 {'{중괄호}'}</p>
         </div>
         <div className="ula-panel-card ula-lawcard">
           <div>

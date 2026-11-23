@@ -869,8 +869,8 @@ export default function UntactLawDoctor() {
             label="진료 대상(환자 선택)"
             value={s.target}
             options={[
-              { k: 'revisit', t: '재진' },
               { k: 'first', t: '초진' },
+              { k: 'revisit', t: '재진' },
               { k: 'exception', t: '예외' },
             ]}
             onChange={k => set({ target: k })}

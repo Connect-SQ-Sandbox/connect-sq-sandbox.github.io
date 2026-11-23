@@ -38,7 +38,7 @@
  *  - [제안] ① 박스 제목은 쉬운 말('최근 6개월 안에 다녀왔어요' 등) + 회색 태그(재진/초진/예외 대상). 화면 제목 '나에게 해당하는 항목을 골라 주세요'.
  *  - [제안] ④ 취소 사유는 병원이 고른 문장(어드민) 대신 앱 표시용 문구(환자 말투 + 다음 행동)를 보여 준다.
  *  - [확정·요청] ① 대상 선택은 라디오 대신 박스형(앱이 대상 선택에 라디오를 쓰지 않음). 모양은 Receipt420 PatientListItem·ReceiptExamRoomItem:
- *    r8 · 테두리 GRAY_30 · 오른쪽 체크(ic_checkbox 32, GRAY_40) / 선택 시 테두리 BLUE_60 · 배경 ALPHA_BLUE_05 · 체크 BLUE_60. 초진 안내는 선택한 박스 아래.
+ *    r8 · 테두리 GRAY_30 / 선택 시 테두리 BLUE_60 · 배경 ALPHA_BLUE_05. 오른쪽 체크 아이콘은 두지 않는다. 초진 안내는 선택한 박스 아래.
  *  - [유지·자체] ① 초진 안내 상자는 ② 처방 안내(PrescriptionGuide) 상자 모양(GRAY_10 · r8 · p16 · 불릿)을 그대로 쓴다.
  *  - [유지·자체] ② 진료 대상을 바꿔 전화 진료가 막히면 선택을 화상 진료로 되돌린다.
  *  - [유지·자체] ③ 책임 문구·법정대리인 안내는 ② 처방 안내 상자와 같은 GRAY_10 상자 안에 둔다. 동의 체크는 CheckBox(icon_check_select) 모양.
@@ -232,12 +232,6 @@ const IconCheckRound = ({ on }: { on: boolean }) =>
 /* 결제 약관 체크: ic_checkbox (24, BLUE_60 / GRAY_40) */
 const IconCheckSharp = ({ on }: { on: boolean }) => (
   <svg width={24} height={24} viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-    <path fillRule="evenodd" clipRule="evenodd" d="M19.1778 8.73474L9.8329 17.3608L4.82129 12.7347L6.17785 11.2651L9.8329 14.639L17.8213 7.26514L19.1778 8.73474Z" fill={on ? '#0073FA' : '#CACED8'} />
-  </svg>
-);
-/* ic_checkbox.svg (32) — Receipt420 PatientListItem·ReceiptExamRoomItem 선택 박스의 체크 */
-const IconCheckBox = ({ on }: { on: boolean }) => (
-  <svg width={32} height={32} viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
     <path fillRule="evenodd" clipRule="evenodd" d="M19.1778 8.73474L9.8329 17.3608L4.82129 12.7347L6.17785 11.2651L9.8329 14.639L17.8213 7.26514L19.1778 8.73474Z" fill={on ? '#0073FA' : '#CACED8'} />
   </svg>
 );
@@ -595,7 +589,6 @@ export default function UntactLawApp() {
                       {t.desc}
                     </T>
                   </span>
-                  <IconCheckBox on={on} />
                 </button>
                 {t.key === 'first' && on && FirstGuide}
               </React.Fragment>

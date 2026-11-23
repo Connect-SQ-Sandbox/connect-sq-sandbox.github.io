@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : untact-law-app — 굿닥 앱(환자용) 비대면진료 신청 흐름 · 비대면진료 제도화(의료법 개정) 대응
- * 상태      : 검토용 초안 · v0.5 · 최종수정 2026-11-23 · 샌드박스 배포
+ * 상태      : 검토용 초안 · v0.6 · 최종수정 2026-11-23 · 샌드박스 배포
  * PRD       : 없음(제도화 대응 기획 초안). 사내 문서 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/untact-law-app.html
  * 피그마    : 없음. 현행 화면은 goodoc-mobile origin/staging(b45968ada, 2026-11-19) 코드 기준 재현.
@@ -35,6 +35,9 @@
  *  - [확정·요청] ④ 병원 취소 상태에서 취소 사유를 환자에게 보여 준다. 현행 진료 정보(DetailInfoRow) 목록에 '취소사유' 줄을 추가한다.
  *  - [확정·요청] ② 거주지 종류는 세그먼트 '등본상 주소지 / 실거주지'(홈 ShortcutSegmentedTab 모양: 트랙 GRAY_20 r4 p3, 칸 높이 36, 선택 칸 흰 바탕·body2_700 GRAY_90, 미선택 body2_500 GRAY_50).
  *    세그먼트 아래에 '제출 가능한 서류' 제목 + 선택한 종류의 서류 + 안내 한 줄.
+ *  - [확정·요청] 예외 대상(D17): ① 박스 설명은 대표 대상 + 고르면 박스 아래 안내(다른 시·도 병원 초진 가능, 서류 필요) + '전체 대상 보기'(시행규칙안 31조의2③ 13개 + 고시 대상).
+ *    ② 거주지 서류 대신 '예외 대상 확인(필수)': 대상 칩 선택 → 등록장애인·장기요양 수급자는 병원이 건강보험 자격 조회로 확인(첨부 없음, 현행 온라인진료실이 조회로 확인 중),
+ *    그 밖은 서류 첨부 필수. 서류 이름은 가안. 고르거나 첨부하기 전에는 다음 비활성 + 이유 한 줄.
  *  - [제안] ① 박스 제목은 쉬운 말('최근 6개월 안에 다녀왔어요' 등) + 회색 태그(재진/초진/예외 대상). 화면 제목 '어디에 해당하나요?'. 순서는 초진 > 재진 > 예외 대상(대부분 초진, 잘못 골랐을 때 피해가 작은 순)(D16).
  *  - [제안] ④ 취소 사유는 병원이 고른 문장(어드민) 대신 앱 표시용 문구(환자 말투 + 다음 행동)를 보여 준다.
  *  - [확정·요청] ① 대상 선택은 라디오 대신 박스형(앱이 대상 선택에 라디오를 쓰지 않음). 모양은 Receipt420 PatientListItem·ReceiptExamRoomItem:
@@ -58,11 +61,14 @@
  *  - [확정·요청] 비대면진료지원시스템은 없고 구축 시점 미정이라는 전제로 그린다(D13). 시행규칙안 부칙 6조에 따라 운영 개시 전에는
  *    주민등록상 주소지·예외 대상은 건보공단 정보시스템 또는 '해당 사실을 확인할 수 있는 서류'로, 실거주지는 자료를 의료기관에 제출해 확인 → ② 주민등록상 주소지 서류 첨부 유지.
  *  - [보류] 주민등록상 서류로 초본(본인만 기재)을 권할지(등본은 세대원 정보가 실림).
- *  - [보류] 예외 대상도 운영 개시 전에는 서류로 확인해야 함(부칙 6조①) — 예외 대상 증빙 첨부 영역 필요 여부.
+ *  - [보류] 수진자(건강보험 자격) 조회로 확인되는 예외 대상 범위(희귀질환 산정특례 포함 여부 등) — EMR·개발 확인 필요. 지금은 등록장애인·장기요양 수급자만 조회로 둠.
+ *  - [보류] 예외 대상별 확인 서류 이름(가안)과 가림 안내 강도.
  *  - [보류] 본인확인은 건강보험증·신분증명서 제출(31조의5③). 시스템이 없으니 병원에 직접 제출(진료 시 화면으로 보여 주기 또는 첨부) 안내 필요 여부.
  *  - [보류] ② 가림 예시 재직증명서의 '소속'·'재직 기간'은 남김/가림 표시 없이 둠. 표시 여부 확인 중.
  *
  * 변경 이력
+ *  - v0.6 (2026-11-23) 패널 '근거 법령 보기' 토글: 켜면 정보 옆 '법령' → 문서명·조항·쪽 + 조문 캡처(assets/untact-law-app/law, 입법예고안 원문).
+ *  - v0.6 (2026-11-23) 예외 대상 확인 흐름(D17): ① 안내·전체 대상 보기, ② 대상 선택 + 조회/서류 첨부.
  *  - v0.5 (2026-11-23) ① 순서 초진 > 재진 > 예외 대상, 제목 '어디에 해당하나요?'(D16).
  *  - v0.5 (2026-11-23) UX 문구·흐름 다듬기(Fable 검토, 처음 이용하는 환자 기준): ① 쉬운 말 제목 + 재진/초진/예외 태그, 초진 안내에 병원 시·도·서류 예고,
  *    ② 화상 안내(바로 연결 안 됨·알림·진료실 입장하기), 거주지 이유·서류 발급처, 다음 비활성 이유 한 줄, ③ 책임 문구 대상별·취소 알림, 다음=결제 안내(후불),
@@ -108,7 +114,7 @@ const KIND_LABEL = { cur: '현행', new: '신규', mod: '수정' } as const;
 const TARGETS: { key: Target; title: string; plain: string; desc: string }[] = [
   { key: 'first', title: '초진', plain: '처음이거나 6개월이 지났어요', desc: '이 병원이 처음이거나, 다녀온 지 6개월이 지났거나, 그때와 다른 증상이에요' },
   { key: 'revisit', title: '재진', plain: '최근 6개월 안에 다녀왔어요', desc: '이 병원에 직접 가서 진료받았고, 그때와 같은 증상이에요' },
-  { key: 'exception', title: '예외 대상', plain: '아래 대상에 해당해요', desc: '희귀질환자, 제1형 당뇨병 환자, 등록장애인, 장기요양 수급자 등' },
+  { key: 'exception', title: '예외 대상', plain: '아래 대상에 해당해요', desc: '희귀질환자, 등록장애인, 장기요양 수급자, 군인·경찰·소방공무원 등' },
 ];
 
 /* text = 병원이 고른 사유(어드민), app = 앱 표시용 문구(제안: 환자 말투 + 다음 행동) */
@@ -373,6 +379,42 @@ const ProofDocMock = ({ doc, mini }: { doc: ProofDocDef; mini?: boolean }) => (
   </div>
 );
 
+/* ---------- 근거 법령(입법예고안 원문 캡처) — 패널 '근거 법령 보기'를 켜면 각 정보 옆 '법령'을 눌러 본다 ---------- */
+const LAW: Record<string, { doc: string; article: string; page: string; img: string }> = {
+  'revisit-period': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의2제1항', page: '4쪽', img: require('../../../assets/untact-law-app/law/revisit-period.png') },
+  'revisit-check': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의5제5항제1호', page: '10쪽', img: require('../../../assets/untact-law-app/law/revisit-check.png') },
+  'first-region': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의2제2항', page: '4쪽', img: require('../../../assets/untact-law-app/law/first-region.png') },
+  'exception-list': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의2제3항', page: '5~6쪽', img: require('../../../assets/untact-law-app/law/exception-list.png') },
+  'exception-check': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의5제5항제3호·제6항', page: '10~11쪽', img: require('../../../assets/untact-law-app/law/exception-check.png') },
+  'phone-condition': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의5제1항', page: '8~9쪽', img: require('../../../assets/untact-law-app/law/phone-condition.png') },
+  'visual-diseases': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의11제1항', page: '16~17쪽', img: require('../../../assets/untact-law-app/law/visual-diseases.png') },
+  'rx-7days': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의3제1항~제4항', page: '6~7쪽', img: require('../../../assets/untact-law-app/law/rx-7days.png') },
+  'rx-banned': { doc: '비대면진료 실시 및 관리에 관한 고시(안)', article: '제4조', page: '5~6쪽', img: require('../../../assets/untact-law-app/law/rx-banned.png') },
+  'resid-actual': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의15제2항', page: '25~26쪽', img: require('../../../assets/untact-law-app/law/resid-actual.png') },
+  'resid-before-system': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '부칙 제6조제1항·제2항', page: '41쪽', img: require('../../../assets/untact-law-app/law/resid-before-system.png') },
+  'no-identity-theft': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의15제6항', page: '27쪽', img: require('../../../assets/untact-law-app/law/no-identity-theft.png') },
+  'explain-4': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의9', page: '15쪽', img: require('../../../assets/untact-law-app/law/explain-4.png') },
+  'guardian': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의5제4항', page: '9~10쪽', img: require('../../../assets/untact-law-app/law/guardian.png') },
+  'platform-notice': { doc: '비대면진료 실시 및 관리에 관한 고시(안)', article: '제24조', page: '16쪽', img: require('../../../assets/untact-law-app/law/platform-notice.png') },
+};
+
+/* ---------- 예외 대상(동일 시·도 밖 초진 허용, 시행규칙안 31조의2③) ----------
+   query = 병원이 건보 자격(수진자) 조회로 확인(현행 온라인진료실이 조회로 확인 중인 항목). 그 밖은 서류 첨부. 서류명은 가안. */
+type ExCat = 'disability' | 'ltc' | 'rare' | 't1dm' | 'infect' | 'public' | 'seaman' | 'veteran' | 'hospice' | 'abroad' | 'prisoner';
+const EX_CATS: { key: ExCat; label: string; query?: boolean; docs?: string }[] = [
+  { key: 'disability', label: '등록장애인', query: true },
+  { key: 'ltc', label: '장기요양 수급자', query: true },
+  { key: 'rare', label: '희귀질환자', docs: '산정특례 등록 확인서 또는 진단서' },
+  { key: 't1dm', label: '제1형 당뇨병 환자', docs: '진단서 또는 소견서' },
+  { key: 'infect', label: '감염병 격리 중', docs: '격리통지서' },
+  { key: 'public', label: '군인·경찰·소방공무원', docs: '공무원증 또는 재직증명서' },
+  { key: 'seaman', label: '선원', docs: '선원수첩 또는 승선 사실 확인서' },
+  { key: 'veteran', label: '국가보훈 대상자', docs: '국가보훈등록증' },
+  { key: 'hospice', label: '호스피스 대상 환자', docs: '호스피스 대상 확인 서류' },
+  { key: 'abroad', label: '국외 체류 재외국민', docs: '재외국민 등록 확인 서류' },
+  { key: 'prisoner', label: '수용자', docs: '수용 사실 확인 서류' },
+];
+
 /* ---------- 상태 ---------- */
 type State = {
   step: Step;
@@ -415,6 +457,40 @@ export default function UntactLawApp() {
     return init;
   });
   const set = (p: Partial<State>) => setS(prev => ({ ...prev, ...p }));
+  /* 근거 법령 보기 */
+  const [lawOn, setLawOn] = useState(false);
+  const [lawView, setLawView] = useState<{ ids: string[]; note?: string } | null>(null);
+  useEffect(() => {
+    if (!lawView) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setLawView(null);
+    window.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [lawView]);
+  /* 앞 글자와 떨어지지 않게 단어 결합 문자 + 인라인 span */
+  const law = (ids: string[], note?: string) =>
+    lawOn ? (
+      <>
+        {'\u2060'}
+        <span
+          role="button"
+          tabIndex={0}
+          className="ula-law"
+          onClick={e => {
+            e.stopPropagation();
+            setLawView({ ids, note });
+          }}
+          onKeyDown={e => {
+            if (e.key === 'Enter') setLawView({ ids, note });
+          }}>
+          법령
+        </span>
+      </>
+    ) : null;
 
   /* 신청서 입력값 (④까지 이어짐) */
   const [method, setMethod] = useState<Method>('video');
@@ -454,6 +530,27 @@ export default function UntactLawApp() {
   }, [s.target]);
   /* 초진은 거주지 서류 필수: 첨부 + 가림 확인 체크까지 해야 다음으로 */
   const proofPending = s.target === 'first' && !(proofFile && proofChecked);
+  /* 예외 대상 확인 — 대상 고르기 + (조회 대상이 아니면) 서류 첨부 */
+  const [exCat, setExCat] = useState<ExCat | null>(null);
+  const [exFile, setExFile] = useState(false);
+  const [exListOpen, setExListOpen] = useState(false);
+  useEffect(() => {
+    if (s.target !== 'exception') {
+      setExCat(null);
+      setExFile(false);
+    }
+    setExListOpen(false);
+  }, [s.target]);
+  const exInfo = EX_CATS.find(c => c.key === exCat);
+  const exPending = s.target === 'exception' && (!exInfo || (!exInfo.query && !exFile));
+  const formPending = proofPending || exPending;
+  const formHint = proofPending
+    ? proofFile
+      ? "가릴 곳을 가린 뒤 위의 '…가렸어요'에 체크해 주세요"
+      : '거주지 서류를 첨부해 주세요'
+    : !exInfo
+      ? '해당하는 예외 대상을 골라 주세요'
+      : '예외 대상을 확인할 서류를 첨부해 주세요';
 
   const phoneHidden = s.age === 'under13' || s.dept === 'nophone';
   const phoneEnabled = !phoneHidden && s.target === 'revisit';
@@ -523,6 +620,41 @@ export default function UntactLawApp() {
     '거주지를 확인할 서류가 필요해요(등본이나 초본 등)',
     '약은 7일분까지 처방받을 수 있어요. 먹는 여드름약(이소트레티노인)·트라마돌은 처방받을 수 없어요',
   ];
+  /* ① 예외 대상 안내 — 고르면 박스 아래 */
+  const ExGuide = (
+    <div className="ula-guide">
+      <div className="ula-bullet">
+        <T s="b2" c="gray-70">
+          {'  •'}
+        </T>
+        <T s="b2" c="gray-70" style={{ flex: 1 }}>
+          다른 시·도에 있는 병원에서도 처음 진료받을 수 있는 대상이에요
+          {law(['exception-list'])}
+        </T>
+      </div>
+      <div className="ula-bullet">
+        <T s="b2" c="gray-70">
+          {'  •'}
+        </T>
+        <T s="b2" c="gray-70" style={{ flex: 1 }}>
+          대상에 따라 확인할 서류를 첨부해야 해요
+        </T>
+      </div>
+      <button className="ula-linkbtn" onClick={() => setExListOpen(o => !o)}>
+        {exListOpen ? '전체 대상 접기' : '전체 대상 보기'}
+        <IconArrowForward rotate={exListOpen ? -90 : 90} />
+      </button>
+      {exListOpen && (
+        <div className="ula-exlist">
+          {[...EX_CATS.map(c => c.label), '그 밖에 보건복지부 장관이 정하는 대상'].map(l => (
+            <T key={l} s="c1" c="gray-70">
+              {`· ${l}`}
+            </T>
+          ))}
+        </div>
+      )}
+    </div>
+  );
   const FirstGuide =
     s.count === 'again' && !firstOpen ? (
       <button
@@ -537,13 +669,14 @@ export default function UntactLawApp() {
       </button>
     ) : (
       <div className="ula-guide">
-        {firstGuideLines.map(line => (
+        {firstGuideLines.map((line, i) => (
           <div className="ula-bullet" key={line}>
             <T s="b2" c="gray-70">
               {'  •'}
             </T>
             <T s="b2" c="gray-70" style={{ flex: 1 }}>
               {line}
+              {law([['phone-condition'], ['first-region'], ['resid-before-system', 'resid-actual'], ['rx-7days', 'rx-banned']][i] ?? [])}
             </T>
           </div>
         ))}
@@ -588,10 +721,12 @@ export default function UntactLawApp() {
                     </span>
                     <T s="b2" c="gray-70">
                       {t.desc}
+                      {law(t.key === 'first' ? ['revisit-period'] : t.key === 'revisit' ? ['revisit-period', 'revisit-check'] : ['exception-list'])}
                     </T>
                   </span>
                 </button>
                 {t.key === 'first' && on && FirstGuide}
+                {t.key === 'exception' && on && ExGuide}
               </React.Fragment>
             );
           })}
@@ -601,6 +736,81 @@ export default function UntactLawApp() {
         다음
       </button>
     </>
+  );
+
+  /* ② 예외 대상 확인 (신규, 예외 대상만) — 거주지 서류 대신 */
+  const ExSection = (
+    <div className="ula-col ula-changed" style={{ gap: 16, padding: '24px 20px 28px', borderBottom: '8px solid var(--gray-20)' }}>
+      <div className="ula-col" style={{ gap: 4 }}>
+        <T s="h5" w={7} c="gray-90">
+          예외 대상 확인(필수)
+          {law(['exception-check', 'resid-before-system'])}
+        </T>
+        <T s="b2" c="gray-80">
+          해당하는 대상을 골라 주세요. 병원이 진료 전에 확인해요.
+        </T>
+      </div>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        {EX_CATS.map(c => (
+          <button
+            key={c.key}
+            className={`ula-preset is-small ${exCat === c.key ? 'is-on' : ''}`}
+            onClick={() => {
+              if (exCat === c.key) return;
+              setExCat(c.key);
+              setExFile(false);
+            }}>
+            {c.label}
+          </button>
+        ))}
+      </div>
+      {exInfo &&
+        (exInfo.query ? (
+          <div className="ula-method-info" style={{ marginBottom: 0 }}>
+            <IconInformation color="#808799" size={18} />
+            <div className="ula-col" style={{ gap: 2, flex: 1 }}>
+              <T s="b2" w={6} c="gray-80">
+                서류는 첨부하지 않아도 돼요
+              </T>
+              <T s="b2" c="gray-70">
+                병원이 건강보험 자격 조회로 {exInfo.label}인지 확인해요.
+              </T>
+            </div>
+          </div>
+        ) : (
+          <div className="ula-col" style={{ gap: 12 }}>
+            <div className="ula-col" style={{ gap: 4 }}>
+              <T s="c1" w={6} c="gray-60">
+                제출 가능한 서류
+              </T>
+              <T s="b1" w={6} c="gray-90">
+                {exInfo.docs}
+              </T>
+              <T s="b2" c="gray-60">
+                주민등록번호 뒷자리처럼 진료와 관련 없는 정보는 가린 뒤 첨부해 주세요.
+              </T>
+            </div>
+            {!exFile ? (
+              <button className="ula-upload" onClick={() => setExFile(true)}>
+                <IconCamera />
+                <span>서류 첨부하기</span>
+              </button>
+            ) : (
+              <div className="ula-proof-file">
+                <span className="ula-proof-thumb ula-ex-thumb">
+                  <span>{exInfo.docs?.split(' 또는 ')[0]}</span>
+                </span>
+                <T s="b2" c="gray-80" style={{ flex: 1 }}>
+                  {`${exInfo.label} 확인 서류 1장`}
+                </T>
+                <button className="ula-proof-del" onClick={() => setExFile(false)} aria-label="첨부 삭제">
+                  <IconClose />
+                </button>
+              </div>
+            )}
+          </div>
+        ))}
+    </div>
   );
 
   /* ② 거주지 (신규, 초진만) — D8 · D12 */
@@ -614,6 +824,7 @@ export default function UntactLawApp() {
       <div className="ula-col" style={{ gap: 4 }}>
         <T s="h5" w={7} c="gray-90">
           거주지(필수)
+          {law(['first-region', 'resid-before-system'])}
         </T>
         <T s="b2" c="gray-80">
           처음 진료받는 병원은 내가 사는 시·도 안에 있어야 해요. 병원이 서류로 확인할 수 있게 1장을 첨부해 주세요.
@@ -634,6 +845,7 @@ export default function UntactLawApp() {
           </T>
           <T s="b1" w={6} c="gray-90">
             {residOpt.docs}
+            {law(resid === 'actual' ? ['resid-actual', 'resid-before-system'] : ['resid-before-system'])}
           </T>
           <T s="b2" c="gray-60">
             {residOpt.note}
@@ -667,6 +879,7 @@ export default function UntactLawApp() {
         <IconCaution color="#FA4655" size={18} />
         <T s="b2" w={6} c="gray-80" style={{ flex: 1 }}>
           진료받는 분의 서류만 첨부해 주세요. 다른 사람의 명의나 서류를 쓰는 것은 법으로 금지돼 있어요.
+          {law(['no-identity-theft'])}
         </T>
       </div>
       <div className="ula-col" style={{ gap: 10 }}>
@@ -746,6 +959,7 @@ export default function UntactLawApp() {
               <div className="ula-col" style={{ gap: 4 }}>
                 <T s="h5" w={7} c="gray-90">
                   진료 방식(필수)
+                  {law(['phone-condition', 'visual-diseases'])}
                 </T>
                 <T s="b2" c="gray-80">
                   선호하는 방식을 선택해 주세요.
@@ -767,6 +981,7 @@ export default function UntactLawApp() {
               <div className="ula-col" style={{ gap: 2, flex: 1 }}>
                 <T s="b2" w={6} c="gray-80">
                   화상 진료로 진행돼요
+                  {law(['phone-condition', 'visual-diseases'])}
                 </T>
                 <T s="b2" c="gray-70">
                   신청하면 바로 연결되지 않아요. 의사가 진료를 시작하면 알림을 보내드리니, 진료내역에서 '진료실 입장하기'를 눌러 주세요.
@@ -828,6 +1043,7 @@ export default function UntactLawApp() {
               <IconCaution color="#FB7480" />
               <T s="b2" w={6} c="gray-80">
                 처방 불가한 약
+                {law(['rx-banned'], '성기능약은 고시 목록에 없지만 굿닥 운영 기준으로 비대면 처방을 하지 않아요. 나머지 문구(다이어트약·일부 진통제 등)는 현행 앱 그대로예요.')}
               </T>
             </div>
             <div className="ula-bullet">
@@ -886,6 +1102,7 @@ export default function UntactLawApp() {
           </div>
         </div>
         {s.target === 'first' && ProofSection}
+        {s.target === 'exception' && ExSection}
         {/* RRNAgreementTerm/index.tsx:13-110 (SymptomScreen.tsx:289, paddingHorizontal 40 → marginHorizontal -20 상쇄) */}
         <div className="ula-col" style={{ background: 'var(--gray-20)', marginTop: 32, padding: '16px 20px' }}>
           <T s="b2" c="gray-60">
@@ -921,10 +1138,8 @@ export default function UntactLawApp() {
           </T>
         </div>
       </div>
-      {proofPending && (
-        <p className="ula-cta-hint">{proofFile ? "가릴 곳을 가린 뒤 위의 '…가렸어요'에 체크해 주세요" : '거주지 서류를 첨부해 주세요'}</p>
-      )}
-      <button className="ula-btn filled-blue ula-cta" disabled={proofPending} onClick={() => go('consent')}>
+      {formPending && <p className="ula-cta-hint">{formHint}</p>}
+      <button className="ula-btn filled-blue ula-cta" disabled={formPending} onClick={() => go('consent')}>
         다음
       </button>
     </>
@@ -947,6 +1162,7 @@ export default function UntactLawApp() {
               <IconCaution color="#FB7480" />
               <T s="b2" w={6} c="gray-80" style={{ flex: 1 }}>
                 {RESPONSIBILITY[s.target ?? 'first']}
+                {law(['platform-notice'])}
               </T>
             </div>
             {s.who === 'child' && (
@@ -954,6 +1170,7 @@ export default function UntactLawApp() {
                 <IconInformation color="#808799" />
                 <T s="b2" c="gray-70" style={{ flex: 1 }}>
                   자녀의 진료는 가족 등록 때 받은 법정대리인 동의로 진행돼요
+                  {law(['guardian'])}
                 </T>
               </div>
             )}
@@ -965,6 +1182,7 @@ export default function UntactLawApp() {
                 <div className="ula-col" style={{ gap: 4, flex: 1 }}>
                   <T s="b1" w={6} c="gray-90">
                     {x.title} <span className="ula-draft">가안</span>
+                    {law(['explain-4'])}
                   </T>
                   <T s="b2" c="gray-70">
                     {x.body}
@@ -1279,7 +1497,18 @@ export default function UntactLawApp() {
       <aside className="ula-panel">
         <div className="ula-panel-card">
           <p className="ula-panel-title">비대면진료 신청 · 제도화 대응</p>
-          <p className="ula-panel-sub">굿닥 앱(환자용) · 검토용 초안 v0.5 · 현행 화면은 앱 코드 기준 재현, 동적 값은 {'{중괄호}'}</p>
+          <p className="ula-panel-sub">굿닥 앱(환자용) · 검토용 초안 v0.6 · 현행 화면은 앱 코드 기준 재현, 동적 값은 {'{중괄호}'}</p>
+        </div>
+        <div className="ula-panel-card ula-lawcard">
+          <div>
+            <p className="ula-panel-h" style={{ margin: 0 }}>
+              근거 법령 보기
+            </p>
+            <p className="ula-panel-sub">켜면 정보 옆 '법령'을 눌러 근거 조문을 볼 수 있어요(입법예고안 기준).</p>
+          </div>
+          <button type="button" role="switch" aria-checked={lawOn} className={`ula-switch ${lawOn ? 'is-on' : ''}`} onClick={() => setLawOn(v => !v)}>
+            <span />
+          </button>
         </div>
         <div className="ula-panel-card">
           <p className="ula-panel-h">화면 바로 가기</p>
@@ -1380,6 +1609,33 @@ export default function UntactLawApp() {
           <div className="ula-homebar" />
         </section>
       </div>
+      {lawView && (
+        <div className="ula-lawmodal" onClick={() => setLawView(null)}>
+          <div className="ula-lawmodal-box" role="dialog" aria-label="근거 법령" onClick={e => e.stopPropagation()}>
+            <div className="ula-lawmodal-head">
+              <p>근거 법령</p>
+              <button type="button" aria-label="닫기" onClick={() => setLawView(null)}>
+                ×
+              </button>
+            </div>
+            <div className="ula-lawmodal-body">
+              {lawView.note && <p className="ula-lawnote">{lawView.note}</p>}
+              {lawView.ids.map(id => {
+                const l = LAW[id];
+                return (
+                  <div key={id} className="ula-lawitem">
+                    <p className="ula-lawitem-doc">{l.doc}</p>
+                    <p className="ula-lawitem-art">
+                      {l.article} · {l.page}
+                    </p>
+                    <img src={l.img} alt={`${l.doc} ${l.article}`} />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

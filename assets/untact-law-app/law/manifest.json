@@ -1,0 +1,107 @@
+[
+  {
+    "id": "revisit-period",
+    "doc": "의료법 시행규칙 일부개정령안(입법예고안)",
+    "article": "제31조의2제1항",
+    "page": "4쪽",
+    "file": "revisit-period.png"
+  },
+  {
+    "id": "revisit-check",
+    "doc": "의료법 시행규칙 일부개정령안(입법예고안)",
+    "article": "제31조의5제5항제1호",
+    "page": "10쪽",
+    "file": "revisit-check.png"
+  },
+  {
+    "id": "first-region",
+    "doc": "의료법 시행규칙 일부개정령안(입법예고안)",
+    "article": "제31조의2제2항",
+    "page": "4쪽",
+    "file": "first-region.png"
+  },
+  {
+    "id": "exception-list",
+    "doc": "의료법 시행규칙 일부개정령안(입법예고안)",
+    "article": "제31조의2제3항",
+    "page": "5~6쪽",
+    "file": "exception-list.png"
+  },
+  {
+    "id": "exception-check",
+    "doc": "의료법 시행규칙 일부개정령안(입법예고안)",
+    "article": "제31조의5제5항제3호·제6항",
+    "page": "10~11쪽",
+    "file": "exception-check.png"
+  },
+  {
+    "id": "phone-condition",
+    "doc": "의료법 시행규칙 일부개정령안(입법예고안)",
+    "article": "제31조의5제1항",
+    "page": "8~9쪽",
+    "file": "phone-condition.png"
+  },
+  {
+    "id": "visual-diseases",
+    "doc": "의료법 시행규칙 일부개정령안(입법예고안)",
+    "article": "제31조의11제1항",
+    "page": "16~17쪽",
+    "file": "visual-diseases.png"
+  },
+  {
+    "id": "rx-7days",
+    "doc": "의료법 시행규칙 일부개정령안(입법예고안)",
+    "article": "제31조의3제1항~제4항",
+    "page": "6~7쪽",
+    "file": "rx-7days.png"
+  },
+  {
+    "id": "rx-banned",
+    "doc": "비대면진료 실시 및 관리에 관한 고시(안)",
+    "article": "제4조",
+    "page": "5~6쪽",
+    "file": "rx-banned.png"
+  },
+  {
+    "id": "resid-actual",
+    "doc": "의료법 시행규칙 일부개정령안(입법예고안)",
+    "article": "제31조의15제2항",
+    "page": "25~26쪽",
+    "file": "resid-actual.png"
+  },
+  {
+    "id": "resid-before-system",
+    "doc": "의료법 시행규칙 일부개정령안(입법예고안)",
+    "article": "부칙 제6조제1항·제2항",
+    "page": "41쪽",
+    "file": "resid-before-system.png"
+  },
+  {
+    "id": "no-identity-theft",
+    "doc": "의료법 시행규칙 일부개정령안(입법예고안)",
+    "article": "제31조의15제6항",
+    "page": "27쪽",
+    "file": "no-identity-theft.png"
+  },
+  {
+    "id": "explain-4",
+    "doc": "의료법 시행규칙 일부개정령안(입법예고안)",
+    "article": "제31조의9",
+    "page": "15쪽",
+    "file": "explain-4.png"
+  },
+  {
+    "id": "guardian",
+    "doc": "의료법 시행규칙 일부개정령안(입법예고안)",
+    "article": "제31조의5제4항",
+    "page": "9~10쪽",
+    "file": "guardian.png"
+  },
+  {
+    "id": "platform-notice",
+    "doc": "비대면진료 실시 및 관리에 관한 고시(안)",
+    "article": "제24조",
+    "page": "16쪽",
+    "file": "platform-notice.png"
+  }
+]

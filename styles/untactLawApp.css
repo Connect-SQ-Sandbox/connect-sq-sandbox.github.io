@@ -847,3 +847,164 @@
   color: var(--gray-60);
   font-weight: 400;
 }
+
+/* ① 예외 대상 전체 보기 · ② 예외 대상 서류 */
+.ula-linkbtn {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-70);
+  cursor: pointer;
+}
+.ula-exlist {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 4px;
+}
+.ula-ex-thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  font-size: 9px;
+  line-height: 12px;
+  text-align: center;
+  color: var(--gray-60);
+  background: var(--gray-10);
+}
+
+/* 근거 법령 보기 */
+.ula-lawcard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ula-lawcard > div {
+  flex: 1;
+}
+.ula-switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 40px;
+  height: 24px;
+  padding: 2px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--gray-30);
+  cursor: pointer;
+}
+.ula-switch span {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--white);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s;
+}
+.ula-switch.is-on {
+  background: var(--note);
+}
+.ula-switch.is-on span {
+  transform: translateX(16px);
+}
+.ula-law {
+  display: inline;
+  margin-left: 6px;
+  padding: 0 6px;
+  border: 1px solid var(--note);
+  border-radius: 9px;
+  background: #f5f1ff;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 16px;
+  color: var(--note);
+  vertical-align: 2px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ula-lawmodal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(22, 24, 29, 0.6);
+}
+.ula-lawmodal-box {
+  display: flex;
+  flex-direction: column;
+  width: min(760px, 100%);
+  max-height: calc(100vh - 48px);
+  border-radius: 12px;
+  background: var(--white);
+  overflow: hidden;
+}
+.ula-lawmodal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--gray-30);
+}
+.ula-lawmodal-head p {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--gray-100);
+}
+.ula-lawmodal-head button {
+  border: 0;
+  background: none;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--gray-60);
+  cursor: pointer;
+}
+.ula-lawmodal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 18px;
+  overflow-y: auto;
+}
+.ula-lawitem img {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  border: 1px solid var(--gray-30);
+  border-radius: 6px;
+}
+.ula-lawitem-doc {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gray-90);
+}
+.ula-lawitem-art {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--note);
+  font-weight: 600;
+}
+
+.ula-lawnote {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f5f1ff;
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--gray-80);
+}

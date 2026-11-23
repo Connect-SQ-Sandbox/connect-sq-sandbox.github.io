@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : untact-law-doctor — 굿닥 온라인진료실(의사용) · 비대면진료 제도화(의료법 개정) 대응
- * 상태      : 검토용 초안 · v0.4 · 최종수정 2026-11-23 · 샌드박스 배포
+ * 상태      : 검토용 초안 · v0.5 · 최종수정 2026-11-23 · 샌드박스 배포
  * PRD       : 없음(제도화 대응 기획 초안). 사내 문서 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/untact-law-doctor.html
  * 피그마    : 없음. 기준은 대응 보드 커넥트 섹션(진료실-1~3) + 현행 온라인진료실 개발 코드.
@@ -25,6 +25,8 @@
  *  - [보드 기준] 진료실-1 '본인확인 의무가 없는 미성년자 환자입니다.' 문구 자리에 법정대리인 동의 완료 · {동의자} · {동의일시}.
  *  - [확정·요청] 진료실-1 초진이면 접수 전 확인 상자 아래에 '거주지 서류' 열람 영역(D8·D12·D14). 종류(주민등록상 주소지 / 실거주지) + 가림 처리된 서류 썸네일, 누르면 현행 첨부사진 확대 보기(ImagePreview)와 같은 형태로 크게 본다.
  *    서류의 이름·주민번호 앞 6자리를 환자정보와 대조할 수 있다. 앱에서 초진은 필수지만 재진→실제 초진, 구버전 신청분 대비 '서류 없음' 상태도 둔다.
+ *  - [확정·요청] 진료실-1 예외 대상이면 '예외 대상 확인' 영역(D17): 대상 이름 + 조회형(등록장애인·장기요양 수급자: '수진자 조회로 확인', 첨부 없음) /
+ *    서류형(그 밖: 환자가 앱에서 첨부한 서류 썸네일·확대 보기). 접수 전 확인 2번 아래 보조 줄도 조회/서류에 맞춤.
  *  - [확정·요청] 지원시스템 없음 전제(D13). 거주지 확인 수단은 환자가 앱으로 올린 서류.
  *  - [유지·자체] 거주지 서류에는 내려받기를 두지 않는다(파기 시점 미결 — 병원 PC에 사본이 남으면 회수 불가). 보기만.
  *  - [유지·자체] 초진 접수 전 확인 2번은 '비대면진료 대상 요건을 확인했어요 (초진)' + 보조 줄 '아래 거주지 서류로 같은 시·도인지 확인해 주세요.'
@@ -52,6 +54,7 @@
  *  - [보류] 보드 그레이존(엄격/완화) 카드는 법무 검토 전이라 반영하지 않음.
  *
  * 변경 이력
+ *  - v0.5 (2026-11-23) 예외 대상 확인 영역(조회형/서류형), 패널 토글 '예외 대상 종류'(D17).
  *  - v0.4 (2026-11-23) 화면 전체 한글 단어 단위 줄바꿈(keep-all).
  *  - v0.4 (2026-11-23) 앱 v0.5 반영: 거주지 서류(종류·확대 보기·서류 없음), 초진 체크 보조 줄, 재진 응답 문구, 안내문 동의 사실 표시. 내려받기 제외.
  *  - v0.3 (2026-11-20) D8 변경 반영: 진료실-1 초진 실거주 증명 첨부 열람 영역, 패널 토글 '실거주 증명'.
@@ -204,6 +207,7 @@ const COLS = [
 ];
 
 type Resid = 'resident' | 'actual' | 'none';
+type ExKind = 'query' | 'doc';
 type DocDef = { title: string; rows: { label: string; segs: { t: string; k?: 'keep' | 'mask' }[] }[] };
 const ResidDoc = ({ doc, mini }: { doc: DocDef; mini?: boolean }) => (
   <span className={`uld-doc ${mini ? 'is-mini' : ''}`}>
@@ -222,12 +226,12 @@ const ResidDoc = ({ doc, mini }: { doc: DocDef; mini?: boolean }) => (
     ))}
   </span>
 );
-type State = { jump: Jump; target: Target; who: Who; method: Method; resid: Resid };
+type State = { jump: Jump; target: Target; who: Who; method: Method; resid: Resid; ex: ExKind };
 
 export default function UntactLawDoctor() {
   /* 검토용 URL 파라미터: ?jump=r1&target=first&who=child&method=phone&resid=actual */
   const [s, setS] = useState<State>(() => {
-    const init: State = { jump: 'r1', target: 'first', who: 'self', method: 'video', resid: 'resident' };
+    const init: State = { jump: 'r1', target: 'first', who: 'self', method: 'video', resid: 'resident', ex: 'doc' };
     try {
       const q = new URLSearchParams(window.location.search);
       (Object.keys(init) as (keyof State)[]).forEach(k => {
@@ -240,6 +244,7 @@ export default function UntactLawDoctor() {
       if (init.method !== 'phone' || init.target !== 'revisit') init.method = 'video';
       if (q.get('proof') === 'none' && !q.get('resid')) init.resid = 'none'; /* v0.3 링크 호환 */
       if (!['resident', 'actual', 'none'].includes(init.resid)) init.resid = 'resident';
+      if (init.ex !== 'query') init.ex = 'doc';
     } catch {
       /* 파라미터 없음 */
     }
@@ -280,6 +285,17 @@ export default function UntactLawDoctor() {
   const isChild = s.who === 'child';
   /* 환자가 앱에서 가림 처리해 올린 가상 서류 — 이름·주민번호 앞자리는 환자정보와 대조 가능 */
   const rrnFront = isChild ? '120101-' : '900101-';
+  /* 확대 보기 대상 서류는 진료 대상에 따라 */
+  /* 예외 대상 확인 서류(가상) — 서류형 예시는 선원 */
+  const exDoc: DocDef = {
+    title: '선원수첩',
+    rows: [
+      { label: '성명', segs: [{ t: '가상환자 A', k: 'keep' }] },
+      { label: '생년월일', segs: [{ t: rrnFront.replace('-', ''), k: 'keep' }] },
+      { label: '주민등록번호 뒷자리', segs: [{ t: '0000000', k: 'mask' }] },
+      { label: '승선 선박', segs: [{ t: '{선박명}' }] },
+    ],
+  };
   const residDoc: DocDef =
     s.resid === 'actual' && isChild
       ? {
@@ -334,7 +350,7 @@ export default function UntactLawDoctor() {
     setDialog(jump === 'r3' ? 'cancel' : jump === 'r2b' ? 'video' : r2a ? 'phone' : null);
   };
   useEffect(() => reset(s.jump), [s.jump, s.target, s.who, s.method]);
-  useEffect(() => setViewerOpen(false), [s.resid]);
+  useEffect(() => setViewerOpen(false), [s.resid, s.ex]);
   /* 확대 보기: Esc로 닫기 · 뒤쪽 스크롤 잠금(현행 Dialog와 같게) */
   useEffect(() => {
     if (!viewerOpen) return;
@@ -348,6 +364,7 @@ export default function UntactLawDoctor() {
     };
   }, [viewerOpen]);
 
+  const viewDoc = s.target === 'exception' ? exDoc : residDoc;
   const canAccept = checks[0] && checks[1];
   const methodLabel = (m: Method) => (m === 'video' ? '화상' : '전화');
   const secondCheck =
@@ -500,6 +517,11 @@ export default function UntactLawDoctor() {
             {secondCheck}
           </Check>
           {s.target === 'first' && <p className="uld-confirm-sub">아래 거주지 서류로 같은 시·도인지 확인해 주세요.</p>}
+          {s.target === 'exception' && (
+            <p className="uld-confirm-sub">
+              {s.ex === 'query' ? '수진자 조회로 예외 대상인지 확인해 주세요.' : '아래 첨부 서류로 예외 대상인지 확인해 주세요.'}
+            </p>
+          )}
         </div>
       )}
       {s.target === 'first' && (
@@ -517,6 +539,24 @@ export default function UntactLawDoctor() {
             </div>
           ) : (
             <span className="uld-proof-none">첨부된 거주지 서류가 없어요</span>
+          )}
+        </div>
+      )}
+      {s.target === 'exception' && (
+        <div className="uld-proof is-changed">
+          <div className="uld-proof-k">
+            예외 대상 확인
+            <span>{s.ex === 'query' ? '등록장애인' : '선원'}</span>
+          </div>
+          {s.ex === 'query' ? (
+            <span className="uld-proof-none">첨부 서류 없음 · 수진자 조회로 확인하는 대상이에요</span>
+          ) : (
+            <div className="uld-photos">
+              <button type="button" className="uld-proof-thumb" aria-label="예외 대상 서류 확대" onClick={() => setViewerOpen(true)}>
+                <ResidDoc doc={exDoc} mini />
+              </button>
+              <span className="uld-proof-name">{exDoc.title} 1장</span>
+            </div>
           )}
         </div>
       )}
@@ -843,7 +883,7 @@ export default function UntactLawDoctor() {
         <div className="uld-panel-card">
           <p className="uld-panel-title">온라인진료실 · 제도화 대응</p>
           <p className="uld-panel-sub">
-            굿닥 온라인진료실(의사용) · 검토용 초안 v0.4 · 현행 화면은 개발 코드 기준 재현, 동적 값은 {'{중괄호}'}
+            굿닥 온라인진료실(의사용) · 검토용 초안 v0.5 · 현행 화면은 개발 코드 기준 재현, 동적 값은 {'{중괄호}'}
           </p>
         </div>
         <div className="uld-panel-card">
@@ -893,6 +933,15 @@ export default function UntactLawDoctor() {
               { k: 'none', t: '서류 없음', disabled: s.target !== 'first' },
             ]}
             onChange={k => set({ resid: k })}
+          />
+          <Seg
+            label="예외 대상 종류(예외)"
+            value={s.target === 'exception' ? s.ex : ('' as ExKind)}
+            options={[
+              { k: 'query', t: '조회형(등록장애인)', disabled: s.target !== 'exception' },
+              { k: 'doc', t: '서류형(선원)', disabled: s.target !== 'exception' },
+            ]}
+            onChange={k => set({ ex: k })}
           />
           <Seg
             label="신청 진료 방식"
@@ -988,14 +1037,14 @@ export default function UntactLawDoctor() {
         </section>
       </div>
       {dialogEl}
-      {viewerOpen && s.target === 'first' && s.resid !== 'none' && (
-        <div className="uld-viewer" role="dialog" aria-modal="true" aria-label="거주지 서류" onClick={() => setViewerOpen(false)}>
+      {viewerOpen && ((s.target === 'first' && s.resid !== 'none') || (s.target === 'exception' && s.ex === 'doc')) && (
+        <div className="uld-viewer" role="dialog" aria-modal="true" aria-label={s.target === 'exception' ? '예외 대상 서류' : '거주지 서류'} onClick={() => setViewerOpen(false)}>
           <div className="uld-viewer-main" onClick={e => e.stopPropagation()}>
-            <ResidDoc doc={residDoc} />
+            <ResidDoc doc={viewDoc} />
           </div>
           <div className="uld-viewer-thumbs" onClick={e => e.stopPropagation()}>
             <span className="uld-viewer-thumb is-on">
-              <ResidDoc doc={residDoc} mini />
+              <ResidDoc doc={viewDoc} mini />
             </span>
           </div>
           <button type="button" className="uld-viewer-close" aria-label="닫기" autoFocus onClick={() => setViewerOpen(false)}>

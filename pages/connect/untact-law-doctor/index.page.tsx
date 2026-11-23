@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : untact-law-doctor — 굿닥 온라인진료실(의사용) · 비대면진료 제도화(의료법 개정) 대응
- * 상태      : 검토용 초안 · v0.3 · 최종수정 2026-11-20 · 샌드박스 배포
+ * 상태      : 검토용 초안 · v0.4 · 최종수정 2026-11-23 · 샌드박스 배포
  * PRD       : 없음(제도화 대응 기획 초안). 사내 문서 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/untact-law-doctor.html
  * 피그마    : 없음. 기준은 대응 보드 커넥트 섹션(진료실-1~3) + 현행 온라인진료실 개발 코드.
@@ -23,7 +23,13 @@
  *  - [보드 기준] 진료실-1 접수 전 확인 체크 2개를 모두 체크해야 접수완료 활성. 재진은 두 번째 체크가 '차트에서 대면 이력을 확인했어요'.
  *  - [보드 기준] 진료실-1 재진은 '환자 응답(확인 필요)' 상자로 환자가 고른 내용을 보여 준다.
  *  - [보드 기준] 진료실-1 '본인확인 의무가 없는 미성년자 환자입니다.' 문구 자리에 법정대리인 동의 완료 · {동의자} · {동의일시}.
- *  - [확정·요청] 진료실-1 초진이면 접수 전 확인 상자 아래에 실거주 증명 첨부 열람 영역(첨부 없음 / 있음). 환자가 앱 ② 신청서에서 가림 처리해 올린 서류(D8).
+ *  - [확정·요청] 진료실-1 초진이면 접수 전 확인 상자 아래에 '거주지 서류' 열람 영역(D8·D12·D14). 종류(주민등록상 주소지 / 실거주지) + 가림 처리된 서류 썸네일, 누르면 현행 첨부사진 확대 보기(ImagePreview)와 같은 형태로 크게 본다.
+ *    서류의 이름·주민번호 앞 6자리를 환자정보와 대조할 수 있다. 앱에서 초진은 필수지만 재진→실제 초진, 구버전 신청분 대비 '서류 없음' 상태도 둔다.
+ *  - [확정·요청] 지원시스템 없음 전제(D13). 거주지 확인 수단은 환자가 앱으로 올린 서류.
+ *  - [유지·자체] 거주지 서류에는 내려받기를 두지 않는다(파기 시점 미결 — 병원 PC에 사본이 남으면 회수 불가). 보기만.
+ *  - [유지·자체] 초진 접수 전 확인 2번은 '비대면진료 대상 요건을 확인했어요 (초진)' + 보조 줄 '아래 거주지 서류로 같은 시·도인지 확인해 주세요.'
+ *  - [제안] 환자정보에 '환자가 앱에서 비대면진료 안내문 4가지를 확인하고 동의함 · {동의일시}'(환자 행위 사실만, 의료인 설명 완료로 읽히지 않게).
+ *  - [유지·자체] 재진 환자 응답 상자 문구를 앱 재진 기준(마지막 대면진료 후 6개월 이내, 같은 증상)에 맞춤.
  *  - [보드 기준] 진료실-2 전화로 진행·전환할 때 사유 모달. 초진은 첫 번째 사유(대면진료 받은 환자) 선택 불가.
  *  - [보드 기준] 진료실-2 화상진료 끄기 확인창 본문: '화상진료를 끄면 초진 환자는 배정되지 않아요. 재진 환자만 전화로 진료할 수 있어요.' 버튼은 현행 '취소 / 확인'.
  *  - [보드 기준] 진료실-3 취소 사유: 환자 월 2회 삭제, 건수 사유는 '의사별 비대면진료 가능 건수(월평균 500건)'로 교체. 직접 입력 안내·검증은 현행 그대로.
@@ -32,8 +38,11 @@
  *
  * 보류·TODO (기획 확인 필요)
  *  - [보류] 보드 진료실-1의 '주소지 서울 · 병원 서울 ✓' 비교 배지는 넣지 않았다. 플랫폼은 주소를 입력받거나 비교하지 않고, 의사가 첨부 서류로 확인한다(D8).
- *  - [보류] 실거주 증명을 '가림 필요'로 환자에게 다시 요청하는 반려 흐름은 미결이라 만들지 않았다.
- *  - [보류] 첨부된 실거주 증명 서류의 파기 시점은 미결.
+ *  - [보류] 거주지 서류를 '가림 필요'로 환자에게 다시 요청하는 반려 흐름은 미결이라 만들지 않았다. 반려가 없으면 출구가 진료취소뿐이라 취소 사유 '제출한 서류로 본인 또는 거주지를 확인할 수 없습니다' 추가 검토.
+ *  - [보류] 거주지 서류의 보존·파기 시점(내려받기 허용 여부와 연결).
+ *  - [보류] 본인확인 체크 시점: 시스템이 없으면 신분증 대조는 화상 연결 뒤에만 가능한데 체크가 접수완료 앞에 있다. 진료 시작 시 확인으로 옮길지.
+ *  - [보류] 재진으로 신청했는데 차트상 6개월 초과·다른 증상인 경우 의사 행동(취소 후 초진 재신청 안내 등).
+ *  - [보류] 접수 전 확인 체크한 의사·시각 저장(스펙). 앱 첨부의 PDF(정부24 등본) 허용 여부 — 현행 확대 보기는 이미지 전용.
  *  - [확정·요청] 굿닥 비대면진료에는 병원급 의료기관이 없으므로 의료기관 구분·병원급 접수 제한(보드 진료실-1)은 넣지 않는다.
  *  - [보류] 화상으로 신청한 환자를 전화로 바꾸는 '전화로 진료하기' 버튼(진료대기 띠 안) 배치는 임의.
  *  - [보류] 진료실-2 예외 대상의 첫 번째 사유 선택 가능 여부(보드는 초진만 막음).
@@ -43,6 +52,7 @@
  *  - [보류] 보드 그레이존(엄격/완화) 카드는 법무 검토 전이라 반영하지 않음.
  *
  * 변경 이력
+ *  - v0.4 (2026-11-23) 앱 v0.5 반영: 거주지 서류(종류·확대 보기·서류 없음), 초진 체크 보조 줄, 재진 응답 문구, 안내문 동의 사실 표시. 내려받기 제외.
  *  - v0.3 (2026-11-20) D8 변경 반영: 진료실-1 초진 실거주 증명 첨부 열람 영역, 패널 토글 '실거주 증명'.
  *  - v0.2 (2026-11-20) 현행 화면을 실제 개발 코드 기준으로 다시 그림(GNB·목록·작업 띠·대기 타이머·환자정보·첨부사진·다이얼로그·프로필 메뉴).
  *    의료기관 구분(의원급/병원급) 토글과 병원급 접수 제한 제거.
@@ -192,12 +202,31 @@ const COLS = [
   { label: '진료상태', w: 1, right: true },
 ];
 
-type State = { jump: Jump; target: Target; who: Who; method: Method; proof: 'none' | 'attached' };
+type Resid = 'resident' | 'actual' | 'none';
+type DocDef = { title: string; rows: { label: string; segs: { t: string; k?: 'keep' | 'mask' }[] }[] };
+const ResidDoc = ({ doc, mini }: { doc: DocDef; mini?: boolean }) => (
+  <span className={`uld-doc ${mini ? 'is-mini' : ''}`}>
+    <span className="uld-doc-title">{doc.title}</span>
+    {doc.rows.map(r => (
+      <span key={r.label} className="uld-doc-row">
+        <span className="uld-doc-k">{r.label}</span>
+        <span className="uld-doc-v">
+          {r.segs.map((g, i) => (
+            <span key={i} className={g.k ? `is-${g.k}` : ''}>
+              {g.k === 'mask' ? <span className="uld-doc-hide">{g.t}</span> : g.t}
+            </span>
+          ))}
+        </span>
+      </span>
+    ))}
+  </span>
+);
+type State = { jump: Jump; target: Target; who: Who; method: Method; resid: Resid };
 
 export default function UntactLawDoctor() {
-  /* 검토용 URL 파라미터: ?jump=r1&target=first&who=child&method=phone&proof=none */
+  /* 검토용 URL 파라미터: ?jump=r1&target=first&who=child&method=phone&resid=actual */
   const [s, setS] = useState<State>(() => {
-    const init: State = { jump: 'r1', target: 'first', who: 'self', method: 'video', proof: 'attached' };
+    const init: State = { jump: 'r1', target: 'first', who: 'self', method: 'video', resid: 'resident' };
     try {
       const q = new URLSearchParams(window.location.search);
       (Object.keys(init) as (keyof State)[]).forEach(k => {
@@ -208,7 +237,8 @@ export default function UntactLawDoctor() {
       if (!(init.target in TARGET_BADGE)) init.target = 'first';
       if (init.who !== 'child') init.who = 'self';
       if (init.method !== 'phone' || init.target !== 'revisit') init.method = 'video';
-      if (init.proof !== 'none') init.proof = 'attached';
+      if (q.get('proof') === 'none' && !q.get('resid')) init.resid = 'none'; /* v0.3 링크 호환 */
+      if (!['resident', 'actual', 'none'].includes(init.resid)) init.resid = 'resident';
     } catch {
       /* 파라미터 없음 */
     }
@@ -238,6 +268,7 @@ export default function UntactLawDoctor() {
   const [treatMethod, setTreatMethod] = useState<Method>('video');
   const [menuOpen, setMenuOpen] = useState(false);
   const [videoOn, setVideoOn] = useState(true);
+  const [viewerOpen, setViewerOpen] = useState(false);
 
   /* 전화 진료는 재진만 신청 가능(앱과 같음) */
   useEffect(() => {
@@ -246,6 +277,40 @@ export default function UntactLawDoctor() {
 
   const phoneDefault = s.target === 'first' ? null : 0;
   const isChild = s.who === 'child';
+  /* 환자가 앱에서 가림 처리해 올린 가상 서류 — 이름·주민번호 앞자리는 환자정보와 대조 가능 */
+  const rrnFront = isChild ? '120101-' : '900101-';
+  const residDoc: DocDef =
+    s.resid === 'actual' && isChild
+      ? {
+          title: '재학증명서',
+          rows: [
+            { label: '성명', segs: [{ t: '가상환자 A', k: 'keep' }] },
+            { label: '주민등록번호', segs: [{ t: rrnFront, k: 'keep' }, { t: '0000000', k: 'mask' }] },
+            { label: '주소', segs: [{ t: '서울특별시', k: 'keep' }, { t: '○○구 ○○로 00', k: 'mask' }] },
+            { label: '학교', segs: [{ t: '{학교명}' }] },
+          ],
+        }
+      : s.resid === 'actual'
+      ? {
+          title: '부동산 임대차 계약서',
+          rows: [
+            { label: '소재지', segs: [{ t: '서울특별시', k: 'keep' }, { t: '○○구 ○○동 000-00', k: 'mask' }] },
+            { label: '보증금·월세', segs: [{ t: '0,000만 원 / 00만 원', k: 'mask' }] },
+            { label: '임차인 성명', segs: [{ t: '가상환자 A', k: 'keep' }] },
+            { label: '주민등록번호', segs: [{ t: rrnFront, k: 'keep' }, { t: '0000000', k: 'mask' }] },
+            { label: '임대인', segs: [{ t: '○○○ · 000000-0000000', k: 'mask' }] },
+            { label: '연락처', segs: [{ t: '010-0000-0000', k: 'mask' }] },
+          ],
+        }
+      : {
+          title: '주민등록표 (초본)',
+          rows: [
+            { label: '성명', segs: [{ t: '가상환자 A', k: 'keep' }] },
+            { label: '주민등록번호', segs: [{ t: rrnFront, k: 'keep' }, { t: '0000000', k: 'mask' }] },
+            { label: '주소', segs: [{ t: '서울특별시', k: 'keep' }, { t: '○○구 ○○로 00, 000호', k: 'mask' }] },
+            { label: '발급일', segs: [{ t: '{발급일}' }] },
+          ],
+        };
 
   const reset = (jump: Jump) => {
     const r2a = jump === 'r2a';
@@ -260,6 +325,7 @@ export default function UntactLawDoctor() {
     setTreatMethod(s.method);
     setMenuOpen(false);
     setVideoOn(true);
+    setViewerOpen(false);
     setWait('5');
     setWaitAt(r2a ? Date.now() + 5 * 60_000 : null);
     setOpen(true);
@@ -267,6 +333,19 @@ export default function UntactLawDoctor() {
     setDialog(jump === 'r3' ? 'cancel' : jump === 'r2b' ? 'video' : r2a ? 'phone' : null);
   };
   useEffect(() => reset(s.jump), [s.jump, s.target, s.who, s.method]);
+  useEffect(() => setViewerOpen(false), [s.resid]);
+  /* 확대 보기: Esc로 닫기 · 뒤쪽 스크롤 잠금(현행 Dialog와 같게) */
+  useEffect(() => {
+    if (!viewerOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setViewerOpen(false);
+    window.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [viewerOpen]);
 
   const canAccept = checks[0] && checks[1];
   const methodLabel = (m: Method) => (m === 'video' ? '화상' : '전화');
@@ -274,7 +353,7 @@ export default function UntactLawDoctor() {
     s.target === 'revisit'
       ? '차트에서 대면 이력을 확인했어요'
       : s.target === 'first'
-        ? '비대면진료 대상 요건을 확인했어요 (초진 · 같은 시·도)'
+        ? '비대면진료 대상 요건을 확인했어요 (초진)'
         : '비대면진료 대상 요건을 확인했어요 (예외 대상)';
 
   /* 다이얼로그 열기 — 열 때마다 처음 상태로 */
@@ -419,30 +498,24 @@ export default function UntactLawDoctor() {
           <Check on={checks[1]} onClick={() => setChecks(c => [c[0], !c[1]])}>
             {secondCheck}
           </Check>
+          {s.target === 'first' && <p className="uld-confirm-sub">아래 거주지 서류로 같은 시·도인지 확인해 주세요.</p>}
         </div>
       )}
       {s.target === 'first' && (
         <div className="uld-proof is-changed">
-          <span className="uld-proof-k">실거주 증명 첨부</span>
-          {s.proof === 'attached' ? (
+          <div className="uld-proof-k">
+            거주지 서류
+            {s.resid !== 'none' && <span>{s.resid === 'resident' ? '주민등록상 주소지' : '실거주지'}</span>}
+          </div>
+          {s.resid !== 'none' ? (
             <div className="uld-photos">
-              <span className="uld-proof-thumb">
-                <span className="uld-mini-doc">
-                  <b>부동산 임대차 계약서</b>
-                  <i className="is-keep" />
-                  <i />
-                  <i className="is-keep is-short" />
-                  <i />
-                  <i />
-                </span>
-                <img className="uld-photo-dl" src={IC_DOWNLOAD} alt="" />
-              </span>
-              <Btn v="secondary" className="uld-photo-btn">
-                내려받기
-              </Btn>
+              <button type="button" className="uld-proof-thumb" aria-label="거주지 서류 확대" onClick={() => setViewerOpen(true)}>
+                <ResidDoc doc={residDoc} mini />
+              </button>
+              <span className="uld-proof-name">{residDoc.title} 1장</span>
             </div>
           ) : (
-            <span className="uld-proof-none">첨부 없음</span>
+            <span className="uld-proof-none">첨부된 거주지 서류가 없어요</span>
           )}
         </div>
       )}
@@ -466,11 +539,12 @@ export default function UntactLawDoctor() {
             </p>
           )}
         </div>
+        <p className="uld-consent-fact is-changed">환자가 앱에서 비대면진료 안내문 4가지를 확인하고 동의함 · {'{동의일시}'}</p>
         {s.target === 'revisit' && (
           <div className="uld-answer is-changed">
             <p className="uld-answer-h">재진 · 환자 응답 (확인 필요)</p>
             <p>
-              환자가 "6개월 안에 같은 증상으로 대면진료 받음"을 골랐어요.
+              환자가 "이 병원에서 마지막 대면진료 후 6개월 이내, 같은 증상"을 골랐어요.
               <br />
               차트에서 대면 이력을 직접 확인해 주세요.
             </p>
@@ -696,7 +770,8 @@ export default function UntactLawDoctor() {
         '현행 빨간 시범사업 안내 대신 진료 대상 배지·가족 대리 신청 배지.',
         '접수 전 확인 2개를 모두 체크해야 접수완료가 켜진다. 재진은 두 번째가 대면 이력 확인.',
         '재진이면 환자 응답 상자, 자녀면 본인확인 문구 자리에 법정대리인 동의 기록',
-        '초진이면 접수 전 확인 아래에 실거주 증명 첨부(앱에서 가림 처리해 올린 서류). 없으면 "첨부 없음". 다시 요청(반려)·파기 시점은 보류.',
+        '초진이면 접수 전 확인 아래에 거주지 서류(앱에서 가림 처리해 올린 서류, 주민등록상/실거주지). 썸네일을 누르면 크게 본다(내려받기 없음). 서류 없음 상태도 있음.',
+        '환자정보에 앱 안내문 확인·동의 사실(제안). 반려·파기 시점·본인확인 시점은 보류.',
         '접수완료를 누르면 현행 예상 대기 시간 설정 → 진료대기.',
       ],
       r2a: [
@@ -767,7 +842,7 @@ export default function UntactLawDoctor() {
         <div className="uld-panel-card">
           <p className="uld-panel-title">온라인진료실 · 제도화 대응</p>
           <p className="uld-panel-sub">
-            굿닥 온라인진료실(의사용) · 검토용 초안 v0.3 · 현행 화면은 개발 코드 기준 재현, 동적 값은 {'{중괄호}'}
+            굿닥 온라인진료실(의사용) · 검토용 초안 v0.4 · 현행 화면은 개발 코드 기준 재현, 동적 값은 {'{중괄호}'}
           </p>
         </div>
         <div className="uld-panel-card">
@@ -809,13 +884,14 @@ export default function UntactLawDoctor() {
             onChange={k => set({ who: k })}
           />
           <Seg
-            label="실거주 증명(초진)"
-            value={s.target === 'first' ? s.proof : 'none'}
+            label="거주지 서류(초진)"
+            value={s.target === 'first' ? s.resid : ('' as Resid)}
             options={[
-              { k: 'none', t: '첨부 없음' },
-              { k: 'attached', t: '첨부함', disabled: s.target !== 'first' },
+              { k: 'resident', t: '주민등록상', disabled: s.target !== 'first' },
+              { k: 'actual', t: '실거주지', disabled: s.target !== 'first' },
+              { k: 'none', t: '서류 없음', disabled: s.target !== 'first' },
             ]}
-            onChange={k => set({ proof: k })}
+            onChange={k => set({ resid: k })}
           />
           <Seg
             label="신청 진료 방식"
@@ -911,6 +987,21 @@ export default function UntactLawDoctor() {
         </section>
       </div>
       {dialogEl}
+      {viewerOpen && s.target === 'first' && s.resid !== 'none' && (
+        <div className="uld-viewer" role="dialog" aria-modal="true" aria-label="거주지 서류" onClick={() => setViewerOpen(false)}>
+          <div className="uld-viewer-main" onClick={e => e.stopPropagation()}>
+            <ResidDoc doc={residDoc} />
+          </div>
+          <div className="uld-viewer-thumbs" onClick={e => e.stopPropagation()}>
+            <span className="uld-viewer-thumb is-on">
+              <ResidDoc doc={residDoc} mini />
+            </span>
+          </div>
+          <button type="button" className="uld-viewer-close" aria-label="닫기" autoFocus onClick={() => setViewerOpen(false)}>
+            ×
+          </button>
+        </div>
+      )}
     </div>
   );
 }

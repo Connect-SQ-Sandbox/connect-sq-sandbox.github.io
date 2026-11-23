@@ -1048,9 +1048,32 @@
   width: 120px;
   flex-shrink: 0;
   align-self: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   font-size: 14px;
   font-weight: 700;
   color: #434956;
+}
+.uld-proof-k span {
+  font-size: 13px;
+  font-weight: 500;
+  color: #808799;
+}
+.uld-proof-name {
+  font-size: 14px;
+  color: #5d6474;
+  align-self: center;
+}
+.uld-confirm-sub {
+  margin: -4px 0 0 28px;
+  font-size: 13px;
+  color: #808799;
+}
+.uld-consent-fact {
+  margin: -8px 0 16px;
+  font-size: 13px;
+  color: #808799;
 }
 .uld-proof-none {
   align-self: center;
@@ -1058,6 +1081,9 @@
   color: #a8aebd;
 }
 .uld-proof-thumb {
+  padding: 0;
+  border: 0;
+  cursor: zoom-in;
   position: relative;
   width: 80px;
   height: 80px;
@@ -1067,29 +1093,136 @@
   outline-offset: -0.5px;
   background: #fff;
 }
-.uld-mini-doc {
+
+/* 가림 처리된 가상 서류 (앱과 같은 표현) */
+.uld-doc {
+  display: block;
+  width: 420px;
+  padding: 28px 28px 20px;
+  background: #fff;
+  font-size: 15px;
+  line-height: 22px;
+  color: #434956;
+  text-align: left;
+}
+.uld-doc-title {
+  display: block;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: #31353f;
+  padding-bottom: 12px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #e3e6ed;
+}
+.uld-doc-row {
+  display: flex;
+  gap: 12px;
+  padding: 7px 0;
+  border-bottom: 1px dotted #e3e6ed;
+}
+.uld-doc-k {
+  width: 96px;
+  flex-shrink: 0;
+  color: #808799;
+}
+.uld-doc-v {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.uld-doc-v .is-keep {
+  font-weight: 600;
+  color: #16181d;
+}
+.uld-doc-hide {
+  display: inline-block;
+  background: #16181d;
+  color: transparent;
+  border-radius: 2px;
+  user-select: none;
+}
+.uld-doc.is-mini {
+  width: 80px;
+  height: 80px;
+  padding: 6px;
+  font-size: 4px;
+  line-height: 6px;
+  overflow: hidden;
+}
+.uld-doc.is-mini .uld-doc-title {
+  font-size: 5px;
+  letter-spacing: 0;
+  padding-bottom: 2px;
+  margin-bottom: 2px;
+}
+.uld-doc.is-mini .uld-doc-row {
+  gap: 2px;
+  padding: 1px 0;
+}
+.uld-doc.is-mini .uld-doc-k {
+  width: 20px;
+}
+
+/* 확대 보기 — 현행 document-viewer.tsx ImagePreview */
+.uld-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  padding: 8px 8px 0;
+  align-items: center;
+  gap: 40px;
+  padding: 40px;
+  background: rgba(22, 24, 29, 0.8);
 }
-.uld-mini-doc b {
-  font-size: 6px;
-  line-height: 8px;
-  text-align: center;
-  color: #31353f;
+.uld-viewer-main {
+  flex: 1;
+  min-height: 0;
+  max-height: calc(100dvh - 200px);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.uld-mini-doc i {
-  display: block;
-  height: 5px;
-  border-radius: 1px;
-  background: #16181d;
+.uld-viewer-main .uld-doc {
+  width: min(720px, calc(100vw - 80px));
+  max-height: 100%;
+  overflow: hidden;
+  font-size: 18px;
+  line-height: 28px;
 }
-.uld-mini-doc i.is-keep {
-  width: 40%;
-  background: transparent;
-  outline: 1px solid #12b76a;
+.uld-viewer-thumbs {
+  display: flex;
+  gap: 16px;
 }
-.uld-mini-doc i.is-short {
-  width: 25%;
+.uld-viewer-thumb {
+  width: 120px;
+  height: 120px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: #fff;
+  outline: 2.5px solid #0073fa;
+  outline-offset: -2px;
+}
+.uld-viewer-thumb .uld-doc.is-mini {
+  width: 120px;
+  height: 120px;
+}
+.uld-viewer-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 6px;
+  background: #434956;
+  color: #fff;
+  display: grid;
+  place-content: center;
+  padding: 14px;
+  opacity: 0.9;
+  cursor: pointer;
 }

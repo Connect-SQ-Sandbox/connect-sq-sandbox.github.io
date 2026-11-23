@@ -205,6 +205,7 @@ const LAW: Record<string, { doc: string; article: string; page: string; img: str
   'after-check': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의5제7항', page: '11쪽', img: require('../../../assets/untact-law-app/law/after-check.png') },
   'record-check': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의5제8항제3호', page: '11쪽', img: require('../../../assets/untact-law-app/law/record-check.png') },
   'record-phone': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의5제8항제2호', page: '11쪽', img: require('../../../assets/untact-law-app/law/record-phone.png') },
+  'doctor-monthly-limit': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의7제4항', page: '12~13쪽', img: require('../../../assets/untact-law-app/law/doctor-monthly-limit.png') },
   'record-stop': { doc: '의료법 시행규칙 일부개정령안(입법예고안)', article: '제31조의5제8항제4호', page: '11쪽', img: require('../../../assets/untact-law-app/law/record-stop.png') },
 };
 const Switch = ({ on, onClick }: { on: boolean; onClick?: () => void }) => (
@@ -339,6 +340,7 @@ export default function UntactLawDoctor() {
           className="uld-law"
           onClick={e => {
             e.stopPropagation();
+            e.preventDefault();
             setLawView({ ids, note });
           }}
           onKeyDown={e => {
@@ -893,6 +895,7 @@ export default function UntactLawDoctor() {
                   <label key={r} className="uld-radio">
                     <input type="radio" name="cancel" checked={cancelPick === r} onChange={() => setCancelPick(r)} />
                     {r}
+                    {r.includes('500건') && law(['doctor-monthly-limit'])}
                   </label>
                 ))}
                 {cancelPick === CANCEL_DIRECT && (

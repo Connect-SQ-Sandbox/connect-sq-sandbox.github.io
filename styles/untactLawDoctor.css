@@ -1534,3 +1534,7 @@
 .uld-root.is-marks-off .is-changed {
   outline: none;
 }
+.uld-proof-k .uld-law {
+  align-self: flex-start;
+  margin-left: 0;
+}

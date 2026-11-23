@@ -744,3 +744,63 @@
   background: var(--gray-10);
   cursor: not-allowed;
 }
+
+/* ───────── v0.5 거주지 · 법정 설명 가안 ───────── */
+.ula-resid {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--gray-30);
+  border-radius: 8px;
+  background: var(--white);
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+}
+.ula-resid.is-on {
+  border-color: var(--blue-60);
+}
+.ula-resid .ula-radio {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+.ula-abuse {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--red-10);
+}
+.ula-explain {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--gray-30);
+  border-radius: 8px;
+}
+.ula-explain-no {
+  width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  background: var(--gray-20);
+  color: var(--gray-70);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 22px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.ula-draft {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: #efe9fe;
+  color: var(--note);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  vertical-align: 2px;
+}

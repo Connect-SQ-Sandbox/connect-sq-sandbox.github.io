@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : untact-law-app — 굿닥 앱(환자용) 비대면진료 신청 흐름 · 비대면진료 제도화(의료법 개정) 대응
- * 상태      : 검토용 초안 · v0.4 · 최종수정 2026-11-20 · 샌드박스 배포
+ * 상태      : 검토용 초안 · v0.5 · 최종수정 2026-11-23 · 샌드박스 배포
  * PRD       : 없음(제도화 대응 기획 초안). 사내 문서 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/untact-law-app.html
  * 피그마    : 없음. 현행 화면은 goodoc-mobile origin/staging(b45968ada, 2026-11-19) 코드 기준 재현.
@@ -16,11 +16,15 @@
  *  - [확정·요청] 담당 범위는 신청서 진입부터. 환자 선택(가족 선택) 화면은 생략하고 패널 토글 '진료 받는 사람'으로 대신한다.
  *  - [확정·요청] 초진 안내(화상만 · 같은 시·도 의원만 · 처방 7일 · 이소트레티노인·트라마돌 불가)는 ① 한 곳에만 둔다. ②에서 반복하지 않는다.
  *  - [확정·요청] 재진·예외 대상을 고르면 초진 안내는 나오지 않는다. 재신청이면 초진 안내를 한 줄 요약으로 접는다.
- *  - [확정·요청] 실거주 증명은 환자가 서류를 첨부해 병원에 전달한다(D8). 플랫폼은 주소를 입력받거나 비교·차단하지 않는다.
- *  - [확정·요청] 첨부 전 가림 안내(고정): 제목 '첨부 전에 꼭 가려 주세요' + 주민등록번호·가족 정보·금액·계좌번호·연락처 가림 / 이름과 주소의 '시'는 꼭 보이게 남김(예: 서울특별시, 경기도 수원시) / 구·동·번지 등 나머지 주소는 가림 / 가리지 않으면 병원이 다시 요청할 수 있음.
- *  - [확정·요청] 가림 예시는 서류 3종(임대차계약서·재직/재학증명서·공공요금 납부자료)을 가상 서류로 그리고 남길 곳·가릴 곳을 표시한다. 주소는 시 단위만 남김.
- *  - [제안] 실거주 증명 첨부는 ①에서 초진을 고른 경우에만 ② 신청서에 선택 항목으로 둔다(필수로 막지 않음). 위치·선택 여부는 기획 세션 제안.
- *  - [제안] 첨부 후 '주민등록번호·가족 정보·금액·계좌번호·연락처를 가렸어요' 체크를 해야 첨부가 완료된다. 체크 전에는 ② 다음 버튼 비활성(첨부를 지우면 다시 진행 가능).
+ *  - [확정·요청] 거주지 서류는 환자가 첨부해 병원에 전달한다(D8). 플랫폼은 주소를 입력받거나 비교·차단하지 않는다.
+ *  - [확정·요청] 표현은 '실거주 증명' 대신 '거주지'. 기본은 주민등록상 주소지(주민등록표 등본·초본), 실제 사는 곳이 다르면 실거주지(임대차계약서·재직/재학증명서·공공요금 납부자료 등, 시행규칙안 31조의15②)(D12).
+ *  - [확정·요청] 재진 = 이 병원에서 마지막 대면진료 후 6개월 이내 + 같은 증상(시행규칙안 31조의2①·31조의5⑤1).
+ *  - [확정·요청] 거주지 섹션에 부정 이용 방지 안내: '다른 사람의 명의나 서류를 이용하는 것은 법으로 금지돼 있어요. 거주지를 사실과 다르게 알리면 병원이 진료를 하지 않을 수 있어요.'(가안, 벌칙 조문 미확인이라 '처벌'은 쓰지 않음)
+ *  - [확정·요청] ③ 법정 설명 4가지는 시행규칙안 31조의9를 앱 문구로 옮긴 가안. ④ 금지 행위 목록은 법 34조의3⑥ 원문 확인 후 기재.
+ *  - [확정·요청] 첨부 전 가림 안내(고정): 제목 '첨부 전에 꼭 가려 주세요' + 주민등록번호 뒷자리·가족 정보·금액·계좌번호·연락처 가림(본인 주민번호 앞 6자리는 남김, 다른 사람 주민번호는 전부 가림) / 이름과 주소의 '시'는 꼭 보이게 남김(예: 서울특별시, 경기도 수원시) / 구·동·번지 등 나머지 주소는 가림 / 가리지 않으면 병원이 다시 요청할 수 있음.
+ *  - [확정·요청] 가림 예시는 가상 서류로 그리고 남길 곳·가릴 곳을 표시한다. 주민등록상 주소지 = 주민등록표 등본, 실거주지 = 임대차계약서·재직/재학증명서·공공요금 납부자료. 주소는 시 단위만 남김.
+ *  - [확정·요청] 거주지 서류 첨부는 ①에서 초진을 고른 경우 ② 신청서에서 필수다. 첨부 + 가림 확인 체크 전에는 다음 버튼 비활성(D14). 위치는 기획 세션 제안.
+ *  - [제안] 첨부 후 '주민등록번호 뒷자리·가족 정보·금액·계좌번호·연락처를 가렸어요' 체크를 해야 첨부가 완료된다.
  *  - [확정·요청] ② 진료 방식은 화상 진료 기본 선택. 전화 진료는 재진만 선택 가능(초진·예외는 비활성 + '재진만 선택 가능').
  *    13세 미만이거나 전화 숨김 과(피부·안과·이비인후·외상·정신)면 전화 진료 항목 자체를 숨긴다.
  *  - [확정·요청] ② 처방 불가 약 안내(PrescriptionGuide)는 현행 문구 그대로.
@@ -46,10 +50,17 @@
  *  - [보류] ② '재진만 선택 가능'을 버튼 안 두 번째 줄로 둔 배치는 임의. 버튼 아래 캡션(현행 '※ 현재 의사 선생님 사정으로…' 자리)도 가능.
  *  - [보류] ② 의사의 videoTreatmentEnabled=false(화상 진료 불가 의사)와 '초진은 화상만'이 겹치면 초진 환자는 신청 경로가 없다. 의사 목록 단계 처리 필요(범위 밖).
  *  - [보류] 나이 13세 미만 + 진료 받는 사람 본인 조합은 막지 않았다(토글 독립).
- *  - [보류] ③ 법정 설명 4가지 문구 미확정(자리표시).
+ *  - [보류] ③ 법정 설명 4가지는 가안. 앱 표시가 의료인 설명 의무(31조의9 주체는 의료인)를 대신하는지, 재신청 축약이 되는지 법무 확인.
+ *  - [확정·요청] 비대면진료지원시스템은 없고 구축 시점 미정이라는 전제로 그린다(D13). 시행규칙안 부칙 6조에 따라 운영 개시 전에는
+ *    주민등록상 주소지·예외 대상은 건보공단 정보시스템 또는 '해당 사실을 확인할 수 있는 서류'로, 실거주지는 자료를 의료기관에 제출해 확인 → ② 주민등록상 주소지 서류 첨부 유지.
+ *  - [보류] 주민등록상 서류로 초본(본인만 기재)을 권할지(등본은 세대원 정보가 실림).
+ *  - [보류] 예외 대상도 운영 개시 전에는 서류로 확인해야 함(부칙 6조①) — 예외 대상 증빙 첨부 영역 필요 여부.
+ *  - [보류] 본인확인은 건강보험증·신분증명서 제출(31조의5③). 시스템이 없으니 병원에 직접 제출(진료 시 화면으로 보여 주기 또는 첨부) 안내 필요 여부.
  *  - [보류] ② 가림 예시 재직증명서의 '소속'·'재직 기간'은 남김/가림 표시 없이 둠. 표시 여부 확인 중.
  *
  * 변경 이력
+ *  - v0.5 (2026-11-23) 초진 거주지 서류 필수(D14). 주민등록번호는 뒷자리만 가림(D8), 등본·초본 '뒷자리 미포함' 발급 안내.
+ *  - v0.5 (2026-11-23) 법령 기준 보강: ① 재진·초진 설명(마지막 대면진료 후 6개월), ② '거주지'로 바꾸고 주민등록상 주소지/실거주지 선택·서류 안내·등본 예시·부정 이용 방지 안내, ③ 법정 설명 4가지 가안.
  *  - v0.4 (2026-11-20) D8 변경 반영: ② 초진 실거주 증명 첨부(선택) · 가림 안내 · 서류 3종 가림 예시 · 가림 확인 체크, 패널 토글 '실거주 증명'.
  *  - v0.3 (2026-11-20) ④ 상단 제목·보조 문구를 사유 표시에 맞게 교체.
  *  - v0.2 (2026-11-20) 검수 반영: ② 비활성 전화 보조 문구 대비, ③ 책임 문구·대리인 안내를 설명 위로, ① 대상 변경 시 펼침 초기화, URL 오타 값 기본값 처리.
@@ -68,7 +79,8 @@ type Dept = 'general' | 'nophone';
 type Age = 'over13' | 'under13';
 type Method = 'video' | 'phone';
 type Proof = 'none' | 'attached';
-type ProofDoc = 'lease' | 'work' | 'bill';
+type ProofDoc = 'resident' | 'lease' | 'work' | 'bill';
+type Resid = 'resident' | 'actual';
 type CancelReason = 'notTarget' | 'needVisit' | 'noContact';
 
 const STEPS: { key: Step; label: string; kind: 'cur' | 'new' | 'mod' }[] = [
@@ -83,8 +95,8 @@ const STEPS: { key: Step; label: string; kind: 'cur' | 'new' | 'mod' }[] = [
 const KIND_LABEL = { cur: '현행', new: '신규', mod: '수정' } as const;
 
 const TARGETS: { key: Target; title: string; desc: string }[] = [
-  { key: 'revisit', title: '재진', desc: '이 병원에서 6개월 안에 같은 증상으로 대면진료를 받았어요' },
-  { key: 'first', title: '초진', desc: '처음이거나, 6개월이 지났거나, 증상이 달라요' },
+  { key: 'revisit', title: '재진', desc: '이 병원에서 마지막으로 대면진료를 받은 지 6개월이 안 됐고, 같은 증상이에요' },
+  { key: 'first', title: '초진', desc: '이 병원이 처음이거나, 마지막 대면진료 후 6개월이 지났거나, 증상이 달라요' },
   { key: 'exception', title: '예외 대상', desc: '희귀질환·제1형 당뇨·등록장애인·장기요양수급자 등' },
 ];
 
@@ -101,9 +113,15 @@ const DEPTS: Record<Dept, { name: string; presets: string[] }> = {
 };
 
 /* 법이 정한 설명 4가지 — 문구 미확정 자리표시 */
-const LAW_EXPLAINS = ['설명 1', '설명 2', '설명 3', '설명 4'];
+/* 시행규칙안 31조의9 설명 4가지를 앱 문구로 옮긴 가안 */
+const LAW_EXPLAINS: { title: string; body: string }[] = [
+  { title: '진단에 한계가 있어요', body: '직접 보거나 만지고 검사할 수 없어서, 대면진료보다 진단 정확도에 한계가 있을 수 있어요.' },
+  { title: '진료를 하지 않거나 중단할 수 있어요', body: '법에서 정한 경우, 의사는 비대면진료를 하지 않거나 진료 중에 멈출 수 있어요.' },
+  { title: '사실대로 알려 주세요', body: '주된 증상, 앓고 있는 병, 병력·가족력, 먹고 있는 약을 의사에게 사실대로 알려야 해요.' },
+  { title: '금지된 행위는 처벌받을 수 있어요', body: '법으로 금지된 행위를 하면 형사처벌 대상이 될 수 있어요. {금지 행위 목록 — 법 원문 확인 후 기재}' },
+];
 const RESPONSIBILITY =
-  '주소지·대면 이력은 진료 전에 의료기관이 확인하며, 조건에 맞지 않으면 진료가 취소될 수 있어요';
+  '거주지·대면 이력은 진료 전에 의료기관이 확인하며, 조건에 맞지 않으면 진료가 취소될 수 있어요';
 
 /* 결제 필수 약관 — SymptomScreen/components/Modal/AgreementModal/text.ts:12 */
 const PAYMENT_TERMS = [
@@ -265,10 +283,23 @@ const NavBar = ({
   </div>
 );
 
-/* ---------- 실거주 증명 가림 예시 (가상 서류, 실제 개인정보 없음) ---------- */
+/* ---------- 거주지 서류 가림 예시 (가상 서류, 실제 개인정보 없음) ---------- */
 type DocSeg = { t: string; k?: 'keep' | 'mask' };
 type ProofDocDef = { key: ProofDoc; tab: string; title: string; rows: { label: string; segs: DocSeg[] }[] };
+/* 거주지 종류별 증명 서류 — 주민등록상 주소지: 법령은 '해당 사실을 확인할 수 있는 서류'로만 규정(가안) · 실거주지: 시행규칙안 31조의15②가 열거한 3종 */
+const RESID_DOCS: Record<Resid, ProofDoc[]> = { resident: ['resident'], actual: ['lease', 'work', 'bill'] };
 const PROOF_DOCS: ProofDocDef[] = [
+  {
+    key: 'resident',
+    tab: '주민등록표 등본·초본',
+    title: '주민등록표 (등본)',
+    rows: [
+      { label: '성명', segs: [{ t: '김굿닥', k: 'keep' }] },
+      { label: '주민등록번호', segs: [{ t: '900101-', k: 'keep' }, { t: '0000000', k: 'mask' }] },
+      { label: '주소', segs: [{ t: '서울특별시', k: 'keep' }, { t: '○○구 ○○로 00, 000호', k: 'mask' }] },
+      { label: '세대주·세대원', segs: [{ t: '○○○ 외 0명', k: 'mask' }] },
+    ],
+  },
   {
     key: 'lease',
     tab: '임대차계약서',
@@ -277,7 +308,8 @@ const PROOF_DOCS: ProofDocDef[] = [
       { label: '소재지', segs: [{ t: '서울특별시', k: 'keep' }, { t: '○○구 ○○동 000-00', k: 'mask' }] },
       { label: '보증금·월세', segs: [{ t: '0,000만 원 / 00만 원', k: 'mask' }] },
       { label: '임차인 성명', segs: [{ t: '김굿닥', k: 'keep' }] },
-      { label: '주민등록번호', segs: [{ t: '000000-0000000', k: 'mask' }] },
+      { label: '주민등록번호', segs: [{ t: '900101-', k: 'keep' }, { t: '0000000', k: 'mask' }] },
+      { label: '임대인', segs: [{ t: '○○○ · 000000-0000000', k: 'mask' }] },
       { label: '연락처', segs: [{ t: '010-0000-0000', k: 'mask' }] },
       { label: '계좌번호', segs: [{ t: '○○은행 000-000-000000', k: 'mask' }] },
     ],
@@ -288,7 +320,7 @@ const PROOF_DOCS: ProofDocDef[] = [
     title: '재직증명서',
     rows: [
       { label: '성명', segs: [{ t: '김굿닥', k: 'keep' }] },
-      { label: '주민등록번호', segs: [{ t: '000000-0000000', k: 'mask' }] },
+      { label: '주민등록번호', segs: [{ t: '900101-', k: 'keep' }, { t: '0000000', k: 'mask' }] },
       { label: '주소', segs: [{ t: '경기도 수원시', k: 'keep' }, { t: '○○구 ○○로 00', k: 'mask' }] },
       { label: '소속', segs: [{ t: '{회사·학교명}' }] },
       { label: '재직 기간', segs: [{ t: '0000.00.00 ~ 현재' }] },
@@ -376,10 +408,20 @@ export default function UntactLawApp() {
   const [terms, setTerms] = useState<boolean[]>(PAYMENT_TERMS.map(() => false));
   const [firstOpen, setFirstOpen] = useState(false);
   const [tab, setTab] = useState<'hospital' | 'pharmacy'>('hospital');
-  /* 실거주 증명: 파일 있음 · 가림 확인 체크. 패널 토글 '첨부함' = 파일 + 체크 완료 */
+  /* 거주지 서류: 파일 있음 · 가림 확인 체크. 패널 토글 '첨부함' = 파일 + 체크 완료 */
   const [proofFile, setProofFile] = useState(s.proof === 'attached');
   const [proofChecked, setProofChecked] = useState(s.proof === 'attached');
-  const [proofDoc, setProofDoc] = useState<ProofDoc>('lease');
+  const [resid, setResidRaw] = useState<Resid>('resident');
+  const [proofDoc, setProofDoc] = useState<ProofDoc>('resident');
+  /* 첨부한 서류 종류(썸네일용) — 첨부 시점의 예시 탭 */
+  const [attachedDoc, setAttachedDoc] = useState<ProofDoc>('resident');
+  /* 거주지 종류를 바꾸면 예시 탭을 그 종류 첫 서류로, 첨부는 비운다(서류 종류가 달라짐) */
+  const setResid = (r: Resid) => {
+    if (r === resid) return;
+    setResidRaw(r);
+    setProofDoc(RESID_DOCS[r][0]);
+    setProof(false, false);
+  };
   /* 첨부 상태는 이 함수로만 바꾼다(패널 토글·첨부·삭제·체크·대상 변경이 같은 값을 가리키게) */
   const setProof = (file: boolean, checked: boolean) => {
     setProofFile(file);
@@ -394,7 +436,8 @@ export default function UntactLawApp() {
       setProofChecked(false);
     }
   }, [s.target]);
-  const proofPending = s.target === 'first' && proofFile && !proofChecked;
+  /* 초진은 거주지 서류 필수: 첨부 + 가림 확인 체크까지 해야 다음으로 */
+  const proofPending = s.target === 'first' && !(proofFile && proofChecked);
 
   const phoneHidden = s.age === 'under13' || s.dept === 'nophone';
   const phoneEnabled = !phoneHidden && s.target === 'revisit';
@@ -460,7 +503,7 @@ export default function UntactLawApp() {
   /* ① 진료 대상 확인 (신규) */
   const firstGuideLines = [
     '화상 진료만 가능해요',
-    '내 주소지와 같은 시·도의 의원에서만 진료받을 수 있어요',
+    '내 거주지와 같은 시·도의 의원에서만 진료받을 수 있어요',
     '처방은 7일까지예요. 먹는 여드름약(이소트레티노인)·트라마돌은 처방 안 돼요',
   ];
   const FirstGuide =
@@ -541,16 +584,35 @@ export default function UntactLawApp() {
     </>
   );
 
-  /* ② 실거주 증명 첨부 (신규, 초진만) — D8 */
+  /* ② 거주지 (신규, 초진만) — D8 · D12 */
+  const RESID_OPTIONS: { key: Resid; title: string; desc: string }[] = [
+    { key: 'resident', title: '주민등록상 주소지', desc: "주민등록표 등본 또는 초본\n발급할 때 '주민등록번호 뒷자리 미포함'을 선택하면 가리지 않아도 돼요" },
+    { key: 'actual', title: '실거주지', desc: '주민등록 주소와 실제 사는 곳이 다를 때\n임대차계약서, 재직·재학증명서, 공공요금 납부자료 등' },
+  ];
   const ProofSection = (
     <div className="ula-col ula-changed" style={{ gap: 16, padding: '24px 20px 28px', borderBottom: '8px solid var(--gray-20)' }}>
       <div className="ula-col" style={{ gap: 4 }}>
         <T s="h5" w={7} c="gray-90">
-          실거주 증명(선택)
+          거주지(필수)
         </T>
         <T s="b2" c="gray-80">
-          주소를 확인할 수 있는 서류를 첨부해 주세요.
+          거주지를 확인할 수 있는 서류를 첨부해 주세요.
         </T>
+      </div>
+      <div className="ula-col" style={{ gap: 8 }}>
+        {RESID_OPTIONS.map(o => (
+          <button key={o.key} className={`ula-resid ${resid === o.key ? 'is-on' : ''}`} onClick={() => setResid(o.key)}>
+            <span className={`ula-radio ${resid === o.key ? 'is-on' : ''}`} />
+            <span className="ula-col" style={{ gap: 2, flex: 1 }}>
+              <T s="b1" w={resid === o.key ? 7 : 5} c="gray-90">
+                {o.title}
+              </T>
+              <T s="b2" c="gray-60">
+                {o.desc}
+              </T>
+            </span>
+          </button>
+        ))}
       </div>
       <div className="ula-guide">
         <div className="ula-guide-title">
@@ -560,7 +622,7 @@ export default function UntactLawApp() {
           </T>
         </div>
         {[
-          '주민등록번호, 가족 정보, 금액·계좌번호, 연락처는 가린 뒤 올려 주세요.',
+          '주민등록번호 뒷자리, 가족 정보, 금액·계좌번호, 연락처는 가린 뒤 올려 주세요.',
           "이름과 주소의 '시'는 꼭 보이게 남겨 주세요. (예: 서울특별시, 경기도 수원시)",
           '구·동·번지 등 나머지 주소는 가려 주세요.',
           '가리지 않은 서류는 병원이 다시 요청할 수 있어요.',
@@ -575,12 +637,18 @@ export default function UntactLawApp() {
           </div>
         ))}
       </div>
+      <div className="ula-abuse">
+        <IconCaution color="#FA4655" size={18} />
+        <T s="b2" w={6} c="gray-80" style={{ flex: 1 }}>
+          다른 사람의 명의나 서류를 이용하는 것은 법으로 금지돼 있어요. 거주지를 사실과 다르게 알리면 병원이 진료를 하지 않을 수 있어요.
+        </T>
+      </div>
       <div className="ula-col" style={{ gap: 10 }}>
         <T s="b2" w={6} c="gray-80">
           이렇게 가려 주세요
         </T>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {PROOF_DOCS.map(d => (
+          {PROOF_DOCS.filter(d => RESID_DOCS[resid].includes(d.key)).map(d => (
             <button key={d.key} className={`ula-preset is-small ${proofDoc === d.key ? 'is-on' : ''}`} onClick={() => setProofDoc(d.key)}>
               {d.tab}
             </button>
@@ -600,17 +668,17 @@ export default function UntactLawApp() {
       </div>
       <div className="ula-col" style={{ gap: 12 }}>
         {!proofFile ? (
-          <button className="ula-upload" onClick={() => setProof(true, false)}>
+          <button className="ula-upload" onClick={() => { setAttachedDoc(proofDoc); setProof(true, false); }}>
             <IconCamera />
             <span>서류 첨부하기</span>
           </button>
         ) : (
           <div className="ula-proof-file">
             <span className="ula-proof-thumb">
-              <ProofDocMock doc={PROOF_DOCS.find(d => d.key === proofDoc)!} mini />
+              <ProofDocMock doc={PROOF_DOCS.find(d => d.key === (RESID_DOCS[resid].includes(attachedDoc) ? attachedDoc : proofDoc))!} mini />
             </span>
             <T s="b2" c="gray-80" style={{ flex: 1 }}>
-              실거주 증명 서류 1장
+              {resid === 'resident' ? '주민등록표 1장' : '실거주지 서류 1장'}
             </T>
             <button className="ula-proof-del" onClick={() => setProof(false, false)} aria-label="첨부 삭제">
               <IconClose />
@@ -621,7 +689,7 @@ export default function UntactLawApp() {
           <button className="ula-check" onClick={() => setProof(true, !proofChecked)}>
             <IconCheckRound on={proofChecked} />
             <T s="b1" w={proofChecked ? 6 : 5} c={proofChecked ? 'gray-90' : 'gray-70'}>
-              주민등록번호·가족 정보·금액·계좌번호·연락처를 가렸어요
+              주민등록번호 뒷자리·가족 정보·금액·계좌번호·연락처를 가렸어요
             </T>
           </button>
         )}
@@ -853,15 +921,17 @@ export default function UntactLawApp() {
             )}
           </div>
           {!isAgain &&
-            LAW_EXPLAINS.map((label, i) => (
-              <div className="ula-ph" key={label}>
-                <span className="ula-ph-tag">자리표시 · 법정 설명 {i + 1} · 문구 미확정</span>
-                <T s="b1" w={6} c="gray-90">
-                  {label}
-                </T>
-                <T s="b2" c="gray-60">
-                  {'{법이 정한 설명 문구}'}
-                </T>
+            LAW_EXPLAINS.map((x, i) => (
+              <div className="ula-explain" key={x.title}>
+                <span className="ula-explain-no">{i + 1}</span>
+                <div className="ula-col" style={{ gap: 4, flex: 1 }}>
+                  <T s="b1" w={6} c="gray-90">
+                    {x.title} <span className="ula-draft">가안</span>
+                  </T>
+                  <T s="b2" c="gray-70">
+                    {x.body}
+                  </T>
+                </div>
               </div>
             ))}
         </div>
@@ -1109,18 +1179,18 @@ export default function UntactLawApp() {
         '신청서 앞에 새로 들어가는 화면.',
         '초진을 고르면 바로 아래에 초진 안내 한 블록. 재진·예외 대상이면 안내 없음.',
         '재신청이면 초진 안내를 한 줄로 접는다(눌러서 펼침).',
-        '실거주 증명은 초진일 때 ② 신청서에서 서류로 첨부한다(D8). 플랫폼은 주소를 입력받거나 비교하지 않는다.',
+        '거주지 서류는 초진일 때 ② 신청서에서 첨부한다(D8). 플랫폼은 주소를 입력받거나 비교하지 않는다.',
       ],
       form: [
-        '바뀐 곳은 진료 방식과 실거주 증명(초진만, 점선). 화상 진료 기본 선택.',
+        '바뀐 곳은 진료 방식과 거주지(초진만, 점선). 화상 진료 기본 선택.',
         '전화 진료: 재진만 선택 가능. 초진·예외는 비활성.',
         '13세 미만 또는 전화 숨김 과면 전화 진료 버튼 자체가 없다.',
         '처방 불가 약 안내는 현행 그대로. 초진 제한은 ①에만.',
-        '실거주 증명(선택, 제안): 가림 안내 고정 + 서류 3종 가림 예시. 첨부하면 가림 확인 체크를 해야 첨부 완료, 그 전에는 다음 비활성.',
+        '거주지(초진 필수): 주민등록상 주소지(등본·초본) / 실거주지(임대차계약서·재직·재학증명서·공공요금 납부자료). 가림 안내·부정 이용 방지 안내·서류별 가림 예시. 첨부 + 가림 확인 체크 전에는 다음 비활성.',
       ],
       consent: [
         '신청서 다음, 결제 앞에 새로 들어가는 화면.',
-        '첫 신청: 법정 설명 4가지(자리표시) + 책임 문구 + 동의. 재신청: 책임 문구 한 줄 + 동의.',
+        '첫 신청: 법정 설명 4가지(시행규칙안 31조의9를 옮긴 가안) + 책임 문구 + 동의. 재신청: 책임 문구 한 줄 + 동의.',
         '자녀 진료면 법정대리인 동의 안내 한 줄 추가.',
         '체크 전에는 다음 버튼 비활성.',
       ],
@@ -1167,7 +1237,7 @@ export default function UntactLawApp() {
       <aside className="ula-panel">
         <div className="ula-panel-card">
           <p className="ula-panel-title">비대면진료 신청 · 제도화 대응</p>
-          <p className="ula-panel-sub">굿닥 앱(환자용) · 검토용 초안 v0.4 · 현행 화면은 앱 코드 기준 재현, 동적 값은 {'{중괄호}'}</p>
+          <p className="ula-panel-sub">굿닥 앱(환자용) · 검토용 초안 v0.5 · 현행 화면은 앱 코드 기준 재현, 동적 값은 {'{중괄호}'}</p>
         </div>
         <div className="ula-panel-card">
           <p className="ula-panel-h">화면 바로 가기</p>
@@ -1231,7 +1301,7 @@ export default function UntactLawApp() {
             onChange={k => set({ age: k })}
           />
           <Seg
-            label="② 실거주 증명(초진)"
+            label="② 거주지 서류(초진)"
             value={s.proof}
             options={[
               { k: 'none', t: '첨부 없음' },

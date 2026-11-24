@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : untact-law-doctor — 굿닥 온라인진료실(의사용) · 비대면진료 제도화(의료법 개정) 대응
- * 상태      : 검토용 초안 · v0.12 · 최종수정 2026-11-24 · 샌드박스 배포
+ * 상태      : 검토용 초안 · v0.13 · 최종수정 2026-11-24 · 샌드박스 배포
  * PRD       : 없음(제도화 대응 기획 초안). 사내 문서 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/untact-law-doctor.html
  * 피그마    : 없음. 기준은 대응 보드 커넥트 섹션(진료실-1~3) + 현행 온라인진료실 개발 코드.
@@ -36,7 +36,7 @@
  *  - [보드 기준] 진료실-2 전화로 진행·전환할 때 사유 모달. 초진은 첫 번째 사유(대면진료 받은 환자) 선택 불가.
  *  - [보드 기준] 진료실-2 화상진료 끄기 확인창 본문: '화상진료를 끄면 초진 환자는 배정되지 않아요. 재진 환자만 전화로 진료할 수 있어요.' 버튼은 현행 '취소 / 확인'.
  *  - [보드 기준] 진료실-3 취소 사유: 환자 월 2회 삭제, 건수 사유는 '의사별 비대면진료 가능 건수(월평균 500건)'로 교체. 직접 입력 안내·검증은 현행 그대로.
- *  - [유지·자체] 전화로 신청한 재진은 '진료시작'을 누르면 현행 '진료 시작하기' 확인창 대신 전화 진료 사유 모달.
+ *  - [유지·자체] 전화로 신청한 재진은 '전화 진료 시작'을 누르면 현행 '진료 시작하기' 확인창 대신 전화 진료 사유 모달.
  *  - [유지·자체] 앱에서 전화 진료는 재진만 고를 수 있으므로 패널 '신청 진료 방식'은 재진일 때만 전화 선택 가능.
  *
  * 보류·TODO (기획 확인 필요)
@@ -47,7 +47,7 @@
  *  - [보류] 재진으로 신청했는데 차트상 6개월 초과·다른 증상인 경우 의사 행동(취소 후 초진 재신청 안내 등).
  *  - [보류] 접수 전 확인 체크한 의사·시각 저장(스펙). 앱 첨부의 PDF(정부24 등본) 허용 여부 — 현행 확대 보기는 이미지 전용.
  *  - [확정·요청] 굿닥 비대면진료에는 병원급 의료기관이 없으므로 의료기관 구분·병원급 접수 제한(보드 진료실-1)은 넣지 않는다.
- *  - [보류] 화상으로 신청한 환자를 전화로 바꾸는 '전화로 진료하기' 버튼(진료대기 띠 안) 배치는 임의.
+ *  - [확정·D26] 진료대기 버튼은 '전화 진료 시작'과 '화상 진료 시작'(전화 신청은 '전화 진료 시작'만), 진료대기에는 진료완료를 두지 않는다. 진료중(화상)은 '다시 화상 연결'과 '진료완료', 진료중(전화)은 '진료완료'만.
  *  - [보류] 진료실-2 예외 대상의 첫 번째 사유 선택 가능 여부(보드는 초진만 막음).
  *  - [보류] 진료실-2 화상진료 끄기 확인창의 '의사목록 순서' 문구는 정렬 기준 표시와 맞춘다고만 되어 있어 뺐다.
  *  - [보류] 진료실-3 '현재 내원 환자가 많아 진료가 어렵습니다'가 '진료하지 않은 판단으로 노출 불이익 금지'와 충돌하는지 법무 확인.
@@ -69,6 +69,7 @@
  *  - [보류] D19 안내 문구는 법령안 31조의7④를 참고한 가안(화면에 '가안' 표시). 굿닥 기준이라 법령 버튼 없이 문장으로만 둠.
  *
  * 변경 이력
+ *  - v0.13 (2026-11-24) D26: 작업 띠 버튼 이름 정리(전화 진료 시작, 화상 진료 시작, 다시 화상 연결), 진료대기의 진료완료 제거. 바로가기 '진료실-2 화상 진료 중 확인' 추가.
  *  - v0.12 (2026-11-24) 11/24 회의 반영: 화상 진료 중 '화상에서 얼굴과 신분증을 대조했어요' 체크(D18), 자녀는 보호자 신분증 열람과 접수 전 확인 3번째 체크 '법정대리인 동의를 확인하고 설명했어요'(D18, D21),
  *    전화 진료 첫 사유를 질환(피부, 안, 이비인후, 외상, 정신)과 13세 미만에서 막음, 패널 '질환'과 '환자 나이' 토글(D24), 셋째 사유 '화상 연결이 불가능한 그 밖의 사유' 직접 입력 필수와 진료기록부 문장(D25).
  *  - v0.11 (2026-11-24) D19: 근접 강조 400건부터, 500건 도달 후 접수 시 경고 확인창. 건수 기준을 '굿닥에서 진료 완료까지 한 진료 건, 의사별'로 확정. 띠와 상세 안내 문구를 법령안(31조의7④) 참고 가안으로 교체, '가안' 표시.
@@ -111,7 +112,7 @@ const SYMPTOM_PHOTOS: string[] = [
 ];
 
 /* ---------- 타입 ---------- */
-type Jump = 'r1' | 'r2a' | 'r2b' | 'r3';
+type Jump = 'r1' | 'r2a' | 'r2v' | 'r2b' | 'r3';
 type Target = 'revisit' | 'first' | 'exception';
 type Who = 'self' | 'child';
 type Method = 'video' | 'phone';
@@ -121,6 +122,7 @@ type Dialog = 'quota' | 'reception' | 'start' | 'phone' | 'cancel' | 'video' | n
 const JUMPS: { key: Jump; label: string; kind: 'new' | 'mod' }[] = [
   { key: 'r1', label: '진료실-1 접수 전 확인', kind: 'mod' },
   { key: 'r2a', label: '진료실-2 전화 진료 사유', kind: 'new' },
+  { key: 'r2v', label: '진료실-2 화상 진료 중 확인', kind: 'new' },
   { key: 'r2b', label: '진료실-2 화상진료 끄기', kind: 'mod' },
   { key: 'r3', label: '진료실-3 진료 취소 사유', kind: 'mod' },
 ];
@@ -475,6 +477,7 @@ export default function UntactLawDoctor() {
 
   const reset = (jump: Jump) => {
     const r2a = jump === 'r2a';
+    const r2v = jump === 'r2v';
     setChecks([false, false, false]);
     setFaceCheck(false);
     setCancelPick(CANCEL_REASONS[0]);
@@ -484,14 +487,14 @@ export default function UntactLawDoctor() {
     setPhonePick(phoneDefault);
     setPhoneText('');
     setPhoneDone('');
-    setTreatMethod(s.method);
+    setTreatMethod(r2v ? 'video' : s.method);
     setMenuOpen(false);
     setVideoOn(true);
     setViewerOpen(false);
     setWait('5');
     setWaitAt(r2a ? Date.now() + 5 * 60_000 : null);
     setOpen(true);
-    setStatus(r2a ? 'waiting' : 'request');
+    setStatus(r2v ? 'ontreatment' : r2a ? 'waiting' : 'request');
     setDialog(jump === 'r3' ? 'cancel' : jump === 'r2b' ? 'video' : r2a ? 'phone' : null);
   };
   useEffect(() => reset(s.jump), [s.jump, s.target, s.who, s.method, disease, under13]);
@@ -684,20 +687,28 @@ export default function UntactLawDoctor() {
             접수완료
           </Btn>
         )}
+        {/* D26 — 시작 버튼은 '전화 진료 시작'과 '화상 진료 시작'으로 맞추고, 진료대기에는 진료완료를 두지 않는다 */}
         {status === 'waiting' && s.method === 'video' && (
           <Btn v="secondary" className="uld-on-blue is-changed" onClick={openPhone}>
-            전화로 진료하기
+            전화 진료 시작
           </Btn>
         )}
-        {status === 'waiting' && (
-          <Btn className="is-reverse" onClick={() => (s.method === 'phone' ? openPhone() : setDialog('start'))}>진료시작</Btn>
-        )}
-        {status === 'ontreatment' && (
-          <Btn v="secondary" className="uld-on-blue" title="의도치 않은 진료 종료 시 다시 진료를 시작해 주세요" onClick={() => (treatMethod === 'phone' ? openPhone() : setDialog('start'))}>
-            다시 진료시작
+        {status === 'waiting' && s.method === 'video' && (
+          <Btn className="is-reverse is-changed" onClick={() => setDialog('start')}>
+            화상 진료 시작
           </Btn>
         )}
-        {(status === 'waiting' || status === 'ontreatment') && <Btn className={status === 'ontreatment' ? 'is-reverse' : undefined}>진료완료</Btn>}
+        {status === 'waiting' && s.method === 'phone' && (
+          <Btn className="is-reverse is-changed" onClick={openPhone}>
+            전화 진료 시작
+          </Btn>
+        )}
+        {status === 'ontreatment' && treatMethod === 'video' && (
+          <Btn v="secondary" className="uld-on-blue is-changed" title="화상 연결이 끊기면 다시 연결해 주세요" onClick={() => setDialog('start')}>
+            다시 화상 연결
+          </Btn>
+        )}
+        {status === 'ontreatment' && <Btn className="is-reverse">진료완료</Btn>}
       </div>
     </div>
   );
@@ -1113,9 +1124,14 @@ export default function UntactLawDoctor() {
       ],
       r2a: [
         '진료대기 상세(현행 파란 작업 띠).',
-        '전화로 신청한 재진은 "진료시작"이 현행 진료 시작하기 확인창 대신 사유 모달을 연다.',
-        '화상으로 신청했으면 "전화로 진료하기"(배치 임의)로 같은 모달.',
+        '시작 버튼은 "전화 진료 시작"과 "화상 진료 시작"(전화 신청은 "전화 진료 시작"만). 진료대기에는 진료완료가 없다.',
+        '"전화 진료 시작"은 사유 모달을 열고, 사유를 고르면 진료중이 된다.',
         '초진이면 첫 번째 사유를 고를 수 없다. 직접 입력은 글자가 있어야 확인.',
+      ],
+      r2v: [
+        '화상 진료 중(진료 시작 뒤) 상태. 작업 띠 바로 아래 "화상 진료 중 확인" 상자에서 얼굴과 신분증을 대조했다고 체크한다(D18).',
+        '자녀면 보호자 얼굴과 신분증 대조, 자녀 동석 확인 문구. 전화 진료 중에는 상자가 없다.',
+        '버튼은 "다시 화상 연결"과 "진료완료".',
       ],
       r2b: [
         '프로필 메뉴 화상진료 스위치를 끌 때 확인창. 본문만 바꿨고 버튼은 현행 취소/확인.',
@@ -1230,7 +1246,7 @@ export default function UntactLawDoctor() {
         <div className="uld-panel-card">
           <p className="uld-panel-title">온라인진료실 · 제도화 대응</p>
           <p className="uld-panel-sub">
-            굿닥 온라인진료실(의사용) · 검토용 초안 v0.12 · 현행 화면은 운영 코드 기준 재현, 동적 값은 {'{중괄호}'}
+            굿닥 온라인진료실(의사용) · 검토용 초안 v0.13 · 현행 화면은 운영 코드 기준 재현, 동적 값은 {'{중괄호}'}
           </p>
         </div>
         <div className="uld-panel-card uld-lawcard">

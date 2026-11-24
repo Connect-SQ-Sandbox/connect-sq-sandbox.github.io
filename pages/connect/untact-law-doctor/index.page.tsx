@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : untact-law-doctor — 굿닥 온라인진료실(의사용) · 비대면진료 제도화(의료법 개정) 대응
- * 상태      : 검토용 초안 · v0.10 · 최종수정 2026-11-24 · 샌드박스 배포
+ * 상태      : 검토용 초안 · v0.11 · 최종수정 2026-11-24 · 샌드박스 배포
  * PRD       : 없음(제도화 대응 기획 초안). 사내 문서 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/untact-law-doctor.html
  * 피그마    : 없음. 기준은 대응 보드 커넥트 섹션(진료실-1~3) + 현행 온라인진료실 개발 코드.
@@ -55,13 +55,14 @@
  *  - [보류] 보드 그레이존(엄격/완화) 카드는 법무 검토 전이라 반영하지 않음.
  *  - [확정·D19] 굿닥 기준 월 500건 상한 안내 띠는 GNB 바로 아래 하나를 모든 탭이 공통으로 쓴다. 굿닥 기준이라 법령 버튼 없음.
  *  - [확정·D19] 띠에는 '이번 달 비대면 진료 n / 500건'을 보여 주고, 남은 건수 문구는 근접과 도달 상태에서만 보여 준다(여유 상태는 숫자만).
- *  - [보류] D19 건수 기준(진료 완료 또는 접수)과 초기화 시점(매월 1일 가정).
- *  - [보류] D19 근접 강조 기준(지금은 [제안]으로 450건부터 주황).
- *  - [보류] D19 500건 도달 시 접수 차단 여부(지금은 안내만).
- *  - [보류] D19 안내 문구(가안). 상세 안내의 법령안 설명(반기 월평균 500건)은 법무 확인 전 가안이라 법령 버튼 없이 문장으로만 둠.
- *  - [보류] D19 상세 안내의 '굿닥 기준' 범위(굿닥 온라인진료실 진료만 셈, 다른 플랫폼과 병원 자체 비대면진료 미포함) 확인 필요.
+ *  - [확정·D19] 건수는 굿닥에서 진료 완료까지 한 진료 건을 의사별로 센다.
+ *  - [보류] D19 초기화 시점(매월 1일 가정).
+ *  - [확정·D19] 400건(80%)부터 띠를 주황으로 강조한다(한 단계).
+ *  - [확정·D19] 500건에 도달해도 접수는 막지 않는다. 도달 뒤 '접수완료'를 누르면 경고 확인창('이번 달 500건에 도달했어요', [취소]/[접수하기])을 먼저 띄우고, 접수하기를 누르면 예상 대기 시간 설정으로 이어진다.
+ *  - [보류] D19 안내 문구는 법령안 31조의7④를 참고한 가안(화면에 '가안' 표시). 굿닥 기준이라 법령 버튼 없이 문장으로만 둠.
  *
  * 변경 이력
+ *  - v0.11 (2026-11-24) D19: 근접 강조 400건부터, 500건 도달 후 접수 시 경고 확인창. 건수 기준을 '굿닥에서 진료 완료까지 한 진료 건, 의사별'로 확정. 띠와 상세 안내 문구를 법령안(31조의7④) 참고 가안으로 교체, '가안' 표시.
  *  - v0.10 (2026-11-24) D19: GNB 바로 아래 모든 탭 공통 '월 비대면 진료 500건(굿닥 기준)' 안내 띠[제안]. 띠 오른쪽 '자세히 보기'로 펼치는 상세 안내(왜 500건인지, 굿닥 기준의 뜻, 세는 법). 패널 '이번 달 진료 건수' 토글(여유/근접/도달).
  *  - v0.9 (2026-11-23) D18 변경: 접수 전 확인에 '첨부한 신분증으로 본인 여부를 확인했어요' 체크, '본인 확인 서류' 열람 영역(전 대상, 확대 보기), 거주지 '신분증 겸용' 상태. 진료 중 확인 상자 삭제.
  *  - v0.8 (2026-11-23) D18(이전안): 본인 확인을 화상 진료 중 확인으로 옮김.
@@ -106,7 +107,7 @@ type Target = 'revisit' | 'first' | 'exception';
 type Who = 'self' | 'child';
 type Method = 'video' | 'phone';
 type Status = 'request' | 'waiting' | 'ontreatment' | 'cancel';
-type Dialog = 'reception' | 'start' | 'phone' | 'cancel' | 'video' | null;
+type Dialog = 'quota' | 'reception' | 'start' | 'phone' | 'cancel' | 'video' | null;
 
 const JUMPS: { key: Jump; label: string; kind: 'new' | 'mod' }[] = [
   { key: 'r1', label: '진료실-1 접수 전 확인', kind: 'mod' },
@@ -531,6 +532,10 @@ export default function UntactLawDoctor() {
     setDialog('cancel');
   };
   const confirm = () => {
+    if (dialog === 'quota') {
+      setDialog('reception');
+      return;
+    }
     if (dialog === 'reception') {
       setWaitAt(wait === '0' ? null : Date.now() + Number(wait) * 60_000);
       setStatus('waiting');
@@ -636,7 +641,7 @@ export default function UntactLawDoctor() {
       <div className="uld-bar-btns">
         {status === 'waiting' && barTimer && <span className="uld-bar-timer">{barTimer}</span>}
         {status === 'request' && (
-          <Btn disabled={!canAccept} onClick={() => setDialog('reception')}>
+          <Btn disabled={!canAccept} onClick={() => setDialog(quota === 'full' ? 'quota' : 'reception')}>
             접수완료
           </Btn>
         )}
@@ -861,6 +866,7 @@ export default function UntactLawDoctor() {
 
   /* ───────── 다이얼로그(packages/ui Dialog) ───────── */
   const DIALOG_TITLE: Record<Exclude<Dialog, null>, string> = {
+    quota: '이번 달 500건에 도달했어요',
     reception: '예상 대기 시간 설정',
     start: '진료 시작하기',
     phone: '전화로 진료하기',
@@ -872,7 +878,7 @@ export default function UntactLawDoctor() {
       <div
         role="dialog"
         aria-label={DIALOG_TITLE[dialog]}
-        className={`uld-dialog ${dialog === 'reception' ? 'is-small' : ''} ${['phone', 'cancel', 'video'].includes(dialog) ? 'is-changed' : ''}`}
+        className={`uld-dialog ${dialog === 'reception' || dialog === 'quota' ? 'is-small' : ''} ${['quota', 'phone', 'cancel', 'video'].includes(dialog) ? 'is-changed' : ''}`}
         onClick={e => e.stopPropagation()}
       >
         <p className="uld-dialog-title">
@@ -880,6 +886,12 @@ export default function UntactLawDoctor() {
           {dialog === 'phone' && law(['phone-condition', 'record-phone'])}
           {dialog === 'cancel' && law(['record-stop'])}
         </p>
+        {dialog === 'quota' && (
+          <p className="uld-dialog-desc">
+            굿닥에서 진료 완료한 비대면진료가 이번 달 500건이에요. 법령안은 의사별 비대면진료를 반기 월평균 500건 이하로 관리하도록 정하고 있어요.
+            그래도 접수할까요? <span className="uld-quota-tag">가안</span>
+          </p>
+        )}
         {dialog === 'start' && <p className="uld-dialog-desc">진료실에서 진료를 시작합니다.</p>}
         {dialog === 'phone' && <p className="uld-dialog-desc">화상진료가 원칙이에요. 전화로 진료하는 이유를 골라 주세요.</p>}
         {dialog === 'video' && (
@@ -952,7 +964,7 @@ export default function UntactLawDoctor() {
             disabled={dialog === 'phone' && (phonePick === null || (phonePick === PHONE_DIRECT && !phoneText.trim()))}
             onClick={confirm}
           >
-            {dialog === 'phone' ? '전화 진료' : '확인'}
+            {dialog === 'phone' ? '전화 진료' : dialog === 'quota' ? '접수하기' : '확인'}
           </Btn>
         </div>
       </div>
@@ -1060,12 +1072,12 @@ export default function UntactLawDoctor() {
   );
 
   /* D19 — 굿닥 기준 월 500건 상한 안내 띠(모든 탭 공통, GNB 바로 아래). 건수 표시·근접 기준·문구는 [제안] */
-  const QUOTA_COUNT = { normal: 312, near: 462, full: 500 } as const;
+  const QUOTA_COUNT = { normal: 312, near: 412, full: 500 } as const;
   const qCount = QUOTA_COUNT[quota];
   const quotaBand = (
     <div className={`uld-quota is-${quota}`}>
       <div className="uld-quota-inner is-changed">
-        <span className="uld-quota-tag">제안</span>
+        <span className="uld-quota-tag">가안</span>
         <strong className="uld-quota-num">
           이번 달 비대면 진료 {qCount} / 500건
         </strong>
@@ -1074,7 +1086,7 @@ export default function UntactLawDoctor() {
             {quota === 'full' ? '이번 달 500건에 도달했어요.' : `500건까지 ${500 - qCount}건 남았어요.`}
           </span>
         )}
-        <span className="uld-quota-sub">굿닥 기준 의사별 월 500건 · 매월 1일 초기화</span>
+        <span className="uld-quota-sub">굿닥에서 진료 완료한 건 기준 · 매월 1일 초기화</span>
         <button type="button" className="uld-quota-more" aria-expanded={quotaMore} onClick={() => setQuotaMore(o => !o)}>
           {quotaMore ? '접기' : '자세히 보기'}
           <span aria-hidden="true" className={`uld-quota-caret${quotaMore ? ' is-open' : ''}`}>⌄</span>
@@ -1086,21 +1098,22 @@ export default function UntactLawDoctor() {
             <div>
               <dt>왜 500건인가요?</dt>
               <dd>
-                의료법 시행규칙 개정령안(입법예고안)은 의사 한 명의 비대면진료 건수가 반기 월평균 500건을 넘지 않도록 정하고 있어요. 굿닥은 이
-                기준을 넘지 않도록 월 단위로 미리 알려 드려요.
+                의료법 시행규칙 개정령안(입법예고안)은 의료기관이 의사별 비대면진료 건수를 반기(6개월) 월평균 500건 이하로 관리하도록 정하고
+                있어요. 이 기준을 넘지 않도록 굿닥에서 진료한 건수를 매월 알려 드려요.
               </dd>
             </div>
             <div>
               <dt>굿닥 기준이란?</dt>
               <dd>
-                굿닥 온라인진료실에서 진료한 건만 센 숫자예요. 다른 플랫폼이나 병원 자체 비대면진료는 포함되지 않으니, 함께 운영하신다면 전체 건수를
-                따로 확인해 주세요.
+                굿닥에서 진료 완료까지 한 비대면진료만 의사별로 센 숫자예요. 접수 후 취소한 진료, 다른 플랫폼이나 병원 자체 비대면진료는
+                포함되지 않으니 함께 운영하신다면 전체 건수를 따로 확인해 주세요.
               </dd>
             </div>
             <div>
               <dt>어떻게 세나요?</dt>
               <dd>
-                {'{진료 완료 또는 접수}'} 기준으로 세고, 매월 1일에 0건부터 다시 셉니다. 법령안의 기준은 반기 월평균이라 한 달 숫자와 다를 수 있어요.
+                진료를 완료한 시점에 1건씩 더하고, 매월 1일에 0건부터 다시 세요. 법령안은 반기 월평균으로 보기 때문에 이 숫자는 관리를 돕는
+                참고 값이에요.
               </dd>
             </div>
           </dl>
@@ -1133,7 +1146,7 @@ export default function UntactLawDoctor() {
         <div className="uld-panel-card">
           <p className="uld-panel-title">온라인진료실 · 제도화 대응</p>
           <p className="uld-panel-sub">
-            굿닥 온라인진료실(의사용) · 검토용 초안 v0.10 · 현행 화면은 운영 코드 기준 재현, 동적 값은 {'{중괄호}'}
+            굿닥 온라인진료실(의사용) · 검토용 초안 v0.11 · 현행 화면은 운영 코드 기준 재현, 동적 값은 {'{중괄호}'}
           </p>
         </div>
         <div className="uld-panel-card uld-lawcard">
@@ -1182,7 +1195,7 @@ export default function UntactLawDoctor() {
             value={quota}
             options={[
               { k: 'normal', t: '여유 312' },
-              { k: 'near', t: '근접 462' },
+              { k: 'near', t: '근접 412' },
               { k: 'full', t: '도달 500' },
             ]}
             onChange={k => setQuota(k)}

@@ -1538,3 +1538,100 @@
   align-self: flex-start;
   margin-left: 0;
 }
+/* D19 월 500건 안내 띠 */
+.uld-quota {
+  background: #f5f8ff;
+  border-bottom: 1px solid #dfe8fb;
+}
+.uld-quota.is-near {
+  background: #fff6ed;
+  border-bottom-color: #fde3c8;
+}
+.uld-quota.is-full {
+  background: #fff1f1;
+  border-bottom-color: #fbd5d5;
+}
+.uld-quota-inner {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #434956;
+}
+.uld-quota-tag {
+  padding: 0 6px;
+  border-radius: 4px;
+  background: #ede6ff;
+  color: var(--note);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+}
+.uld-quota-num {
+  font-weight: 700;
+  color: #1b1f27;
+}
+.uld-quota.is-near .uld-quota-msg {
+  color: #d9640b;
+  font-weight: 700;
+}
+.uld-quota.is-full .uld-quota-msg {
+  color: #e0383e;
+  font-weight: 700;
+}
+.uld-quota-sub {
+  margin-left: auto;
+  font-size: 13px;
+  color: #808799;
+}
+.uld-quota-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: #2b6cf6;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.uld-quota-caret {
+  display: inline-block;
+  line-height: 1;
+  transform: translateY(-3px);
+}
+.uld-quota-caret.is-open {
+  transform: rotate(180deg) translateY(-3px);
+}
+.uld-quota-detail {
+  max-width: 1140px;
+  margin: 0 auto 12px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #e3e6ed;
+}
+.uld-quota-detail dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+.uld-quota-detail dt {
+  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1b1f27;
+}
+.uld-quota-detail dd {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #5d6474;
+}

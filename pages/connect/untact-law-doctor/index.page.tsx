@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : untact-law-doctor — 굿닥 온라인진료실(의사용) · 비대면진료 제도화(의료법 개정) 대응
- * 상태      : 검토용 초안 · v0.9 · 최종수정 2026-11-23 · 샌드박스 배포
+ * 상태      : 검토용 초안 · v0.10 · 최종수정 2026-11-24 · 샌드박스 배포
  * PRD       : 없음(제도화 대응 기획 초안). 사내 문서 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/untact-law-doctor.html
  * 피그마    : 없음. 기준은 대응 보드 커넥트 섹션(진료실-1~3) + 현행 온라인진료실 개발 코드.
@@ -53,8 +53,16 @@
  *  - [보류] 진료실-3 '현재 내원 환자가 많아 진료가 어렵습니다'가 '진료하지 않은 판단으로 노출 불이익 금지'와 충돌하는지 법무 확인.
  *  - [보류] 접수 전 확인 상자 모양은 임의(현행 대응 요소 없음).
  *  - [보류] 보드 그레이존(엄격/완화) 카드는 법무 검토 전이라 반영하지 않음.
+ *  - [확정·D19] 굿닥 기준 월 500건 상한 안내 띠는 GNB 바로 아래 하나를 모든 탭이 공통으로 쓴다. 굿닥 기준이라 법령 버튼 없음.
+ *  - [확정·D19] 띠에는 '이번 달 비대면 진료 n / 500건'을 보여 주고, 남은 건수 문구는 근접과 도달 상태에서만 보여 준다(여유 상태는 숫자만).
+ *  - [보류] D19 건수 기준(진료 완료 또는 접수)과 초기화 시점(매월 1일 가정).
+ *  - [보류] D19 근접 강조 기준(지금은 [제안]으로 450건부터 주황).
+ *  - [보류] D19 500건 도달 시 접수 차단 여부(지금은 안내만).
+ *  - [보류] D19 안내 문구(가안). 상세 안내의 법령안 설명(반기 월평균 500건)은 법무 확인 전 가안이라 법령 버튼 없이 문장으로만 둠.
+ *  - [보류] D19 상세 안내의 '굿닥 기준' 범위(굿닥 온라인진료실 진료만 셈, 다른 플랫폼과 병원 자체 비대면진료 미포함) 확인 필요.
  *
  * 변경 이력
+ *  - v0.10 (2026-11-24) D19: GNB 바로 아래 모든 탭 공통 '월 비대면 진료 500건(굿닥 기준)' 안내 띠[제안]. 띠 오른쪽 '자세히 보기'로 펼치는 상세 안내(왜 500건인지, 굿닥 기준의 뜻, 세는 법). 패널 '이번 달 진료 건수' 토글(여유/근접/도달).
  *  - v0.9 (2026-11-23) D18 변경: 접수 전 확인에 '첨부한 신분증으로 본인 여부를 확인했어요' 체크, '본인 확인 서류' 열람 영역(전 대상, 확대 보기), 거주지 '신분증 겸용' 상태. 진료 중 확인 상자 삭제.
  *  - v0.8 (2026-11-23) D18(이전안): 본인 확인을 화상 진료 중 확인으로 옮김.
  *  - v0.7 (2026-11-23) 패널 '바뀐 곳 점선 표시' 토글(기본 켜짐). 근거 법령 보기(패널 스위치, 기본 켜짐): 접수 전 확인(31조의5⑦·⑧3, 본인 ②③, 대상별 31조의2①②③·31조의5⑤),
@@ -317,6 +325,8 @@ export default function UntactLawDoctor() {
   const [toast, setToast] = useState('');
   const [lawOn, setLawOn] = useState(true);
   const [marksOn, setMarksOn] = useState(true);
+  const [quota, setQuota] = useState<'normal' | 'near' | 'full'>('normal');
+  const [quotaMore, setQuotaMore] = useState(false);
   const [lawView, setLawView] = useState<{ ids: string[]; note?: string } | null>(null);
   useEffect(() => {
     if (!lawView) return;
@@ -1049,6 +1059,56 @@ export default function UntactLawDoctor() {
     </div>
   );
 
+  /* D19 — 굿닥 기준 월 500건 상한 안내 띠(모든 탭 공통, GNB 바로 아래). 건수 표시·근접 기준·문구는 [제안] */
+  const QUOTA_COUNT = { normal: 312, near: 462, full: 500 } as const;
+  const qCount = QUOTA_COUNT[quota];
+  const quotaBand = (
+    <div className={`uld-quota is-${quota}`}>
+      <div className="uld-quota-inner is-changed">
+        <span className="uld-quota-tag">제안</span>
+        <strong className="uld-quota-num">
+          이번 달 비대면 진료 {qCount} / 500건
+        </strong>
+        {quota !== 'normal' && (
+          <span className="uld-quota-msg">
+            {quota === 'full' ? '이번 달 500건에 도달했어요.' : `500건까지 ${500 - qCount}건 남았어요.`}
+          </span>
+        )}
+        <span className="uld-quota-sub">굿닥 기준 의사별 월 500건 · 매월 1일 초기화</span>
+        <button type="button" className="uld-quota-more" aria-expanded={quotaMore} onClick={() => setQuotaMore(o => !o)}>
+          {quotaMore ? '접기' : '자세히 보기'}
+          <span aria-hidden="true" className={`uld-quota-caret${quotaMore ? ' is-open' : ''}`}>⌄</span>
+        </button>
+      </div>
+      {quotaMore && (
+        <div className="uld-quota-detail is-changed">
+          <dl>
+            <div>
+              <dt>왜 500건인가요?</dt>
+              <dd>
+                의료법 시행규칙 개정령안(입법예고안)은 의사 한 명의 비대면진료 건수가 반기 월평균 500건을 넘지 않도록 정하고 있어요. 굿닥은 이
+                기준을 넘지 않도록 월 단위로 미리 알려 드려요.
+              </dd>
+            </div>
+            <div>
+              <dt>굿닥 기준이란?</dt>
+              <dd>
+                굿닥 온라인진료실에서 진료한 건만 센 숫자예요. 다른 플랫폼이나 병원 자체 비대면진료는 포함되지 않으니, 함께 운영하신다면 전체 건수를
+                따로 확인해 주세요.
+              </dd>
+            </div>
+            <div>
+              <dt>어떻게 세나요?</dt>
+              <dd>
+                {'{진료 완료 또는 접수}'} 기준으로 세고, 매월 1일에 0건부터 다시 셉니다. 법령안의 기준은 반기 월평균이라 한 달 숫자와 다를 수 있어요.
+              </dd>
+            </div>
+          </dl>
+        </div>
+      )}
+    </div>
+  );
+
   const aInWaiting = status === 'request';
   const rowA = (
     <div className={`uld-row-card ${open ? 'is-open' : ''}`}>
@@ -1073,7 +1133,7 @@ export default function UntactLawDoctor() {
         <div className="uld-panel-card">
           <p className="uld-panel-title">온라인진료실 · 제도화 대응</p>
           <p className="uld-panel-sub">
-            굿닥 온라인진료실(의사용) · 검토용 초안 v0.9 · 현행 화면은 운영 코드 기준 재현, 동적 값은 {'{중괄호}'}
+            굿닥 온라인진료실(의사용) · 검토용 초안 v0.10 · 현행 화면은 운영 코드 기준 재현, 동적 값은 {'{중괄호}'}
           </p>
         </div>
         <div className="uld-panel-card uld-lawcard">
@@ -1117,6 +1177,16 @@ export default function UntactLawDoctor() {
           <p className="uld-panel-h" style={{ margin: 0 }}>
             상태 (가상환자 A)
           </p>
+          <Seg
+            label="이번 달 진료 건수(500건 안내)"
+            value={quota}
+            options={[
+              { k: 'normal', t: '여유 312' },
+              { k: 'near', t: '근접 462' },
+              { k: 'full', t: '도달 500' },
+            ]}
+            onChange={k => setQuota(k)}
+          />
           <Seg
             label="진료 대상(환자 선택)"
             value={s.target}
@@ -1215,6 +1285,7 @@ export default function UntactLawDoctor() {
               </div>
             </div>
           </header>
+          {quotaBand}
           <main className="uld-main">
             <header className="uld-page-head">
               <h1>접수대기</h1>

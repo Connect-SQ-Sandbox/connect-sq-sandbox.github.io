@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : untact-law-app — 굿닥 앱(환자용) 비대면진료 신청 흐름 · 비대면진료 제도화(의료법 개정) 대응
- * 상태      : 검토용 초안 · v0.9 · 최종수정 2026-11-23 · 샌드박스 배포
+ * 상태      : 검토용 초안 · v0.10 · 최종수정 2026-11-24 · 샌드박스 배포
  * PRD       : 없음(제도화 대응 기획 초안). 사내 문서 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/untact-law-app.html
  * 피그마    : 없음. 현행 화면은 goodoc-mobile origin/staging(b45968ada, 2026-11-19) 코드 기준 재현.
@@ -19,32 +19,40 @@
  *  - [확정·요청] 거주지 서류는 환자가 첨부해 병원에 전달한다(D8). 플랫폼은 주소를 입력받거나 비교·차단하지 않는다.
  *  - [확정·요청] 표현은 '실거주 증명' 대신 '거주지'. 기본은 주민등록상 주소지(주민등록표 등본·초본), 실제 사는 곳이 다르면 실거주지(임대차계약서·재직/재학증명서·공공요금 납부자료 등, 시행규칙안 31조의15②)(D12).
  *  - [확정·요청] 재진 = 이 병원에서 마지막 대면진료 후 6개월 이내 + 같은 증상(시행규칙안 31조의2①·31조의5⑤1).
+ *  - [확정·D20] 재진은 환자 자기 신고. 앱은 ①에서 고르기만 하고 별도 검증 UI는 두지 않는다.
+ *  - [확정·D22] ① 재진 설명은 '이 병원에서 마지막으로 직접 진료받은 날부터 6개월 안이고, 그때와 같은 증상이에요' + 보조 '비대면진료만 받았다면 해당하지 않아요'.
+ *    예외 대상 안내에도 초진과 같은 처방 안내('약은 7일분까지 …, 이소트레티노인과 트라마돌 불가')를 둔다.
  *  - [확정·요청] 거주지 섹션에 부정 이용 방지 안내: '다른 사람의 명의나 서류를 이용하는 것은 법으로 금지돼 있어요. 거주지를 사실과 다르게 알리면 병원이 진료를 하지 않을 수 있어요.'(가안, 벌칙 조문 미확인이라 '처벌'은 쓰지 않음)
  *  - [확정·요청] ③ 법정 설명 4가지는 시행규칙안 31조의9를 앱 문구로 옮긴 가안. ④ 금지 행위 목록은 법 34조의3⑥ 원문 확인 후 기재.
  *  - [확정·요청] 첨부 전 가림 안내(고정): 제목 '첨부 전에 꼭 가려 주세요' + 주민등록번호 뒷자리·가족 정보·금액·계좌번호·연락처 가림(본인 주민번호 앞 6자리는 남김, 다른 사람 주민번호는 전부 가림) / 이름과 주소의 '시'는 꼭 보이게 남김(예: 서울특별시, 경기도 수원시) / 구·동·번지 등 나머지 주소는 가림 / 가리지 않으면 병원이 다시 요청할 수 있음.
  *  - [확정·요청] 가림 예시는 가상 서류로 그리고 남길 곳·가릴 곳을 표시한다. 주민등록상 주소지 = 주민등록표 등본, 실거주지 = 임대차계약서·재직/재학증명서·공공요금 납부자료. 주소는 시 단위만 남김.
  *  - [확정·요청] 거주지 서류 첨부는 ①에서 초진을 고른 경우 ② 신청서에서 필수다. 첨부 + 가림 확인 체크 전에는 다음 버튼 비활성(D14). 위치는 기획 세션 제안.
  *  - [제안] 첨부 후 '주민등록번호 뒷자리·가족 정보·금액·계좌번호·연락처를 가렸어요' 체크를 해야 첨부가 완료된다.
- *  - [확정·요청] ② 진료 방식은 전화를 고를 수 있을 때(재진 + 13세 이상 + 전화 숨김 과 아님)만 선택 칸(화상 기본)을 보여 준다.
- *    그 밖(초진·예외·13세 미만·피부·안과·이비인후·외상·정신)은 선택 칸 없이 안내(D15).
+ *  - [확정·D24] ② 진료 방식은 전화를 고를 수 있을 때(재진 + 13세 이상 + 전화 가능 질환)만 선택 칸(화상 기본)을 보여 준다.
+ *    전화 불가는 진료과가 아니라 질환 기준: 피부, 안, 이비인후, 외상, 정신 질환과 13세 미만은 화상만. 감기, 비염처럼 이비인후에 걸치는 항목은 전화를 고를 수 있되 화상이 기본.
+ *    질환 분류는 진료항목에 붙여 판단한다. 그 밖(초진, 예외, 13세 미만, 화상만 질환)은 선택 칸 없이 안내(D15 표시 방식 유지).
  *    안내(가안): '화상 진료로 진행돼요' + '신청하면 바로 연결되지 않아요. 의사가 진료를 시작하면 알림을 보내드리니, 진료내역에서 '진료실 입장하기'를 눌러 주세요.'
  *    (현행 앱: 진료 시작 시 진료내역 '진료실로 입장해 주세요' + '진료실 입장하기' 버튼)
  *  - [확정·요청] ② 처방 불가 약 안내(PrescriptionGuide)는 현행 문구 그대로.
  *  - [확정·요청] ③ 첫 신청 = 제목 + 법정 설명 4가지(자리표시) + 책임 문구 1곳 + 동의 체크(체크 전 CTA 비활성).
- *    재신청 = 한 줄 재확인(책임 문구) + 체크. 자녀 진료 = 법정대리인 동의 안내 한 줄 추가.
+ *    재신청 = 한 줄 재확인(책임 문구) + 체크.
+ *  - [확정·D21] 법정대리인 동의 대상은 미성년만('진료 받는 사람: 자녀(미성년)' 구조 유지). 자녀 신청이면 신청할 때마다(재신청 포함) 법정대리인 동의 체크(필수)를 받고,
+ *    설명 4가지는 법정대리인에게 하는 말로 바꿔 쓴다(내용은 같고 주어만 바꿈).
  *  - [확정·요청] ④ 병원 취소 상태에서 취소 사유를 환자에게 보여 준다. 현행 진료 정보(DetailInfoRow) 목록에 '취소사유' 줄을 추가한다.
  *  - [확정·요청] ② 거주지 종류는 세그먼트 '등본상 주소지 / 실거주지'(홈 ShortcutSegmentedTab 모양: 트랙 GRAY_20 r4 p3, 칸 높이 36, 선택 칸 흰 바탕·body2_700 GRAY_90, 미선택 body2_500 GRAY_50).
  *    세그먼트 아래에 '제출 가능한 서류' 제목 + 선택한 종류의 서류 + 안내 한 줄.
  *  - [확정·요청] 예외 대상(D17): ① 박스 설명은 대표 대상 + 고르면 박스 아래 안내(다른 시·도 병원 초진 가능, 서류 필요) + '전체 대상 보기'(시행규칙안 31조의2③ 13개 + 고시 대상).
  *    ② 거주지 서류 대신 '예외 대상 확인(필수)': 대상 칩 선택 → 등록장애인·장기요양 수급자는 병원이 건강보험 자격 조회로 확인(첨부 없음, 현행 온라인진료실이 조회로 확인 중),
  *    그 밖은 서류 첨부 필수. 서류 이름은 가안. 고르거나 첨부하기 전에는 다음 비활성 + 이유 한 줄.
+ *  - [확정·D23] ② 예외 대상 중 감염병, 선원, 재외국민은 고를 때 조건을 보여 주고 확인 체크(필수)를 받는다. 체크 전에는 다음 비활성.
+ *    감염병 '확진된 그 감염병 진료만', 선원 '승선 중이거나 승선을 위해 주소지 밖에 체류 중', 재외국민 '국외 체류 중'.
  *  - [제안] ① 박스 제목은 쉬운 말('최근 6개월 안에 다녀왔어요' 등) + 회색 태그(재진/초진/예외 대상). 화면 제목 '어디에 해당하나요?'. 순서는 초진 > 재진 > 예외 대상(대부분 초진, 잘못 골랐을 때 피해가 작은 순)(D16).
  *  - [제안] ④ 취소 사유는 병원이 고른 문장(어드민) 대신 앱 표시용 문구(환자 말투 + 다음 행동)를 보여 준다.
  *  - [확정·요청] ① 대상 선택은 라디오 대신 박스형(앱이 대상 선택에 라디오를 쓰지 않음). 모양은 Receipt420 PatientListItem·ReceiptExamRoomItem:
  *    r8 · 테두리 GRAY_30 / 선택 시 테두리 BLUE_60 · 배경 ALPHA_BLUE_05. 오른쪽 체크 아이콘은 두지 않는다. 초진 안내는 선택한 박스 아래.
  *  - [유지·자체] ① 초진 안내 상자는 ② 처방 안내(PrescriptionGuide) 상자 모양(GRAY_10 · r8 · p16 · 불릿)을 그대로 쓴다.
  *  - [유지·자체] ② 진료 대상을 바꿔 전화 진료가 막히면 선택을 화상 진료로 되돌린다.
- *  - [유지·자체] ③ 책임 문구·법정대리인 안내는 ② 처방 안내 상자와 같은 GRAY_10 상자 안에 둔다. 동의 체크는 CheckBox(icon_check_select) 모양.
+ *  - [유지·자체] ③ 책임 문구는 ② 처방 안내 상자와 같은 GRAY_10 상자 안에 둔다. 동의 체크(법정대리인 동의 포함)는 CheckBox(icon_check_select) 모양.
  *  - [유지·자체] ④ 취소사유 줄은 진료 정보 첫 줄(요청일시 위)에 둔다. 하단 버튼은 현행대로 없음(Cancel → actionButton []).
  *  - [유지·자체] 결제는 현행 화면을 간단히 재현(등록 카드 영역은 서버 데이터라 자리표시). '약관 전체 동의하기' → '진료 신청하기' 순서는 현행 그대로.
  *  - [유지·자체] 동적 값은 {병원명}·{의사명}처럼 중괄호. 진료항목·증상은 ②에서 고른 값이 ④까지 이어진다.
@@ -63,10 +71,22 @@
  *  - [보류] 주민등록상 서류로 초본(본인만 기재)을 권할지(등본은 세대원 정보가 실림).
  *  - [보류] 수진자(건강보험 자격) 조회로 확인되는 예외 대상 범위(희귀질환 산정특례 포함 여부 등) — EMR·개발 확인 필요. 지금은 등록장애인·장기요양 수급자만 조회로 둠.
  *  - [보류] 예외 대상별 확인 서류 이름(가안)과 가림 안내 강도.
- *  - [확정·D18] 본인 확인 서류(주민등록증·운전면허증·여권·건강보험증 중 1장) 필수 첨부, 전 대상, 뒷자리 가림 체크. 초진·등본상 주소지면 '신분증 주소가 지금 주소와 같아요' 체크로 거주지 서류 겸용. 자녀 신청이면 아이 서류는 건강보험증·여권만.
+ *  - [확정·D18] 본인 확인 서류(주민등록증, 운전면허증, 여권, 건강보험증 중 1장) 필수 첨부, 전 대상, 뒷자리 가림 체크. 초진이고 등본상 주소지면 '신분증 주소가 지금 주소와 같아요' 체크로 거주지 서류 겸용.
+ *    자녀 신청이면 아이 서류(건강보험증 또는 여권)에 더해 신청한 보호자의 신분증(주민등록증, 운전면허증, 여권 중 1장, 뒷자리 가림 체크, 필수)도 받고,
+ *    '화상 진료 때 자녀가 함께 화면에 나오도록 해 주세요' 안내를 본인 확인 서류 영역에 둔다(건강보험증에는 사진이 없어 얼굴 대조가 안 됨).
  *  - [보류] ② 가림 예시 재직증명서의 '소속'·'재직 기간'은 남김/가림 표시 없이 둠. 표시 여부 확인 중.
+ *  - [보류] ③ 법정대리인 동의 체크 문구 '자녀의 법정대리인으로서 비대면진료에 동의해요'는 가안.
+ *  - [보류] ③ 자녀 신청 설명 4가지 중 4번(금지 행위)은 문구에 주어가 없어 본인 신청과 같은 문구를 그대로 둠. 3번 제목은 '자녀의 상태를 사실대로 알려 주세요'로 바꿈.
+ *  - [보류] ② 예외 대상 확인 체크는 조건 문구를 체크 문구로 그대로 씀(감염병 '확진된 그 감염병 진료만 받을 수 있어요' 등). 따로 '해당해요' 식 체크 문구가 필요한지,
+ *    칩 이름 '감염병 격리 중'과 조건 '확진된'의 관계(격리 중이지만 미확진인 경우)도 확인 필요. 그 밖의 예외 대상은 조건 체크 없음.
+ *  - [보류] ② 질환 분류(D24)는 진료항목 단위로 붙였다(증상 프리셋 단위 분류는 하지 않음). 항목별 분류표가 없어 전화 가능 질환, 화상만 질환의 항목 이름과 프리셋은 자리표시.
+ *  - [보류] ② '화상 기본'은 이비인후 걸침 항목으로 정해졌지만 전화 가능 질환도 기존 D15대로 화상이 기본이라 화면상 차이가 없다. 전화 가능 질환의 기본 선택 확인 필요.
+ *  - [보류] ② 자녀 신청의 보호자 신분증을 거주지 서류로 함께 쓸 수 있는지(지금은 겸용 체크 없음). 보호자 신분증 설명 '신청한 보호자의 신분증 1장을 첨부해 주세요'는 가안.
  *
  * 변경 이력
+ *  - v0.10 (2026-11-24) 11-24 회의 확정 반영: ① 재진 설명(마지막 직접 진료 후 6개월, 비대면진료만은 해당 안 됨), 예외 대상 안내에 처방 안내 추가(D22).
+ *    ② 전화 불가를 진료과 대신 질환 기준으로(패널 '질환' 토글, D24), 예외 대상 감염병, 선원, 재외국민 조건 확인 체크(D23), 자녀 신청이면 보호자 신분증 추가와 화상 안내(D18).
+ *    ③ 자녀 신청은 매번 법정대리인 동의 체크(필수) + 설명 4가지를 법정대리인에게 하는 말로(D21). 재진 자기 신고(D20), 동의 대상 미성년만(D21) 메모.
  *  - v0.9 (2026-11-23) D18 변경: ② 본인 확인 서류(필수) 영역 추가(전 대상), 초진은 신분증으로 거주지 겸용 가능. v0.8의 화상 신분증 안내 문구 삭제. 서류 종류 칩(자녀는 건강보험증·여권만), 겸용은 주소 있는 서류만.
  *  - v0.8 (2026-11-23) D18(이전안): 화상 진료일 때 신분증 화면 제시 안내.
  *  - v0.7 (2026-11-23) '근거 법령 보기' 토글 기본값 켜짐. 패널 '바뀐 곳 점선 표시' 토글(기본 켜짐).
@@ -95,7 +115,7 @@ type Step = 'doctor' | 'target' | 'form' | 'consent' | 'payment' | 'done' | 'det
 type Target = 'revisit' | 'first' | 'exception';
 type Who = 'self' | 'child';
 type Count = 'first' | 'again';
-type Dept = 'general' | 'nophone';
+type Dis = 'general' | 'entMix' | 'videoOnly';
 type Age = 'over13' | 'under13';
 type Method = 'video' | 'phone';
 type Proof = 'none' | 'attached';
@@ -114,9 +134,9 @@ const STEPS: { key: Step; label: string; kind: 'cur' | 'new' | 'mod' }[] = [
 ];
 const KIND_LABEL = { cur: '현행', new: '신규', mod: '수정' } as const;
 
-const TARGETS: { key: Target; title: string; plain: string; desc: string }[] = [
+const TARGETS: { key: Target; title: string; plain: string; desc: string; sub?: string }[] = [
   { key: 'first', title: '초진', plain: '처음이거나 6개월이 지났어요', desc: '이 병원이 처음이거나, 다녀온 지 6개월이 지났거나, 그때와 다른 증상이에요' },
-  { key: 'revisit', title: '재진', plain: '최근 6개월 안에 다녀왔어요', desc: '이 병원에 직접 가서 진료받았고, 그때와 같은 증상이에요' },
+  { key: 'revisit', title: '재진', plain: '최근 6개월 안에 다녀왔어요', desc: '이 병원에서 마지막으로 직접 진료받은 날부터 6개월 안이고, 그때와 같은 증상이에요', sub: '비대면진료만 받았다면 해당하지 않아요' },
   { key: 'exception', title: '예외 대상', plain: '아래 대상에 해당해요', desc: '희귀질환자, 등록장애인, 장기요양 수급자, 군인·경찰·소방공무원 등' },
 ];
 
@@ -127,10 +147,13 @@ const CANCEL_REASONS: { key: CancelReason; text: string; app: string }[] = [
   { key: 'noContact', text: '환자와 연락이 되지 않습니다', app: '연락이 닿지 않아 취소됐어요. 알림과 전화를 받을 수 있을 때 다시 신청해 주세요.' },
 ];
 
-/* 진료과: 일반은 실제 캡처(UNT-FRM-01) 값, 전화 숨김 과는 이름만 임의 */
-const DEPTS: Record<Dept, { name: string; presets: string[] }> = {
-  general: { name: '감기·비염', presets: ['콧물', '코막힘', '인후통', '삼킴곤란', '기침'] },
-  nophone: { name: '피부과', presets: ['{증상 프리셋 1}', '{증상 프리셋 2}', '{증상 프리셋 3}'] },
+/* 진료항목별 질환 분류(D24): 전화 가능 여부는 진료과가 아니라 질환으로 정한다(시행규칙안 31조의11①).
+   general = 전화 가능 질환(이름과 프리셋은 자리표시), entMix = 이비인후에 걸치는 항목(실제 캡처 UNT-FRM-01 값, 전화 가능하되 화상 기본),
+   videoOnly = 피부, 안, 이비인후, 외상, 정신 질환(화상만, 이름과 프리셋은 자리표시) */
+const ITEMS: Record<Dis, { name: string; presets: string[]; phone: boolean }> = {
+  general: { name: '{진료항목}', presets: ['{증상 프리셋 1}', '{증상 프리셋 2}', '{증상 프리셋 3}'], phone: true },
+  entMix: { name: '감기·비염', presets: ['콧물', '코막힘', '인후통', '삼킴곤란', '기침'], phone: true },
+  videoOnly: { name: '{피부 질환 항목}', presets: ['{증상 프리셋 1}', '{증상 프리셋 2}', '{증상 프리셋 3}'], phone: false },
 };
 
 /* 법이 정한 설명 4가지 — 문구 미확정 자리표시 */
@@ -140,6 +163,13 @@ const LAW_EXPLAINS: { title: string; body: string }[] = [
   { title: '의사가 진료를 하지 않거나 중간에 멈출 수 있어요', body: '법에서 정한 경우에 해당하면 의사가 비대면진료를 하지 않거나 진료 중에 멈출 수 있어요.' },
   { title: '사실대로 알려 주세요', body: '주된 증상, 지금 앓고 있는 병, 병력·가족력, 먹고 있는 약을 의사에게 사실대로 알려 주세요.' },
   { title: '이런 행위는 법으로 금지돼 있어요', body: '{금지 행위 목록 — 법 원문 확인 후 기재} 이런 행위를 하면 형사처벌을 받을 수 있어요.' },
+];
+/* 자녀 신청(D21): 같은 내용을 법정대리인에게 하는 말로(주어만 바꿈). 4번은 주어가 없어 그대로 */
+const LAW_EXPLAINS_CHILD: { title: string; body: string }[] = [
+  { title: '직접 진찰할 수 없어 진단에 한계가 있어요', body: '의사가 자녀를 직접 보거나 만지고 검사할 수 없어서, 대면진료보다 진단이 덜 정확할 수 있어요.' },
+  { title: '의사가 진료를 하지 않거나 중간에 멈출 수 있어요', body: '법에서 정한 경우에 해당하면 의사가 자녀의 비대면진료를 하지 않거나 진료 중에 멈출 수 있어요.' },
+  { title: '자녀의 상태를 사실대로 알려 주세요', body: '자녀의 주된 증상, 지금 앓고 있는 병, 병력·가족력, 먹고 있는 약을 보호자님이 의사에게 사실대로 알려 주세요.' },
+  LAW_EXPLAINS[3],
 ];
 /* ③ 책임 문구 — 진료 대상별(가안). 고시 24조 '의료기관이 본인·대상 여부를 확인' 안내 포함 */
 const RESPONSIBILITY: Record<Target, string> = {
@@ -430,17 +460,18 @@ const LAW: Record<string, { doc: string; article: string; page: string; img: str
 /* ---------- 예외 대상(동일 시·도 밖 초진 허용, 시행규칙안 31조의2③) ----------
    query = 병원이 건보 자격(수진자) 조회로 확인(현행 온라인진료실이 조회로 확인 중인 항목). 그 밖은 서류 첨부. 서류명은 가안. */
 type ExCat = 'disability' | 'ltc' | 'rare' | 't1dm' | 'infect' | 'public' | 'seaman' | 'veteran' | 'hospice' | 'abroad' | 'prisoner';
-const EX_CATS: { key: ExCat; label: string; query?: boolean; docs?: string }[] = [
+/* cond = 고를 때 보여 주고 확인 체크를 받는 조건(D23) */
+const EX_CATS: { key: ExCat; label: string; query?: boolean; docs?: string; cond?: string }[] = [
   { key: 'disability', label: '등록장애인', query: true },
   { key: 'ltc', label: '장기요양 수급자', query: true },
   { key: 'rare', label: '희귀질환자', docs: '산정특례 등록 확인서 또는 진단서' },
   { key: 't1dm', label: '제1형 당뇨병 환자', docs: '진단서 또는 소견서' },
-  { key: 'infect', label: '감염병 격리 중', docs: '격리통지서' },
+  { key: 'infect', label: '감염병 격리 중', docs: '격리통지서', cond: '확진된 그 감염병 진료만 받을 수 있어요' },
   { key: 'public', label: '군인·경찰·소방공무원', docs: '공무원증 또는 재직증명서' },
-  { key: 'seaman', label: '선원', docs: '선원수첩 또는 승선 사실 확인서' },
+  { key: 'seaman', label: '선원', docs: '선원수첩 또는 승선 사실 확인서', cond: '승선 중이거나 승선을 위해 주소지 밖에 체류 중이에요' },
   { key: 'veteran', label: '국가보훈 대상자', docs: '국가보훈등록증' },
   { key: 'hospice', label: '호스피스 대상 환자', docs: '호스피스 대상 확인 서류' },
-  { key: 'abroad', label: '국외 체류 재외국민', docs: '재외국민 등록 확인 서류' },
+  { key: 'abroad', label: '국외 체류 재외국민', docs: '재외국민 등록 확인 서류', cond: '국외 체류 중이에요' },
   { key: 'prisoner', label: '수용자', docs: '수용 사실 확인 서류' },
 ];
 
@@ -450,21 +481,21 @@ type State = {
   target: Target | null;
   who: Who;
   count: Count;
-  dept: Dept;
+  dis: Dis;
   age: Age;
   cancel: CancelReason;
   proof: Proof;
 };
 
 export default function UntactLawApp() {
-  /* 검토용 URL 파라미터: ?step=form&target=first&who=child&count=again&dept=nophone&age=under13&cancel=needVisit&proof=attached */
+  /* 검토용 URL 파라미터: ?step=form&target=first&who=child&count=again&dis=videoOnly&age=under13&cancel=needVisit&proof=attached */
   const [s, setS] = useState<State>(() => {
     const init: State = {
       step: 'doctor',
       target: null,
       who: 'self',
       count: 'first',
-      dept: 'general',
+      dis: 'entMix',
       age: 'over13',
       cancel: 'notTarget',
       proof: 'none',
@@ -477,7 +508,7 @@ export default function UntactLawApp() {
       });
       /* 오타 값은 기본값으로 — 없는 값이면 화면 전체가 깨짐 */
       if (!STEPS.some(x => x.key === init.step)) init.step = 'doctor' as State['step'];
-      if (!(init.dept in DEPTS)) init.dept = 'general';
+      if (!(init.dis in ITEMS)) init.dis = 'entMix';
       if (!CANCEL_REASONS.some(r => r.key === init.cancel)) init.cancel = 'notTarget' as State['cancel'];
       if (init.proof !== 'attached' || init.target !== 'first') init.proof = 'none';
     } catch {
@@ -563,25 +594,41 @@ export default function UntactLawApp() {
   const [idFile, setIdFile] = useState(s.proof === 'attached');
   const [idChecked, setIdChecked] = useState(s.proof === 'attached');
   /* 자녀 신청이면 아이 서류는 건강보험증·여권만(D18) */
-  const idTypes = s.who === 'child' ? ID_TYPES.filter(x => x.key === 'insurance' || x.key === 'passport') : ID_TYPES;
+  const idTypes = s.who === 'child' ? (['insurance', 'passport'] as IdType[]).map(k => ID_TYPES.find(x => x.key === k)!) : ID_TYPES;
   const [idType, setIdType] = useState<IdType>(s.who === 'child' ? 'insurance' : 'idcard');
+  /* 본인과 자녀를 바꾸면 서류 주인이 달라지므로 첨부를 비운다 */
+  const whoMounted = useRef(false);
   useEffect(() => {
-    if (!idTypes.some(x => x.key === idType)) {
-      setIdType(idTypes[0].key);
-      setIdFile(false);
-      setIdChecked(false);
+    if (!whoMounted.current) {
+      whoMounted.current = true;
+      return;
     }
+    const att = s.proof === 'attached';
+    setIdType(idTypes[0].key);
+    setIdFile(att);
+    setIdChecked(att);
+    setGFile(att);
+    setGChecked(att);
   }, [s.who]);
   const idHasAddr = ID_TYPES.find(x => x.key === idType)!.hasAddr;
+  /* 자녀 신청이면 보호자 신분증도 필수(D18): 주민등록증, 운전면허증, 여권 중 1장 + 뒷자리 가림 체크 */
+  const guardianIdTypes = ID_TYPES.filter(x => x.key !== 'insurance');
+  const [gType, setGType] = useState<IdType>('idcard');
+  const [gFile, setGFile] = useState(s.proof === 'attached');
+  const [gChecked, setGChecked] = useState(s.proof === 'attached');
   useEffect(() => {
     if (s.proof === 'attached') {
       setIdFile(true);
       setIdChecked(true);
+      setGFile(true);
+      setGChecked(true);
     }
   }, [s.proof]);
   /* 초진 + 등본상 주소지: 신분증 주소가 지금 주소와 같으면 거주지 서류로 함께 쓴다 */
   const [idAsResid, setIdAsResid] = useState(false);
-  const idPending = !(idFile && idChecked);
+  const idSelfPending = !(idFile && idChecked);
+  const guardianPending = s.who === 'child' && !(gFile && gChecked);
+  const idPending = idSelfPending || guardianPending;
   useEffect(() => {
     if (!idFile || !idHasAddr || s.target !== 'first' || resid !== 'resident') setIdAsResid(false);
   }, [idFile, idHasAddr, s.target, resid]);
@@ -591,39 +638,56 @@ export default function UntactLawApp() {
   const [exCat, setExCat] = useState<ExCat | null>(null);
   const [exFile, setExFile] = useState(false);
   const [exListOpen, setExListOpen] = useState(false);
+  /* 조건 확인 체크(D23, 감염병, 선원, 재외국민) */
+  const [exCond, setExCond] = useState(false);
   useEffect(() => {
     if (s.target !== 'exception') {
       setExCat(null);
       setExFile(false);
+      setExCond(false);
     }
     setExListOpen(false);
   }, [s.target]);
   const exInfo = EX_CATS.find(c => c.key === exCat);
-  const exPending = s.target === 'exception' && (!exInfo || (!exInfo.query && !exFile));
+  const exPending = s.target === 'exception' && (!exInfo || (!!exInfo.cond && !exCond) || (!exInfo.query && !exFile));
   const formPending = idPending || proofPending || exPending;
-  const formHint = idPending
+  const formHint = idSelfPending
     ? idFile
       ? "주민등록번호 뒷자리를 가린 뒤 위의 '…가렸어요'에 체크해 주세요"
       : '본인 확인 서류를 첨부해 주세요'
+    : guardianPending
+    ? gFile
+      ? "보호자 신분증의 주민등록번호 뒷자리를 가린 뒤 '…가렸어요'에 체크해 주세요"
+      : '보호자 신분증을 첨부해 주세요'
     : proofPending
     ? proofFile
       ? "가릴 곳을 가린 뒤 위의 '…가렸어요'에 체크해 주세요"
       : '거주지 서류를 첨부해 주세요'
     : !exInfo
       ? '해당하는 예외 대상을 골라 주세요'
-      : '예외 대상을 확인할 서류를 첨부해 주세요';
+      : exInfo.cond && !exCond
+        ? '예외 대상 조건을 확인하고 체크해 주세요'
+        : '예외 대상을 확인할 서류를 첨부해 주세요';
 
-  const phoneHidden = s.age === 'under13' || s.dept === 'nophone';
+  /* 전화 불가: 13세 미만 또는 화상만 질환(D24) */
+  const phoneHidden = s.age === 'under13' || !ITEMS[s.dis].phone;
   const phoneEnabled = !phoneHidden && s.target === 'revisit';
 
   /* 전화 진료가 막히거나 숨겨지면 화상 진료로 되돌린다 */
   useEffect(() => {
     if (method === 'phone' && !phoneEnabled) setMethod('video');
   }, [phoneEnabled, method]);
-  /* 진료과가 바뀌면 프리셋 초기화 (SymptomScreen.tsx:124 와 같음) */
-  useEffect(() => setPresets([]), [s.dept]);
-  /* 동의는 첫/재신청·진료 받는 사람이 바뀌면 다시 받는다 */
-  useEffect(() => setConsent(false), [s.count, s.who]);
+  /* 진료항목이 바뀌면 프리셋 초기화 (SymptomScreen.tsx:124 와 같음), 진료 방식은 화상 기본으로(D24) */
+  useEffect(() => {
+    setPresets([]);
+    setMethod('video');
+  }, [s.dis]);
+  /* 동의는 첫/재신청, 진료 받는 사람이 바뀌면 다시 받는다(법정대리인 동의 포함) */
+  const [guardianConsent, setGuardianConsent] = useState(false);
+  useEffect(() => {
+    setConsent(false);
+    setGuardianConsent(false);
+  }, [s.count, s.who]);
   useEffect(() => setFirstOpen(false), [s.count, s.target]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -632,7 +696,7 @@ export default function UntactLawApp() {
   }, [s.step]);
 
   const go = (step: Step) => set({ step });
-  const dept = DEPTS[s.dept];
+  const item = ITEMS[s.dis];
 
   /* ───────── 화면들 ───────── */
 
@@ -691,6 +755,16 @@ export default function UntactLawApp() {
         <T s="b2" c="gray-70" style={{ flex: 1 }}>
           다른 시·도에 있는 병원에서도 처음 진료받을 수 있는 대상이에요
           {law(['exception-list'])}
+        </T>
+      </div>
+      {/* D22: 초진과 같은 처방 안내 */}
+      <div className="ula-bullet ula-changed">
+        <T s="b2" c="gray-70">
+          {'  •'}
+        </T>
+        <T s="b2" c="gray-70" style={{ flex: 1 }}>
+          약은 7일분까지 처방받을 수 있어요. 먹는 여드름약(이소트레티노인)·트라마돌은 처방받을 수 없어요
+          {law(['rx-7days', 'rx-banned'])}
         </T>
       </div>
       <div className="ula-bullet">
@@ -780,10 +854,18 @@ export default function UntactLawApp() {
                       </T>
                       <span className="ula-tag">{t.title}</span>
                     </span>
-                    <T s="b2" c="gray-70">
-                      {t.desc}
-                      {law(t.key === 'first' ? ['revisit-period'] : t.key === 'revisit' ? ['revisit-period', 'revisit-check'] : ['exception-list'])}
-                    </T>
+                    {/* D22: 재진은 마지막 직접 진료일 기준 + 비대면진료만은 해당 안 됨 */}
+                    <span className={`ula-col ${t.sub ? 'ula-changed' : ''}`} style={{ gap: 2 }}>
+                      <T s="b2" c="gray-70">
+                        {t.desc}
+                        {law(t.key === 'first' ? ['revisit-period'] : t.key === 'revisit' ? ['revisit-period', 'revisit-check'] : ['exception-list'])}
+                      </T>
+                      {t.sub && (
+                        <T s="c1" c="gray-60">
+                          {t.sub}
+                        </T>
+                      )}
+                    </span>
                   </span>
                 </button>
                 {t.key === 'first' && on && FirstGuide}
@@ -820,11 +902,23 @@ export default function UntactLawApp() {
               if (exCat === c.key) return;
               setExCat(c.key);
               setExFile(false);
+              setExCond(false);
             }}>
             {c.label}
           </button>
         ))}
       </div>
+      {exInfo?.cond && (
+        <div className="ula-changed">
+          <button className="ula-check" onClick={() => setExCond(v => !v)}>
+            <IconCheckRound on={exCond} />
+            <T s="b1" w={exCond ? 6 : 5} c={exCond ? 'gray-90' : 'gray-70'}>
+              {exInfo.cond}
+              {law(['exception-list'])}
+            </T>
+          </button>
+        </div>
+      )}
       {exInfo &&
         (exInfo.query ? (
           <div className="ula-method-info" style={{ marginBottom: 0 }}>
@@ -874,34 +968,31 @@ export default function UntactLawApp() {
     </div>
   );
 
-  /* ② 본인 확인 서류 (신규, 전 대상) — D18 */
-  const IdSection = (
-    <div className="ula-col ula-changed" style={{ gap: 16, padding: '24px 20px 28px', borderBottom: '8px solid var(--gray-20)' }}>
-      <div className="ula-col" style={{ gap: 4 }}>
-        <T s="h5" w={7} c="gray-90">
-          본인 확인 서류(필수)
-          {law(['identity-check'])}
-        </T>
-        <T s="b2" c="gray-80">
-          {s.who === 'child'
-            ? '병원이 진료받는 자녀가 맞는지 확인할 수 있게 자녀의 서류 1장을 첨부해 주세요.'
-            : '병원이 진료받는 분이 맞는지 확인할 수 있게 1장을 첨부해 주세요.'}
-        </T>
-      </div>
+  /* ② 본인 확인 서류 (신규, 전 대상) — D18. 서류 고르기, 가림 예시, 첨부, 가림 체크 한 묶음 */
+  const idBlock = (o: {
+    types: typeof ID_TYPES;
+    type: IdType;
+    setType: (t: IdType) => void;
+    file: boolean;
+    setFile: (v: boolean) => void;
+    checked: boolean;
+    setChecked: (v: boolean) => void;
+  }) => (
+    <>
       <div className="ula-col" style={{ gap: 4 }}>
         <T s="c1" w={6} c="gray-60">
           제출 가능한 서류
         </T>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
-          {idTypes.map(t => (
+          {o.types.map(t => (
             <button
               key={t.key}
-              className={`ula-preset is-small ${idType === t.key ? 'is-on' : ''}`}
+              className={`ula-preset is-small ${o.type === t.key ? 'is-on' : ''}`}
               onClick={() => {
-                if (idType === t.key) return;
-                setIdType(t.key);
-                setIdFile(false);
-                setIdChecked(false);
+                if (o.type === t.key) return;
+                o.setType(t.key);
+                o.setFile(false);
+                o.setChecked(false);
               }}>
               {t.label}
             </button>
@@ -915,7 +1006,7 @@ export default function UntactLawApp() {
         <T s="b2" w={6} c="gray-80">
           이렇게 가려 주세요
         </T>
-        <ProofDocMock doc={idDocOf(idType)} />
+        <ProofDocMock doc={idDocOf(o.type)} />
         <div className="ula-legend">
           <span>
             <i className="is-keep" />
@@ -928,33 +1019,75 @@ export default function UntactLawApp() {
         </div>
       </div>
       <div className="ula-col" style={{ gap: 12 }}>
-        {!idFile ? (
-          <button className="ula-upload" onClick={() => { setIdFile(true); setIdChecked(false); }}>
+        {!o.file ? (
+          <button className="ula-upload" onClick={() => { o.setFile(true); o.setChecked(false); }}>
             <IconCamera />
             <span>서류 첨부하기</span>
           </button>
         ) : (
           <div className="ula-proof-file">
             <span className="ula-proof-thumb">
-              <ProofDocMock doc={idDocOf(idType)} mini />
+              <ProofDocMock doc={idDocOf(o.type)} mini />
             </span>
             <T s="b2" c="gray-80" style={{ flex: 1 }}>
-              {`${ID_TYPES.find(x => x.key === idType)!.label} 1장`}
+              {`${ID_TYPES.find(x => x.key === o.type)!.label} 1장`}
             </T>
-            <button className="ula-proof-del" onClick={() => { setIdFile(false); setIdChecked(false); }} aria-label="첨부 삭제">
+            <button className="ula-proof-del" onClick={() => { o.setFile(false); o.setChecked(false); }} aria-label="첨부 삭제">
               <IconClose />
             </button>
           </div>
         )}
-        {idFile && (
-          <button className="ula-check" onClick={() => setIdChecked(v => !v)}>
-            <IconCheckRound on={idChecked} />
-            <T s="b1" w={idChecked ? 6 : 5} c={idChecked ? 'gray-90' : 'gray-70'}>
+        {o.file && (
+          <button className="ula-check" onClick={() => o.setChecked(!o.checked)}>
+            <IconCheckRound on={o.checked} />
+            <T s="b1" w={o.checked ? 6 : 5} c={o.checked ? 'gray-90' : 'gray-70'}>
               주민등록번호 뒷자리를 가렸어요
             </T>
           </button>
         )}
       </div>
+    </>
+  );
+  const IdSection = (
+    <div className="ula-col ula-changed" style={{ gap: 16, padding: '24px 20px 28px', borderBottom: '8px solid var(--gray-20)' }}>
+      <div className="ula-col" style={{ gap: 4 }}>
+        <T s="h5" w={7} c="gray-90">
+          본인 확인 서류(필수)
+          {law(['identity-check'])}
+        </T>
+        <T s="b2" c="gray-80">
+          {s.who === 'child'
+            ? '병원이 진료받는 자녀가 맞는지 확인할 수 있게 자녀의 서류 1장을 첨부해 주세요.'
+            : '병원이 진료받는 분이 맞는지 확인할 수 있게 1장을 첨부해 주세요.'}
+        </T>
+      </div>
+      {s.who === 'child' && (
+        <T s="b1" w={7} c="gray-90">
+          자녀 서류
+        </T>
+      )}
+      {idBlock({ types: idTypes, type: idType, setType: setIdType, file: idFile, setFile: setIdFile, checked: idChecked, setChecked: setIdChecked })}
+      {/* D18: 자녀 신청이면 보호자 신분증 + 화상 진료 때 자녀가 함께 나오도록 안내 */}
+      {s.who === 'child' && (
+        <div className="ula-col ula-changed" style={{ gap: 16, paddingTop: 8 }}>
+          <div className="ula-col" style={{ gap: 4 }}>
+            <T s="b1" w={7} c="gray-90">
+              보호자 신분증
+              {law(['identity-check', 'guardian'])}
+            </T>
+            <T s="b2" c="gray-80">
+              신청한 보호자의 신분증 1장을 첨부해 주세요.
+            </T>
+          </div>
+          {idBlock({ types: guardianIdTypes, type: gType, setType: setGType, file: gFile, setFile: setGFile, checked: gChecked, setChecked: setGChecked })}
+          <div className="ula-method-info" style={{ marginBottom: 0 }}>
+            <IconInformation color="#808799" size={18} />
+            <T s="b2" w={6} c="gray-80" style={{ flex: 1 }}>
+              화상 진료 때 자녀가 함께 화면에 나오도록 해 주세요
+            </T>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -1108,7 +1241,7 @@ export default function UntactLawApp() {
         <div className="ula-col" style={{ padding: '24px 20px 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <T s="h3" w={7}>
-              {dept.name}
+              {item.name}
             </T>
             <div className="ula-srv" style={{ width: 48, height: 48, marginRight: 8, borderRadius: 24 }}>
               서버
@@ -1137,7 +1270,7 @@ export default function UntactLawApp() {
               </div>
             </div>
           ) : (
-            /* 전화를 고를 수 없으면(초진·예외·13세 미만·전화 숨김 과) 선택 칸 대신 안내 한 줄 */
+            /* 전화를 고를 수 없으면(초진, 예외, 13세 미만, 화상만 질환) 선택 칸 대신 안내 한 줄 */
             <div className="ula-method-info ula-changed">
               <IconInformation color="#808799" size={18} />
               <div className="ula-col" style={{ gap: 2, flex: 1 }}>
@@ -1161,7 +1294,7 @@ export default function UntactLawApp() {
           </div>
         </div>
         <div className="ula-hscroll" style={{ padding: '8px 20px' }}>
-          {dept.presets.map(p => (
+          {item.presets.map(p => (
             <button
               key={p}
               className={`ula-preset ${presets.includes(p) ? 'is-on' : ''}`}
@@ -1310,6 +1443,8 @@ export default function UntactLawApp() {
 
   /* ③ 비대면진료 안내·동의 (신규) */
   const isAgain = s.count === 'again';
+  const isChild = s.who === 'child';
+  const explains = isChild ? LAW_EXPLAINS_CHILD : LAW_EXPLAINS;
   const ConsentScreen = (
     <>
       <NavBar left={{ icon: 'back', onPress: () => go('form') }} />
@@ -1328,19 +1463,10 @@ export default function UntactLawApp() {
                 {law(['platform-notice'])}
               </T>
             </div>
-            {s.who === 'child' && (
-              <div className="ula-guide-title">
-                <IconInformation color="#808799" />
-                <T s="b2" c="gray-70" style={{ flex: 1 }}>
-                  자녀의 진료는 가족 등록 때 받은 법정대리인 동의로 진행돼요
-                  {law(['guardian'])}
-                </T>
-              </div>
-            )}
           </div>
           {!isAgain &&
-            LAW_EXPLAINS.map((x, i) => (
-              <div className="ula-explain" key={x.title}>
+            explains.map((x, i) => (
+              <div className={`ula-explain ${isChild && i < 3 ? 'ula-changed' : ''}`} key={x.title}>
                 <span className="ula-explain-no">{i + 1}</span>
                 <div className="ula-col" style={{ gap: 4, flex: 1 }}>
                   <T s="b1" w={6} c="gray-90">
@@ -1356,7 +1482,19 @@ export default function UntactLawApp() {
         </div>
         <div style={{ flex: 1, minHeight: 24 }} />
       </div>
-      <div style={{ padding: '16px 20px 0', borderTop: '1px solid var(--gray-30)' }}>
+      <div className="ula-col" style={{ padding: '16px 20px 0', borderTop: '1px solid var(--gray-30)', gap: 12 }}>
+        {/* D21: 자녀 신청이면 신청할 때마다 법정대리인 동의(필수) */}
+        {isChild && (
+          <div className="ula-changed">
+            <button className="ula-check" onClick={() => setGuardianConsent(v => !v)}>
+              <IconCheckRound on={guardianConsent} />
+              <T s="b1" w={guardianConsent ? 6 : 5} c={guardianConsent ? 'gray-90' : 'gray-70'}>
+                자녀의 법정대리인으로서 비대면진료에 동의해요
+                {law(['guardian'])}
+              </T>
+            </button>
+          </div>
+        )}
         <button className="ula-check" onClick={() => setConsent(v => !v)}>
           <IconCheckRound on={consent} />
           <T s="b1" w={consent ? 6 : 5} c={consent ? 'gray-90' : 'gray-70'}>
@@ -1369,7 +1507,7 @@ export default function UntactLawApp() {
         <br />
         진료비는 진료가 끝난 뒤 결제돼요.
       </p>
-      <button className="ula-btn filled-blue ula-cta" disabled={!consent} onClick={() => go('payment')}>
+      <button className="ula-btn filled-blue ula-cta" disabled={!consent || (isChild && !guardianConsent)} onClick={() => go('payment')}>
         다음
       </button>
     </>
@@ -1481,7 +1619,7 @@ export default function UntactLawApp() {
               진료항목
             </T>
             <T s="b1" w={6} c="gray-70">
-              {dept.name}
+              {item.name}
             </T>
           </div>
         </div>
@@ -1572,7 +1710,7 @@ export default function UntactLawApp() {
               <InfoRow title="의사명" bold>
                 {'{의사명} 의사'}
               </InfoRow>
-              <InfoRow title="진료항목">{dept.name}</InfoRow>
+              <InfoRow title="진료항목">{item.name}</InfoRow>
               {symptomsText && <InfoRow title="상세증상">{symptomsText}</InfoRow>}
             </div>
           </div>
@@ -1601,20 +1739,23 @@ export default function UntactLawApp() {
       doctor: ['현행 의사 상세의 하단 버튼만 재현. 진료예약·바로진료 모두 ①로 이어진다(환자 선택 화면 생략).'],
       target: [
         '신청서 앞에 새로 들어가는 화면.',
-        '초진을 고르면 바로 아래에 초진 안내 한 블록. 재진·예외 대상이면 안내 없음.',
+        '초진을 고르면 초진 안내, 예외 대상을 고르면 예외 안내(처방 안내 포함)가 박스 아래에. 재진은 안내 없음(환자 자기 신고, 검증 UI 없음).',
+        '재진 설명은 마지막으로 직접 진료받은 날부터 6개월 안 + 같은 증상, 보조로 비대면진료만 받았다면 해당 안 됨.',
         '재신청이면 초진 안내를 한 줄로 접는다(눌러서 펼침).',
         '거주지 서류는 초진일 때 ② 신청서에서 첨부한다(D8). 플랫폼은 주소를 입력받거나 비교하지 않는다.',
       ],
       form: [
         '바뀐 곳은 진료 방식과 거주지(초진만, 점선). 화상 진료 기본 선택.',
-        '진료 방식 선택 칸은 재진 + 13세 이상 + 일반 과일 때만. 그 밖은 화상 진료 안내(바로 연결 안 됨 · 알림 · 진료실 입장하기).',
+        '진료 방식 선택 칸은 재진 + 13세 이상 + 전화 가능 질환일 때만. 피부, 안, 이비인후, 외상, 정신 질환은 화상만. 이비인후에 걸치는 항목(감기·비염)은 전화를 고를 수 있되 화상이 기본. 그 밖은 화상 진료 안내(바로 연결 안 됨, 알림, 진료실 입장하기).',
+        '본인 확인 서류(필수): 자녀 신청이면 자녀 서류(건강보험증 또는 여권)에 더해 보호자 신분증(주민등록증, 운전면허증, 여권)과 화상 진료 때 자녀가 함께 나오도록 하는 안내.',
+        '예외 대상 중 감염병, 선원, 재외국민은 고르면 조건 확인 체크. 체크 전에는 다음 비활성.',
         '처방 불가 약 안내는 현행 그대로. 초진 제한은 ①에만.',
         '거주지(초진 필수): 세그먼트 등본상 주소지(등본·초본) / 실거주지(임대차계약서·재직·재학증명서·공공요금 납부자료). 가림 안내·부정 이용 방지 안내·서류별 가림 예시. 첨부 + 가림 확인 체크 전에는 다음 비활성.',
       ],
       consent: [
         '신청서 다음, 결제 앞에 새로 들어가는 화면.',
         '첫 신청: 법정 설명 4가지(시행규칙안 31조의9를 옮긴 가안) + 책임 문구 + 동의. 재신청: 책임 문구 한 줄 + 동의.',
-        '자녀 진료면 법정대리인 동의 안내 한 줄 추가.',
+        '자녀 신청이면 법정대리인 동의 체크(필수, 재신청 포함)를 더하고, 설명 4가지를 법정대리인에게 하는 말로 바꾼다.',
         '체크 전에는 다음 버튼 비활성.',
       ],
       payment: ['현행 결제 화면을 간단히 재현. 약관 전체 동의 → 진료 신청하기.'],
@@ -1660,7 +1801,7 @@ export default function UntactLawApp() {
       <aside className="ula-panel">
         <div className="ula-panel-card">
           <p className="ula-panel-title">비대면진료 신청 · 제도화 대응</p>
-          <p className="ula-panel-sub">굿닥 앱(환자용) · 검토용 초안 v0.9 · 현행 화면은 앱 코드 기준 재현, 동적 값은 {'{중괄호}'}</p>
+          <p className="ula-panel-sub">굿닥 앱(환자용) · 검토용 초안 v0.10 · 현행 화면은 앱 코드 기준 재현, 동적 값은 {'{중괄호}'}</p>
         </div>
         <div className="ula-panel-card ula-lawcard">
           <div>
@@ -1728,13 +1869,15 @@ export default function UntactLawApp() {
             onChange={k => set({ count: k })}
           />
           <Seg
-            label="진료과"
-            value={s.dept}
+            label="질환(진료항목)"
+            value={s.dis}
+            col
             options={[
-              { k: 'general', t: '일반' },
-              { k: 'nophone', t: '전화 숨김 과' },
+              { k: 'entMix', t: '이비인후 걸침(감기·비염), 화상 기본' },
+              { k: 'general', t: '전화 가능 질환' },
+              { k: 'videoOnly', t: '피부, 안, 이비인후, 외상, 정신(화상만)' },
             ]}
-            onChange={k => set({ dept: k })}
+            onChange={k => set({ dis: k })}
           />
           <Seg
             label="나이"

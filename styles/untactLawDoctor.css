@@ -1635,3 +1635,34 @@
   line-height: 1.55;
   color: #5d6474;
 }
+/* D25 진료기록부 문장 */
+.uld-record {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #f7f8fa;
+}
+.uld-record-k {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #434956;
+}
+.uld-record p {
+  margin: 6px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #1b1f27;
+}
+.uld-bar-icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  background-color: currentColor;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}

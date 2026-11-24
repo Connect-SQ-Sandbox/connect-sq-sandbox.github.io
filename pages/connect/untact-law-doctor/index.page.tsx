@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : untact-law-doctor — 굿닥 온라인진료실(의사용) · 비대면진료 제도화(의료법 개정) 대응
- * 상태      : 검토용 초안 · v0.11 · 최종수정 2026-11-24 · 샌드박스 배포
+ * 상태      : 검토용 초안 · v0.12 · 최종수정 2026-11-24 · 샌드박스 배포
  * PRD       : 없음(제도화 대응 기획 초안). 사내 문서 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/untact-law-doctor.html
  * 피그마    : 없음. 기준은 대응 보드 커넥트 섹션(진료실-1~3) + 현행 온라인진료실 개발 코드.
@@ -43,7 +43,7 @@
  *  - [보류] 보드 진료실-1의 '주소지 서울 · 병원 서울 ✓' 비교 배지는 넣지 않았다. 플랫폼은 주소를 입력받거나 비교하지 않고, 의사가 첨부 서류로 확인한다(D8).
  *  - [보류] 거주지 서류를 '가림 필요'로 환자에게 다시 요청하는 반려 흐름은 미결이라 만들지 않았다. 반려가 없으면 출구가 진료취소뿐이라 취소 사유 '제출한 서류로 본인 또는 거주지를 확인할 수 없습니다' 추가 검토.
  *  - [보류] 거주지 서류의 보존·파기 시점(내려받기 허용 여부와 연결).
- *  - [확정·D18] 본인 확인은 신청 때 첨부한 본인 확인 서류로 접수 전에 한다(전 대상). 초진은 신분증 주소로 거주지 겸용 가능(패널 '신분증 겸용'). 화상 대조 확인 상자는 두지 않는다. 자녀 신청이면 아이 서류는 건강보험증·여권만(예시 건강보험증, 신분증 겸용 불가).
+ *  - [확정·D18] 본인 확인은 신청 때 첨부한 본인 확인 서류로 접수 전에 1차로 하고(전 대상), 화상 진료 중 '화상에서 얼굴과 신분증을 대조했어요' 체크를 더한다(사본 '제출' 인정 여부 정부 답 전까지 잠정). 자녀면 보호자 신분증도 함께 받는다. 초진은 신분증 주소로 거주지 겸용 가능(패널 '신분증 겸용'). 화상 대조 확인 상자는 두지 않는다. 자녀 신청이면 아이 서류는 건강보험증·여권만(예시 건강보험증, 신분증 겸용 불가).
  *  - [보류] 재진으로 신청했는데 차트상 6개월 초과·다른 증상인 경우 의사 행동(취소 후 초진 재신청 안내 등).
  *  - [보류] 접수 전 확인 체크한 의사·시각 저장(스펙). 앱 첨부의 PDF(정부24 등본) 허용 여부 — 현행 확대 보기는 이미지 전용.
  *  - [확정·요청] 굿닥 비대면진료에는 병원급 의료기관이 없으므로 의료기관 구분·병원급 접수 제한(보드 진료실-1)은 넣지 않는다.
@@ -53,6 +53,13 @@
  *  - [보류] 진료실-3 '현재 내원 환자가 많아 진료가 어렵습니다'가 '진료하지 않은 판단으로 노출 불이익 금지'와 충돌하는지 법무 확인.
  *  - [보류] 접수 전 확인 상자 모양은 임의(현행 대응 요소 없음).
  *  - [보류] 보드 그레이존(엄격/완화) 카드는 법무 검토 전이라 반영하지 않음.
+ *  - [확정·D20] 재진은 환자 자기 신고. 의사가 확인한 뒤 재진이 아니면 진료취소, 맞으면 진료(전화 포함)로 진행.
+ *  - [확정·D21] 자녀면 접수 전 확인 3개(본인, 요건, 법정대리인 동의 확인과 설명)를 모두 체크해야 접수완료(진료 시작)할 수 있다.
+ *  - [확정·D24] 전화 진료 첫 사유(대면 이력과 의사 판단)는 초진, 피부, 안, 이비인후, 외상, 정신 질환, 13세 미만에서 고를 수 없다.
+ *  - [확정·D25] 셋째 사유는 '화상 연결이 불가능한 그 밖의 사유', 직접 입력 필수. 고른 사유를 진료기록부에 옮길 문장(가안)으로 보여 준다.
+ *  - [보류] 화상 대조 체크를 하지 않으면 진료완료를 막을지(지금은 체크만, 막지 않음).
+ *  - [보류] 전화 진료일 때 본인 확인 방법(얼굴 대조 불가). 지금은 화상 진료 중에만 대조 체크를 보여 준다.
+ *  - [보류] 진료기록부 문장 문구(가안).
  *  - [확정·D19] 굿닥 기준 월 500건 상한 안내 띠는 GNB 바로 아래 하나를 모든 탭이 공통으로 쓴다. 굿닥 기준이라 법령 버튼 없음.
  *  - [확정·D19] 띠에는 '이번 달 비대면 진료 n / 500건'을 보여 주고, 남은 건수 문구는 근접과 도달 상태에서만 보여 준다(여유 상태는 숫자만).
  *  - [확정·D19] 건수는 굿닥에서 진료 완료까지 한 진료 건을 의사별로 센다.
@@ -62,6 +69,8 @@
  *  - [보류] D19 안내 문구는 법령안 31조의7④를 참고한 가안(화면에 '가안' 표시). 굿닥 기준이라 법령 버튼 없이 문장으로만 둠.
  *
  * 변경 이력
+ *  - v0.12 (2026-11-24) 11/24 회의 반영: 화상 진료 중 '화상에서 얼굴과 신분증을 대조했어요' 체크(D18), 자녀는 보호자 신분증 열람과 접수 전 확인 3번째 체크 '법정대리인 동의를 확인하고 설명했어요'(D18, D21),
+ *    전화 진료 첫 사유를 질환(피부, 안, 이비인후, 외상, 정신)과 13세 미만에서 막음, 패널 '질환'과 '환자 나이' 토글(D24), 셋째 사유 '화상 연결이 불가능한 그 밖의 사유' 직접 입력 필수와 진료기록부 문장(D25).
  *  - v0.11 (2026-11-24) D19: 근접 강조 400건부터, 500건 도달 후 접수 시 경고 확인창. 건수 기준을 '굿닥에서 진료 완료까지 한 진료 건, 의사별'로 확정. 띠와 상세 안내 문구를 법령안(31조의7④) 참고 가안으로 교체, '가안' 표시.
  *  - v0.10 (2026-11-24) D19: GNB 바로 아래 모든 탭 공통 '월 비대면 진료 500건(굿닥 기준)' 안내 띠[제안]. 띠 오른쪽 '자세히 보기'로 펼치는 상세 안내(왜 500건인지, 굿닥 기준의 뜻, 세는 법). 패널 '이번 달 진료 건수' 토글(여유/근접/도달).
  *  - v0.9 (2026-11-23) D18 변경: 접수 전 확인에 '첨부한 신분증으로 본인 여부를 확인했어요' 체크, '본인 확인 서류' 열람 영역(전 대상, 확대 보기), 거주지 '신분증 겸용' 상태. 진료 중 확인 상자 삭제.
@@ -132,7 +141,13 @@ const CANCEL_DIRECT = '직접 입력';
 const PHONE_REASONS = [
   '이 병원에서 대면진료를 받은 환자이고, 전화로 충분하다고 판단했어요',
   '화상 연결이 안 돼요 (정보통신장애 등)',
-  '그 밖의 불가피한 사유',
+  '화상 연결이 불가능한 그 밖의 사유',
+];
+/* D25 — 고른 사유를 진료기록부에 옮길 문장(가안) */
+const PHONE_RECORD = [
+  '이 의료기관에서 대면진료를 받은 환자로, 의사가 화상 없이 진료할 수 있다고 판단하여 전화로 진료함',
+  '정보통신장애로 화상 연결이 불가능하여 전화로 진료함',
+  '화상 연결이 불가능하여 전화로 진료함: ',
 ];
 const PHONE_DIRECT = 2;
 
@@ -311,7 +326,11 @@ export default function UntactLawDoctor() {
   /* 가상환자 A 진행 상태 */
   const [status, setStatus] = useState<Status>('request');
   const [open, setOpen] = useState(true);
-  const [checks, setChecks] = useState([false, false]);
+  const [checks, setChecks] = useState([false, false, false]);
+  const toggleCheck = (i: number) => setChecks(c => c.map((v, j) => (j === i ? !v : v)));
+  const [faceCheck, setFaceCheck] = useState(false);
+  const [disease, setDisease] = useState<'general' | 'visual'>('general');
+  const [under13, setUnder13] = useState(false);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [wait, setWait] = useState('5');
   const [waitAt, setWaitAt] = useState<number | null>(null);
@@ -373,7 +392,7 @@ export default function UntactLawDoctor() {
   const [videoOn, setVideoOn] = useState(true);
   const [viewerOpen, setViewerOpen] = useState(false);
   /* 확대 보기 대상: 본인 확인 서류(D18) 또는 거주지·예외 대상 서류 */
-  const [viewerKind, setViewerKind] = useState<'id' | 'doc'>('doc');
+  const [viewerKind, setViewerKind] = useState<'id' | 'guardian' | 'doc'>('doc');
   // 현행 SymptomInformation: 사진별 내려받기 아이콘 → 0.5초 완료 아이콘, 전체 '내려받기' → '받기완료'(secondarySolid) 0.5초
   const [photoView, setPhotoView] = useState<number | null>(null);
   const [photoDone, setPhotoDone] = useState<number[]>([]);
@@ -402,7 +421,7 @@ export default function UntactLawDoctor() {
     if (s.target !== 'revisit' && s.method === 'phone') set({ method: 'video' });
   }, [s.target, s.method]);
 
-  const phoneDefault = s.target === 'first' ? null : 0;
+  const phoneDefault = s.target === 'first' || disease === 'visual' || under13 ? null : 0;
   const isChild = s.who === 'child';
   /* 자녀 서류(건강보험증·여권)는 주소가 없어 신분증 겸용 불가 */
   useEffect(() => {
@@ -456,7 +475,8 @@ export default function UntactLawDoctor() {
 
   const reset = (jump: Jump) => {
     const r2a = jump === 'r2a';
-    setChecks([false, false]);
+    setChecks([false, false, false]);
+    setFaceCheck(false);
     setCancelPick(CANCEL_REASONS[0]);
     setCancelText('');
     setCancelError('');
@@ -474,7 +494,7 @@ export default function UntactLawDoctor() {
     setStatus(r2a ? 'waiting' : 'request');
     setDialog(jump === 'r3' ? 'cancel' : jump === 'r2b' ? 'video' : r2a ? 'phone' : null);
   };
-  useEffect(() => reset(s.jump), [s.jump, s.target, s.who, s.method]);
+  useEffect(() => reset(s.jump), [s.jump, s.target, s.who, s.method, disease, under13]);
   useEffect(() => setViewerOpen(false), [s.resid, s.ex]);
   /* 확대 보기: Esc로 닫기 · 뒤쪽 스크롤 잠금(현행 Dialog와 같게) */
   useEffect(() => {
@@ -509,8 +529,20 @@ export default function UntactLawDoctor() {
       { label: '주소', segs: [{ t: '서울특별시', k: 'keep' }, { t: '○○구 ○○로 00', k: 'mask' }] },
     ],
   };
-  const viewDoc = viewerKind === 'id' ? idDoc : s.target === 'exception' ? exDoc : residDoc;
-  const canAccept = checks[0] && checks[1];
+  /* D18 — 자녀 신청이면 신청한 보호자의 신분증도 받는다 */
+  const guardianDoc: DocDef = {
+    title: '주민등록증(보호자)',
+    rows: [
+      { label: '사진', segs: [{ t: '{얼굴 사진}', k: 'keep' }] },
+      { label: '성명', segs: [{ t: '{보호자 성명}', k: 'keep' }] },
+      { label: '주민등록번호', segs: [{ t: '800101-', k: 'keep' }, { t: '0000000', k: 'mask' }] },
+      { label: '주소', segs: [{ t: '서울특별시', k: 'keep' }, { t: '○○구 ○○로 00', k: 'mask' }] },
+    ],
+  };
+  const viewDoc = viewerKind === 'id' ? idDoc : viewerKind === 'guardian' ? guardianDoc : s.target === 'exception' ? exDoc : residDoc;
+  const canAccept = checks[0] && checks[1] && (!isChild || checks[2]);
+  const phoneFirstOff: '' | 'first' | 'visual' | 'under13' =
+    s.target === 'first' ? 'first' : disease === 'visual' ? 'visual' : under13 ? 'under13' : '';
   const methodLabel = (m: Method) => (m === 'video' ? '화상' : '전화');
   const secondCheck =
     s.target === 'revisit'
@@ -630,10 +662,17 @@ export default function UntactLawDoctor() {
     ontreatment: { color: 'white', background: '#0961CE', borderColor: '#0D56B5' },
   };
   const barMsg = { request: '환자를 접수해 주세요.', waiting: '진료를 시작해 주세요.', ontreatment: '진료를 완료해 주세요.' };
+  /* 작업 띠 아이콘 — SVG 안 따옴표를 인코딩해 마스크로 쓴다 */
+  const barIconUrl = `url("${(status === 'request' ? IC_RECEPTION : IC_TREATMENT).replace(/"/g, '%22').replace(/\n/g, '')}")`;
   const actionBar = status !== 'cancel' && (
     <div className="uld-bar" style={barStyle[status]}>
       <div className="uld-bar-msg">
-        <img src={status === 'request' ? IC_RECEPTION : IC_TREATMENT} alt="" />
+        {/* 아이콘 색은 띠 글자색(currentColor)을 따른다 */}
+        <span
+          aria-hidden="true"
+          className="uld-bar-icon"
+          style={{ WebkitMaskImage: barIconUrl, maskImage: barIconUrl }}
+        />
         <div>
           <strong>{barMsg[status]}</strong>
         </div>
@@ -666,17 +705,32 @@ export default function UntactLawDoctor() {
   const detail = (
     <div className="uld-detail">
       {actionBar}
+      {status === 'ontreatment' && treatMethod === 'video' && (
+        <div className="uld-confirm is-changed">
+          <p className="uld-confirm-h">화상 진료 중 확인 (의료인){law(['identity-check'])}</p>
+          <Check on={faceCheck} onClick={() => setFaceCheck(v => !v)}>
+            {isChild ? '화상에서 보호자 얼굴과 신분증을 대조했고, 자녀가 함께 나온 것을 확인했어요' : '화상에서 얼굴과 신분증을 대조했어요'}
+          </Check>
+          <p className="uld-confirm-sub">접수 전 사본 확인에 이어, 화상으로 본인 여부를 한 번 더 확인해 주세요.</p>
+        </div>
+      )}
       {status === 'request' && (
         <div className="uld-confirm is-changed">
           <p className="uld-confirm-h">접수 전 확인 (의료인){law(['after-check', 'record-check'])}</p>
-          <Check on={checks[0]} onClick={() => setChecks(c => [!c[0], c[1]])}>
-            {isChild ? '첨부한 자녀 서류로 본인 여부를 확인했어요' : '첨부한 신분증으로 본인 여부를 확인했어요'}
+          <Check on={checks[0]} onClick={() => toggleCheck(0)}>
+            {isChild ? '첨부한 자녀 서류와 보호자 신분증으로 본인 여부를 확인했어요' : '첨부한 신분증으로 본인 여부를 확인했어요'}
             {law(['identity-check'])}
           </Check>
-          <Check on={checks[1]} onClick={() => setChecks(c => [c[0], !c[1]])}>
+          <Check on={checks[1]} onClick={() => toggleCheck(1)}>
             {secondCheck}
             {law(s.target === 'first' ? ['first-region'] : s.target === 'revisit' ? ['revisit-period', 'revisit-check'] : ['exception-list', 'exception-check'])}
           </Check>
+          {isChild && (
+            <Check on={checks[2]} onClick={() => toggleCheck(2)}>
+              법정대리인 동의를 확인하고 설명했어요
+              {law(['guardian'])}
+            </Check>
+          )}
           {s.target === 'first' && (
             <p className="uld-confirm-sub">
               {s.resid === 'id' ? '본인 확인 서류의 주소로 같은 시·도인지 확인해 주세요.' : '아래 거주지 서류로 같은 시·도인지 확인해 주세요.'}
@@ -699,6 +753,14 @@ export default function UntactLawDoctor() {
             <ResidDoc doc={idDoc} mini />
           </button>
           <span className="uld-proof-name">{idDoc.title} 1장</span>
+          {isChild && (
+            <>
+              <button type="button" className="uld-proof-thumb" aria-label="보호자 신분증 확대" onClick={() => { setViewerKind('guardian'); setViewerOpen(true); }}>
+                <ResidDoc doc={guardianDoc} mini />
+              </button>
+              <span className="uld-proof-name">보호자 주민등록증 1장</span>
+            </>
+          )}
         </div>
       </div>
       {s.target === 'first' && (
@@ -936,20 +998,41 @@ export default function UntactLawDoctor() {
             {dialog === 'phone' && (
               <div className="uld-radios">
                 {PHONE_REASONS.map((r, i) => {
-                  const off = i === 0 && s.target === 'first';
+                  const off = i === 0 && phoneFirstOff !== '';
                   return (
                     <label key={r} className={`uld-radio ${off ? 'is-off' : ''}`}>
                       <input type="radio" name="phone" disabled={off} checked={phonePick === i} onChange={() => setPhonePick(i)} />
                       <span>
                         {r}
-                        {off && <em>초진 환자는 선택할 수 없어요</em>}
+                        {off && (
+                          <em>
+                            {phoneFirstOff === 'first'
+                              ? '초진 환자는 선택할 수 없어요'
+                              : phoneFirstOff === 'visual'
+                                ? '피부, 안, 이비인후, 외상, 정신 질환은 선택할 수 없어요'
+                                : '13세 미만 환자는 선택할 수 없어요'}
+                            {phoneFirstOff !== 'first' && law(['visual-diseases'])}
+                          </em>
+                        )}
                       </span>
                     </label>
                   );
                 })}
                 {phonePick === PHONE_DIRECT && (
                   <div className="uld-textarea-wrap">
-                    <textarea rows={3} value={phoneText} placeholder="사유를 입력해 주세요" onChange={e => setPhoneText(e.target.value)} />
+                    <textarea rows={3} value={phoneText} placeholder="[필수] 화상 연결이 불가능한 사유를 입력해 주세요" onChange={e => setPhoneText(e.target.value)} />
+                  </div>
+                )}
+                {phonePick !== null && (
+                  <div className="uld-record is-changed">
+                    <span className="uld-record-k">
+                      진료기록부에 옮길 문장 <span className="uld-quota-tag">가안</span>
+                      {law(['record-phone'])}
+                    </span>
+                    <p>
+                      {PHONE_RECORD[phonePick]}
+                      {phonePick === PHONE_DIRECT && (phoneText.trim() || '{입력한 사유}')}
+                    </p>
                   </div>
                 )}
               </div>
@@ -1021,7 +1104,8 @@ export default function UntactLawDoctor() {
       r1: [
         '접수대기 상세. 바뀐 곳은 보라 점선, 나머지는 현행 코드 재현.',
         '현행 빨간 시범사업 안내 대신 진료 대상 배지·가족 대리 신청 배지.',
-        '접수 전 확인 2개를 모두 체크해야 접수완료가 켜진다. 재진은 두 번째가 대면 이력 확인.',
+        '접수 전 확인을 모두 체크해야 접수완료가 켜진다(자녀면 법정대리인 동의 확인까지 3개). 재진은 두 번째가 대면 이력 확인.',
+        '진료 시작 뒤 화상 진료 중에는 작업 띠 아래 "화상에서 얼굴과 신분증을 대조했어요" 체크(자녀면 보호자 대조와 자녀 동석 확인).',
         '재진이면 환자 응답 상자, 자녀면 본인확인 문구 자리에 법정대리인 동의 기록',
         '초진이면 접수 전 확인 아래에 거주지 서류(앱에서 가림 처리해 올린 서류, 주민등록상/실거주지). 썸네일을 누르면 크게 본다(내려받기 없음). 서류 없음 상태도 있음.',
         '환자정보에 앱 안내문 확인·동의 사실(제안). 반려·파기 시점은 보류. 본인 확인은 첨부 서류로 접수 전에(D18).',
@@ -1146,7 +1230,7 @@ export default function UntactLawDoctor() {
         <div className="uld-panel-card">
           <p className="uld-panel-title">온라인진료실 · 제도화 대응</p>
           <p className="uld-panel-sub">
-            굿닥 온라인진료실(의사용) · 검토용 초안 v0.11 · 현행 화면은 운영 코드 기준 재현, 동적 값은 {'{중괄호}'}
+            굿닥 온라인진료실(의사용) · 검토용 초안 v0.12 · 현행 화면은 운영 코드 기준 재현, 동적 값은 {'{중괄호}'}
           </p>
         </div>
         <div className="uld-panel-card uld-lawcard">
@@ -1244,9 +1328,33 @@ export default function UntactLawDoctor() {
             value={s.method}
             options={[
               { k: 'video', t: '화상' },
-              { k: 'phone', t: '전화(재진만)', disabled: s.target !== 'revisit' },
+              { k: 'phone', t: '전화(재진만)', disabled: s.target !== 'revisit' || disease === 'visual' || under13 },
             ]}
             onChange={k => set({ method: k })}
+          />
+          <Seg
+            label="질환(전화 진료 제한)"
+            value={disease}
+            options={[
+              { k: 'general', t: '일반' },
+              { k: 'visual', t: '피부, 안, 이비인후, 외상, 정신' },
+            ]}
+            onChange={k => {
+              setDisease(k);
+              if (k === 'visual') set({ method: 'video' });
+            }}
+          />
+          <Seg
+            label="환자 나이"
+            value={under13 ? 'u' : 'o'}
+            options={[
+              { k: 'o', t: '13세 이상' },
+              { k: 'u', t: '13세 미만' },
+            ]}
+            onChange={k => {
+              setUnder13(k === 'u');
+              if (k === 'u') set({ method: 'video' });
+            }}
           />
         </div>
         <div className="uld-panel-card">
@@ -1362,8 +1470,8 @@ export default function UntactLawDoctor() {
           </div>
         </div>
       )}
-      {viewerOpen && (viewerKind === 'id' || (s.target === 'first' && (s.resid === 'resident' || s.resid === 'actual')) || (s.target === 'exception' && s.ex === 'doc')) && (
-        <div className="uld-viewer" role="dialog" aria-modal="true" aria-label={viewerKind === 'id' ? '본인 확인 서류' : s.target === 'exception' ? '예외 대상 서류' : '거주지 서류'} onClick={() => setViewerOpen(false)}>
+      {viewerOpen && (viewerKind === 'id' || viewerKind === 'guardian' || (s.target === 'first' && (s.resid === 'resident' || s.resid === 'actual')) || (s.target === 'exception' && s.ex === 'doc')) && (
+        <div className="uld-viewer" role="dialog" aria-modal="true" aria-label={viewerKind === 'id' ? '본인 확인 서류' : viewerKind === 'guardian' ? '보호자 신분증' : s.target === 'exception' ? '예외 대상 서류' : '거주지 서류'} onClick={() => setViewerOpen(false)}>
           <div className="uld-viewer-main" onClick={e => e.stopPropagation()}>
             <ResidDoc doc={viewDoc} />
           </div>

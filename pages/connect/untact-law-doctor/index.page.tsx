@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : untact-law-doctor — 굿닥 온라인진료실(의사용) · 비대면진료 제도화(의료법 개정) 대응
- * 상태      : 검토용 초안 · v0.18 · 최종수정 2026-11-25 · 샌드박스 배포
+ * 상태      : 검토용 초안 · v0.19 · 최종수정 2026-11-25 · 샌드박스 배포
  * PRD       : 없음(제도화 대응 기획 초안). 사내 문서 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/untact-law-doctor.html
  * 피그마    : 대응 보드 커넥트 섹션(진료실-1~3) + 현행 온라인진료실 개발 코드. 대응 보드 외 화상진료실은 피그마 TELECARE DEV 220:72455.
@@ -78,6 +78,7 @@
  *  - [보류] D33 항목 문구, 진료기록부 문장, 접수 전 확인 3번째 '법정대리인 동의를 확인하고 설명했어요'의 '설명' 부분이 진료 전 설명 영역과 겹치는지.
  *
  * 변경 이력
+ *  - v0.19 (2026-11-25) 패널 보기 개선: 패널을 화면 옆에 고정하고 안에서만 스크롤, 탭 3개(화면·상태 / 이 화면 메모 / 티켓)로 나눔. 티켓 칩은 번호만(전체 번호는 툴팁), 티켓별 보기는 한 줄 제목 + 화면 링크로 압축.
  *  - v0.18 (2026-11-25) 티켓 영향 범위 보기: 패널 티켓 칩을 누르면 무대 화면의 해당 영역에 주황 점선과 번호 라벨(data-tk). '티켓별 보기' 칩은 관계없는 화면이면 첫 해당 화면으로 이동. 다시 누르거나 '선택 해제'로 끔.
  *  - v0.17 (2026-11-25) 패널 '이 화면' 메모 줄마다 대응 티켓 번호(CONNECT26-) 표시, '티켓별 보기'(티켓 → 해당 화면 바로 가기) 추가. 메모 안 결정 번호는 화면에서 뺌.
  *  - v0.16 (2026-11-25) D33: 진료대기 상세에 진료 전 설명 확인 영역(설명 대상, 동의자, 동의 시각, 4가지 설명함 체크, 진료기록부 문장). 4개 체크 전에는 시작 버튼 비활성.
@@ -1476,6 +1477,7 @@ export default function UntactLawDoctor() {
 
   /* 티켓 영향 범위 보기 — 패널에서 티켓을 고르면 무대 화면의 data-tk 영역에 점선과 번호 라벨 */
   const [tkSel, setTkSel] = useState<number | null>(null);
+  const [ptab, setPtab] = useState<'ctl' | 'note' | 'tk'>('ctl');
   const [tkHits, setTkHits] = useState(0);
   useEffect(() => {
     document.querySelectorAll<HTMLElement>('[data-tkon]').forEach(el => {
@@ -1609,9 +1611,23 @@ export default function UntactLawDoctor() {
         <div className="uld-panel-card">
           <p className="uld-panel-title">온라인진료실 · 제도화 대응</p>
           <p className="uld-panel-sub">
-            굿닥 온라인진료실(의사용) · 검토용 초안 v0.18 · 현행 화면은 운영 코드 기준 재현, 동적 값은 {'{중괄호}'}
+            굿닥 온라인진료실(의사용) · 검토용 초안 v0.19 · 현행 화면은 운영 코드 기준 재현, 동적 값은 {'{중괄호}'}
           </p>
         </div>
+        <div className="ptab" role="tablist">
+          {([
+            ['ctl', '화면·상태'],
+            ['note', '이 화면 메모'],
+            ['tk', '티켓'],
+          ] as const).map(([k, t]) => (
+            <button key={k} type="button" role="tab" aria-selected={ptab === k} className={ptab === k ? 'is-on' : ''} onClick={() => setPtab(k)}>
+              {t}
+              {k === 'tk' && tkSel != null ? ` · ${tkSel}` : ''}
+            </button>
+          ))}
+        </div>
+        {ptab === 'ctl' && (
+        <>
         <div className="uld-panel-card uld-lawcard">
           <div>
             <p className="uld-panel-h" style={{ margin: 0 }}>
@@ -1736,23 +1752,36 @@ export default function UntactLawDoctor() {
             }}
           />
         </div>
+        </>
+        )}
+        {ptab === 'note' && (
         <div className="uld-panel-card">
-          <p className="uld-panel-h">이 화면</p>
+          <p className="uld-panel-h">이 화면 <span className="tk-legend">번호는 CONNECT26 티켓, 누르면 화면에 영향 범위 표시</span></p>
           <ul className="uld-note">
             {notes[s.jump].map((n, i) => (
               <li key={n}>
                 {(NOTE_TICKETS[s.jump][i] ?? []).map(t => (
-                  <button type="button" key={t} className={`tk-chip${tkSel === t ? ' is-on' : ''}`} title={`${TICKET_TITLE[t]} · 누르면 영향 범위 표시`} onClick={() => pickTk(t)}>
-                    CONNECT26-{t}
+                  <button type="button" key={t} className={`tk-chip${tkSel === t ? ' is-on' : ''}`} title={`CONNECT26-${t} ${TICKET_TITLE[t]} · 누르면 영향 범위 표시`} onClick={() => pickTk(t)}>
+                    {t}
                   </button>
                 ))}
                 {stripD(n)}
               </li>
             ))}
           </ul>
+          {phoneDone && <p className="uld-panel-result">전화 진료 사유: {phoneDone}</p>}
+          {cancelDone && (
+            <p className="uld-panel-result">
+              가상환자 A 진료취소 → 현행대로 진료완료 탭으로 이동(이 프로토는 접수대기 탭만 그림).
+              <br />
+              취소 사유: {cancelDone}
+            </p>
+          )}
         </div>
+        )}
+        {ptab === 'tk' && (
         <div className="uld-panel-card">
-          <p className="uld-panel-h">티켓별 보기</p>
+          <p className="uld-panel-h">티켓별 보기 <span className="tk-legend">CONNECT26-</span></p>
           <p className="tk-state">
             {tkSel == null
               ? '티켓 번호를 누르면 이 화면에서 영향 범위를 점선으로 보여 줘요.'
@@ -1773,9 +1802,9 @@ export default function UntactLawDoctor() {
                 const ex = EXTRA_TICKETS.filter(e => e.t === t);
                 return (
                   <li key={t}>
-                    <p className="tk-title">
+                    <p className="tk-title" title={TICKET_TITLE[t]}>
                       <button type="button" className={`tk-chip${tkSel === t ? ' is-on' : ''}`} title="누르면 영향 범위 표시" onClick={() => pickTk(t, true)}>
-                        CONNECT26-{t}
+                        {t}
                       </button>
                       {TICKET_TITLE[t]}
                     </p>
@@ -1793,15 +1822,8 @@ export default function UntactLawDoctor() {
                 );
               })}
           </ul>
-          {phoneDone && <p className="uld-panel-result">전화 진료 사유: {phoneDone}</p>}
-          {cancelDone && (
-            <p className="uld-panel-result">
-              가상환자 A 진료취소 → 현행대로 진료완료 탭으로 이동(이 프로토는 접수대기 탭만 그림).
-              <br />
-              취소 사유: {cancelDone}
-            </p>
-          )}
         </div>
+        )}
       </aside>
 
       <div className="uld-stage">

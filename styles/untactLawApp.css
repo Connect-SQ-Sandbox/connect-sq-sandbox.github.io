@@ -1340,3 +1340,22 @@ button.tk-chip.is-on { background: #e8590c; color: #fff; }
 .tk-clear { margin-left: 6px; padding: 0 6px; border: 1px solid #caced8; border-radius: 4px; background: #fff; font-size: 11px; line-height: 16px; color: #434956; cursor: pointer; }
 [data-tkon] { outline: 2px dashed #e8590c !important; outline-offset: 3px !important; }
 [data-tkon]::after { content: attr(data-tkon); position: absolute; top: -12px; left: -2px; z-index: 50; padding: 0 5px; border-radius: 3px; background: #e8590c; color: #fff; font-size: 10px; font-weight: 700; line-height: 15px; white-space: nowrap; pointer-events: none; }
+
+/* 패널: 화면 옆에 붙여 두고 안에서만 스크롤, 탭으로 나눔 */
+.ula-panel { max-height: calc(100vh - 48px); overflow-y: auto; scrollbar-width: thin; padding-bottom: 8px; }
+.ptab { position: sticky; top: 0; z-index: 3; display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: #e3e6ed; }
+.ptab button { flex: 1; height: 30px; border: 0; border-radius: 8px; background: transparent; font-size: 12px; font-weight: 600; color: #5d6474; cursor: pointer; white-space: nowrap; }
+.ptab button.is-on { background: #fff; color: #16181d; box-shadow: 0 1px 2px rgba(22, 24, 29, 0.08); }
+.tk-legend { margin-left: 4px; font-size: 11px; font-weight: 400; color: #808799; }
+.tk-chip { margin: 0 3px 0 0; padding: 0 5px; font-size: 10px; line-height: 16px; }
+.tk-list { gap: 0; }
+.tk-list > li { padding: 8px 0; border-top: 1px solid #f2f4f7; }
+.tk-list > li:first-child { border-top: 0; padding-top: 0; }
+.tk-title { display: flex; align-items: center; gap: 2px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.tk-title .tk-chip { flex-shrink: 0; }
+.tk-go { gap: 2px 8px; padding: 2px 0 0 2px; }
+.tk-go button { padding: 0; border: 0; background: none; font-size: 11px; line-height: 16px; color: #0073fa; text-decoration: underline; text-underline-offset: 2px; }
+.tk-go button.is-on { color: #7a4ff0; font-weight: 700; text-decoration: none; }
+.tk-where { padding: 0; background: none; font-size: 11px; color: #808799; }
+@media (max-width: 760px) { .ula-panel { max-height: none; overflow: visible; } }
+@media (min-width: 761px) { .ula-panel { align-self: flex-start; position: sticky; top: 24px; } }

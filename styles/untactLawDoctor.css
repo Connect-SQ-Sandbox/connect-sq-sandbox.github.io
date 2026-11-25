@@ -2019,3 +2019,47 @@
 .uld-vr-memo {
   min-height: 72px;
 }
+
+/* v0.16 D33: 진료 전 설명 확인 */
+.uld-explain-meta {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 6px 12px;
+  margin: 0 0 4px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.uld-explain-meta dt {
+  color: #7a8292;
+}
+.uld-explain-meta dd {
+  margin: 0;
+  color: #1b1f27;
+}
+.uld-explain-meta dd.is-warn {
+  color: #e5484d;
+  font-weight: 600;
+}
+.uld-explain .uld-check b {
+  margin-right: 4px;
+  color: #0073fa;
+}
+.uld-explain .uld-record {
+  margin-top: 4px;
+}
+/* 진료대기 작업 띠(파란 바탕)의 비활성 시작 버튼 */
+.uld-bar .uld-btn.is-reverse:disabled,
+.uld-bar .uld-btn.is-reverse:disabled:hover {
+  background: rgba(255, 255, 255, 0.35);
+  color: rgba(255, 255, 255, 0.75);
+}
+.uld-bar .uld-btn.uld-on-blue:disabled,
+.uld-bar .uld-btn.uld-on-blue:disabled:hover {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.55);
+}
+/* 진료중 읽기 전용 설명 체크 */
+.uld-explain .uld-check:disabled {
+  cursor: default;
+}

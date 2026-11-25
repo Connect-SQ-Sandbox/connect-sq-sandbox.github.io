@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : untact-law-doctor — 굿닥 온라인진료실(의사용) · 비대면진료 제도화(의료법 개정) 대응
- * 상태      : 검토용 초안 · v0.15 · 최종수정 2026-11-24 · 샌드박스 배포
+ * 상태      : 검토용 초안 · v0.16 · 최종수정 2026-11-25 · 샌드박스 배포
  * PRD       : 없음(제도화 대응 기획 초안). 사내 문서 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/untact-law-doctor.html
  * 피그마    : 대응 보드 커넥트 섹션(진료실-1~3) + 현행 온라인진료실 개발 코드. 대응 보드 외 화상진료실은 피그마 TELECARE DEV 220:72455.
@@ -70,8 +70,16 @@
  *  - [확정·D19] 400건(80%)부터 띠를 주황으로 강조한다(한 단계).
  *  - [확정·D19] 500건에 도달해도 접수는 막지 않는다. 도달 뒤 '접수완료'를 누르면 경고 확인창('이번 달 500건에 도달했어요', [취소]/[접수하기])을 먼저 띄우고, 접수하기를 누르면 예상 대기 시간 설정으로 이어진다.
  *  - [보류] D19 안내 문구는 법령안 31조의7④를 참고한 가안(화면에 '가안' 표시). 굿닥 기준이라 법령 버튼 없이 문장으로만 둠.
+ *  - [확정·D33] 진료대기 상세에 '진료 전 설명 확인' 영역: 설명 대상(본인 또는 법정대리인), 동의자, 앱 동의 시각, 4가지 항목별 '설명함' 체크.
+ *    4개를 모두 체크해야 '전화 진료 시작'과 '화상 진료 시작'이 열린다. 자녀면 법정대리인 동의 확인(접수 전 확인 3번째)이 없으면 시작할 수 없다.
+ *    진료기록부에 옮길 문장(가안)을 D25 형식으로 보여 준다. 진료중에는 같은 영역을 읽기 전용으로 둔다.
+ *  - [확정·D34] 화상진료실 차트 '환자 증상'에 환자가 고른 증상 칩을 접수 상세와 같은 형식('증상: 기침, 콧물' 다음 줄에 상세 증상)으로 보여 준다. 칩만 있어도 블록을 보여 준다.
+ *  - [보류] D33 항목 문구, 진료기록부 문장, 접수 전 확인 3번째 '법정대리인 동의를 확인하고 설명했어요'의 '설명' 부분이 진료 전 설명 영역과 겹치는지.
  *
  * 변경 이력
+ *  - v0.16 (2026-11-25) D33: 진료대기 상세에 진료 전 설명 확인 영역(설명 대상, 동의자, 동의 시각, 4가지 설명함 체크, 진료기록부 문장). 4개 체크 전에는 시작 버튼 비활성.
+ *    진료대기, 진료중 바로가기는 접수 전 확인과 설명 체크를 마친 상태로 연다. 환자정보 동의 사실 문구를 '이 진료의 설명 4가지'로(자녀는 법정대리인이 주어).
+ *    D34: 화상진료실 차트 '환자 증상'에 증상 칩 줄 표시(현행은 자유 입력만).
  *  - v0.15 (2026-11-24) D30: 화상진료실 화면 추가(피그마 220:72455 기준, 키/몸무게 줄 제외). 화상 진료 시작 확인, 다시 화상 연결, 바로가기에서 오버레이로 열리고 '나가기'로 닫힘.
  *    얼굴과 신분증 대조 체크를 진료 상세에서 화상진료실 환자정보 패널 맨 위 '본인 확인' 영역(서류 썸네일, 확대 보기)으로 옮김. 바로가기 이름 '진료실-2 화상진료실 본인 확인'.
  *    D31: 진료 취소 사유에 '화상으로 본인 확인이 되지 않았습니다.' 추가(법령 버튼).
@@ -161,6 +169,14 @@ const PHONE_RECORD = [
 ];
 const PHONE_DIRECT = 2;
 
+/* D33 — 진료 전 설명 4가지(시행규칙안 31조의9, 4번은 법 34조의3⑥). 의사가 항목별로 '설명함' 체크 */
+const EXPLAIN_ITEMS = [
+  '직접 진찰과 검사를 할 수 없어 진단의 정확도에 한계가 있다',
+  '법에서 정한 경우 비대면진료를 하지 않거나 중단할 수 있다',
+  '주된 증상, 기저질환, 병력과 가족력, 복용 중인 약을 사실대로 알릴 의무가 있다',
+  '다른 사람의 인적 사항을 쓰거나 속여서 처방받는 행위는 금지되고 형사처벌 대상이 될 수 있다',
+];
+
 /* 현행 types.ts waitingTimes */
 const WAITING_TIMES = [
   { value: '5', label: '5분' },
@@ -247,8 +263,8 @@ const Switch = ({ on, onClick }: { on: boolean; onClick?: () => void }) => (
     <span />
   </button>
 );
-const Check = ({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) => (
-  <button type="button" className={`uld-check ${on ? 'is-on' : ''}`} onClick={onClick}>
+const Check = ({ on, onClick, children, disabled }: { on: boolean; onClick: () => void; children: React.ReactNode; disabled?: boolean }) => (
+  <button type="button" className={`uld-check ${on ? 'is-on' : ''}`} onClick={onClick} disabled={disabled}>
     <span className="uld-check-box">
       {on && (
         <svg width={12} height={12} viewBox="0 0 24 24" fill="none">
@@ -394,6 +410,9 @@ export default function UntactLawDoctor() {
   const [checks, setChecks] = useState([false, false, false]);
   const toggleCheck = (i: number) => setChecks(c => c.map((v, j) => (j === i ? !v : v)));
   const [faceCheck, setFaceCheck] = useState(false);
+  /* D33 — 진료 전 설명 항목별 체크(4개 모두 체크해야 진료 시작 버튼이 열림) */
+  const [explained, setExplained] = useState([false, false, false, false]);
+  const toggleExplained = (i: number) => setExplained(c => c.map((v, j) => (j === i ? !v : v)));
   /* D30 — 화상진료실(오버레이). 경과 시간은 화상 진료 시작 시각부터 */
   const [roomOpen, setRoomOpen] = useState(false);
   /* 화상진료실 오버레이는 좌측 프로토 패널 오른쪽부터 덮는다(패널은 계속 쓸 수 있게) */
@@ -575,7 +594,9 @@ export default function UntactLawDoctor() {
   const reset = (jump: Jump) => {
     const r2a = jump === 'r2a';
     const r2v = jump === 'r2v';
-    setChecks([false, false, false]);
+    /* 진료대기, 진료중 바로가기는 접수 전 확인과 진료 전 설명을 마친 상태로 연다 */
+    setChecks(r2a || r2v ? [true, true, true] : [false, false, false]);
+    setExplained(r2a || r2v ? [true, true, true, true] : [false, false, false, false]);
     setFaceCheck(false);
     setCancelPick(CANCEL_REASONS[0]);
     setCancelText('');
@@ -644,6 +665,10 @@ export default function UntactLawDoctor() {
   };
   const viewDoc = viewerKind === 'id' ? idDoc : viewerKind === 'guardian' ? guardianDoc : s.target === 'exception' ? exDoc : residDoc;
   const canAccept = checks[0] && checks[1] && (!isChild || checks[2]);
+  /* D33 — 4가지 설명 체크와 (자녀면) 법정대리인 동의 확인이 모두 있어야 진료를 시작할 수 있다 */
+  const guardianOk = !isChild || checks[2];
+  const canStart = explained.every(Boolean) && guardianOk;
+  const startHint = !guardianOk ? '법정대리인 동의를 확인해야 진료를 시작할 수 있어요' : '진료 전 설명 4가지를 모두 체크해야 진료를 시작할 수 있어요';
   const phoneFirstOff: '' | 'first' | 'visual' | 'under13' =
     s.target === 'first' ? 'first' : disease === 'visual' ? 'visual' : under13 ? 'under13' : '';
   const methodLabel = (m: Method) => (m === 'video' ? '화상' : '전화');
@@ -790,17 +815,17 @@ export default function UntactLawDoctor() {
         )}
         {/* D26 — 시작 버튼은 '전화 진료 시작'과 '화상 진료 시작'으로 맞추고, 진료대기에는 진료완료를 두지 않는다 */}
         {status === 'waiting' && s.method === 'video' && (
-          <Btn v="secondary" className="uld-on-blue is-changed" onClick={openPhone}>
+          <Btn v="secondary" className="uld-on-blue is-changed" disabled={!canStart} title={canStart ? undefined : startHint} onClick={openPhone}>
             전화 진료 시작
           </Btn>
         )}
         {status === 'waiting' && s.method === 'video' && (
-          <Btn className="is-reverse is-changed" onClick={() => setDialog('start')}>
+          <Btn className="is-reverse is-changed" disabled={!canStart} title={canStart ? undefined : startHint} onClick={() => setDialog('start')}>
             화상 진료 시작
           </Btn>
         )}
         {status === 'waiting' && s.method === 'phone' && (
-          <Btn className="is-reverse is-changed" onClick={openPhone}>
+          <Btn className="is-reverse is-changed" disabled={!canStart} title={canStart ? undefined : startHint} onClick={openPhone}>
             전화 진료 시작
           </Btn>
         )}
@@ -844,6 +869,45 @@ export default function UntactLawDoctor() {
               {s.ex === 'query' ? '수진자 조회로 예외 대상인지 확인해 주세요.' : '아래 첨부 서류로 예외 대상인지 확인해 주세요.'}
             </p>
           )}
+        </div>
+      )}
+      {(status === 'waiting' || status === 'ontreatment') && (
+        <div className="uld-confirm uld-explain is-changed">
+          <p className="uld-confirm-h">진료 전 설명 확인 (의료인){law(['explain-4', 'after-check'])}</p>
+          <dl className="uld-explain-meta">
+            <dt>설명 대상</dt>
+            <dd>{isChild ? '법정대리인(보호자) {보호자 성명}' : '환자 본인 가상환자 A'}</dd>
+            <dt>동의자</dt>
+            <dd>
+              {isChild ? '법정대리인(보호자) {보호자 성명}' : '환자 본인 가상환자 A'}
+              {isChild && law(['guardian'])}
+            </dd>
+            <dt>동의 시각</dt>
+            <dd>{'{앱 동의 시각}'} (앱 신청 때 설명 4가지 확인 후 동의)</dd>
+            {isChild && (
+              <>
+                <dt>법정대리인 동의</dt>
+                <dd className={guardianOk ? '' : 'is-warn'}>{guardianOk ? '확인함 (접수 전 확인)' : '확인되지 않음, 진료를 시작할 수 없어요'}</dd>
+              </>
+            )}
+          </dl>
+          {EXPLAIN_ITEMS.map((t, i) => (
+            <Check key={t} on={explained[i]} disabled={status !== 'waiting'} onClick={() => toggleExplained(i)}>
+              <b>설명함</b> {i + 1}. {t}
+            </Check>
+          ))}
+          {status === 'waiting' && !canStart && <p className="uld-confirm-sub">{startHint}</p>}
+          <div className="uld-record">
+            <span className="uld-record-k">
+              진료기록부에 옮길 문장 <span className="uld-quota-tag">가안</span>
+              {law(['explain-4'])}
+            </span>
+            <p>
+              {isChild
+                ? '비대면진료 전 법정대리인(보호자 {보호자 성명})에게 진단의 한계, 진료 거절 또는 중단 가능성, 사실 고지 의무, 금지 행위와 처벌 가능성을 설명하고 {앱 동의 시각}에 동의를 받음'
+                : '비대면진료 전 환자 본인에게 진단의 한계, 진료 거절 또는 중단 가능성, 사실 고지 의무, 금지 행위와 처벌 가능성을 설명하고 {앱 동의 시각}에 동의를 받음'}
+            </p>
+          </div>
         </div>
       )}
       <div className="uld-proof is-changed">
@@ -923,7 +987,7 @@ export default function UntactLawDoctor() {
             </p>
           )}
         </div>
-        <p className="uld-consent-fact is-changed">환자가 앱에서 비대면진료 안내문 4가지를 확인하고 동의함 · {'{동의일시}'}{law(['explain-4'])}</p>
+        <p className="uld-consent-fact is-changed">{isChild ? '법정대리인(보호자)이' : '환자가'} 앱에서 이 진료의 설명 4가지를 확인하고 동의함 · {'{동의일시}'}{law(['explain-4'])}</p>
         {s.target === 'revisit' && (
           <div className="uld-answer is-changed">
             <p className="uld-answer-h">재진 · 환자 응답 (확인 필요){law(['revisit-period', 'revisit-check'])}</p>
@@ -1270,7 +1334,9 @@ export default function UntactLawDoctor() {
                 {roomField('전화번호', '010-0000-0000')}
               </div>
               <div className="uld-vr-symptom-col">
-                <div className="uld-vr-form uld-vr-symptom">
+                {/* D34 — 현행 화상진료 차트는 자유 입력(symptomDescription)만 보여 주고 없으면 블록을 숨긴다.
+                    접수 상세와 같이 '증상: 칩' 줄 다음에 상세 증상을 보여 주고, 칩만 있어도 블록을 보여 준다 */}
+                <div className="uld-vr-form uld-vr-symptom is-changed">
                   <span className="uld-vr-label">환자 증상</span>
                   <div className="uld-vr-input">
                     <span>
@@ -1344,12 +1410,15 @@ export default function UntactLawDoctor() {
       ],
       r2a: [
         '진료대기 상세(현행 파란 작업 띠).',
+        '진료 전 설명 확인: 설명 대상, 동의자, 앱 동의 시각과 4가지 "설명함" 체크. 4개 모두 체크해야 시작 버튼이 열린다(자녀면 법정대리인 동의 확인도 필요). 진료기록부 문장(가안)을 함께 보여 준다(D33).',
+        '이 바로가기는 설명 체크를 마친 상태로 연다. 체크 전 상태는 진료실-1에서 접수완료 후 확인.',
         '시작 버튼은 "전화 진료 시작"과 "화상 진료 시작"(전화 신청은 "전화 진료 시작"만). 진료대기에는 진료완료가 없다.',
         '"전화 진료 시작"은 사유 모달을 열고, 사유를 고르면 진료중이 된다.',
         '초진이면 첫 번째 사유를 고를 수 없다. 직접 입력은 글자가 있어야 확인.',
       ],
       r2v: [
         '화상진료실(현행 재현). 환자정보 패널 맨 위 "본인 확인" 영역에서 첨부 서류 썸네일을 보며 얼굴과 신분증을 대조했다고 체크한다(D18, D30). 썸네일을 누르면 크게 본다.',
+        '차트 "환자 증상"은 접수 상세와 같이 "증상: 칩" 다음 줄에 상세 증상. 현행은 자유 입력만 보여 주고 없으면 숨김. 칩만 있어도 보여 준다(D34).',
         '자녀면 아이 서류와 보호자 신분증 썸네일, 보호자 대조와 자녀 동석 확인 문구. 전화 진료는 화상진료실이 열리지 않는다.',
         '"나가기"를 누르면 진료 상세(진료중)로 돌아오고, 작업 띠 "다시 화상 연결"로 다시 연다. 체크는 진료가 바뀌기 전까지 유지.',
       ],
@@ -1466,7 +1535,7 @@ export default function UntactLawDoctor() {
         <div className="uld-panel-card">
           <p className="uld-panel-title">온라인진료실 · 제도화 대응</p>
           <p className="uld-panel-sub">
-            굿닥 온라인진료실(의사용) · 검토용 초안 v0.15 · 현행 화면은 운영 코드 기준 재현, 동적 값은 {'{중괄호}'}
+            굿닥 온라인진료실(의사용) · 검토용 초안 v0.16 · 현행 화면은 운영 코드 기준 재현, 동적 값은 {'{중괄호}'}
           </p>
         </div>
         <div className="uld-panel-card uld-lawcard">

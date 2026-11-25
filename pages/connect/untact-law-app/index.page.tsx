@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : untact-law-app — 굿닥 앱(환자용) 비대면진료 신청 흐름 · 비대면진료 제도화(의료법 개정) 대응
- * 상태      : 검토용 초안 · v0.13 · 최종수정 2026-11-25 · 샌드박스 배포
+ * 상태      : 검토용 초안 · v0.14 · 최종수정 2026-11-25 · 샌드박스 배포
  * PRD       : 없음(제도화 대응 기획 초안). 사내 문서 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/untact-law-app.html
  * 피그마    : 없음. 현행 화면은 goodoc-mobile origin/staging(b45968ada, 2026-11-19) 코드 기준 재현.
@@ -9,15 +9,16 @@
  * 에셋      : assets/untact-law-app/img_doctor_avatar.png (레포 원본). 아이콘은 레포 svg path 를 인라인.
  * 기술제약  : 샌드박스 빌드 = react 훅 + plain CSS, 외부 요청 0. Pretendard 는 로컬 설치 글꼴에 의존(CDN @import 는 빌드에서 제거됨).
  * 화면구성  : 좌측 상태 패널(화면 점프 · 상태 토글 · 화면별 메모) + 375×812 폰
- *             굿닥 웹 비대면 소개(수정·D36, 앱으로 이동) → 의사 상세(현행·진입점) → 진료 대상자 선택(현행) → ① 진료 대상 확인(신규) → ② 신청서(수정) → ③ 비대면진료 안내·동의(신규)
+ *             굿닥 웹 비대면 소개, 웹 병원 상세(수정·D36·D37, 앱으로 이동) → 의사 상세(현행·진입점) → 진료 대상자 선택(현행) → ① 진료 대상 확인(신규) → ② 신청서(수정) → ③ 비대면진료 안내·동의(신규)
  *             → 결제(현행·간단) → 신청 완료(현행) → ④ 진료내역 상세 · 병원 취소(수정)
  *
  * 핵심 결정(why)
  *  - [확정·D36] 비대면진료는 웹으로 신청할 수 없다. 굿닥 웹 비대면 소개(goodoc.co.kr/untact)는 현행을 재현하되 웹 신청을 암시하거나 법 기준에 맞지 않는 내용을 뺀다(요청):
  *    '비대면진료는 이렇게 진행하세요' STEP 1~4 전체, 후기 '대면이랑 차이가 없어요'. 하단 버튼은 앱 신청 안내 모달로 바꾼다.
  *  - [보류] 웹 하단 버튼 '앱에서 진료 신청하기', 모달 제목, 본문, 버튼 이름은 가안. 모달은 로그인 없이 뜬다(현행은 로그인, 본인인증 후 웹 신청서).
- *  - [보류] PC 웹은 현행 앱 다운로드 모달처럼 QR을 보여 줄지, 앱 딥링크 목적지(비대면 홈 또는 같은 의사), 웹 병원 상세 '비대면진료' 버튼도 같은 모달로 보낼지,
- *    웹으로 이미 신청한 진행 중 진료(상태 FAB)를 어떻게 둘지 확인 필요.
+ *  - [확정·D37] 웹 병원 상세 '비대면진료' 버튼도 같은 모달(로그인 없이, 여러 의사면 현행 의사 선택 시트 후). PC 웹은 QR. 앱 목적지는 비대면 소개 → 비대면 의사 목록,
+ *    병원 상세 의사 선택 → 그 의사 상세(앱에 딥링크 app/untact/doctor/list, app/untact/doctor/profile/:doctorId 이미 있음). 웹으로 이미 신청한 진행 중 진료는 유지.
+ *  - [보류] PC 모달 문구 '휴대폰 카메라로 QR 코드를 찍어 앱에서 신청해 주세요'는 가안.
  *  - [확정·요청] 담당 범위는 신청서 진입부터. 진료 대상자 선택은 현행(SelectFamilyScreen, type untact) 그대로 재현하고, 고른 값은 패널 '진료 받는 사람'과 같은 상태다.
  *  - [확정·D29] 진료 대상자 선택(현행)에서 자녀를 고르면 추가 준비물 바텀시트(아이 서류, 보호자 신분증, 화상 동석, 매 신청 법정대리인 동의)를 띄우고 [준비할게요]로 진행.
  *    [다시 고를게요], 배경, 닫기, Esc는 닫기만. 본인은 지금처럼 바로 진행. 거주지, 예외 대상 서류는 '진료 대상에 따라 … 더 필요할 수 있어요' 한 줄로.
@@ -104,6 +105,7 @@
  *  - [보류] ② 자녀 신청의 보호자 신분증을 거주지 서류로 함께 쓸 수 있는지(지금은 겸용 체크 없음). 보호자 신분증 설명 '신청한 보호자의 신분증 1장을 첨부해 주세요'는 가안.
  *
  * 변경 이력
+ *  - v0.14 (2026-11-25) D37: 웹 진입점 병원 상세(로그인 없이 의사 선택 시트 → 앱 안내 모달), PC 웹 QR 모달. 패널 '웹 진입점', '기기' 토글.
  *  - v0.13 (2026-11-25) D36: 굿닥 웹 비대면 소개 화면(모바일 웹) 추가. STEP 1~4와 후기 1건 제거, 하단 버튼을 앱 신청 안내 모달로. 패널 '웹 소개 보기' As-is/To-be 비교.
  *  - v0.12 (2026-11-25) D33: ③ 설명 4가지를 담당 의료인 명의({의사명} 의사가 설명드려요)로 바꾸고 재신청에도 보여 줌. 4번을 법 34조의3⑥ 기준(다른 사람 인적 사항 사용, 속여 처방받기) 문구로.
  *    동의 체크를 '(필수) {의사명} 의사의 설명 4가지를 확인했고, 이 진료에 동의해요'로(자녀는 법정대리인 문구), 법정대리인 동의(D21)는 그 아래 유지.
@@ -152,7 +154,7 @@ type Resid = 'resident' | 'actual';
 type CancelReason = 'notTarget' | 'needVisit' | 'noIdentity' | 'noContact';
 
 const STEPS: { key: Step; label: string; kind: 'cur' | 'new' | 'mod' }[] = [
-  { key: 'web', label: '굿닥 웹 비대면 소개 (D36)', kind: 'mod' },
+  { key: 'web', label: '굿닥 웹 비대면 진입 (D36·D37)', kind: 'mod' },
   { key: 'doctor', label: '의사 상세 (진입점)', kind: 'cur' },
   { key: 'family', label: '진료 대상자 선택', kind: 'cur' },
   { key: 'target', label: '① 진료 대상 확인', kind: 'new' },
@@ -865,7 +867,20 @@ export default function UntactLawApp() {
   /* 굿닥 웹 비대면 소개(goodoc.co.kr/untact, 모바일 웹) — D36 웹 신청 불가. 현행 UntactLandingPage 재현 + 웹 신청 암시 제거 + 앱 유도 모달 */
   const [webAsIs, setWebAsIs] = useState(false);
   const [webModal, setWebModal] = useState(false);
-  useEffect(() => setWebModal(false), [s.step, webAsIs]);
+  /* D37: 진입점(비대면 소개 / 웹 병원 상세), 기기(모바일 / PC), 병원 상세 의사 선택 시트 */
+  const [webEntry, setWebEntry] = useState<'landing' | 'hospital'>('landing');
+  const [webPc, setWebPc] = useState(false);
+  const [hospSheet, setHospSheet] = useState(false);
+  const [webDoc, setWebDoc] = useState<string | null>(null);
+  useEffect(() => {
+    setWebModal(false);
+    setHospSheet(false);
+    setWebDoc(null);
+  }, [s.step, webAsIs, webEntry, webPc]);
+  const WEB_DOCTORS = [
+    { name: '{의사명A}', dept: '{진료과}', st: '바로진료' },
+    { name: '{의사명B}', dept: '{진료과}', st: '예약가능' },
+  ];
   const WEB_PRICES: [string, string][] = [
     ['감기·비염', '6,500'],
     ['소화기', '6,600'],
@@ -895,8 +910,7 @@ export default function UntactLawApp() {
       {children}
     </div>
   );
-  const WebScreen = (
-    <>
+  const WebHead = (
       <div className="ulw-head">
         <span className="ulw-logo">g</span>
         <span className="ulw-search">지역, 진료과, 병원명 검색</span>
@@ -904,6 +918,10 @@ export default function UntactLawApp() {
           ≡
         </span>
       </div>
+  );
+  const WebLanding = (
+    <>
+      {WebHead}
       <div className="ula-scroll ulw-body">
         {/* 현행: 하단 버튼은 후기 섹션 끝까지만 따라오는 sticky — 배너, 푸터 위로는 따라오지 않음 */}
         <div className="ulw-sticky-scope">
@@ -1025,30 +1043,135 @@ export default function UntactLawApp() {
       <div className="ulw-appbar">
         <span style={{ color: '#3ee39b' }}>병원갈 땐, 굿닥</span>&nbsp;앱 다운받기 ↓
       </div>
-      {webModal && (
-        <div className="ulw-dim" onClick={() => setWebModal(false)}>
-          <div className="ulw-modal ula-changed" role="dialog" aria-label="앱에서 신청 안내" onClick={e => e.stopPropagation()}>
-            <T s="h4" c="gray-90" style={{ textAlign: 'center' }}>
-              비대면진료는
-              <br />
-              <b>굿닥 앱에서 신청할 수 있어요</b>
-            </T>
-            <T s="b2" c="gray-70" style={{ textAlign: 'center' }}>
-              웹에서는 비대면진료를 신청할 수 없어요.
-              <br />
-              앱을 설치하거나 열어서 신청해 주세요.
-            </T>
-            <div className="ulw-modal-btns">
-              <button type="button" className="ulw-modal-main" onClick={() => go('doctor')}>
-                앱에서 진료 신청하기
+    </>
+  );
+
+  /* 웹 병원 상세(모바일 웹) — 현행 FloatingActionButtons/UntactTreatmentButton. To-be: 로그인 없이 의사 선택 → 앱 안내 모달(D37) */
+  const WebHospital = (
+    <>
+      {WebHead}
+      <div className="ula-scroll ulw-body">
+        <div className="ulw-pad" style={{ gap: 8, paddingTop: 16 }}>
+          <T s="c1" c="gray-60">
+            {'{진료과} · {주소}'}
+          </T>
+          <T s="h4" w={7} c="gray-90">
+            {'{병원명}'}
+          </T>
+          <div className="ula-srv" style={{ height: 120, borderRadius: 8, marginTop: 8 }}>
+            {'{병원 상세 — 진료시간, 위치, 리뷰 등 현행, 범위 밖}'}
+          </div>
+          <div className="ula-srv" style={{ height: 220, borderRadius: 8 }}>
+            {'{병원 상세 본문 — 현행}'}
+          </div>
+        </div>
+      </div>
+      <div className="ulw-cta-wrap" style={{ gap: 8 }}>
+        <button type="button" className="ula-btn is-flex tonal-blue">
+          {'{접수·예약 — 현행}'}
+        </button>
+        <button
+          type="button"
+          className={`ula-btn is-flex tonal-blue${webAsIs ? '' : ' ula-changed'}`}
+          title={webAsIs ? '현행: 로그인 → 의사 선택 → 예약/진료과 선택 → 웹 신청서' : undefined}
+          onClick={() => !webAsIs && setHospSheet(true)}>
+          비대면진료
+        </button>
+      </div>
+      {hospSheet && (
+        <div className="ula-sheet-dim" onClick={() => setHospSheet(false)}>
+          <div className="ula-sheet" onClick={e => e.stopPropagation()} role="dialog" aria-label="의사 선택">
+            <div className="ulw-sheet-head">
+              <T s="h5" w={7} c="gray-90">
+                진료받을 의사를 선택해 주세요
+              </T>
+              <button type="button" className="ulw-x" aria-label="닫기" onClick={() => setHospSheet(false)}>
+                ×
               </button>
-              <button type="button" className="ulw-modal-sub" onClick={() => setWebModal(false)}>
-                닫기
-              </button>
+            </div>
+            <div className="ula-col" style={{ padding: '0 20px 40px', gap: 8 }}>
+              {WEB_DOCTORS.map(d => (
+                <button
+                  type="button"
+                  key={d.name}
+                  className="ulw-doc"
+                  onClick={() => {
+                    setHospSheet(false);
+                    setWebDoc(d.name);
+                    setWebModal(true);
+                  }}>
+                  <img src={doctorAvatar} alt="" width={48} height={48} style={{ borderRadius: 24 }} />
+                  <span className="ula-col" style={{ flex: 1, gap: 2, textAlign: 'left' }}>
+                    <T s="b1" w={7} c="gray-90">
+                      {d.name} 의사
+                    </T>
+                    <T s="c1" c="gray-60">
+                      {d.dept} 전문의
+                    </T>
+                  </span>
+                  <span className="ulw-review-tag">{d.st}</span>
+                </button>
+              ))}
             </div>
           </div>
         </div>
       )}
+    </>
+  );
+  /* 앱 신청 안내 모달 — 모바일: [앱에서 진료 신청하기] / PC: QR(현행 앱 다운로드 모달처럼) */
+  const WebAppModal = webModal && (
+    <div className="ulw-dim" onClick={() => setWebModal(false)}>
+      <div className={`ulw-modal ula-changed${webPc ? ' is-pc' : ''}`} role="dialog" aria-label="앱에서 신청 안내" onClick={e => e.stopPropagation()}>
+        {webPc && (
+          <button type="button" className="ulw-x ulw-modal-x" aria-label="닫기" onClick={() => setWebModal(false)}>
+            ×
+          </button>
+        )}
+        <T s="h4" c="gray-90" style={{ textAlign: 'center' }}>
+          비대면진료는
+          <br />
+          <b>굿닥 앱에서 신청할 수 있어요</b>
+        </T>
+        <T s="b2" c="gray-70" style={{ textAlign: 'center' }}>
+          웹에서는 비대면진료를 신청할 수 없어요.
+          <br />
+          {webPc ? '휴대폰 카메라로 QR 코드를 찍어 앱에서 신청해 주세요.' : '앱을 설치하거나 열어서 신청해 주세요.'}
+        </T>
+        {webPc ? (
+          <div className="ulw-qr" aria-label="QR 코드 자리">
+            <svg viewBox="0 0 21 21" width="168" height="168" shapeRendering="crispEdges">
+              {Array.from({ length: 441 }, (_, k) => {
+                const x = k % 21;
+                const y = Math.floor(k / 21);
+                const finder = (a: number, b: number) => x >= a && x < a + 7 && y >= b && y < b + 7;
+                const inF = finder(0, 0) || finder(14, 0) || finder(0, 14);
+                let on: boolean;
+                if (inF) {
+                  const fx = x % 14 === x ? x : x - 14;
+                  const fy = y % 14 === y ? y : y - 14;
+                  on = fx === 0 || fx === 6 || fy === 0 || fy === 6 || (fx >= 2 && fx <= 4 && fy >= 2 && fy <= 4);
+                } else on = (x * 7 + y * 13 + x * y) % 5 < 2;
+                return on ? <rect key={k} x={x} y={y} width={1} height={1} fill="#16181d" /> : null;
+              })}
+            </svg>
+          </div>
+        ) : (
+          <div className="ulw-modal-btns">
+            <button type="button" className="ulw-modal-main" onClick={() => go('doctor')}>
+              앱에서 진료 신청하기
+            </button>
+            <button type="button" className="ulw-modal-sub" onClick={() => setWebModal(false)}>
+              닫기
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+  const WebScreen = (
+    <>
+      {webEntry === 'landing' ? WebLanding : WebHospital}
+      {WebAppModal}
     </>
   );
 
@@ -2386,6 +2509,10 @@ export default function UntactLawApp() {
         '뺀 것 2: 후기 \'대면이랑 차이가 없어요\'. 진료 전 설명 1번(비대면진료는 진단에 한계가 있음)과 맞지 않는다.',
         '바꾼 것: 하단 고정 버튼 \'진료 신청하기\'(현행: 로그인, 본인인증 후 웹 신청서) → \'앱에서 진료 신청하기\'(가안). 누르면 로그인 없이 앱 신청 안내 모달. [앱에서 진료 신청하기]는 앱으로 이동(이 프로토에서는 의사 상세로 넘어감), [닫기]나 배경은 닫기만.',
         '나머지(소개, 진료비, 후기, 앱 다운로드 배너, 하단 앱 다운받기 띠)는 현행 그대로.',
+        '패널 \'웹 진입점\' 병원 상세: 웹 병원 상세 \'비대면진료\' 버튼도 같은 모달로 보낸다(D37). 로그인 없이 현행 의사 선택 시트(\'진료받을 의사를 선택해 주세요\')에서 의사를 고르면 모달. 의사가 1명이면 시트 없이 바로 모달. 현행의 예약, 진료과 선택 모달과 웹 신청서는 없앤다.',
+        '앱을 열면 가는 곳(D37): 비대면 소개에서 온 경우 비대면 의사 목록(딥링크 app/untact/doctor/list), 병원 상세에서 의사를 고른 경우 그 의사 상세(app/untact/doctor/profile/{doctorId}). 이 프로토에서는 둘 다 의사 상세로 넘어간다.',
+        '패널 \'기기\' PC 웹: 현행 앱 다운로드 모달처럼 QR을 보여 주고 버튼 대신 닫기(×). QR 그림은 자리표시. 모바일 웹은 [앱에서 진료 신청하기] 버튼.',
+        '웹으로 이미 신청해 진행 중인 진료(비대면 소개 상단 상태 표시)는 지금처럼 유지한다(D37). 이 프로토는 진행 중 진료가 없는 상태만 그린다.',
       ],
       doctor: ['현행 의사 상세의 하단 버튼만 재현. 진료예약, 바로진료 모두 진료 대상자 선택으로 이어진다.'],
       family: [
@@ -2460,7 +2587,7 @@ export default function UntactLawApp() {
       <aside className="ula-panel">
         <div className="ula-panel-card">
           <p className="ula-panel-title">비대면진료 신청 · 제도화 대응</p>
-          <p className="ula-panel-sub">굿닥 앱(환자용) · 검토용 초안 v0.13 · 현행 화면은 앱 코드 기준 재현, 동적 값은 {'{중괄호}'}</p>
+          <p className="ula-panel-sub">굿닥 앱(환자용) · 검토용 초안 v0.14 · 현행 화면은 앱 코드 기준 재현, 동적 값은 {'{중괄호}'}</p>
         </div>
         <div className="ula-panel-card ula-lawcard">
           <div>
@@ -2508,6 +2635,28 @@ export default function UntactLawApp() {
                 { k: 'asis', t: 'As-is(현행)' },
               ]}
               onChange={k => setWebAsIs(k === 'asis')}
+            />
+          )}
+          {s.step === 'web' && (
+            <Seg
+              label="웹 진입점"
+              value={webEntry}
+              options={[
+                { k: 'landing', t: '비대면 소개' },
+                { k: 'hospital', t: '병원 상세' },
+              ]}
+              onChange={k => setWebEntry(k as 'landing' | 'hospital')}
+            />
+          )}
+          {s.step === 'web' && (
+            <Seg
+              label="기기"
+              value={webPc ? 'pc' : 'mobile'}
+              options={[
+                { k: 'mobile', t: '모바일 웹' },
+                { k: 'pc', t: 'PC 웹' },
+              ]}
+              onChange={k => setWebPc(k === 'pc')}
             />
           )}
           <Seg
@@ -2601,7 +2750,7 @@ export default function UntactLawApp() {
         <span className="ula-stage-cap">
           {stepMeta.label} · {KIND_LABEL[stepMeta.kind]}
         </span>
-        <section className="ula-phone">
+        <section className={`ula-phone${s.step === 'web' && webPc ? ' is-pc' : ''}`}>
           <div className="ula-statusbar">9:41</div>
           <div className="ula-col" style={{ flex: 1, minHeight: 0 }}>
             {screens[s.step]}

@@ -1666,3 +1666,356 @@
   -webkit-mask-size: contain;
   mask-size: contain;
 }
+
+/* ───────── D30 화상진료실 — 피그마 TELECARE DEV 220:72455 (현행 재현, 본인 확인 영역만 신규) ───────── */
+.uld-vr-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow: auto;
+  background: rgba(22, 24, 29, 0.6);
+}
+.uld-vr {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 1280px;
+  height: 832px;
+  margin: auto;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #27282c;
+  font-family: Pretendard, sans-serif;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.uld-vr-top {
+  display: flex;
+  gap: 16px;
+  width: 1140px;
+  height: 40px;
+}
+.uld-root .uld-vr-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 99px;
+  background: transparent;
+  opacity: 0.8;
+  font: 600 13px/20px Pretendard, sans-serif;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+}
+.uld-vr-contents {
+  display: flex;
+  gap: 24px;
+  width: 1140px;
+  height: 600px;
+}
+.uld-vr-video {
+  position: relative;
+  width: 376px;
+  height: 600px;
+  flex-shrink: 0;
+}
+.uld-vr-patient {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 376px;
+  height: 601.6px;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: linear-gradient(180deg, #4a4e57 0%, #2f3239 60%, #1f2126 100%);
+}
+.uld-vr-pip {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 120px;
+  height: 180px;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: linear-gradient(180deg, #5d6474 0%, #3a3e47 100%);
+}
+.uld-vr-sil {
+  display: block;
+}
+.uld-vr-patient .uld-vr-sil {
+  width: 300px;
+  height: 300px;
+  margin-bottom: 40px;
+}
+.uld-vr-info {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 740px;
+  height: 600px;
+  padding: 24px;
+  border-radius: 8px;
+  background: #fff;
+  overflow-y: auto;
+}
+.uld-vr-label {
+  font: 700 14px/22px Pretendard, sans-serif;
+  color: #808799;
+  white-space: nowrap;
+}
+.uld-vr-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+.uld-vr-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #f2f4f7;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0);
+  font: 700 16px/24px Pretendard, sans-serif;
+  color: #31353f;
+}
+.uld-vr-input > span:first-child {
+  flex: 1;
+  min-width: 0;
+}
+.uld-vr-copy {
+  display: flex;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  opacity: 0.4;
+  color: #16181d;
+}
+.uld-vr-data {
+  display: flex;
+  gap: 32px;
+  width: 100%;
+  flex-shrink: 0;
+}
+.uld-vr-basic {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 248px;
+  flex-shrink: 0;
+}
+.uld-vr-symptom-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.uld-vr-symptom {
+  height: 272px;
+}
+.uld-vr-symptom .uld-vr-input {
+  flex: 1;
+  align-items: flex-end;
+}
+.uld-vr-symptom .uld-vr-input > span:first-child {
+  align-self: flex-start;
+  white-space: pre-wrap;
+}
+.uld-vr-photos {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+.uld-vr-thumbs {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  height: 68px;
+  padding-top: 4px;
+}
+.uld-root .uld-vr-thumb {
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: 1px solid rgba(128, 135, 153, 0.2);
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+  cursor: zoom-in;
+}
+.uld-vr-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.uld-vr-memo {
+  flex: 1;
+  min-height: 140px;
+}
+.uld-root .uld-vr-memo .uld-vr-input {
+  flex: 1;
+  align-items: flex-start;
+  border-color: #caced8;
+  font: 600 16px/24px Pretendard, sans-serif;
+  resize: none;
+  outline: none;
+}
+.uld-vr-memo .uld-vr-input::placeholder {
+  color: #a8aebd;
+}
+/* 본인 확인 영역(신규) — 첨부 서류 썸네일 + 대조 체크 */
+.uld-vr-idcheck {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 12px 16px;
+  border: 1px solid #f2f4f7;
+  border-radius: 8px;
+}
+.uld-vr-idthumbs {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.uld-vr-idthumb {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  line-height: 16px;
+  color: #5d6474;
+}
+.uld-vr-idside {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.uld-vr-idside .uld-check {
+  font-size: 15px;
+  font-weight: 600;
+}
+.uld-vr-idsub {
+  margin: 0 0 0 28px;
+  font-size: 13px;
+  color: #808799;
+}
+.uld-vr-bottom {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 1140px;
+  height: 72px;
+  padding-top: 24px;
+  background: #27282c;
+}
+.uld-root .uld-vr-round {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  cursor: pointer;
+}
+.uld-root .uld-vr-round.is-dim {
+  opacity: 0.8;
+}
+.uld-vr-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.uld-root .uld-vr-exit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 99px;
+  background: #fa4655;
+  font: 700 14px/22px Pretendard, sans-serif;
+  color: #fff;
+  cursor: pointer;
+}
+.uld-vr-time {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  width: 400px;
+  text-align: center;
+  font: 700 16px/24px Pretendard, sans-serif;
+  color: #fff;
+  white-space: nowrap;
+}
+.uld-vr-toast {
+  position: absolute;
+  left: calc(50% + 0.5px);
+  top: calc(50% - 55px);
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 24px;
+  border-radius: 8px;
+  background: #0073fa;
+  box-shadow: 0 2px 0.5px rgba(22, 24, 29, 0.02), 0 2px 4px rgba(22, 24, 29, 0.1);
+  font: 700 16px/24px Pretendard, sans-serif;
+  color: #fff;
+  white-space: nowrap;
+  pointer-events: none;
+}
+/* 검수 반영: 화상진료실이 열려도 좌측 프로토 패널은 쓸 수 있게(오버레이는 패널 오른쪽부터), 좁은 화면에서 왼쪽 잘림 방지 */
+.uld-root .uld-panel {
+  position: relative;
+  z-index: 46;
+}
+.uld-vr-backdrop {
+  left: var(--uld-vr-left, 0px);
+  justify-content: flex-start;
+  padding: 8px;
+}
+.uld-vr-backdrop > .uld-vr {
+  margin: auto;
+  flex-shrink: 0;
+}
+/* 검수 반영: 본인 확인 영역이 들어가도 진료 메모가 첫 화면에 보이게 간격을 줄임 */
+.uld-vr-info {
+  gap: 16px;
+}
+.uld-vr-idcheck {
+  padding: 8px 12px;
+}
+.uld-vr-memo {
+  min-height: 72px;
+}

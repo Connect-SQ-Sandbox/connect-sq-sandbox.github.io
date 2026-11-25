@@ -1016,3 +1016,240 @@
   border-color: transparent;
   background: transparent;
 }
+
+/* ① 예외 대상 종류 바텀시트(D27) — 폰 안에 겹침, 최대 높이 85%, 목록만 내부 스크롤 */
+.ula-sheet-dim {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: rgba(22, 24, 29, 0.5);
+}
+.ula-sheet {
+  display: flex;
+  flex-direction: column;
+  max-height: 85%;
+  border-radius: 16px 16px 0 0;
+  background: var(--white);
+}
+.ula-sheet-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 16px 20px 8px;
+  flex-shrink: 0;
+}
+.ula-sheet-close {
+  display: flex;
+  padding: 2px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.ula-sheet-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 20px;
+  scrollbar-width: none;
+}
+.ula-sheet-list::-webkit-scrollbar {
+  display: none;
+}
+.ula-sheet-item + .ula-sheet-item {
+  border-top: 1px solid var(--gray-20);
+}
+.ula-sheet-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 16px 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ula-sheet-badge {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--gray-20);
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 600;
+  color: var(--gray-60);
+}
+.ula-sheet-badge.is-query {
+  background: rgba(0, 115, 250, 0.08);
+  color: var(--blue-60);
+}
+.ula-sheet-cond {
+  align-items: flex-start;
+  width: 100%;
+  margin: -4px 0 16px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--gray-10);
+}
+.ula-sheet-foot {
+  flex-shrink: 0;
+  padding: 8px 20px 34px;
+  border-top: 1px solid var(--gray-20);
+}
+.ula-btn.filled-blue.is-disabled {
+  background: var(--gray-20);
+  color: var(--gray-50);
+}
+/* ① 예외 대상 박스 요약 + [변경] */
+.ula-exsum {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ula-exsum-change {
+  flex-shrink: 0;
+  /* 보이는 글자는 그대로, 터치 영역만 44x45 가까이(음수 여백으로 배치 유지) */
+  padding: 12px 10px;
+  margin: -12px -10px;
+  font-size: 14px;
+  line-height: 21px;
+  font-weight: 600;
+  color: var(--blue-60);
+  text-decoration: underline;
+  cursor: pointer;
+}
+/* 조회형 배지 물음표(16) — 터치 영역은 패딩으로 넓힘, 행 선택과 따로 */
+.ula-qmark {
+  display: flex;
+  flex-shrink: 0;
+  margin: -12px -10px -12px -8px;
+  padding: 12px 10px 12px 4px;
+  cursor: pointer;
+}
+.ula-qhelp {
+  display: flex;
+  margin: -6px 0 14px 34px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--gray-10);
+}
+/* ② 예외 대상 읽기 전용 요약 */
+.ula-exsum-ro {
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--gray-10);
+}
+/* ② 다른진료 선택 시트(현행 SelectDepartmentModal) — 핸들 없음, 내용 높이만큼 */
+.ula-dept-sheet {
+  padding: 40px 20px 34px;
+}
+.ula-dept-title {
+  margin: 0 0 24px;
+  font-size: 20px;
+  line-height: 30px;
+  font-weight: 700;
+  color: var(--gray-100);
+}
+.ula-dept-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 8px;
+  row-gap: 12px;
+  padding-bottom: 14px;
+}
+.ula-dept-card {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 8px 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ula-dept-icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gray-20);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gray-60);
+}
+
+/* 진료 대상자 선택(현행) — SelectFamilyItem: 높이 72, r8, 테두리 GRAY_30, 아래 12, 왼쪽 16, 프로필 36 + 12 */
+.ula-fam-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  height: 72px;
+  margin-bottom: 12px;
+  padding: 18px 12px 18px 16px;
+  border: 1px solid var(--gray-30);
+  border-radius: 8px;
+  background: var(--white);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ula-fam-name {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+.ula-fam-badge {
+  flex-shrink: 0;
+  margin-left: 8px;
+  padding: 2px 4px;
+  border: 1px solid var(--gray-30);
+  border-radius: 2px;
+  background: var(--gray-20);
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 500;
+  color: var(--gray-100);
+}
+/* SelectFamilyScreen addButton: 높이 48, r8, gap 4, 가운데 */
+.ula-fam-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  height: 48px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+/* 자녀 추가 준비물 시트(신규) 목록 */
+.ula-need {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.ula-need-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 20px;
+  background: var(--gray-20);
+}

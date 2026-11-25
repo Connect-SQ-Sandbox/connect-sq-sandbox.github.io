@@ -1,10 +1,10 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : untact-law-doctor — 굿닥 온라인진료실(의사용) · 비대면진료 제도화(의료법 개정) 대응
- * 상태      : 검토용 초안 · v0.14 · 최종수정 2026-11-24 · 샌드박스 배포
+ * 상태      : 검토용 초안 · v0.15 · 최종수정 2026-11-24 · 샌드박스 배포
  * PRD       : 없음(제도화 대응 기획 초안). 사내 문서 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/untact-law-doctor.html
- * 피그마    : 없음. 기준은 대응 보드 커넥트 섹션(진료실-1~3) + 현행 온라인진료실 개발 코드.
+ * 피그마    : 대응 보드 커넥트 섹션(진료실-1~3) + 현행 온라인진료실 개발 코드. 대응 보드 외 화상진료실은 피그마 TELECARE DEV 220:72455.
  * 현행 기준 : goodoc-web-hospital-admin production(54aa1ebf, 2026-10-29) pages/untact — 운영 화면.
  *             (참고) goodoc-web-platform apps/partners/src/features/online-clinic 은 이관본이라 운영과 다른 곳이 있음
  *             workspace.tsx(GNB·화상진료 확인창) · treatment-table.tsx(목록) · treatment-details.tsx(상세·다이얼로그)
@@ -15,7 +15,8 @@
  * 기술제약  : 샌드박스 빌드 = react 훅 + plain CSS, 외부 요청 0.
  * 화면구성  : 좌측 상태 패널(화면 점프 · 상태 토글 · 화면별 메모) + 온라인진료실(본문 1140px)
  *             접수대기 목록(현행) → 진료실-1 접수대기 상세·접수 전 확인(수정) → 예상 대기 시간 설정(현행)
- *             → 진료실-2 진료시작·전화 진료 사유(신규) · 화상진료 끄기 확인창(수정) → 진료실-3 진료 취소 사유(수정)
+ *             → 진료실-2 진료시작·전화 진료 사유(신규) · 화상진료실(현행 재현, 본인 확인 영역 신규) · 화상진료 끄기 확인창(수정)
+ *             → 진료실-3 진료 취소 사유(수정)
  *
  * 핵심 결정(why)
  *  - [확정·요청] 프로토는 제품별로 나눈다. 이 파일은 의사 어드민, 앱은 untact-law-app, 둘을 잇는 건 untact-law-pair(D9).
@@ -43,7 +44,7 @@
  *  - [보류] 보드 진료실-1의 '주소지 서울 · 병원 서울 ✓' 비교 배지는 넣지 않았다. 플랫폼은 주소를 입력받거나 비교하지 않고, 의사가 첨부 서류로 확인한다(D8).
  *  - [보류] 거주지 서류를 '가림 필요'로 환자에게 다시 요청하는 반려 흐름은 미결이라 만들지 않았다. 반려가 없으면 출구가 진료취소뿐이라 취소 사유 '제출한 서류로 본인 또는 거주지를 확인할 수 없습니다' 추가 검토.
  *  - [보류] 거주지 서류의 보존·파기 시점(내려받기 허용 여부와 연결).
- *  - [확정·D18] 본인 확인은 신청 때 첨부한 본인 확인 서류로 접수 전에 1차로 하고(전 대상), 화상 진료 중 '화상에서 얼굴과 신분증을 대조했어요' 체크를 더한다(사본 '제출' 인정 여부 정부 답 전까지 잠정). 자녀면 보호자 신분증도 함께 받는다. 초진은 신분증 주소로 거주지 겸용 가능(패널 '신분증 겸용'). 화상 대조 확인 상자는 두지 않는다. 자녀 신청이면 아이 서류는 건강보험증·여권만(예시 건강보험증, 신분증 겸용 불가).
+ *  - [확정·D18] 본인 확인은 신청 때 첨부한 본인 확인 서류로 접수 전에 1차로 하고(전 대상), 화상진료실 안에서 '화상에서 얼굴과 신분증을 대조했어요' 체크를 더한다(사본 '제출' 인정 여부 정부 답 전까지 잠정). 자녀면 보호자 신분증도 함께 받는다. 초진은 신분증 주소로 거주지 겸용 가능(패널 '신분증 겸용'). 화상 대조 확인 상자는 두지 않는다. 자녀 신청이면 아이 서류는 건강보험증·여권만(예시 건강보험증, 신분증 겸용 불가).
  *  - [보류] 재진으로 신청했는데 차트상 6개월 초과·다른 증상인 경우 의사 행동(취소 후 초진 재신청 안내 등).
  *  - [보류] 접수 전 확인 체크한 의사·시각 저장(스펙). 앱 첨부의 PDF(정부24 등본) 허용 여부 — 현행 확대 보기는 이미지 전용.
  *  - [확정·요청] 굿닥 비대면진료에는 병원급 의료기관이 없으므로 의료기관 구분·병원급 접수 제한(보드 진료실-1)은 넣지 않는다.
@@ -57,8 +58,10 @@
  *  - [확정·D21] 자녀면 접수 전 확인 3개(본인, 요건, 법정대리인 동의 확인과 설명)를 모두 체크해야 접수완료(진료 시작)할 수 있다.
  *  - [확정·D24] 전화 진료 첫 사유(대면 이력과 의사 판단)는 초진, 피부, 안, 이비인후, 외상, 정신 질환, 13세 미만에서 고를 수 없다.
  *  - [확정·D25] 셋째 사유는 '화상 연결이 불가능한 그 밖의 사유', 직접 입력 필수. 고른 사유를 진료기록부에 옮길 문장(가안)으로 보여 준다.
+ *  - [확정·D30] 화상 진료는 굿닥 화상진료실로만 한다. 얼굴과 신분증 대조 체크는 진료 상세가 아니라 화상진료실 화면 안(환자정보 패널 맨 위 '본인 확인' 영역)에 둔다.
+ *  - [확정·D31] 화상통화 중 환자 카메라 끄기는 막지 않고, 쌍방 확인이 안 되면 '화상으로 본인 확인이 되지 않았습니다.' 사유로 진료 취소한다.
  *  - [보류] 화상 대조 체크를 하지 않으면 진료완료를 막을지(지금은 체크만, 막지 않음).
- *  - [보류] 전화 진료일 때 본인 확인 방법(얼굴 대조 불가). 지금은 화상 진료 중에만 대조 체크를 보여 준다.
+ *  - [보류] 전화 진료일 때 본인 확인 방법(얼굴 대조 불가). 지금은 화상진료실 안에서만 대조 체크를 보여 준다.
  *  - [보류] 진료기록부 문장 문구(가안).
  *  - [확정·D19] 굿닥 기준 월 500건 상한 안내 띠는 GNB 바로 아래 하나를 모든 탭이 공통으로 쓴다. 굿닥 기준이라 법령 버튼 없음.
  *  - [확정·D19] 띠에는 '이번 달 비대면 진료 n / 500건'을 보여 주고, 남은 건수 문구는 근접과 도달 상태에서만 보여 준다(여유 상태는 숫자만).
@@ -69,6 +72,9 @@
  *  - [보류] D19 안내 문구는 법령안 31조의7④를 참고한 가안(화면에 '가안' 표시). 굿닥 기준이라 법령 버튼 없이 문장으로만 둠.
  *
  * 변경 이력
+ *  - v0.15 (2026-11-24) D30: 화상진료실 화면 추가(피그마 220:72455 기준, 키/몸무게 줄 제외). 화상 진료 시작 확인, 다시 화상 연결, 바로가기에서 오버레이로 열리고 '나가기'로 닫힘.
+ *    얼굴과 신분증 대조 체크를 진료 상세에서 화상진료실 환자정보 패널 맨 위 '본인 확인' 영역(서류 썸네일, 확대 보기)으로 옮김. 바로가기 이름 '진료실-2 화상진료실 본인 확인'.
+ *    D31: 진료 취소 사유에 '화상으로 본인 확인이 되지 않았습니다.' 추가(법령 버튼).
  *  - v0.14 (2026-11-24) 환자정보의 현행 '통신사 본인확인을 완료한 환자입니다.' 문구 삭제(본인 확인이 서류와 화상 대조로 바뀜, D18).
  *  - v0.13 (2026-11-24) D26: 작업 띠 버튼 이름 정리(전화 진료 시작, 화상 진료 시작, 다시 화상 연결), 진료대기의 진료완료 제거. 바로가기 '진료실-2 화상 진료 중 확인' 추가.
  *  - v0.12 (2026-11-24) 11/24 회의 반영: 화상 진료 중 '화상에서 얼굴과 신분증을 대조했어요' 체크(D18), 자녀는 보호자 신분증 열람과 접수 전 확인 3번째 체크 '법정대리인 동의를 확인하고 설명했어요'(D18, D21),
@@ -123,7 +129,7 @@ type Dialog = 'quota' | 'reception' | 'start' | 'phone' | 'cancel' | 'video' | n
 const JUMPS: { key: Jump; label: string; kind: 'new' | 'mod' }[] = [
   { key: 'r1', label: '진료실-1 접수 전 확인', kind: 'mod' },
   { key: 'r2a', label: '진료실-2 전화 진료 사유', kind: 'new' },
-  { key: 'r2v', label: '진료실-2 화상 진료 중 확인', kind: 'new' },
+  { key: 'r2v', label: '진료실-2 화상진료실 본인 확인', kind: 'new' },
   { key: 'r2b', label: '진료실-2 화상진료 끄기', kind: 'mod' },
   { key: 'r3', label: '진료실-3 진료 취소 사유', kind: 'mod' },
 ];
@@ -134,6 +140,7 @@ const CANCEL_REASONS = [
   '비대면 진료 대상 환자가 아닙니다.',
   '환자와 연락이 되지 않습니다.',
   '대면 진료가 필요한 증상입니다.',
+  '화상으로 본인 확인이 되지 않았습니다.',
   '현재 내원 환자가 많아 진료가 어렵습니다.',
   '의사별 비대면진료 가능 건수(월평균 500건)를 초과했습니다.',
   '직접 입력',
@@ -269,6 +276,61 @@ const Avatar = ({ on }: { on: boolean }) => (
   </span>
 );
 
+/* D30 화상진료실 아이콘(피그마 에셋 대신 같은 모양으로 다시 그림) */
+const IconVr = ({ k }: { k: 'report' | 'eye' | 'setting' | 'mic' | 'cam' | 'end' | 'info' }) => {
+  const sz = k === 'report' || k === 'eye' ? 20 : k === 'info' ? 24 : 22;
+  const st = { stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, fill: 'none' };
+  return (
+    <svg aria-hidden="true" width={sz} height={sz} viewBox="0 0 24 24">
+      {k === 'report' && (
+        <>
+          <path {...st} d="M6 18v-6a6 6 0 0 1 12 0v6" />
+          <path {...st} d="M4 18h16M12 3v2M4.5 6.5l1.4 1.4M19.5 6.5l-1.4 1.4" />
+        </>
+      )}
+      {k === 'eye' && (
+        <>
+          <path {...st} d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z" />
+          <circle {...st} cx={12} cy={12} r={3} />
+        </>
+      )}
+      {k === 'setting' && <path {...st} d="M4 7h10M18 7h2M4 17h2M10 17h10M16 5v4M8 15v4" />}
+      {k === 'mic' && (
+        <>
+          <rect {...st} x={9} y={3} width={6} height={11} rx={3} />
+          <path {...st} d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" />
+        </>
+      )}
+      {k === 'cam' && (
+        <>
+          <rect {...st} x={3} y={6.5} width={12.5} height={11} rx={2} />
+          <path {...st} d="m15.5 10.5 5.5-3v9l-5.5-3" />
+        </>
+      )}
+      {k === 'end' && (
+        <path
+          fill="currentColor"
+          d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85a1 1 0 0 1-1.41-.02L.29 13.06a1 1 0 0 1 0-1.41C3.34 8.75 7.46 7 12 7s8.66 1.75 11.71 4.65a1 1 0 0 1 0 1.41l-2.48 2.49a1 1 0 0 1-1.41.02c-.79-.73-1.68-1.36-2.66-1.85a1 1 0 0 1-.56-.9v-3.1A14.9 14.9 0 0 0 12 9Z"
+        />
+      )}
+      {k === 'info' && (
+        <>
+          <circle cx={12} cy={12} r={10} fill="#fff" />
+          <path d="M12 11v6" stroke="#0073FA" strokeWidth={2} strokeLinecap="round" />
+          <circle cx={12} cy={7.5} r={1.2} fill="#0073FA" />
+        </>
+      )}
+    </svg>
+  );
+};
+/* 영상 자리표시: 사람 실루엣 */
+const Silhouette = ({ small }: { small?: boolean }) => (
+  <svg aria-hidden="true" className="uld-vr-sil" viewBox="0 0 100 100" width={small ? 72 : 200} height={small ? 72 : 200}>
+    <circle cx={50} cy={36} r={17} fill="rgba(255,255,255,.18)" />
+    <path d="M16 100c0-21 15-35 34-35s34 14 34 35Z" fill="rgba(255,255,255,.18)" />
+  </svg>
+);
+
 /* 현행 table 열 비율(담당의 열 없음 — 의사 프로필 선택 상태) */
 const COLS = [
   { label: '요청일시', w: 2 },
@@ -332,6 +394,30 @@ export default function UntactLawDoctor() {
   const [checks, setChecks] = useState([false, false, false]);
   const toggleCheck = (i: number) => setChecks(c => c.map((v, j) => (j === i ? !v : v)));
   const [faceCheck, setFaceCheck] = useState(false);
+  /* D30 — 화상진료실(오버레이). 경과 시간은 화상 진료 시작 시각부터 */
+  const [roomOpen, setRoomOpen] = useState(false);
+  /* 화상진료실 오버레이는 좌측 프로토 패널 오른쪽부터 덮는다(패널은 계속 쓸 수 있게) */
+  useEffect(() => {
+    if (!roomOpen) return;
+    const set = () => {
+      const p = document.querySelector('.uld-panel');
+      const right = p ? Math.ceil(p.getBoundingClientRect().right) + 8 : 0;
+      document.documentElement.style.setProperty('--uld-vr-left', `${right}px`);
+    };
+    set();
+    window.addEventListener('resize', set);
+    return () => window.removeEventListener('resize', set);
+  }, [roomOpen]);
+  const [roomAt, setRoomAt] = useState<number | null>(null);
+  const [roomToast, setRoomToast] = useState(false);
+  const roomToastTimer = useRef(0);
+  const openRoom = (startAt?: number) => {
+    if (startAt) setRoomAt(startAt);
+    setRoomOpen(true);
+    setRoomToast(true);
+    window.clearTimeout(roomToastTimer.current);
+    roomToastTimer.current = window.setTimeout(() => setRoomToast(false), 3000);
+  };
   const [disease, setDisease] = useState<'general' | 'visual'>('general');
   const [under13, setUnder13] = useState(false);
   const [dialog, setDialog] = useState<Dialog>(null);
@@ -419,6 +505,16 @@ export default function UntactLawDoctor() {
     };
   }, [photoView]);
 
+  /* 화상진료실이 열려 있으면 뒤쪽 스크롤 잠금 */
+  useEffect(() => {
+    if (!roomOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [roomOpen]);
+
   /* 전화 진료는 재진만 신청 가능(앱과 같음) */
   useEffect(() => {
     if (s.target !== 'revisit' && s.method === 'phone') set({ method: 'video' });
@@ -492,6 +588,9 @@ export default function UntactLawDoctor() {
     setMenuOpen(false);
     setVideoOn(true);
     setViewerOpen(false);
+    setRoomOpen(false);
+    if (r2v) openRoom(Date.now());
+    else setRoomAt(null);
     setWait('5');
     setWaitAt(r2a ? Date.now() + 5 * 60_000 : null);
     setOpen(true);
@@ -579,6 +678,7 @@ export default function UntactLawDoctor() {
     if (dialog === 'start') {
       setTreatMethod('video');
       setStatus('ontreatment');
+      openRoom(Date.now());
     }
     if (dialog === 'phone') {
       setPhoneDone(phonePick === PHONE_DIRECT ? phoneText.trim() : PHONE_REASONS[phonePick ?? 0]);
@@ -705,7 +805,7 @@ export default function UntactLawDoctor() {
           </Btn>
         )}
         {status === 'ontreatment' && treatMethod === 'video' && (
-          <Btn v="secondary" className="uld-on-blue is-changed" title="화상 연결이 끊기면 다시 연결해 주세요" onClick={() => setDialog('start')}>
+          <Btn v="secondary" className="uld-on-blue is-changed" title="화상 연결이 끊기면 다시 연결해 주세요" onClick={() => openRoom()}>
             다시 화상 연결
           </Btn>
         )}
@@ -717,15 +817,6 @@ export default function UntactLawDoctor() {
   const detail = (
     <div className="uld-detail">
       {actionBar}
-      {status === 'ontreatment' && treatMethod === 'video' && (
-        <div className="uld-confirm is-changed">
-          <p className="uld-confirm-h">화상 진료 중 확인 (의료인){law(['identity-check'])}</p>
-          <Check on={faceCheck} onClick={() => setFaceCheck(v => !v)}>
-            {isChild ? '화상에서 보호자 얼굴과 신분증을 대조했고, 자녀가 함께 나온 것을 확인했어요' : '화상에서 얼굴과 신분증을 대조했어요'}
-          </Check>
-          <p className="uld-confirm-sub">접수 전 사본 확인에 이어, 화상으로 본인 여부를 한 번 더 확인해 주세요.</p>
-        </div>
-      )}
       {status === 'request' && (
         <div className="uld-confirm is-changed">
           <p className="uld-confirm-h">접수 전 확인 (의료인){law(['after-check', 'record-check'])}</p>
@@ -988,6 +1079,7 @@ export default function UntactLawDoctor() {
                     <input type="radio" name="cancel" checked={cancelPick === r} onChange={() => setCancelPick(r)} />
                     {r}
                     {r.includes('500건') && law(['doctor-monthly-limit'])}
+                    {r.startsWith('화상으로 본인 확인') && law(['identity-check'])}
                   </label>
                 ))}
                 {cancelPick === CANCEL_DIRECT && (
@@ -1106,6 +1198,137 @@ export default function UntactLawDoctor() {
     </div>
   );
 
+
+  /* ───────── D30 화상진료실 — 피그마 TELECARE DEV 220:72455 재현(현행), 본인 확인 영역만 신규 ───────── */
+  const roomSec = roomAt ? Math.max(0, Math.floor((now - roomAt) / 1000)) : 0;
+  const roomTime = `${String(Math.floor(roomSec / 60)).padStart(2, '0')}:${String(roomSec % 60).padStart(2, '0')}`;
+  const roomField = (k: string, v: string) => (
+    <div className="uld-vr-form" key={k}>
+      <span className="uld-vr-label">{k}</span>
+      <div className="uld-vr-input">
+        <span>{v}</span>
+        <span className="uld-vr-copy">
+          <IconCopy />
+        </span>
+      </div>
+    </div>
+  );
+  const videoRoom = roomOpen && (
+    <div className="uld-vr-backdrop">
+      <div className="uld-vr" role="dialog" aria-modal="true" aria-label="화상진료실">
+        <div className="uld-vr-top">
+          <button type="button" className="uld-vr-pill">
+            <IconVr k="report" />
+            신고하기
+          </button>
+          <button type="button" className="uld-vr-pill">
+            <IconVr k="eye" />
+            환자 화면 끄기
+          </button>
+        </div>
+        <div className="uld-vr-contents">
+          <div className="uld-vr-video">
+            <div className="uld-vr-patient" aria-label="환자 영상(자리표시)">
+              <Silhouette />
+            </div>
+            <div className="uld-vr-pip" aria-label="내 화면(자리표시)">
+              <Silhouette small />
+            </div>
+          </div>
+          <div className="uld-vr-info">
+            {/* D30 — 영상과 첨부 서류를 같은 화면에서 보며 대조 */}
+            <div className="uld-vr-idcheck is-changed">
+              <div className="uld-vr-idthumbs">
+                <span className="uld-vr-idthumb">
+                  <button type="button" className="uld-proof-thumb" aria-label="본인 확인 서류 확대" onClick={() => { setViewerKind('id'); setViewerOpen(true); }}>
+                    <ResidDoc doc={idDoc} mini />
+                  </button>
+                  <span>{idDoc.title}</span>
+                </span>
+                {isChild && (
+                  <span className="uld-vr-idthumb">
+                    <button type="button" className="uld-proof-thumb" aria-label="보호자 신분증 확대" onClick={() => { setViewerKind('guardian'); setViewerOpen(true); }}>
+                      <ResidDoc doc={guardianDoc} mini />
+                    </button>
+                    <span>보호자 주민등록증</span>
+                  </span>
+                )}
+              </div>
+              <div className="uld-vr-idside">
+                <span className="uld-vr-label">본인 확인</span>
+                <Check on={faceCheck} onClick={() => setFaceCheck(v => !v)}>
+                  {isChild ? '화상에서 보호자 얼굴과 신분증을 대조했고, 자녀가 함께 나온 것을 확인했어요' : '화상에서 얼굴과 신분증을 대조했어요'}
+                  {law(['identity-check'])}
+                </Check>
+                <p className="uld-vr-idsub">접수 전 사본 확인에 이어, 화상으로 본인 여부를 한 번 더 확인해 주세요.</p>
+              </div>
+            </div>
+            <div className="uld-vr-data">
+              <div className="uld-vr-basic">
+                {roomField('환자명', '가상환자 A')}
+                {roomField('주민등록번호', isChild ? '120101-4000000' : '900101-2000000')}
+                {roomField('전화번호', '010-0000-0000')}
+              </div>
+              <div className="uld-vr-symptom-col">
+                <div className="uld-vr-form uld-vr-symptom">
+                  <span className="uld-vr-label">환자 증상</span>
+                  <div className="uld-vr-input">
+                    <span>
+                      증상: 기침, 콧물
+                      <br />
+                      샘플 증상 설명입니다. 실제 진료 요청이 아닙니다.
+                    </span>
+                    <span className="uld-vr-copy">
+                      <IconCopy />
+                    </span>
+                  </div>
+                </div>
+                <div className="uld-vr-photos">
+                  <span className="uld-vr-label">환자 첨부사진</span>
+                  <div className="uld-vr-thumbs">
+                    {SYMPTOM_PHOTOS.map((src, i) => (
+                      <button key={i} type="button" className="uld-vr-thumb" aria-label={`첨부사진 ${i + 1} 확대`} onClick={() => setPhotoView(i)}>
+                        <img src={src} alt="" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="uld-vr-form uld-vr-memo">
+              <span className="uld-vr-label">진료 메모</span>
+              <textarea className="uld-vr-input" placeholder="메모를 입력해 주세요" />
+            </div>
+          </div>
+        </div>
+        <div className="uld-vr-bottom">
+          <button type="button" className="uld-vr-round is-dim" aria-label="설정">
+            <IconVr k="setting" />
+          </button>
+          <span className="uld-vr-time">{roomTime}</span>
+          <div className="uld-vr-right">
+            <button type="button" className="uld-vr-round" aria-label="마이크">
+              <IconVr k="mic" />
+            </button>
+            <button type="button" className="uld-vr-round" aria-label="카메라">
+              <IconVr k="cam" />
+            </button>
+            <button type="button" className="uld-vr-exit" onClick={() => setRoomOpen(false)}>
+              <IconVr k="end" />
+              나가기
+            </button>
+          </div>
+        </div>
+        {roomToast && (
+          <div className="uld-vr-toast" role="status">
+            <IconVr k="info" />
+            가상환자 A 환자가 진료실에 입장했어요.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   /* ───────── 패널 ───────── */
   const notes: Record<Jump, string[]> = useMemo(
     () => ({
@@ -1113,7 +1336,7 @@ export default function UntactLawDoctor() {
         '접수대기 상세. 바뀐 곳은 보라 점선, 나머지는 현행 코드 재현.',
         '현행 빨간 시범사업 안내 대신 진료 대상 배지·가족 대리 신청 배지.',
         '접수 전 확인을 모두 체크해야 접수완료가 켜진다(자녀면 법정대리인 동의 확인까지 3개). 재진은 두 번째가 대면 이력 확인.',
-        '진료 시작 뒤 화상 진료 중에는 작업 띠 아래 "화상에서 얼굴과 신분증을 대조했어요" 체크(자녀면 보호자 대조와 자녀 동석 확인).',
+        '화상 진료 시작 뒤 화상진료실 안 환자정보 패널 맨 위에서 "화상에서 얼굴과 신분증을 대조했어요" 체크(자녀면 보호자 대조와 자녀 동석 확인).',
         '재진이면 환자 응답 상자, 자녀면 본인확인 문구 자리에 법정대리인 동의 기록',
         '초진이면 접수 전 확인 아래에 거주지 서류(앱에서 가림 처리해 올린 서류, 주민등록상/실거주지). 썸네일을 누르면 크게 본다(내려받기 없음). 서류 없음 상태도 있음.',
         '환자정보에 앱 안내문 확인·동의 사실(제안). 반려·파기 시점은 보류. 본인 확인은 첨부 서류로 접수 전에(D18).',
@@ -1126,9 +1349,9 @@ export default function UntactLawDoctor() {
         '초진이면 첫 번째 사유를 고를 수 없다. 직접 입력은 글자가 있어야 확인.',
       ],
       r2v: [
-        '화상 진료 중(진료 시작 뒤) 상태. 작업 띠 바로 아래 "화상 진료 중 확인" 상자에서 얼굴과 신분증을 대조했다고 체크한다(D18).',
-        '자녀면 보호자 얼굴과 신분증 대조, 자녀 동석 확인 문구. 전화 진료 중에는 상자가 없다.',
-        '버튼은 "다시 화상 연결"과 "진료완료".',
+        '화상진료실(현행 재현). 환자정보 패널 맨 위 "본인 확인" 영역에서 첨부 서류 썸네일을 보며 얼굴과 신분증을 대조했다고 체크한다(D18, D30). 썸네일을 누르면 크게 본다.',
+        '자녀면 아이 서류와 보호자 신분증 썸네일, 보호자 대조와 자녀 동석 확인 문구. 전화 진료는 화상진료실이 열리지 않는다.',
+        '"나가기"를 누르면 진료 상세(진료중)로 돌아오고, 작업 띠 "다시 화상 연결"로 다시 연다. 체크는 진료가 바뀌기 전까지 유지.',
       ],
       r2b: [
         '프로필 메뉴 화상진료 스위치를 끌 때 확인창. 본문만 바꿨고 버튼은 현행 취소/확인.',
@@ -1136,8 +1359,8 @@ export default function UntactLawDoctor() {
         '켤 때 확인창(현행 "화상진료 켜기")은 이 화면 범위 밖이라 바로 켜짐.',
       ],
       r3: [
-        '진료 취소하기 다이얼로그. 현행 7개 → 5개 + 직접 입력.',
-        '삭제: 이번 달 환자의 비대면진료 가능 횟수(2회). 교체: 병원 월 건수 → 의사별 월평균 500건.',
+        '진료 취소하기 다이얼로그. 현행 7개 → 6개 + 직접 입력.',
+        '삭제: 이번 달 환자의 비대면진료 가능 횟수(2회). 교체: 병원 월 건수 → 의사별 월평균 500건. 추가: 화상으로 본인 확인이 되지 않았습니다(환자가 카메라를 꺼서 대조가 안 될 때).',
         '직접 입력 안내 문구·빈칸 검증은 현행 그대로. 확인하면 행이 현행대로 진료완료 탭으로 빠지고, 고른 사유는 아래에 표시.',
         '고른 사유는 앱 진료내역 ④에 그대로 보인다(D10, 페어 화면에서 연결).',
       ],
@@ -1243,7 +1466,7 @@ export default function UntactLawDoctor() {
         <div className="uld-panel-card">
           <p className="uld-panel-title">온라인진료실 · 제도화 대응</p>
           <p className="uld-panel-sub">
-            굿닥 온라인진료실(의사용) · 검토용 초안 v0.14 · 현행 화면은 운영 코드 기준 재현, 동적 값은 {'{중괄호}'}
+            굿닥 온라인진료실(의사용) · 검토용 초안 v0.15 · 현행 화면은 운영 코드 기준 재현, 동적 값은 {'{중괄호}'}
           </p>
         </div>
         <div className="uld-panel-card uld-lawcard">
@@ -1454,6 +1677,7 @@ export default function UntactLawDoctor() {
           </main>
         </section>
       </div>
+      {videoRoom}
       {dialogEl}
       {toast && <div className="uld-toast" role="status">{toast}</div>}
       {lawView && (

@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : untact-law-doctor — 굿닥 온라인진료실(의사용) · 비대면진료 제도화(의료법 개정) 대응
- * 상태      : 검토용 초안 · v0.20 · 최종수정 2026-11-25 · 샌드박스 배포
+ * 상태      : 검토용 초안 · v0.22 · 최종수정 2026-11-25 · 샌드박스 배포
  * PRD       : 없음(제도화 대응 기획 초안). 사내 문서 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/untact-law-doctor.html
  * 피그마    : 대응 보드 커넥트 섹션(진료실-1~3) + 현행 온라인진료실 개발 코드. 대응 보드 외 화상진료실은 피그마 TELECARE DEV 220:72455.
@@ -78,6 +78,8 @@
  *  - [보류] D33 항목 문구, 진료기록부 문장, 접수 전 확인 3번째 '법정대리인 동의를 확인하고 설명했어요'의 '설명' 부분이 진료 전 설명 영역과 겹치는지.
  *
  * 변경 이력
+ *  - v0.22 (2026-11-25) 패널 상태 토글을 바꿀 때 지금 화면에 그 상태가 드러나지 않으면 드러나는 화면으로 옮김.
+ *  - v0.21 (2026-11-25) 티켓을 눌렀을 때 지금 케이스에 영역이 없으면 그 티켓이 보이는 케이스로 바꿔 표시(진료 대상, 자녀, 자녀 시트, 웹 To-be 등), 바꾼 케이스를 패널에 안내. 메모 탭에도 선택 상태 줄.
  *  - v0.20 (2026-11-25) 티켓 표시를 하위 티켓 기준으로 다시 연결(메모 칩, 영향 범위 점선, 티켓별 보기). 티켓별 보기는 상위 티켓 제목 아래 하위 티켓을 묶어 보여 줌.
  *  - v0.19 (2026-11-25) 패널 보기 개선: 패널을 화면 옆에 고정하고 안에서만 스크롤, 탭 3개(화면·상태 / 이 화면 메모 / 티켓)로 나눔. 티켓 칩은 번호만(전체 번호는 툴팁), 티켓별 보기는 한 줄 제목 + 화면 링크로 압축.
  *  - v0.18 (2026-11-25) 티켓 영향 범위 보기: 패널 티켓 칩을 누르면 무대 화면의 해당 영역에 주황 점선과 번호 라벨(data-tk). '티켓별 보기' 칩은 관계없는 화면이면 첫 해당 화면으로 이동. 다시 누르거나 '선택 해제'로 끔.
@@ -1504,6 +1506,21 @@ export default function UntactLawDoctor() {
   const [tkSel, setTkSel] = useState<number | null>(null);
   const [ptab, setPtab] = useState<'ctl' | 'note' | 'tk'>('ctl');
   const [tkHits, setTkHits] = useState(0);
+  /* 지금 케이스에 영역이 없으면 그 티켓이 보이는 케이스로 한 번 바꾼다 */
+  const tkCaseTried = useRef<number | null>(null);
+  const [tkCase, setTkCase] = useState('');
+  const applyTkCase = (t: number): string => {
+    switch (t) {
+      case 1217:
+        set({ who: 'child' });
+        return '자녀 신청';
+      case 1212:
+        set({ target: 'revisit' });
+        return '재진';
+      default:
+        return '';
+    }
+  };
   useEffect(() => {
     document.querySelectorAll<HTMLElement>('[data-tkon]').forEach(el => {
       el.removeAttribute('data-tkon');
@@ -1525,6 +1542,11 @@ export default function UntactLawDoctor() {
       }
     });
     if (tkHits !== els.length) setTkHits(els.length);
+    if (els.length === 0 && tkCaseTried.current !== tkSel) {
+      tkCaseTried.current = tkSel;
+      const label = applyTkCase(tkSel);
+      if (label) setTkCase(label);
+    }
   });
   const pickTk = (t: number, fromList?: boolean) => {
     if (tkSel === t && !fromList) {
@@ -1532,6 +1554,8 @@ export default function UntactLawDoctor() {
       return;
     }
     setTkSel(t);
+    tkCaseTried.current = null;
+    setTkCase('');
     if (fromList) {
       const here = (NOTE_TICKETS[s.jump] ?? []).some(l => l.includes(t)) || EXTRA_TICKETS.some(e => e.t === t);
       const first = JUMPS.find(x => (NOTE_TICKETS[x.key] ?? []).some(l => l.includes(t)));
@@ -1543,17 +1567,25 @@ export default function UntactLawDoctor() {
     value,
     options,
     onChange,
+    show,
+    goTo,
   }: {
     label: string;
     value: K;
     options: { k: K; t: string; disabled?: boolean }[];
     onChange: (k: K) => void;
+    /* 이 상태가 화면에 드러나는 화면들. 지금 화면이 아니면 goTo로 옮긴다 */
+    show?: Jump[];
+    goTo?: Jump;
   }) => (
     <div className="uld-ctl-row">
       <span className="uld-ctl-label">{label}</span>
       <div className="uld-seg">
         {options.map(o => (
-          <button key={o.k} className={value === o.k ? 'is-on' : ''} disabled={o.disabled} onClick={() => onChange(o.k)}>
+          <button key={o.k} className={value === o.k ? 'is-on' : ''} disabled={o.disabled} onClick={() => {
+              onChange(o.k);
+              if (show && goTo && !show.includes(s.jump)) set({ jump: goTo });
+            }}>
             {o.t}
           </button>
         ))}
@@ -1636,7 +1668,7 @@ export default function UntactLawDoctor() {
         <div className="uld-panel-card">
           <p className="uld-panel-title">온라인진료실 · 제도화 대응</p>
           <p className="uld-panel-sub">
-            굿닥 온라인진료실(의사용) · 검토용 초안 v0.20 · 현행 화면은 운영 코드 기준 재현, 동적 값은 {'{중괄호}'}
+            굿닥 온라인진료실(의사용) · 검토용 초안 v0.22 · 현행 화면은 운영 코드 기준 재현, 동적 값은 {'{중괄호}'}
           </p>
         </div>
         <div className="ptab" role="tablist">
@@ -1705,7 +1737,7 @@ export default function UntactLawDoctor() {
             onChange={k => setQuota(k)}
           />
           <Seg
-            label="진료 대상(환자 선택)"
+            label="진료 대상(환자 선택)" show={['r1', 'r2a', 'r2v']} goTo="r1"
             value={s.target}
             options={[
               { k: 'first', t: '초진' },
@@ -1715,7 +1747,7 @@ export default function UntactLawDoctor() {
             onChange={k => set({ target: k })}
           />
           <Seg
-            label="진료 받는 사람"
+            label="진료 받는 사람" show={['r1', 'r2a', 'r2v']} goTo="r1"
             value={s.who}
             options={[
               { k: 'self', t: '본인' },
@@ -1724,7 +1756,7 @@ export default function UntactLawDoctor() {
             onChange={k => set({ who: k })}
           />
           <Seg
-            label="거주지 서류(초진)"
+            label="거주지 서류(초진)" show={['r1']} goTo="r1"
             value={s.target === 'first' ? s.resid : ('' as Resid)}
             options={[
               { k: 'resident', t: '주민등록상', disabled: s.target !== 'first' },
@@ -1735,7 +1767,7 @@ export default function UntactLawDoctor() {
             onChange={k => set({ resid: k })}
           />
           <Seg
-            label="예외 대상 종류(예외)"
+            label="예외 대상 종류(예외)" show={['r1']} goTo="r1"
             value={s.target === 'exception' ? s.ex : ('' as ExKind)}
             options={[
               { k: 'query', t: '조회형(등록장애인)', disabled: s.target !== 'exception' },
@@ -1744,7 +1776,7 @@ export default function UntactLawDoctor() {
             onChange={k => set({ ex: k })}
           />
           <Seg
-            label="신청 진료 방식"
+            label="신청 진료 방식" show={['r2a']} goTo="r2a"
             value={s.method}
             options={[
               { k: 'video', t: '화상' },
@@ -1753,7 +1785,7 @@ export default function UntactLawDoctor() {
             onChange={k => set({ method: k })}
           />
           <Seg
-            label="질환(전화 진료 제한)"
+            label="질환(전화 진료 제한)" show={['r2a']} goTo="r2a"
             value={disease}
             options={[
               { k: 'general', t: '일반' },
@@ -1765,7 +1797,7 @@ export default function UntactLawDoctor() {
             }}
           />
           <Seg
-            label="환자 나이"
+            label="환자 나이" show={['r2a']} goTo="r2a"
             value={under13 ? 'u' : 'o'}
             options={[
               { k: 'o', t: '13세 이상' },
@@ -1782,6 +1814,16 @@ export default function UntactLawDoctor() {
         {ptab === 'note' && (
         <div className="uld-panel-card">
           <p className="uld-panel-h">이 화면 <span className="tk-legend">번호는 CONNECT26 티켓, 누르면 화면에 영향 범위 표시</span></p>
+          {tkSel != null && (
+            <p className="tk-state">
+              {tkHits > 0
+                ? `CONNECT26-${tkSel} · 이 화면 ${tkHits}곳${tkCase ? ` · 케이스를 '${tkCase}'(으)로 바꿔 보여 줘요` : ''}`
+                : `CONNECT26-${tkSel} · 이 화면에는 해당 영역이 없어요`}
+              <button type="button" className="tk-clear" onClick={() => setTkSel(null)}>
+                선택 해제
+              </button>
+            </p>
+          )}
           <ul className="uld-note">
             {notes[s.jump].map((n, i) => (
               <li key={n}>
@@ -1811,7 +1853,7 @@ export default function UntactLawDoctor() {
             {tkSel == null
               ? '티켓 번호를 누르면 이 화면에서 영향 범위를 점선으로 보여 줘요.'
               : tkHits > 0
-                ? `CONNECT26-${tkSel} · 이 화면 ${tkHits}곳`
+                ? `CONNECT26-${tkSel} · 이 화면 ${tkHits}곳${tkCase ? ` · 케이스를 '${tkCase}'(으)로 바꿔 보여 줘요` : ''}`
                 : `CONNECT26-${tkSel} · 지금 상태에서는 보이는 영역이 없어요(상태를 바꿔 보세요)`}
             {tkSel != null && (
               <button type="button" className="tk-clear" onClick={() => setTkSel(null)}>

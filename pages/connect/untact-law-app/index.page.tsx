@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : untact-law-app — 굿닥 앱(환자용) 비대면진료 신청 흐름 · 비대면진료 제도화(의료법 개정) 대응
- * 상태      : 검토용 초안 · v0.18 · 최종수정 2026-11-25 · 샌드박스 배포
+ * 상태      : 검토용 초안 · v0.20 · 최종수정 2026-11-25 · 샌드박스 배포
  * PRD       : 없음(제도화 대응 기획 초안). 사내 문서 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/untact-law-app.html
  * 피그마    : 없음. 현행 화면은 goodoc-mobile origin/staging(b45968ada, 2026-11-19) 코드 기준 재현.
@@ -105,6 +105,8 @@
  *  - [보류] ② 자녀 신청의 보호자 신분증을 거주지 서류로 함께 쓸 수 있는지(지금은 겸용 체크 없음). 보호자 신분증 설명 '신청한 보호자의 신분증 1장을 첨부해 주세요'는 가안.
  *
  * 변경 이력
+ *  - v0.20 (2026-11-25) 패널 상태 토글을 바꿀 때 지금 화면에 그 상태가 드러나지 않으면 드러나는 화면으로 옮김.
+ *  - v0.19 (2026-11-25) 티켓을 눌렀을 때 지금 케이스에 영역이 없으면 그 티켓이 보이는 케이스로 바꿔 표시(진료 대상, 자녀, 자녀 시트, 웹 To-be 등), 바꾼 케이스를 패널에 안내. 메모 탭에도 선택 상태 줄.
  *  - v0.18 (2026-11-25) 티켓 표시를 하위 티켓 기준으로 다시 연결(메모 칩, 영향 범위 점선, 티켓별 보기). 티켓별 보기는 상위 티켓 제목 아래 하위 티켓을 묶어 보여 줌.
  *  - v0.17 (2026-11-25) 패널 보기 개선: 패널을 화면 옆에 고정하고 안에서만 스크롤, 탭 3개(화면·상태 / 이 화면 메모 / 티켓)로 나눔. 티켓 칩은 번호만(전체 번호는 툴팁), 티켓별 보기는 한 줄 제목 + 화면 링크로 압축.
  *  - v0.16 (2026-11-25) 티켓 영향 범위 보기: 패널 티켓 칩을 누르면 무대 화면의 해당 영역에 주황 점선과 번호 라벨(data-tk). '티켓별 보기' 칩은 관계없는 화면이면 첫 해당 화면으로 이동. 다시 누르거나 '선택 해제'로 끔.
@@ -2619,6 +2621,41 @@ export default function UntactLawApp() {
   const [tkSel, setTkSel] = useState<number | null>(null);
   const [ptab, setPtab] = useState<'ctl' | 'note' | 'tk'>('ctl');
   const [tkHits, setTkHits] = useState(0);
+  /* 지금 케이스에 영역이 없으면 그 티켓이 보이는 케이스로 한 번 바꾼다 */
+  const tkCaseTried = useRef<number | null>(null);
+  const [tkCase, setTkCase] = useState('');
+  const applyTkCase = (t: number): string => {
+    switch (t) {
+      case 1209:
+        setTarget('revisit');
+        return '재진';
+      case 1231:
+        setTarget('first');
+        return '초진';
+      case 1210:
+        setTarget('first');
+        if (s.step !== 'form') go('form');
+        return s.step !== 'form' ? '초진, ② 신청서' : '초진';
+      case 1211:
+        setTarget('exception');
+        return '예외 대상';
+      case 1216:
+        if (s.step === 'family') {
+          setChildSheet(true);
+          return '자녀 선택';
+        }
+        set({ who: 'child' });
+        return '진료 받는 사람: 자녀';
+      case 1218:
+        if (s.step === 'web') {
+          setWebAsIs(false);
+          return 'To-be';
+        }
+        return '';
+      default:
+        return '';
+    }
+  };
   useEffect(() => {
     document.querySelectorAll<HTMLElement>('[data-tkon]').forEach(el => {
       el.removeAttribute('data-tkon');
@@ -2640,6 +2677,11 @@ export default function UntactLawApp() {
       }
     });
     if (tkHits !== els.length) setTkHits(els.length);
+    if (els.length === 0 && tkCaseTried.current !== tkSel) {
+      tkCaseTried.current = tkSel;
+      const label = applyTkCase(tkSel);
+      if (label) setTkCase(label);
+    }
   });
   const pickTk = (t: number, fromList?: boolean) => {
     if (tkSel === t && !fromList) {
@@ -2647,6 +2689,8 @@ export default function UntactLawApp() {
       return;
     }
     setTkSel(t);
+    tkCaseTried.current = null;
+    setTkCase('');
     if (fromList) {
       const here = (NOTE_TICKETS[s.step] ?? []).some(l => l.includes(t)) || EXTRA_TICKETS.some(e => e.t === t);
       const first = STEPS.find(x => (NOTE_TICKETS[x.key] ?? []).some(l => l.includes(t)));
@@ -2658,19 +2702,27 @@ export default function UntactLawApp() {
     value,
     options,
     onChange,
+    show,
+    goTo,
     col,
   }: {
     label: string;
     value: K | null;
     options: { k: K; t: string; disabled?: boolean }[];
     onChange: (k: K) => void;
+    /* 이 상태가 화면에 드러나는 화면들. 지금 화면이 아니면 goTo로 옮긴다 */
+    show?: Step[];
+    goTo?: Step;
     col?: boolean;
   }) => (
     <div className="ula-ctl-row">
       <span className="ula-ctl-label">{label}</span>
       <div className={`ula-seg ${col ? 'ula-seg-col' : ''}`}>
         {options.map(o => (
-          <button key={o.k} className={value === o.k ? 'is-on' : ''} disabled={o.disabled} onClick={() => onChange(o.k)}>
+          <button key={o.k} className={value === o.k ? 'is-on' : ''} disabled={o.disabled} onClick={() => {
+              onChange(o.k);
+              if (show && goTo && !show.includes(s.step)) go(goTo);
+            }}>
             {o.t}
           </button>
         ))}
@@ -2685,7 +2737,7 @@ export default function UntactLawApp() {
       <aside className="ula-panel">
         <div className="ula-panel-card">
           <p className="ula-panel-title">비대면진료 신청 · 제도화 대응</p>
-          <p className="ula-panel-sub">굿닥 앱(환자용) · 검토용 초안 v0.18 · 현행 화면은 앱 코드 기준 재현, 동적 값은 {'{중괄호}'}</p>
+          <p className="ula-panel-sub">굿닥 앱(환자용) · 검토용 초안 v0.20 · 현행 화면은 앱 코드 기준 재현, 동적 값은 {'{중괄호}'}</p>
         </div>
         <div className="ptab" role="tablist">
           {([
@@ -2772,7 +2824,7 @@ export default function UntactLawApp() {
             />
           )}
           <Seg
-            label="진료 대상"
+            label="진료 대상" show={['target', 'form', 'consent']} goTo="target"
             value={s.target}
             options={[
               { k: 'first', t: '초진' },
@@ -2783,7 +2835,7 @@ export default function UntactLawApp() {
           />
           {s.target === 'exception' && (
             <Seg
-              label="예외 대상 종류(① 선택 완료 상태)"
+              label="예외 대상 종류(① 선택 완료 상태)" show={['target', 'form']} goTo="target"
               value={exCat}
               col
               options={[
@@ -2795,7 +2847,7 @@ export default function UntactLawApp() {
             />
           )}
           <Seg
-            label="진료 받는 사람"
+            label="진료 받는 사람" show={['family', 'target', 'form', 'consent']} goTo="form"
             value={s.who}
             options={[
               { k: 'self', t: '본인' },
@@ -2804,7 +2856,7 @@ export default function UntactLawApp() {
             onChange={k => set({ who: k })}
           />
           <Seg
-            label="신청 횟수"
+            label="신청 횟수" show={['target', 'consent']} goTo="target"
             value={s.count}
             options={[
               { k: 'first', t: '첫 신청' },
@@ -2813,7 +2865,7 @@ export default function UntactLawApp() {
             onChange={k => set({ count: k })}
           />
           <Seg
-            label="질환(진료항목)"
+            label="질환(진료항목)" show={['form']} goTo="form"
             value={s.dis}
             col
             options={[
@@ -2824,7 +2876,7 @@ export default function UntactLawApp() {
             onChange={k => set({ dis: k })}
           />
           <Seg
-            label="나이"
+            label="나이" show={['form']} goTo="form"
             value={s.age}
             options={[
               { k: 'over13', t: '13세 이상' },
@@ -2833,7 +2885,7 @@ export default function UntactLawApp() {
             onChange={k => set({ age: k })}
           />
           <Seg
-            label="② 거주지 서류(초진)"
+            label="② 거주지 서류(초진)" show={['form']} goTo="form"
             value={s.proof}
             options={[
               { k: 'none', t: '첨부 없음' },
@@ -2842,7 +2894,7 @@ export default function UntactLawApp() {
             onChange={k => setProof(k === 'attached', k === 'attached')}
           />
           <Seg
-            label="④ 취소 사유"
+            label="④ 취소 사유" show={['detail']} goTo="detail"
             value={s.cancel}
             col
             options={CANCEL_REASONS.map(r => ({ k: r.key, t: r.text }))}
@@ -2854,6 +2906,16 @@ export default function UntactLawApp() {
         {ptab === 'note' && (
         <div className="ula-panel-card">
           <p className="ula-panel-h">이 화면 <span className="tk-legend">번호는 CONNECT26 티켓, 누르면 화면에 영향 범위 표시</span></p>
+          {tkSel != null && (
+            <p className="tk-state">
+              {tkHits > 0
+                ? `CONNECT26-${tkSel} · 이 화면 ${tkHits}곳${tkCase ? ` · 케이스를 '${tkCase}'(으)로 바꿔 보여 줘요` : ''}`
+                : `CONNECT26-${tkSel} · 이 화면에는 해당 영역이 없어요`}
+              <button type="button" className="tk-clear" onClick={() => setTkSel(null)}>
+                선택 해제
+              </button>
+            </p>
+          )}
           <ul className="ula-note">
             {notes[s.step].map((n, i) => (
               <li key={n}>
@@ -2875,7 +2937,7 @@ export default function UntactLawApp() {
             {tkSel == null
               ? '티켓 번호를 누르면 이 화면에서 영향 범위를 점선으로 보여 줘요.'
               : tkHits > 0
-                ? `CONNECT26-${tkSel} · 이 화면 ${tkHits}곳`
+                ? `CONNECT26-${tkSel} · 이 화면 ${tkHits}곳${tkCase ? ` · 케이스를 '${tkCase}'(으)로 바꿔 보여 줘요` : ''}`
                 : `CONNECT26-${tkSel} · 지금 상태에서는 보이는 영역이 없어요(상태를 바꿔 보세요)`}
             {tkSel != null && (
               <button type="button" className="tk-clear" onClick={() => setTkSel(null)}>

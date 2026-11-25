@@ -2098,3 +2098,10 @@ button.tk-chip.is-on { background: #e8590c; color: #fff; }
 @media (max-width: 760px) { .uld-panel { max-height: none; overflow: visible; } }
 @media (min-width: 761px) { .uld-root .uld-panel { align-self: flex-start; position: sticky; top: 24px; } }
 .tk-parent { margin: 4px 0 4px; font-size: 11px; font-weight: 700; color: #808799; }
+
+/* 화면 길게 보기(기본): 화상진료실, 다이얼로그를 안쪽 스크롤 없이 전체 높이로 펼치고 바깥(브라우저)에서 스크롤 */
+.uld-root.is-tall .uld-vr { height: auto; min-height: 832px; }
+.uld-root.is-tall .uld-vr-contents { height: auto; align-items: stretch; }
+.uld-root.is-tall .uld-vr-info { height: auto; min-height: 600px; overflow: visible; }
+.uld-root.is-tall .uld-backdrop { overflow-y: auto; padding: 24px 16px; }
+.uld-root.is-tall .uld-backdrop > .uld-dialog { margin: auto; max-height: none; overflow: visible; }

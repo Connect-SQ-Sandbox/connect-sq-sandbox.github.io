@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : untact-law-doctor — 굿닥 온라인진료실(의사용) · 비대면진료 제도화(의료법 개정) 대응
- * 상태      : 검토용 초안 · v0.22 · 최종수정 2026-11-25 · 샌드박스 배포
+ * 상태      : 검토용 초안 · v0.23 · 최종수정 2026-11-25 · 샌드박스 배포
  * PRD       : 없음(제도화 대응 기획 초안). 사내 문서 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/untact-law-doctor.html
  * 피그마    : 대응 보드 커넥트 섹션(진료실-1~3) + 현행 온라인진료실 개발 코드. 대응 보드 외 화상진료실은 피그마 TELECARE DEV 220:72455.
@@ -78,6 +78,7 @@
  *  - [보류] D33 항목 문구, 진료기록부 문장, 접수 전 확인 3번째 '법정대리인 동의를 확인하고 설명했어요'의 '설명' 부분이 진료 전 설명 영역과 겹치는지.
  *
  * 변경 이력
+ *  - v0.23 (2026-11-25) 화면 길게 보기(기본): 화상진료실(환자정보 패널 안쪽 스크롤 없앰)과 다이얼로그를 전체 높이로 펼치고 바깥에서 스크롤. 패널 '화면 높이' 토글로 실제 창 높이로 되돌릴 수 있음.
  *  - v0.22 (2026-11-25) 패널 상태 토글을 바꿀 때 지금 화면에 그 상태가 드러나지 않으면 드러나는 화면으로 옮김.
  *  - v0.21 (2026-11-25) 티켓을 눌렀을 때 지금 케이스에 영역이 없으면 그 티켓이 보이는 케이스로 바꿔 표시(진료 대상, 자녀, 자녀 시트, 웹 To-be 등), 바꾼 케이스를 패널에 안내. 메모 탭에도 선택 상태 줄.
  *  - v0.20 (2026-11-25) 티켓 표시를 하위 티켓 기준으로 다시 연결(메모 칩, 영향 범위 점선, 티켓별 보기). 티켓별 보기는 상위 티켓 제목 아래 하위 티켓을 묶어 보여 줌.
@@ -516,6 +517,8 @@ export default function UntactLawDoctor() {
   const [toast, setToast] = useState('');
   const [lawOn, setLawOn] = useState(true);
   const [marksOn, setMarksOn] = useState(true);
+  /* 화면 길게 보기: 화상진료실, 다이얼로그 안쪽 스크롤 없이 전체 높이로 펼침 */
+  const [tall, setTall] = useState(true);
   const [quota, setQuota] = useState<'normal' | 'near' | 'full'>('normal');
   const [quotaMore, setQuotaMore] = useState(false);
   const [lawView, setLawView] = useState<{ ids: string[]; note?: string } | null>(null);
@@ -1663,12 +1666,12 @@ export default function UntactLawDoctor() {
   );
 
   return (
-    <div className={`uld-root${marksOn ? '' : ' is-marks-off'}`}>
+    <div className={`uld-root${marksOn ? '' : ' is-marks-off'}${tall ? ' is-tall' : ''}`}>
       <aside className="uld-panel">
         <div className="uld-panel-card">
           <p className="uld-panel-title">온라인진료실 · 제도화 대응</p>
           <p className="uld-panel-sub">
-            굿닥 온라인진료실(의사용) · 검토용 초안 v0.22 · 현행 화면은 운영 코드 기준 재현, 동적 값은 {'{중괄호}'}
+            굿닥 온라인진료실(의사용) · 검토용 초안 v0.23 · 현행 화면은 운영 코드 기준 재현, 동적 값은 {'{중괄호}'}
           </p>
         </div>
         <div className="ptab" role="tablist">
@@ -1726,6 +1729,15 @@ export default function UntactLawDoctor() {
           <p className="uld-panel-h" style={{ margin: 0 }}>
             상태 (가상환자 A)
           </p>
+          <Seg
+            label="화면 높이"
+            value={tall ? 'tall' : 'fixed'}
+            options={[
+              { k: 'tall', t: '길게 보기' },
+              { k: 'fixed', t: '실제 창 높이' },
+            ]}
+            onChange={k => setTall(k === 'tall')}
+          />
           <Seg
             label="이번 달 진료 건수(500건 안내)"
             value={quota}

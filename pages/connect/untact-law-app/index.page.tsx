@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : untact-law-app — 굿닥 앱(환자용) 비대면진료 신청 흐름 · 비대면진료 제도화(의료법 개정) 대응
- * 상태      : 검토용 초안 · v0.20 · 최종수정 2026-11-25 · 샌드박스 배포
+ * 상태      : 검토용 초안 · v0.21 · 최종수정 2026-11-25 · 샌드박스 배포
  * PRD       : 없음(제도화 대응 기획 초안). 사내 문서 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/untact-law-app.html
  * 피그마    : 없음. 현행 화면은 goodoc-mobile origin/staging(b45968ada, 2026-11-19) 코드 기준 재현.
@@ -105,6 +105,7 @@
  *  - [보류] ② 자녀 신청의 보호자 신분증을 거주지 서류로 함께 쓸 수 있는지(지금은 겸용 체크 없음). 보호자 신분증 설명 '신청한 보호자의 신분증 1장을 첨부해 주세요'는 가안.
  *
  * 변경 이력
+ *  - v0.21 (2026-11-25) 폰 화면 길게 보기(기본): 폰 안 스크롤 대신 화면 전체 높이로 펼치고, 상단 바와 하단 버튼은 브라우저 기준으로 붙임. 시트, 모달은 브라우저 높이 기준. 패널 '폰 화면' 토글로 812 높이로 되돌릴 수 있음.
  *  - v0.20 (2026-11-25) 패널 상태 토글을 바꿀 때 지금 화면에 그 상태가 드러나지 않으면 드러나는 화면으로 옮김.
  *  - v0.19 (2026-11-25) 티켓을 눌렀을 때 지금 케이스에 영역이 없으면 그 티켓이 보이는 케이스로 바꿔 표시(진료 대상, 자녀, 자녀 시트, 웹 To-be 등), 바꾼 케이스를 패널에 안내. 메모 탭에도 선택 상태 줄.
  *  - v0.18 (2026-11-25) 티켓 표시를 하위 티켓 기준으로 다시 연결(메모 칩, 영향 범위 점선, 티켓별 보기). 티켓별 보기는 상위 티켓 제목 아래 하위 티켓을 묶어 보여 줌.
@@ -916,9 +917,44 @@ export default function UntactLawApp() {
   useEffect(() => setFirstOpen(false), [s.count, s.target]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  /* 폰 화면 길게 보기: 폰 안 스크롤 대신 화면 전체 높이로 펼치고, 하단 버튼은 브라우저 아래에 붙인다 */
+  const [tall, setTall] = useState(true);
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: 0 });
+    const ph = document.querySelector<HTMLElement>('.ula-phone');
+    if (ph) {
+      const top = ph.getBoundingClientRect().top;
+      if (top < 0) window.scrollTo({ top: window.scrollY + top - 16 });
+    }
   }, [s.step]);
+  /* 펼친 화면에서 시트·모달은 브라우저 높이 기준으로 띄우므로 폰의 가로 위치를 알려 준다 */
+  useEffect(() => {
+    const sync = () => {
+      const ph = document.querySelector<HTMLElement>('.ula-phone');
+      const root = document.querySelector<HTMLElement>('.ula-root');
+      if (!ph || !root) return;
+      const r = ph.getBoundingClientRect();
+      root.style.setProperty('--phone-left', `${r.left}px`);
+      root.style.setProperty('--phone-w', `${r.width}px`);
+      /* 하단에 붙는 요소가 여럿이면 아래에서부터 쌓는다 */
+      const col = ph.querySelector<HTMLElement>(':scope > .ula-col');
+      if (!col) return;
+      const kids = Array.from(col.children) as HTMLElement[];
+      const at = kids.findIndex(k => k.classList.contains('ula-scroll'));
+      let acc = ph.classList.contains('is-pc') ? 0 : 34;
+      kids
+        .slice(at + 1)
+        .filter(k => !k.classList.contains('ula-sheet-dim') && !k.classList.contains('ulw-dim'))
+        .reverse()
+        .forEach(k => {
+          k.style.bottom = tall && at >= 0 ? `${acc}px` : '';
+          acc += k.offsetHeight;
+        });
+    };
+    sync();
+    window.addEventListener('resize', sync);
+    return () => window.removeEventListener('resize', sync);
+  });
 
   const go = (step: Step) => set({ step });
   const item = ITEMS[s.dis];
@@ -2733,11 +2769,11 @@ export default function UntactLawApp() {
   const stepMeta = STEPS.find(x => x.key === s.step)!;
 
   return (
-    <div className={`ula-root${marksOn ? '' : ' is-marks-off'}`}>
+    <div className={`ula-root${marksOn ? '' : ' is-marks-off'}${tall ? ' is-tall' : ''}`}>
       <aside className="ula-panel">
         <div className="ula-panel-card">
           <p className="ula-panel-title">비대면진료 신청 · 제도화 대응</p>
-          <p className="ula-panel-sub">굿닥 앱(환자용) · 검토용 초안 v0.20 · 현행 화면은 앱 코드 기준 재현, 동적 값은 {'{중괄호}'}</p>
+          <p className="ula-panel-sub">굿닥 앱(환자용) · 검토용 초안 v0.21 · 현행 화면은 앱 코드 기준 재현, 동적 값은 {'{중괄호}'}</p>
         </div>
         <div className="ptab" role="tablist">
           {([
@@ -2823,6 +2859,15 @@ export default function UntactLawApp() {
               onChange={k => setWebPc(k === 'pc')}
             />
           )}
+          <Seg
+            label="폰 화면"
+            value={tall ? 'tall' : 'fixed'}
+            options={[
+              { k: 'tall', t: '길게 보기' },
+              { k: 'fixed', t: '폰 높이(812)' },
+            ]}
+            onChange={k => setTall(k === 'tall')}
+          />
           <Seg
             label="진료 대상" show={['target', 'form', 'consent']} goTo="target"
             value={s.target}

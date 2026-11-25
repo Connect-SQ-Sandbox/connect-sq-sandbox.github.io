@@ -1360,3 +1360,18 @@ button.tk-chip.is-on { background: #e8590c; color: #fff; }
 @media (max-width: 760px) { .ula-panel { max-height: none; overflow: visible; } }
 @media (min-width: 761px) { .ula-panel { align-self: flex-start; position: sticky; top: 24px; } }
 .tk-parent { margin: 4px 0 4px; font-size: 11px; font-weight: 700; color: #808799; }
+
+/* 폰 화면 길게 보기(기본): 폰 안 스크롤 없이 전체 높이로 펼치고, 상단 바와 하단 버튼은 브라우저 기준으로 붙인다 */
+.ula-root.is-tall .ula-phone { height: auto; min-height: 812px; overflow: visible; }
+.ula-root.is-tall .ula-phone.is-pc { min-height: 620px; }
+.ula-root.is-tall .ula-phone > .ula-col { flex: 1 0 auto !important; }
+.ula-root.is-tall .ula-scroll { flex: 1 0 auto; overflow: visible; }
+.ula-root.is-tall .ula-statusbar { position: sticky; top: 0; z-index: 15; }
+.ula-root.is-tall .ula-phone > .ula-col > :has(~ .ula-scroll) { position: sticky; top: 47px; z-index: 12; }
+.ula-root.is-tall .ula-phone.is-pc > .ula-col > :has(~ .ula-scroll) { top: 0; }
+.ula-root.is-tall .ula-phone > .ula-col > .ula-scroll ~ :not(.ula-sheet-dim):not(.ulw-dim) { position: sticky; z-index: 12; }
+.ula-root.is-tall .ula-homebar { position: sticky; bottom: 0; z-index: 15; }
+.ula-root.is-tall .ula-sheet-dim,
+.ula-root.is-tall .ulw-dim { position: fixed; inset: 0 auto 0 var(--phone-left, 0px); width: var(--phone-w, 375px); z-index: 40; }
+.ula-root.is-tall .ulw-sticky-scope > .ulw-cta-wrap { bottom: 74px; }
+.ula-root.is-tall .ula-phone.is-pc .ulw-sticky-scope > .ulw-cta-wrap { bottom: 40px; }

@@ -1268,3 +1268,45 @@
   object-fit: cover;
   flex-shrink: 0;
 }
+
+/* 굿닥 웹 비대면 소개(모바일 웹, D36) — 현행 goodoc.co.kr/untact 재현 */
+.ulw-head { display: flex; align-items: center; gap: 12px; padding: 6px 16px; height: 52px; flex-shrink: 0; background: var(--white); }
+.ulw-logo { width: 22px; font-size: 26px; font-weight: 800; color: var(--blue-60); line-height: 1; }
+.ulw-search { flex: 1; height: 36px; border-radius: 6px; background: var(--gray-20); color: var(--gray-50); font-size: 14px; display: flex; align-items: center; padding: 0 12px; }
+.ulw-menu { font-size: 24px; color: var(--gray-90); }
+.ulw-body { background: var(--white); }
+.ulw-pad { display: flex; flex-direction: column; padding: 0 16px; }
+.ulw-pagetitle { padding-top: 16px; }
+.ulw-blue { color: var(--blue-60); font-weight: 700; }
+.ulw-intro { margin-top: 20px; padding: 20px; border-radius: 12px; background: var(--blue-10); }
+.ulw-price { margin-top: 20px; padding: 4px 16px; border-radius: 12px; box-shadow: 0 2px 12px rgba(22, 24, 29, 0.08); }
+.ulw-price-row { display: flex; justify-content: space-between; align-items: center; height: 40px; border-bottom: 1px solid var(--gray-20); }
+.ulw-price-row:last-child { border-bottom: 0; }
+.ulw-btn-line { margin-top: 16px; height: 44px; border-radius: 6px; border: 1px solid var(--gray-30); background: var(--white); font-size: 14px; font-weight: 600; color: var(--gray-80); }
+.ulw-cut { position: relative; margin-top: 40px; padding: 22px 8px 8px; border: 2px dashed var(--red-60); border-radius: 8px; background: var(--red-10); display: flex; flex-direction: column; gap: 4px; }
+.ulw-reviews .ulw-cut { margin-top: 0; padding: 22px 4px 4px; flex-shrink: 0; }
+.ulw-cut-tag { position: absolute; top: 2px; left: 6px; font-size: 11px; font-weight: 700; color: var(--red-60); }
+.ulw-step { display: flex; flex-direction: column; align-items: center; gap: 6px; padding-top: 20px; text-align: center; }
+.ulw-step-img { width: 100%; height: 72px; border-radius: 12px; background: var(--gray-15); color: var(--gray-50); font-size: 11px; display: flex; align-items: center; justify-content: center; padding: 0 12px; }
+.ulw-step-badge { padding: 2px 10px; border-radius: 12px; background: var(--blue-20); color: var(--blue-60); font-size: 12px; font-weight: 600; }
+.ulw-review-hero { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 20px 0 12px; }
+.ulw-reviews { display: flex; gap: 10px; overflow-x: auto; padding: 4px 16px 8px; scrollbar-width: none; }
+.ulw-review { width: 200px; min-height: 132px; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; padding: 14px; border-radius: 12px; border: 1px solid var(--gray-30); background: var(--white); }
+.ulw-review-tag { align-self: flex-start; padding: 2px 8px; border-radius: 4px; background: var(--gray-20); color: var(--gray-70); font-size: 12px; }
+.ulw-banner { margin-top: 40px; padding: 40px 24px; background: #1d3a7a; display: flex; flex-direction: column; gap: 4px; }
+.ulw-stores { display: flex; gap: 8px; padding-top: 16px; }
+.ulw-stores span { padding: 8px 14px; border-radius: 6px; background: rgba(255, 255, 255, 0.14); color: var(--white); font-size: 13px; font-weight: 600; }
+.ulw-footer { padding: 24px 16px 40px; color: var(--gray-50); font-size: 12px; background: var(--gray-15); }
+.ulw-cta-wrap { display: flex; padding: 12px 16px; background: var(--white); flex-shrink: 0; }
+.ulw-appbar { height: 40px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #1d3a7a; color: var(--white); font-size: 14px; font-weight: 700; }
+.ulw-dim { position: absolute; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center; background: rgba(22, 24, 29, 0.5); }
+.ulw-modal { width: 327px; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 32px 24px 16px; border-radius: 16px; background: var(--white); }
+.ulw-modal-btns { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 12px; }
+.ulw-modal-main { width: 100%; height: 52px; border-radius: 6px; background: var(--blue-60); color: var(--white); font-size: 16px; font-weight: 600; }
+.ulw-modal-sub { height: 40px; padding: 0 20px; border-radius: 6px; background: transparent; color: var(--gray-80); font-size: 14px; font-weight: 500; }
+.ulw-sticky-scope { display: flex; flex-direction: column; }
+.ulw-sticky-scope > * { flex-shrink: 0; }
+.ulw-sticky-scope > .ulw-cta-wrap { position: sticky; bottom: 0; z-index: 2; margin-top: 24px; }
+.ulw-review-hero { flex-direction: row; justify-content: space-between; align-items: flex-end; }
+.ulw-more { background: transparent; color: var(--gray-60); font-size: 13px; font-weight: 500; padding: 0; }
+.ulw-reviews { align-items: flex-start; }

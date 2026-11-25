@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : untact-law-app — 굿닥 앱(환자용) 비대면진료 신청 흐름 · 비대면진료 제도화(의료법 개정) 대응
- * 상태      : 검토용 초안 · v0.12 · 최종수정 2026-11-25 · 샌드박스 배포
+ * 상태      : 검토용 초안 · v0.13 · 최종수정 2026-11-25 · 샌드박스 배포
  * PRD       : 없음(제도화 대응 기획 초안). 사내 문서 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/untact-law-app.html
  * 피그마    : 없음. 현행 화면은 goodoc-mobile origin/staging(b45968ada, 2026-11-19) 코드 기준 재현.
@@ -9,10 +9,15 @@
  * 에셋      : assets/untact-law-app/img_doctor_avatar.png (레포 원본). 아이콘은 레포 svg path 를 인라인.
  * 기술제약  : 샌드박스 빌드 = react 훅 + plain CSS, 외부 요청 0. Pretendard 는 로컬 설치 글꼴에 의존(CDN @import 는 빌드에서 제거됨).
  * 화면구성  : 좌측 상태 패널(화면 점프 · 상태 토글 · 화면별 메모) + 375×812 폰
- *             의사 상세(현행·진입점) → 진료 대상자 선택(현행) → ① 진료 대상 확인(신규) → ② 신청서(수정) → ③ 비대면진료 안내·동의(신규)
+ *             굿닥 웹 비대면 소개(수정·D36, 앱으로 이동) → 의사 상세(현행·진입점) → 진료 대상자 선택(현행) → ① 진료 대상 확인(신규) → ② 신청서(수정) → ③ 비대면진료 안내·동의(신규)
  *             → 결제(현행·간단) → 신청 완료(현행) → ④ 진료내역 상세 · 병원 취소(수정)
  *
  * 핵심 결정(why)
+ *  - [확정·D36] 비대면진료는 웹으로 신청할 수 없다. 굿닥 웹 비대면 소개(goodoc.co.kr/untact)는 현행을 재현하되 웹 신청을 암시하거나 법 기준에 맞지 않는 내용을 뺀다(요청):
+ *    '비대면진료는 이렇게 진행하세요' STEP 1~4 전체, 후기 '대면이랑 차이가 없어요'. 하단 버튼은 앱 신청 안내 모달로 바꾼다.
+ *  - [보류] 웹 하단 버튼 '앱에서 진료 신청하기', 모달 제목, 본문, 버튼 이름은 가안. 모달은 로그인 없이 뜬다(현행은 로그인, 본인인증 후 웹 신청서).
+ *  - [보류] PC 웹은 현행 앱 다운로드 모달처럼 QR을 보여 줄지, 앱 딥링크 목적지(비대면 홈 또는 같은 의사), 웹 병원 상세 '비대면진료' 버튼도 같은 모달로 보낼지,
+ *    웹으로 이미 신청한 진행 중 진료(상태 FAB)를 어떻게 둘지 확인 필요.
  *  - [확정·요청] 담당 범위는 신청서 진입부터. 진료 대상자 선택은 현행(SelectFamilyScreen, type untact) 그대로 재현하고, 고른 값은 패널 '진료 받는 사람'과 같은 상태다.
  *  - [확정·D29] 진료 대상자 선택(현행)에서 자녀를 고르면 추가 준비물 바텀시트(아이 서류, 보호자 신분증, 화상 동석, 매 신청 법정대리인 동의)를 띄우고 [준비할게요]로 진행.
  *    [다시 고를게요], 배경, 닫기, Esc는 닫기만. 본인은 지금처럼 바로 진행. 거주지, 예외 대상 서류는 '진료 대상에 따라 … 더 필요할 수 있어요' 한 줄로.
@@ -99,6 +104,7 @@
  *  - [보류] ② 자녀 신청의 보호자 신분증을 거주지 서류로 함께 쓸 수 있는지(지금은 겸용 체크 없음). 보호자 신분증 설명 '신청한 보호자의 신분증 1장을 첨부해 주세요'는 가안.
  *
  * 변경 이력
+ *  - v0.13 (2026-11-25) D36: 굿닥 웹 비대면 소개 화면(모바일 웹) 추가. STEP 1~4와 후기 1건 제거, 하단 버튼을 앱 신청 안내 모달로. 패널 '웹 소개 보기' As-is/To-be 비교.
  *  - v0.12 (2026-11-25) D33: ③ 설명 4가지를 담당 의료인 명의({의사명} 의사가 설명드려요)로 바꾸고 재신청에도 보여 줌. 4번을 법 34조의3⑥ 기준(다른 사람 인적 사항 사용, 속여 처방받기) 문구로.
  *    동의 체크를 '(필수) {의사명} 의사의 설명 4가지를 확인했고, 이 진료에 동의해요'로(자녀는 법정대리인 문구), 법정대리인 동의(D21)는 그 아래 유지.
  *  - v0.11 (2026-11-24) 예외 대상 종류 선택을 ② 칩에서 ① 바텀시트로 옮김(D27). 조건 체크는 시트 안, ②는 읽기 전용 요약과 서류 첨부, ① '전체 대상 보기' 삭제. 패널 '예외 대상 종류' 토글, URL ?ex= 추가.
@@ -133,7 +139,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import doctorAvatar from '../../../assets/untact-law-app/img_doctor_avatar.png';
 
 /* ---------- 타입 ---------- */
-type Step = 'doctor' | 'family' | 'target' | 'form' | 'consent' | 'payment' | 'done' | 'detail';
+type Step = 'web' | 'doctor' | 'family' | 'target' | 'form' | 'consent' | 'payment' | 'done' | 'detail';
 type Target = 'revisit' | 'first' | 'exception';
 type Who = 'self' | 'child';
 type Count = 'first' | 'again';
@@ -146,6 +152,7 @@ type Resid = 'resident' | 'actual';
 type CancelReason = 'notTarget' | 'needVisit' | 'noIdentity' | 'noContact';
 
 const STEPS: { key: Step; label: string; kind: 'cur' | 'new' | 'mod' }[] = [
+  { key: 'web', label: '굿닥 웹 비대면 소개 (D36)', kind: 'mod' },
   { key: 'doctor', label: '의사 상세 (진입점)', kind: 'cur' },
   { key: 'family', label: '진료 대상자 선택', kind: 'cur' },
   { key: 'target', label: '① 진료 대상 확인', kind: 'new' },
@@ -854,6 +861,196 @@ export default function UntactLawApp() {
   const item = ITEMS[s.dis];
 
   /* ───────── 화면들 ───────── */
+
+  /* 굿닥 웹 비대면 소개(goodoc.co.kr/untact, 모바일 웹) — D36 웹 신청 불가. 현행 UntactLandingPage 재현 + 웹 신청 암시 제거 + 앱 유도 모달 */
+  const [webAsIs, setWebAsIs] = useState(false);
+  const [webModal, setWebModal] = useState(false);
+  useEffect(() => setWebModal(false), [s.step, webAsIs]);
+  const WEB_PRICES: [string, string][] = [
+    ['감기·비염', '6,500'],
+    ['소화기', '6,600'],
+    ['소아청소년과', '4,700'],
+    ['피부질환', '9,800'],
+    ['고혈압·당뇨', '6,000'],
+    ['산부인과', '6,700'],
+  ];
+  const WEB_REVIEWS: { n: string; b: string; tag: string; cut?: boolean }[] = [
+    { n: '김*연', b: '코막힘 심했는데 대기 없이 바로 진료돼서 훨씬 편했어요!', tag: '감기·비염' },
+    { n: '이*진', b: '병원 방문이 부담됐는데 집에서 상담받으니까 민망하지 않고 좋아요', tag: '산부인과' },
+    { n: '박*호', b: '약 복용이랑 생활관리까지 자세히 설명해주니 대면이랑 차이가 없어요', tag: '고혈압·당뇨', cut: true },
+    { n: '최*아', b: '아이 열나서 급했는데 빠르게 진료가 필요할 때 딱이에요!', tag: '소아청소년과' },
+    { n: '정*민', b: '증상 설명드리니 원인도 알려주고 처방까지 세심하게 진찰해줘요 ^^', tag: '소화기' },
+    { n: '오*진', b: '매번 병원 가기 번거로웠는데 집에서 꾸준히 관리할 수 있어 좋아요', tag: '만성질환' },
+  ];
+  const WEB_STEPS: [string, string?][] = [
+    ['증상을 자세하게 입력해 주세요'],
+    ['결제 수단을 등록해 주세요', '결제는 진료가 완료된 후 진행돼요.'],
+    ['병원에서 오는 전화로 진료를 진행해요', '화상 진료를 원할 경우 앱에서 진료를 신청해 주세요.'],
+    ['약국에 처방전 전송 후 약을 수령해요', '처방전 전송을 위해 굿닥 앱을 다운로드해 주세요.'],
+  ];
+  /* As-is 보기에서만 보이는 삭제 대상 표시 */
+  const Cut = ({ children }: { children: React.ReactNode }) => (
+    <div className="ulw-cut">
+      <span className="ulw-cut-tag">To-be에서 삭제</span>
+      {children}
+    </div>
+  );
+  const WebScreen = (
+    <>
+      <div className="ulw-head">
+        <span className="ulw-logo">g</span>
+        <span className="ulw-search">지역, 진료과, 병원명 검색</span>
+        <span className="ulw-menu" aria-hidden>
+          ≡
+        </span>
+      </div>
+      <div className="ula-scroll ulw-body">
+        {/* 현행: 하단 버튼은 후기 섹션 끝까지만 따라오는 sticky — 배너, 푸터 위로는 따라오지 않음 */}
+        <div className="ulw-sticky-scope">
+        <div className="ulw-pad">
+          <T s="h4" w={7} c="gray-90" className="ulw-pagetitle">
+            비대면진료
+          </T>
+          <T s="h4" w={7} c="gray-90" style={{ paddingTop: 36 }}>
+            굿닥 비대면진료가 처음인가요?
+          </T>
+          <div className="ulw-intro">
+            <T s="b2" w={5} c="gray-80">
+              병원 방문없이 의사에게 진료받으세요! 굿닥을 통해 <b className="ulw-blue">비대면진료부터 처방, 약 수령 과정</b>까지 편하게 이용하세요.
+            </T>
+          </div>
+          <T s="h4" w={7} c="gray-90" style={{ paddingTop: 40 }}>
+            미리 진료비 보고, 부담없이 진료 받으세요
+          </T>
+          <div className="ulw-price">
+            {WEB_PRICES.map(([k, v]) => (
+              <div key={k} className="ulw-price-row">
+                <T s="b2" w={5} c="gray-70">
+                  {k}
+                </T>
+                <T s="b2" w={7} c="gray-90">
+                  평균 <span className="ulw-blue">{v}원</span>
+                </T>
+              </div>
+            ))}
+          </div>
+          <button type="button" className="ulw-btn-line">
+            앱에서 가격 전체 보기
+          </button>
+          <T s="c2" c="gray-60" style={{ paddingTop: 12 }}>
+            건강보험 적용이 되지 않는 비급여 진료는 비용이 추가될 수 있어요.
+          </T>
+          {webAsIs && (
+            <Cut>
+              <T s="h4" w={7} c="gray-90">
+                비대면진료는 이렇게 진행하세요
+              </T>
+              {WEB_STEPS.map(([t, sub], i) => (
+                <div key={t} className="ulw-step">
+                  <div className="ulw-step-img">{i === 1 ? '{결제수단 등록하기 · 등록 후 진료 신청하기 (웹 화면 그림)}' : '{단계 그림}'}</div>
+                  <span className="ulw-step-badge">STEP {i + 1}</span>
+                  <T s="b1" w={7} c="gray-90">
+                    {t}
+                  </T>
+                  {sub && (
+                    <T s="c1" c="gray-60">
+                      {sub}
+                    </T>
+                  )}
+                </div>
+              ))}
+            </Cut>
+          )}
+          <T s="h4" w={7} c="gray-90" style={{ paddingTop: 48 }}>
+            실제 환자들의 후기를 확인하세요
+          </T>
+          <div className="ulw-review-hero">
+            <div className="ula-col">
+              <T s="b2" w={5} c="gray-70">
+                <span className="ulw-blue">30만 명</span>의 유저가
+              </T>
+              <T s="h5" w={7} c="gray-90">
+                만족한 굿닥 비대면진료
+              </T>
+            </div>
+            <button type="button" className="ulw-more">
+              더 많은 후기 보기 ›
+            </button>
+          </div>
+        </div>
+        <div className="ulw-reviews">
+          {WEB_REVIEWS.filter(r => webAsIs || !r.cut).map(r => {
+            const card = (
+              <div className="ulw-review">
+                <T s="c1" w={6} c="gray-90">
+                  {r.n}
+                </T>
+                <T s="b2" c="gray-80" style={{ flex: 1 }}>
+                  {r.b}
+                </T>
+                <span className="ulw-review-tag">{r.tag}</span>
+              </div>
+            );
+            return r.cut ? <Cut key={r.n}>{card}</Cut> : <React.Fragment key={r.n}>{card}</React.Fragment>;
+          })}
+        </div>
+        <div className="ulw-cta-wrap">
+          {webAsIs ? (
+            <button type="button" className="ula-btn is-flex filled-blue" title="현행: 웹 신청서(/untact/apply)로 이동">
+              진료 신청하기
+            </button>
+          ) : (
+            <button type="button" className="ula-btn is-flex filled-blue ula-changed" onClick={() => setWebModal(true)}>
+              앱에서 진료 신청하기
+            </button>
+          )}
+        </div>
+        </div>
+        <div className="ulw-banner">
+          <T s="b2" w={5} c="white">
+            대한민국 누적 다운로드 1위
+          </T>
+          <T s="h4" w={7} c="white">
+            비대면진료가 필요한 순간,
+            <br />
+            <span style={{ color: '#3ee39b' }}>굿닥</span>
+          </T>
+          <div className="ulw-stores">
+            <span>App Store</span>
+            <span>Google Play</span>
+          </div>
+        </div>
+        <div className="ulw-footer">{'{공통 푸터 — 현행, 범위 밖}'}</div>
+      </div>
+      <div className="ulw-appbar">
+        <span style={{ color: '#3ee39b' }}>병원갈 땐, 굿닥</span>&nbsp;앱 다운받기 ↓
+      </div>
+      {webModal && (
+        <div className="ulw-dim" onClick={() => setWebModal(false)}>
+          <div className="ulw-modal ula-changed" role="dialog" aria-label="앱에서 신청 안내" onClick={e => e.stopPropagation()}>
+            <T s="h4" c="gray-90" style={{ textAlign: 'center' }}>
+              비대면진료는
+              <br />
+              <b>굿닥 앱에서 신청할 수 있어요</b>
+            </T>
+            <T s="b2" c="gray-70" style={{ textAlign: 'center' }}>
+              웹에서는 비대면진료를 신청할 수 없어요.
+              <br />
+              앱을 설치하거나 열어서 신청해 주세요.
+            </T>
+            <div className="ulw-modal-btns">
+              <button type="button" className="ulw-modal-main" onClick={() => go('doctor')}>
+                앱에서 진료 신청하기
+              </button>
+              <button type="button" className="ulw-modal-sub" onClick={() => setWebModal(false)}>
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
 
   /* 의사 상세 (진입점만) — DoctorProfileScreen / FooterButton.tsx:82-128 */
   const DoctorScreen = (
@@ -2169,6 +2366,7 @@ export default function UntactLawApp() {
   );
 
   const screens: Record<Step, React.ReactNode> = {
+    web: WebScreen,
     doctor: DoctorScreen,
     family: FamilyScreen,
     target: TargetScreen,
@@ -2182,6 +2380,13 @@ export default function UntactLawApp() {
   /* 화면별 메모 (패널) */
   const notes: Record<Step, string[]> = useMemo(
     () => ({
+      web: [
+        '굿닥 웹 비대면진료 소개(goodoc.co.kr/untact) 모바일 웹. 현행 페이지를 재현하고 웹 신청을 암시하거나 법 기준에 맞지 않는 내용만 뺐다(D36). 패널 \'웹 소개 보기\'로 As-is와 비교.',
+        '뺀 것 1: \'비대면진료는 이렇게 진행하세요\' STEP 1~4 전체. 웹 결제수단 등록과 신청 버튼 그림, \'병원에서 오는 전화로 진료\'(초진은 화상만이라 맞지 않음), \'화상은 앱에서\', \'처방전 전송을 위해 앱 다운로드\'가 모두 웹 신청을 전제로 한다.',
+        '뺀 것 2: 후기 \'대면이랑 차이가 없어요\'. 진료 전 설명 1번(비대면진료는 진단에 한계가 있음)과 맞지 않는다.',
+        '바꾼 것: 하단 고정 버튼 \'진료 신청하기\'(현행: 로그인, 본인인증 후 웹 신청서) → \'앱에서 진료 신청하기\'(가안). 누르면 로그인 없이 앱 신청 안내 모달. [앱에서 진료 신청하기]는 앱으로 이동(이 프로토에서는 의사 상세로 넘어감), [닫기]나 배경은 닫기만.',
+        '나머지(소개, 진료비, 후기, 앱 다운로드 배너, 하단 앱 다운받기 띠)는 현행 그대로.',
+      ],
       doctor: ['현행 의사 상세의 하단 버튼만 재현. 진료예약, 바로진료 모두 진료 대상자 선택으로 이어진다.'],
       family: [
         '현행 진료 대상자 선택(SelectFamilyScreen, type untact) 재현. 헤더 제목 없음, 본인 행, 자녀 행, 자녀 추가하기 순서.',
@@ -2255,7 +2460,7 @@ export default function UntactLawApp() {
       <aside className="ula-panel">
         <div className="ula-panel-card">
           <p className="ula-panel-title">비대면진료 신청 · 제도화 대응</p>
-          <p className="ula-panel-sub">굿닥 앱(환자용) · 검토용 초안 v0.12 · 현행 화면은 앱 코드 기준 재현, 동적 값은 {'{중괄호}'}</p>
+          <p className="ula-panel-sub">굿닥 앱(환자용) · 검토용 초안 v0.13 · 현행 화면은 앱 코드 기준 재현, 동적 값은 {'{중괄호}'}</p>
         </div>
         <div className="ula-panel-card ula-lawcard">
           <div>
@@ -2294,6 +2499,17 @@ export default function UntactLawApp() {
           <p className="ula-panel-h" style={{ margin: 0 }}>
             상태
           </p>
+          {s.step === 'web' && (
+            <Seg
+              label="웹 소개 보기"
+              value={webAsIs ? 'asis' : 'tobe'}
+              options={[
+                { k: 'tobe', t: 'To-be' },
+                { k: 'asis', t: 'As-is(현행)' },
+              ]}
+              onChange={k => setWebAsIs(k === 'asis')}
+            />
+          )}
           <Seg
             label="진료 대상"
             value={s.target}

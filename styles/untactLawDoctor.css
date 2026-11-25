@@ -2071,3 +2071,10 @@
 .tk-go button { padding: 2px 8px; border: 1px solid #e3e6ed; border-radius: 4px; background: #fff; font-size: 11px; line-height: 16px; color: #434956; cursor: pointer; }
 .tk-go button.is-on { border-color: #7a4ff0; color: #7a4ff0; }
 .tk-where { padding: 2px 8px; border-radius: 4px; background: #f2f4f7; font-size: 11px; line-height: 16px; color: #5d6474; }
+button.tk-chip { border: 0; cursor: pointer; font-family: inherit; }
+button.tk-chip:hover { background: #e2d7fd; }
+button.tk-chip.is-on { background: #e8590c; color: #fff; }
+.tk-state { margin: 0 0 10px; font-size: 11px; line-height: 16px; color: #5d6474; }
+.tk-clear { margin-left: 6px; padding: 0 6px; border: 1px solid #caced8; border-radius: 4px; background: #fff; font-size: 11px; line-height: 16px; color: #434956; cursor: pointer; }
+[data-tkon] { outline: 2px dashed #e8590c !important; outline-offset: 3px !important; }
+[data-tkon]::after { content: attr(data-tkon); position: absolute; top: -12px; left: -2px; z-index: 50; padding: 0 5px; border-radius: 3px; background: #e8590c; color: #fff; font-size: 10px; font-weight: 700; line-height: 15px; white-space: nowrap; pointer-events: none; }

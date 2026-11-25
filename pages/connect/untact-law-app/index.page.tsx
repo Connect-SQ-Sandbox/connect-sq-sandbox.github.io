@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : untact-law-app — 굿닥 앱(환자용) 비대면진료 신청 흐름 · 비대면진료 제도화(의료법 개정) 대응
- * 상태      : 검토용 초안 · v0.15 · 최종수정 2026-11-25 · 샌드박스 배포
+ * 상태      : 검토용 초안 · v0.16 · 최종수정 2026-11-25 · 샌드박스 배포
  * PRD       : 없음(제도화 대응 기획 초안). 사내 문서 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/untact-law-app.html
  * 피그마    : 없음. 현행 화면은 goodoc-mobile origin/staging(b45968ada, 2026-11-19) 코드 기준 재현.
@@ -105,6 +105,7 @@
  *  - [보류] ② 자녀 신청의 보호자 신분증을 거주지 서류로 함께 쓸 수 있는지(지금은 겸용 체크 없음). 보호자 신분증 설명 '신청한 보호자의 신분증 1장을 첨부해 주세요'는 가안.
  *
  * 변경 이력
+ *  - v0.16 (2026-11-25) 티켓 영향 범위 보기: 패널 티켓 칩을 누르면 무대 화면의 해당 영역에 주황 점선과 번호 라벨(data-tk). '티켓별 보기' 칩은 관계없는 화면이면 첫 해당 화면으로 이동. 다시 누르거나 '선택 해제'로 끔.
  *  - v0.15 (2026-11-25) 패널 '이 화면' 메모 줄마다 대응 티켓 번호(CONNECT26-) 표시, '티켓별 보기'(티켓 → 해당 화면 바로 가기) 추가. 메모 안 결정 번호는 화면에서 뺌.
  *  - v0.14 (2026-11-25) D37: 웹 진입점 병원 상세(로그인 없이 의사 선택 시트 → 앱 안내 모달), PC 웹 QR 모달. 패널 '웹 진입점', '기기' 토글.
  *  - v0.13 (2026-11-25) D36: 굿닥 웹 비대면 소개 화면(모바일 웹) 추가. STEP 1~4와 후기 1건 제거, 하단 버튼을 앱 신청 안내 모달로. 패널 '웹 소개 보기' As-is/To-be 비교.
@@ -1053,7 +1054,7 @@ export default function UntactLawApp() {
               진료 신청하기
             </button>
           ) : (
-            <button type="button" className="ula-btn is-flex filled-blue ula-changed" onClick={() => setWebModal(true)}>
+            <button type="button" data-tk="1179" className="ula-btn is-flex filled-blue ula-changed" onClick={() => setWebModal(true)}>
               앱에서 진료 신청하기
             </button>
           )}
@@ -1107,7 +1108,7 @@ export default function UntactLawApp() {
         </button>
         <button
           type="button"
-          className={`ula-btn is-flex tonal-blue${webAsIs ? '' : ' ula-changed'}`}
+          data-tk="1179" className={`ula-btn is-flex tonal-blue${webAsIs ? '' : ' ula-changed'}`}
           title={webAsIs ? '현행: 로그인 → 의사 선택 → 예약/진료과 선택 → 웹 신청서' : undefined}
           onClick={() => !webAsIs && setHospSheet(true)}>
           비대면진료
@@ -1156,7 +1157,7 @@ export default function UntactLawApp() {
   /* 앱 신청 안내 모달 — 모바일: [앱에서 진료 신청하기] / PC: QR(현행 앱 다운로드 모달처럼) */
   const WebAppModal = webModal && (
     <div className="ulw-dim" onClick={() => setWebModal(false)}>
-      <div className={`ulw-modal ula-changed${webPc ? ' is-pc' : ''}`} role="dialog" aria-label="앱에서 신청 안내" onClick={e => e.stopPropagation()}>
+      <div data-tk="1179" className={`ulw-modal ula-changed${webPc ? ' is-pc' : ''}`} role="dialog" aria-label="앱에서 신청 안내" onClick={e => e.stopPropagation()}>
         {webPc && (
           <button type="button" className="ulw-x ulw-modal-x" aria-label="닫기" onClick={() => setWebModal(false)}>
             ×
@@ -1268,7 +1269,7 @@ export default function UntactLawApp() {
         </T>
       </div>
       {/* D22: 초진과 같은 처방 안내 */}
-      <div className="ula-bullet ula-changed">
+      <div data-tk="1186 1187" className="ula-bullet ula-changed">
         <T s="b2" c="gray-70">
           {'  •'}
         </T>
@@ -1278,7 +1279,7 @@ export default function UntactLawApp() {
         </T>
       </div>
       {/* D27: 서류 안내는 고른 종류에 맞게. 전체 대상 목록은 바텀시트로 옮김 */}
-      <div className="ula-bullet ula-changed">
+      <div data-tk="1176" className="ula-bullet ula-changed">
         <T s="b2" c="gray-70">
           {'  •'}
         </T>
@@ -1290,7 +1291,7 @@ export default function UntactLawApp() {
   );
   /* ① 재진 주의 안내(D28) — 고르면 박스 아래 */
   const RevisitGuide = (
-    <div className="ula-guide ula-changed" style={{ gap: 10 }}>
+    <div data-tk="1176" className="ula-guide ula-changed" style={{ gap: 10 }}>
       <div className="ula-abuse">
         <IconCaution color="#FA4655" size={18} />
         <T s="b2" w={6} c="gray-80" style={{ flex: 1 }}>
@@ -1322,7 +1323,7 @@ export default function UntactLawApp() {
         <IconArrowForward rotate={90} />
       </button>
     ) : (
-      <div className="ula-guide">
+      <div data-tk="1176 1186 1187" className="ula-guide">
         {firstGuideLines.map((line, i) => (
           <div className="ula-bullet" key={line}>
             <T s="b2" c="gray-70">
@@ -1350,7 +1351,7 @@ export default function UntactLawApp() {
   /* ① 예외 대상 종류 바텀시트(D27) — 단일 선택, 조건형은 행 아래 확인 체크, [선택 완료]로만 확정 */
   const ExSheet = (
     <div className="ula-sheet-dim" onClick={closeExSheet}>
-      <div className="ula-sheet ula-changed" role="dialog" aria-label="예외 대상 고르기" onClick={e => e.stopPropagation()}>
+      <div data-tk="1176" className="ula-sheet ula-changed" role="dialog" aria-label="예외 대상 고르기" onClick={e => e.stopPropagation()}>
         <div className="ula-sheet-head">
           <T s="h4" w={7} c="gray-100" style={{ flex: 1 }}>
             어떤 대상에 해당하나요?
@@ -1511,7 +1512,7 @@ export default function UntactLawApp() {
   ];
   const ChildSheet = (
     <div className="ula-sheet-dim" onClick={() => setChildSheet(false)}>
-      <div className="ula-sheet ula-changed" role="dialog" aria-label="자녀 진료 추가 준비물" onClick={e => e.stopPropagation()}>
+      <div data-tk="1178" className="ula-sheet ula-changed" role="dialog" aria-label="자녀 진료 추가 준비물" onClick={e => e.stopPropagation()}>
         <div className="ula-sheet-head">
           <T s="h4" w={7} c="gray-100" style={{ flex: 1 }}>
             자녀 진료에는 이게 더 필요해요 <span className="ula-draft">가안</span>
@@ -1632,7 +1633,7 @@ export default function UntactLawApp() {
                     {/* D22: 재진은 마지막 직접 진료일 기준 + 비대면진료만은 해당 안 됨 */}
                     {t.key === 'exception' && on && exInfo ? (
                       /* D27: 고른 종류 요약 + [변경](시트 다시 열기) */
-                      <span className="ula-exsum ula-changed">
+                      <span data-tk="1176" className="ula-exsum ula-changed">
                         <T s="b2" w={6} c="gray-90" style={{ flex: 1 }}>
                           {exInfo.label}
                           {law(['exception-list'])}
@@ -1655,7 +1656,7 @@ export default function UntactLawApp() {
                         </span>
                       </span>
                     ) : (
-                    <span className={`ula-col ${t.sub ? 'ula-changed' : ''}`} style={{ gap: 2 }}>
+                    <span data-tk={t.sub ? '1176' : undefined} className={`ula-col ${t.sub ? 'ula-changed' : ''}`} style={{ gap: 2 }}>
                       <T s="b2" c="gray-70">
                         {t.desc}
                         {law(t.key === 'first' ? ['revisit-period'] : t.key === 'revisit' ? ['revisit-period', 'revisit-check'] : ['exception-list'])}
@@ -1686,7 +1687,7 @@ export default function UntactLawApp() {
 
   /* ② 예외 대상 확인 (신규, 예외 대상만) — 거주지 서류 대신 */
   const ExSection = (
-    <div className="ula-col ula-changed" style={{ gap: 16, padding: '24px 20px 28px', borderBottom: '8px solid var(--gray-20)' }}>
+    <div data-tk="1176" className="ula-col ula-changed" style={{ gap: 16, padding: '24px 20px 28px', borderBottom: '8px solid var(--gray-20)' }}>
       <div className="ula-col" style={{ gap: 4 }}>
         <T s="h5" w={7} c="gray-90">
           예외 대상 확인(필수)
@@ -1832,7 +1833,7 @@ export default function UntactLawApp() {
     </>
   );
   const IdSection = (
-    <div className="ula-col ula-changed" style={{ gap: 16, padding: '24px 20px 28px', borderBottom: '8px solid var(--gray-20)' }}>
+    <div data-tk="1177" className="ula-col ula-changed" style={{ gap: 16, padding: '24px 20px 28px', borderBottom: '8px solid var(--gray-20)' }}>
       <div className="ula-col" style={{ gap: 4 }}>
         <T s="h5" w={7} c="gray-90">
           본인 확인 서류(필수)
@@ -1852,7 +1853,7 @@ export default function UntactLawApp() {
       {idBlock({ types: idTypes, type: idType, setType: setIdType, file: idFile, setFile: setIdFile, checked: idChecked, setChecked: setIdChecked })}
       {/* D18: 자녀 신청이면 보호자 신분증 + 화상 진료 때 자녀가 함께 나오도록 안내 */}
       {s.who === 'child' && (
-        <div className="ula-col ula-changed" style={{ gap: 16, paddingTop: 8 }}>
+        <div data-tk="1177 1178" className="ula-col ula-changed" style={{ gap: 16, paddingTop: 8 }}>
           <div className="ula-col" style={{ gap: 4 }}>
             <T s="b1" w={7} c="gray-90">
               보호자 신분증
@@ -1881,7 +1882,7 @@ export default function UntactLawApp() {
   ];
   const residOpt = RESID_OPTIONS.find(o => o.key === resid)!;
   const ProofSection = (
-    <div className="ula-col ula-changed" style={{ gap: 16, padding: '24px 20px 28px', borderBottom: '8px solid var(--gray-20)' }}>
+    <div data-tk="1176" className="ula-col ula-changed" style={{ gap: 16, padding: '24px 20px 28px', borderBottom: '8px solid var(--gray-20)' }}>
       <div className="ula-col" style={{ gap: 4 }}>
         <T s="h5" w={7} c="gray-90">
           거주지(필수)
@@ -2033,7 +2034,7 @@ export default function UntactLawApp() {
             </div>
           </div>
           {phoneEnabled ? (
-            <div className="ula-col ula-changed" style={{ gap: 20, paddingBottom: 20 }}>
+            <div data-tk="1179 1180" className="ula-col ula-changed" style={{ gap: 20, paddingBottom: 20 }}>
               <div className="ula-col" style={{ gap: 4 }}>
                 <T s="h5" w={7} c="gray-90">
                   진료 방식(필수)
@@ -2054,7 +2055,7 @@ export default function UntactLawApp() {
             </div>
           ) : (
             /* 전화를 고를 수 없으면(초진, 예외, 13세 미만, 화상만 질환) 선택 칸 대신 안내 한 줄 */
-            <div className="ula-method-info ula-changed">
+            <div data-tk="1179 1180" className="ula-method-info ula-changed">
               <IconInformation color="#808799" size={18} />
               <div className="ula-col" style={{ gap: 2, flex: 1 }}>
                 <T s="b2" w={6} c="gray-80">
@@ -2248,7 +2249,7 @@ export default function UntactLawApp() {
             </div>
           </div>
           {/* D33: 담당 의료인 명의로, 첫 신청과 재신청 모두 이 진료의 설명 4가지를 보여 준다 */}
-          <div className="ula-explain-by ula-changed">
+          <div data-tk="1182" className="ula-explain-by ula-changed">
             <img className="ula-explain-by-avatar" src={doctorAvatar} alt="" />
             <div className="ula-col" style={{ gap: 2, flex: 1 }}>
               <T s="b1" w={7} c="gray-90">
@@ -2261,7 +2262,7 @@ export default function UntactLawApp() {
             </div>
           </div>
           {explains.map((x, i) => (
-              <div className="ula-explain ula-changed" key={x.title}>
+              <div data-tk={isChild ? '1182 1178' : '1182'} className="ula-explain ula-changed" key={x.title}>
                 <span className="ula-explain-no">{i + 1}</span>
                 <div className="ula-col" style={{ gap: 4, flex: 1 }}>
                   <T s="b1" w={6} c="gray-90">
@@ -2279,7 +2280,7 @@ export default function UntactLawApp() {
       </div>
       <div className="ula-col" style={{ padding: '16px 20px 0', borderTop: '1px solid var(--gray-30)', gap: 12 }}>
         {/* D33: 약관 동의와 따로 받는 이 진료의 설명 동의(필수) */}
-        <div className="ula-changed">
+        <div data-tk="1182" className="ula-changed">
           <button className="ula-check" onClick={() => setConsent(v => !v)}>
             <IconCheckRound on={consent} />
             <T s="b1" w={consent ? 6 : 5} c={consent ? 'gray-90' : 'gray-70'}>
@@ -2291,7 +2292,7 @@ export default function UntactLawApp() {
         </div>
         {/* D21: 자녀 신청이면 신청할 때마다 법정대리인 동의(필수) */}
         {isChild && (
-          <div className="ula-changed">
+          <div data-tk="1178" className="ula-changed">
             <button className="ula-check" onClick={() => setGuardianConsent(v => !v)}>
               <IconCheckRound on={guardianConsent} />
               <T s="b1" w={guardianConsent ? 6 : 5} c={guardianConsent ? 'gray-90' : 'gray-70'}>
@@ -2499,7 +2500,7 @@ export default function UntactLawApp() {
               진료 정보
             </T>
             <div className="ula-col" style={{ gap: 12 }}>
-              <div className="ula-changed">
+              <div data-tk="1183 1177" className="ula-changed">
                 <InfoRow title="취소사유">{cancelText}</InfoRow>
               </div>
               <InfoRow title="요청일시">{'{YYYY. MM. DD (ddd) HH:mm}'}</InfoRow>
@@ -2590,6 +2591,44 @@ export default function UntactLawApp() {
     [],
   );
 
+
+  /* 티켓 영향 범위 보기 — 패널에서 티켓을 고르면 무대 화면의 data-tk 영역에 점선과 번호 라벨 */
+  const [tkSel, setTkSel] = useState<number | null>(null);
+  const [tkHits, setTkHits] = useState(0);
+  useEffect(() => {
+    document.querySelectorAll<HTMLElement>('[data-tkon]').forEach(el => {
+      el.removeAttribute('data-tkon');
+      if (el.dataset.tkpos) {
+        el.style.position = '';
+        delete el.dataset.tkpos;
+      }
+    });
+    if (tkSel == null) {
+      if (tkHits !== 0) setTkHits(0);
+      return;
+    }
+    const els = Array.from(document.querySelectorAll<HTMLElement>('[data-tk]')).filter(el => (el.dataset.tk ?? '').split(' ').includes(String(tkSel)));
+    els.forEach(el => {
+      el.setAttribute('data-tkon', `CONNECT26-${tkSel}`);
+      if (getComputedStyle(el).position === 'static') {
+        el.style.position = 'relative';
+        el.dataset.tkpos = '1';
+      }
+    });
+    if (tkHits !== els.length) setTkHits(els.length);
+  });
+  const pickTk = (t: number, fromList?: boolean) => {
+    if (tkSel === t && !fromList) {
+      setTkSel(null);
+      return;
+    }
+    setTkSel(t);
+    if (fromList) {
+      const here = (NOTE_TICKETS[s.step] ?? []).some(l => l.includes(t)) || EXTRA_TICKETS.some(e => e.t === t);
+      const first = STEPS.find(x => (NOTE_TICKETS[x.key] ?? []).some(l => l.includes(t)));
+      if (!here && first) go(first.key);
+    }
+  };
   const Seg = <K extends string>({
     label,
     value,
@@ -2622,7 +2661,7 @@ export default function UntactLawApp() {
       <aside className="ula-panel">
         <div className="ula-panel-card">
           <p className="ula-panel-title">비대면진료 신청 · 제도화 대응</p>
-          <p className="ula-panel-sub">굿닥 앱(환자용) · 검토용 초안 v0.15 · 현행 화면은 앱 코드 기준 재현, 동적 값은 {'{중괄호}'}</p>
+          <p className="ula-panel-sub">굿닥 앱(환자용) · 검토용 초안 v0.16 · 현행 화면은 앱 코드 기준 재현, 동적 값은 {'{중괄호}'}</p>
         </div>
         <div className="ula-panel-card ula-lawcard">
           <div>
@@ -2778,9 +2817,9 @@ export default function UntactLawApp() {
             {notes[s.step].map((n, i) => (
               <li key={n}>
                 {(NOTE_TICKETS[s.step][i] ?? []).map(t => (
-                  <span key={t} className="tk-chip" title={TICKET_TITLE[t]}>
+                  <button type="button" key={t} className={`tk-chip${tkSel === t ? ' is-on' : ''}`} title={`${TICKET_TITLE[t]} · 누르면 영향 범위 표시`} onClick={() => pickTk(t)}>
                     CONNECT26-{t}
-                  </span>
+                  </button>
                 ))}
                 {stripD(n)}
               </li>
@@ -2789,6 +2828,18 @@ export default function UntactLawApp() {
         </div>
         <div className="ula-panel-card">
           <p className="ula-panel-h">티켓별 보기</p>
+          <p className="tk-state">
+            {tkSel == null
+              ? '티켓 번호를 누르면 이 화면에서 영향 범위를 점선으로 보여 줘요.'
+              : tkHits > 0
+                ? `CONNECT26-${tkSel} · 이 화면 ${tkHits}곳`
+                : `CONNECT26-${tkSel} · 지금 상태에서는 보이는 영역이 없어요(상태를 바꿔 보세요)`}
+            {tkSel != null && (
+              <button type="button" className="tk-clear" onClick={() => setTkSel(null)}>
+                선택 해제
+              </button>
+            )}
+          </p>
           <ul className="tk-list">
             {Object.keys(TICKET_TITLE)
               .map(Number)
@@ -2798,7 +2849,9 @@ export default function UntactLawApp() {
                 return (
                   <li key={t}>
                     <p className="tk-title">
-                      <span className="tk-chip">CONNECT26-{t}</span>
+                      <button type="button" className={`tk-chip${tkSel === t ? ' is-on' : ''}`} title="누르면 영향 범위 표시" onClick={() => pickTk(t, true)}>
+                        CONNECT26-{t}
+                      </button>
                       {TICKET_TITLE[t]}
                     </p>
                     <div className="tk-go">

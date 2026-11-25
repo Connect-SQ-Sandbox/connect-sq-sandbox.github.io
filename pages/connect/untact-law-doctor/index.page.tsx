@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : untact-law-doctor — 굿닥 온라인진료실(의사용) · 비대면진료 제도화(의료법 개정) 대응
- * 상태      : 검토용 초안 · v0.17 · 최종수정 2026-11-25 · 샌드박스 배포
+ * 상태      : 검토용 초안 · v0.18 · 최종수정 2026-11-25 · 샌드박스 배포
  * PRD       : 없음(제도화 대응 기획 초안). 사내 문서 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/untact-law-doctor.html
  * 피그마    : 대응 보드 커넥트 섹션(진료실-1~3) + 현행 온라인진료실 개발 코드. 대응 보드 외 화상진료실은 피그마 TELECARE DEV 220:72455.
@@ -78,6 +78,7 @@
  *  - [보류] D33 항목 문구, 진료기록부 문장, 접수 전 확인 3번째 '법정대리인 동의를 확인하고 설명했어요'의 '설명' 부분이 진료 전 설명 영역과 겹치는지.
  *
  * 변경 이력
+ *  - v0.18 (2026-11-25) 티켓 영향 범위 보기: 패널 티켓 칩을 누르면 무대 화면의 해당 영역에 주황 점선과 번호 라벨(data-tk). '티켓별 보기' 칩은 관계없는 화면이면 첫 해당 화면으로 이동. 다시 누르거나 '선택 해제'로 끔.
  *  - v0.17 (2026-11-25) 패널 '이 화면' 메모 줄마다 대응 티켓 번호(CONNECT26-) 표시, '티켓별 보기'(티켓 → 해당 화면 바로 가기) 추가. 메모 안 결정 번호는 화면에서 뺌.
  *  - v0.16 (2026-11-25) D33: 진료대기 상세에 진료 전 설명 확인 영역(설명 대상, 동의자, 동의 시각, 4가지 설명함 체크, 진료기록부 문장). 4개 체크 전에는 시작 버튼 비활성.
  *    진료대기, 진료중 바로가기는 접수 전 확인과 설명 체크를 마친 상태로 연다. 환자정보 동의 사실 문구를 '이 진료의 설명 4가지'로(자녀는 법정대리인이 주어).
@@ -850,17 +851,17 @@ export default function UntactLawDoctor() {
         )}
         {/* D26 — 시작 버튼은 '전화 진료 시작'과 '화상 진료 시작'으로 맞추고, 진료대기에는 진료완료를 두지 않는다 */}
         {status === 'waiting' && s.method === 'video' && (
-          <Btn v="secondary" className="uld-on-blue is-changed" disabled={!canStart} title={canStart ? undefined : startHint} onClick={openPhone}>
+          <Btn data-tk="1179 1180 1182" v="secondary" className="uld-on-blue is-changed" disabled={!canStart} title={canStart ? undefined : startHint} onClick={openPhone}>
             전화 진료 시작
           </Btn>
         )}
         {status === 'waiting' && s.method === 'video' && (
-          <Btn className="is-reverse is-changed" disabled={!canStart} title={canStart ? undefined : startHint} onClick={() => setDialog('start')}>
+          <Btn data-tk="1179 1182" className="is-reverse is-changed" disabled={!canStart} title={canStart ? undefined : startHint} onClick={() => setDialog('start')}>
             화상 진료 시작
           </Btn>
         )}
         {status === 'waiting' && s.method === 'phone' && (
-          <Btn className="is-reverse is-changed" disabled={!canStart} title={canStart ? undefined : startHint} onClick={openPhone}>
+          <Btn data-tk="1179 1180 1182" className="is-reverse is-changed" disabled={!canStart} title={canStart ? undefined : startHint} onClick={openPhone}>
             전화 진료 시작
           </Btn>
         )}
@@ -878,7 +879,7 @@ export default function UntactLawDoctor() {
     <div className="uld-detail">
       {actionBar}
       {status === 'request' && (
-        <div className="uld-confirm is-changed">
+        <div data-tk="1176 1178" className="uld-confirm is-changed">
           <p className="uld-confirm-h">접수 전 확인 (의료인){law(['after-check', 'record-check'])}</p>
           <Check on={checks[0]} onClick={() => toggleCheck(0)}>
             {isChild ? '첨부한 자녀 서류와 보호자 신분증으로 본인 여부를 확인했어요' : '첨부한 신분증으로 본인 여부를 확인했어요'}
@@ -907,7 +908,7 @@ export default function UntactLawDoctor() {
         </div>
       )}
       {(status === 'waiting' || status === 'ontreatment') && (
-        <div className="uld-confirm uld-explain is-changed">
+        <div data-tk={isChild ? '1182 1184 1178' : '1182 1184'} className="uld-confirm uld-explain is-changed">
           <p className="uld-confirm-h">진료 전 설명 확인 (의료인){law(['explain-4', 'after-check'])}</p>
           <dl className="uld-explain-meta">
             <dt>설명 대상</dt>
@@ -945,7 +946,7 @@ export default function UntactLawDoctor() {
           </div>
         </div>
       )}
-      <div className="uld-proof is-changed">
+      <div data-tk="1177" className="uld-proof is-changed">
         <div className="uld-proof-k">
           본인 확인 서류
           {law(['identity-check'])}
@@ -966,7 +967,7 @@ export default function UntactLawDoctor() {
         </div>
       </div>
       {s.target === 'first' && (
-        <div className="uld-proof is-changed">
+        <div data-tk="1176" className="uld-proof is-changed">
           <div className="uld-proof-k">
             거주지 서류
             {law(['first-region', 'resid-actual', 'resid-before-system'])}
@@ -987,7 +988,7 @@ export default function UntactLawDoctor() {
         </div>
       )}
       {s.target === 'exception' && (
-        <div className="uld-proof is-changed">
+        <div data-tk="1176" className="uld-proof is-changed">
           <div className="uld-proof-k">
             예외 대상 확인
             {law(['exception-check', 'resid-before-system'])}
@@ -1009,22 +1010,22 @@ export default function UntactLawDoctor() {
       <section className="uld-section">
         <div className="uld-section-head">
           <h3>환자정보</h3>
-          <span className="uld-chips is-changed">
+          <span data-tk="1176 1178" className="uld-chips is-changed">
             <span className={`uld-chip is-${s.target}`}>{TARGET_BADGE[s.target]}</span>
             {isChild && <span className="uld-chip is-family">가족 대리 신청</span>}
           </span>
           {/* 현행 '통신사 본인확인을 완료한 환자입니다.' 문구는 본인 확인이 서류와 화상 대조로 바뀌어(D18) 삭제 */}
           {isChild && (
-            <p className="uld-identity is-changed">
+            <p data-tk="1178" className="uld-identity is-changed">
               <IconVerified />
               미성년 환자 법정대리인 동의 완료 · {'{동의자}'} · {'{동의일시}'}
               {law(['guardian'])}
             </p>
           )}
         </div>
-        <p className="uld-consent-fact is-changed">{isChild ? '법정대리인(보호자)이' : '환자가'} 앱에서 이 진료의 설명 4가지를 확인하고 동의함 · {'{동의일시}'}{law(['explain-4'])}</p>
+        <p data-tk="1182" className="uld-consent-fact is-changed">{isChild ? '법정대리인(보호자)이' : '환자가'} 앱에서 이 진료의 설명 4가지를 확인하고 동의함 · {'{동의일시}'}{law(['explain-4'])}</p>
         {s.target === 'revisit' && (
-          <div className="uld-answer is-changed">
+          <div data-tk="1176" className="uld-answer is-changed">
             <p className="uld-answer-h">재진 · 환자 응답 (확인 필요){law(['revisit-period', 'revisit-check'])}</p>
             <p>
               환자가 "이 병원에서 마지막 대면진료 후 6개월 이내, 같은 증상"을 골랐어요.
@@ -1138,7 +1139,7 @@ export default function UntactLawDoctor() {
       <div
         role="dialog"
         aria-label={DIALOG_TITLE[dialog]}
-        className={`uld-dialog ${dialog === 'reception' || dialog === 'quota' ? 'is-small' : ''} ${['quota', 'phone', 'cancel', 'video'].includes(dialog) ? 'is-changed' : ''}`}
+        data-tk={({ phone: '1180', cancel: '1183 1203 1177', video: '1179', quota: '1203' } as Record<string, string>)[dialog ?? '']} className={`uld-dialog ${dialog === 'reception' || dialog === 'quota' ? 'is-small' : ''} ${['quota', 'phone', 'cancel', 'video'].includes(dialog) ? 'is-changed' : ''}`}
         onClick={e => e.stopPropagation()}
       >
         <p className="uld-dialog-title">
@@ -1223,7 +1224,7 @@ export default function UntactLawDoctor() {
                   </div>
                 )}
                 {phonePick !== null && (
-                  <div className="uld-record is-changed">
+                  <div data-tk="1184" className="uld-record is-changed">
                     <span className="uld-record-k">
                       진료기록부에 옮길 문장 <span className="uld-quota-tag">가안</span>
                       {law(['record-phone'])}
@@ -1336,7 +1337,7 @@ export default function UntactLawDoctor() {
           </div>
           <div className="uld-vr-info">
             {/* D30 — 영상과 첨부 서류를 같은 화면에서 보며 대조 */}
-            <div className="uld-vr-idcheck is-changed">
+            <div data-tk={isChild ? '1177 1178' : '1177'} className="uld-vr-idcheck is-changed">
               <div className="uld-vr-idthumbs">
                 <span className="uld-vr-idthumb">
                   <button type="button" className="uld-proof-thumb" aria-label="본인 확인 서류 확대" onClick={() => { setViewerKind('id'); setViewerOpen(true); }}>
@@ -1371,7 +1372,7 @@ export default function UntactLawDoctor() {
               <div className="uld-vr-symptom-col">
                 {/* D34 — 현행 화상진료 차트는 자유 입력(symptomDescription)만 보여 주고 없으면 블록을 숨긴다.
                     접수 상세와 같이 '증상: 칩' 줄 다음에 상세 증상을 보여 주고, 칩만 있어도 블록을 보여 준다 */}
-                <div className="uld-vr-form uld-vr-symptom is-changed">
+                <div data-tk="1185" className="uld-vr-form uld-vr-symptom is-changed">
                   <span className="uld-vr-label">환자 증상</span>
                   <div className="uld-vr-input">
                     <span>
@@ -1472,6 +1473,44 @@ export default function UntactLawDoctor() {
     [],
   );
 
+
+  /* 티켓 영향 범위 보기 — 패널에서 티켓을 고르면 무대 화면의 data-tk 영역에 점선과 번호 라벨 */
+  const [tkSel, setTkSel] = useState<number | null>(null);
+  const [tkHits, setTkHits] = useState(0);
+  useEffect(() => {
+    document.querySelectorAll<HTMLElement>('[data-tkon]').forEach(el => {
+      el.removeAttribute('data-tkon');
+      if (el.dataset.tkpos) {
+        el.style.position = '';
+        delete el.dataset.tkpos;
+      }
+    });
+    if (tkSel == null) {
+      if (tkHits !== 0) setTkHits(0);
+      return;
+    }
+    const els = Array.from(document.querySelectorAll<HTMLElement>('[data-tk]')).filter(el => (el.dataset.tk ?? '').split(' ').includes(String(tkSel)));
+    els.forEach(el => {
+      el.setAttribute('data-tkon', `CONNECT26-${tkSel}`);
+      if (getComputedStyle(el).position === 'static') {
+        el.style.position = 'relative';
+        el.dataset.tkpos = '1';
+      }
+    });
+    if (tkHits !== els.length) setTkHits(els.length);
+  });
+  const pickTk = (t: number, fromList?: boolean) => {
+    if (tkSel === t && !fromList) {
+      setTkSel(null);
+      return;
+    }
+    setTkSel(t);
+    if (fromList) {
+      const here = (NOTE_TICKETS[s.jump] ?? []).some(l => l.includes(t)) || EXTRA_TICKETS.some(e => e.t === t);
+      const first = JUMPS.find(x => (NOTE_TICKETS[x.key] ?? []).some(l => l.includes(t)));
+      if (!here && first) set({ jump: first.key });
+    }
+  };
   const Seg = <K extends string>({
     label,
     value,
@@ -1500,7 +1539,7 @@ export default function UntactLawDoctor() {
   const qCount = QUOTA_COUNT[quota];
   const quotaBand = (
     <div className={`uld-quota is-${quota}`}>
-      <div className="uld-quota-inner is-changed">
+      <div data-tk="1203" className="uld-quota-inner is-changed">
         <span className="uld-quota-tag">가안</span>
         <strong className="uld-quota-num">
           이번 달 비대면 진료 {qCount} / 500건
@@ -1517,7 +1556,7 @@ export default function UntactLawDoctor() {
         </button>
       </div>
       {quotaMore && (
-        <div className="uld-quota-detail is-changed">
+        <div data-tk="1203" className="uld-quota-detail is-changed">
           <dl>
             <div>
               <dt>왜 500건인가요?</dt>
@@ -1570,7 +1609,7 @@ export default function UntactLawDoctor() {
         <div className="uld-panel-card">
           <p className="uld-panel-title">온라인진료실 · 제도화 대응</p>
           <p className="uld-panel-sub">
-            굿닥 온라인진료실(의사용) · 검토용 초안 v0.17 · 현행 화면은 운영 코드 기준 재현, 동적 값은 {'{중괄호}'}
+            굿닥 온라인진료실(의사용) · 검토용 초안 v0.18 · 현행 화면은 운영 코드 기준 재현, 동적 값은 {'{중괄호}'}
           </p>
         </div>
         <div className="uld-panel-card uld-lawcard">
@@ -1703,9 +1742,9 @@ export default function UntactLawDoctor() {
             {notes[s.jump].map((n, i) => (
               <li key={n}>
                 {(NOTE_TICKETS[s.jump][i] ?? []).map(t => (
-                  <span key={t} className="tk-chip" title={TICKET_TITLE[t]}>
+                  <button type="button" key={t} className={`tk-chip${tkSel === t ? ' is-on' : ''}`} title={`${TICKET_TITLE[t]} · 누르면 영향 범위 표시`} onClick={() => pickTk(t)}>
                     CONNECT26-{t}
-                  </span>
+                  </button>
                 ))}
                 {stripD(n)}
               </li>
@@ -1714,6 +1753,18 @@ export default function UntactLawDoctor() {
         </div>
         <div className="uld-panel-card">
           <p className="uld-panel-h">티켓별 보기</p>
+          <p className="tk-state">
+            {tkSel == null
+              ? '티켓 번호를 누르면 이 화면에서 영향 범위를 점선으로 보여 줘요.'
+              : tkHits > 0
+                ? `CONNECT26-${tkSel} · 이 화면 ${tkHits}곳`
+                : `CONNECT26-${tkSel} · 지금 상태에서는 보이는 영역이 없어요(상태를 바꿔 보세요)`}
+            {tkSel != null && (
+              <button type="button" className="tk-clear" onClick={() => setTkSel(null)}>
+                선택 해제
+              </button>
+            )}
+          </p>
           <ul className="tk-list">
             {Object.keys(TICKET_TITLE)
               .map(Number)
@@ -1723,7 +1774,9 @@ export default function UntactLawDoctor() {
                 return (
                   <li key={t}>
                     <p className="tk-title">
-                      <span className="tk-chip">CONNECT26-{t}</span>
+                      <button type="button" className={`tk-chip${tkSel === t ? ' is-on' : ''}`} title="누르면 영향 범위 표시" onClick={() => pickTk(t, true)}>
+                        CONNECT26-{t}
+                      </button>
                       {TICKET_TITLE[t]}
                     </p>
                     <div className="tk-go">

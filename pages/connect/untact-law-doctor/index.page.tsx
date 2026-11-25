@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : untact-law-doctor — 굿닥 온라인진료실(의사용) · 비대면진료 제도화(의료법 개정) 대응
- * 상태      : 검토용 초안 · v0.16 · 최종수정 2026-11-25 · 샌드박스 배포
+ * 상태      : 검토용 초안 · v0.17 · 최종수정 2026-11-25 · 샌드박스 배포
  * PRD       : 없음(제도화 대응 기획 초안). 사내 문서 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/untact-law-doctor.html
  * 피그마    : 대응 보드 커넥트 섹션(진료실-1~3) + 현행 온라인진료실 개발 코드. 대응 보드 외 화상진료실은 피그마 TELECARE DEV 220:72455.
@@ -78,6 +78,7 @@
  *  - [보류] D33 항목 문구, 진료기록부 문장, 접수 전 확인 3번째 '법정대리인 동의를 확인하고 설명했어요'의 '설명' 부분이 진료 전 설명 영역과 겹치는지.
  *
  * 변경 이력
+ *  - v0.17 (2026-11-25) 패널 '이 화면' 메모 줄마다 대응 티켓 번호(CONNECT26-) 표시, '티켓별 보기'(티켓 → 해당 화면 바로 가기) 추가. 메모 안 결정 번호는 화면에서 뺌.
  *  - v0.16 (2026-11-25) D33: 진료대기 상세에 진료 전 설명 확인 영역(설명 대상, 동의자, 동의 시각, 4가지 설명함 체크, 진료기록부 문장). 4개 체크 전에는 시작 버튼 비활성.
  *    진료대기, 진료중 바로가기는 접수 전 확인과 설명 체크를 마친 상태로 연다. 환자정보 동의 사실 문구를 '이 진료의 설명 4가지'로(자녀는 법정대리인이 주어).
  *    D34: 화상진료실 차트 '환자 증상'에 증상 칩 줄 표시(현행은 자유 입력만).
@@ -142,6 +143,38 @@ const JUMPS: { key: Jump; label: string; kind: 'new' | 'mod' }[] = [
   { key: 'r2b', label: '진료실-2 화상진료 끄기', kind: 'mod' },
   { key: 'r3', label: '진료실-3 진료 취소 사유', kind: 'mod' },
 ];
+const TICKET_TITLE: Record<number, string> = {
+  1176: '진료 대상·주소·병원급 예외 확인',
+  1177: '진료 전 환자 본인 확인과 실패 처리',
+  1178: '법정대리인 설명·동의 확인',
+  1179: '화상 기본값 적용',
+  1180: '음성진료 예외 확인과 사유 기록',
+  1182: '진료 전 의료인 설명·환자 동의 확인',
+  1183: '진료 거절·중단과 대면진료 안내',
+  1184: '진료기록 6항목 작성 지원',
+  1185: '진료실 환자 문진 원문 확인',
+  1203: '반기 진료 비율·의료인별 월평균',
+};
+/* 패널 메모 줄별 대응 티켓(CONNECT26-). 결정 번호는 화면에 쓰지 않는다 */
+const NOTE_TICKETS: Record<Jump, number[][]> = {
+  r1: [[], [1176, 1178], [1176, 1178], [1177], [1176, 1178], [1176], [1182, 1177], []],
+  r2a: [[], [1182, 1184, 1178], [1182], [1179, 1180], [1180, 1184], [1180]],
+  r2v: [[1177], [1185], [1177, 1178], []],
+  r2b: [[1179], [1179], []],
+  r3: [[1183], [1203, 1183, 1177], [1183], [1183]],
+};
+/* 메모 줄 밖의 공통 변경 */
+const EXTRA_TICKETS: { t: number; where: string }[] = [
+  { t: 1203, where: '모든 화면 상단 월 건수 안내 띠' },
+];
+const stripD = (t: string) =>
+  t
+    .replace(/D\d+(?:~D?\d+)?(?:,\s*)?/g, '')
+    .replace(/\(\s*\)/g, '')
+    .replace(/\(\s*,\s*/g, '(')
+    .replace(/,\s*\)/g, ')')
+    .replace(/\s+([.,])/g, '$1')
+    .replace(/\s{2,}/g, ' ');
 const KIND_LABEL = { new: '신규', mod: '수정' } as const;
 
 /* 진료실-3 — 현행 types.ts cancelReasons 에서 '환자 월 2회' 삭제, 건수 사유 교체 */
@@ -1537,7 +1570,7 @@ export default function UntactLawDoctor() {
         <div className="uld-panel-card">
           <p className="uld-panel-title">온라인진료실 · 제도화 대응</p>
           <p className="uld-panel-sub">
-            굿닥 온라인진료실(의사용) · 검토용 초안 v0.16 · 현행 화면은 운영 코드 기준 재현, 동적 값은 {'{중괄호}'}
+            굿닥 온라인진료실(의사용) · 검토용 초안 v0.17 · 현행 화면은 운영 코드 기준 재현, 동적 값은 {'{중괄호}'}
           </p>
         </div>
         <div className="uld-panel-card uld-lawcard">
@@ -1667,9 +1700,45 @@ export default function UntactLawDoctor() {
         <div className="uld-panel-card">
           <p className="uld-panel-h">이 화면</p>
           <ul className="uld-note">
-            {notes[s.jump].map(n => (
-              <li key={n}>{n}</li>
+            {notes[s.jump].map((n, i) => (
+              <li key={n}>
+                {(NOTE_TICKETS[s.jump][i] ?? []).map(t => (
+                  <span key={t} className="tk-chip" title={TICKET_TITLE[t]}>
+                    CONNECT26-{t}
+                  </span>
+                ))}
+                {stripD(n)}
+              </li>
             ))}
+          </ul>
+        </div>
+        <div className="uld-panel-card">
+          <p className="uld-panel-h">티켓별 보기</p>
+          <ul className="tk-list">
+            {Object.keys(TICKET_TITLE)
+              .map(Number)
+              .map(t => {
+                const steps = JUMPS.filter(x => (NOTE_TICKETS[x.key] ?? []).some(l => l.includes(t)));
+                const ex = EXTRA_TICKETS.filter(e => e.t === t);
+                return (
+                  <li key={t}>
+                    <p className="tk-title">
+                      <span className="tk-chip">CONNECT26-{t}</span>
+                      {TICKET_TITLE[t]}
+                    </p>
+                    <div className="tk-go">
+                      {steps.map(x => (
+                        <button key={x.key} type="button" className={s.jump === x.key ? 'is-on' : ''} onClick={() => set({ jump: x.key })}>
+                          {x.label}
+                        </button>
+                      ))}
+                      {ex.map(e => (
+                        <span key={e.where} className="tk-where">{e.where}</span>
+                      ))}
+                    </div>
+                  </li>
+                );
+              })}
           </ul>
           {phoneDone && <p className="uld-panel-result">전화 진료 사유: {phoneDone}</p>}
           {cancelDone && (

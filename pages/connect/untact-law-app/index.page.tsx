@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : untact-law-app — 굿닥 앱(환자용) 비대면진료 신청 흐름 · 비대면진료 제도화(의료법 개정) 대응
- * 상태      : 검토용 초안 · v0.14 · 최종수정 2026-11-25 · 샌드박스 배포
+ * 상태      : 검토용 초안 · v0.15 · 최종수정 2026-11-25 · 샌드박스 배포
  * PRD       : 없음(제도화 대응 기획 초안). 사내 문서 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/untact-law-app.html
  * 피그마    : 없음. 현행 화면은 goodoc-mobile origin/staging(b45968ada, 2026-11-19) 코드 기준 재현.
@@ -105,6 +105,7 @@
  *  - [보류] ② 자녀 신청의 보호자 신분증을 거주지 서류로 함께 쓸 수 있는지(지금은 겸용 체크 없음). 보호자 신분증 설명 '신청한 보호자의 신분증 1장을 첨부해 주세요'는 가안.
  *
  * 변경 이력
+ *  - v0.15 (2026-11-25) 패널 '이 화면' 메모 줄마다 대응 티켓 번호(CONNECT26-) 표시, '티켓별 보기'(티켓 → 해당 화면 바로 가기) 추가. 메모 안 결정 번호는 화면에서 뺌.
  *  - v0.14 (2026-11-25) D37: 웹 진입점 병원 상세(로그인 없이 의사 선택 시트 → 앱 안내 모달), PC 웹 QR 모달. 패널 '웹 진입점', '기기' 토글.
  *  - v0.13 (2026-11-25) D36: 굿닥 웹 비대면 소개 화면(모바일 웹) 추가. STEP 1~4와 후기 1건 제거, 하단 버튼을 앱 신청 안내 모달로. 패널 '웹 소개 보기' As-is/To-be 비교.
  *  - v0.12 (2026-11-25) D33: ③ 설명 4가지를 담당 의료인 명의({의사명} 의사가 설명드려요)로 바꾸고 재신청에도 보여 줌. 4번을 법 34조의3⑥ 기준(다른 사람 인적 사항 사용, 속여 처방받기) 문구로.
@@ -154,7 +155,7 @@ type Resid = 'resident' | 'actual';
 type CancelReason = 'notTarget' | 'needVisit' | 'noIdentity' | 'noContact';
 
 const STEPS: { key: Step; label: string; kind: 'cur' | 'new' | 'mod' }[] = [
-  { key: 'web', label: '굿닥 웹 비대면 진입 (D36·D37)', kind: 'mod' },
+  { key: 'web', label: '굿닥 웹 비대면 진입', kind: 'mod' },
   { key: 'doctor', label: '의사 상세 (진입점)', kind: 'cur' },
   { key: 'family', label: '진료 대상자 선택', kind: 'cur' },
   { key: 'target', label: '① 진료 대상 확인', kind: 'new' },
@@ -164,6 +165,40 @@ const STEPS: { key: Step; label: string; kind: 'cur' | 'new' | 'mod' }[] = [
   { key: 'done', label: '신청 완료', kind: 'cur' },
   { key: 'detail', label: '④ 진료내역 상세 · 병원 취소', kind: 'mod' },
 ];
+const TICKET_TITLE: Record<number, string> = {
+  1176: '진료 대상·주소·병원급 예외 확인',
+  1177: '진료 전 환자 본인 확인과 실패 처리',
+  1178: '법정대리인 설명·동의 확인',
+  1179: '화상 기본값 적용',
+  1180: '음성진료 예외 확인과 사유 기록',
+  1182: '진료 전 의료인 설명·환자 동의 확인',
+  1183: '진료 거절·중단과 대면진료 안내',
+  1186: '7일·30일 처방 안내',
+  1187: '처방 금지약과 경로별 추가 제한 안내',
+};
+/* 패널 메모 줄별 대응 티켓(CONNECT26-). 결정 번호는 화면에 쓰지 않는다 */
+const NOTE_TICKETS: Record<Step, number[][]> = {
+  web: [[1179], [1179], [1179], [1179], [1179], [1179], [1179], [1179], [1179]],
+  doctor: [[]],
+  family: [[], [], [1178], []],
+  target: [[1176], [1176, 1186, 1187], [1176], [1176], [1176], [1176]],
+  form: [[1179, 1176], [1179, 1180], [1177, 1178], [1176], [1187], [1176]],
+  consent: [[1182], [1182], [1182], [1178, 1182], [1182]],
+  payment: [[]],
+  done: [[]],
+  detail: [[1183, 1177], [1183], []],
+};
+/* 메모 줄 밖의 공통 변경 */
+const EXTRA_TICKETS: { t: number; where: string }[] = [
+];
+const stripD = (t: string) =>
+  t
+    .replace(/D\d+(?:~D?\d+)?(?:,\s*)?/g, '')
+    .replace(/\(\s*\)/g, '')
+    .replace(/\(\s*,\s*/g, '(')
+    .replace(/,\s*\)/g, ')')
+    .replace(/\s+([.,])/g, '$1')
+    .replace(/\s{2,}/g, ' ');
 const KIND_LABEL = { cur: '현행', new: '신규', mod: '수정' } as const;
 
 const TARGETS: { key: Target; title: string; plain: string; desc: string; sub?: string }[] = [
@@ -2587,7 +2622,7 @@ export default function UntactLawApp() {
       <aside className="ula-panel">
         <div className="ula-panel-card">
           <p className="ula-panel-title">비대면진료 신청 · 제도화 대응</p>
-          <p className="ula-panel-sub">굿닥 앱(환자용) · 검토용 초안 v0.14 · 현행 화면은 앱 코드 기준 재현, 동적 값은 {'{중괄호}'}</p>
+          <p className="ula-panel-sub">굿닥 앱(환자용) · 검토용 초안 v0.15 · 현행 화면은 앱 코드 기준 재현, 동적 값은 {'{중괄호}'}</p>
         </div>
         <div className="ula-panel-card ula-lawcard">
           <div>
@@ -2740,9 +2775,45 @@ export default function UntactLawApp() {
         <div className="ula-panel-card">
           <p className="ula-panel-h">이 화면</p>
           <ul className="ula-note">
-            {notes[s.step].map(n => (
-              <li key={n}>{n}</li>
+            {notes[s.step].map((n, i) => (
+              <li key={n}>
+                {(NOTE_TICKETS[s.step][i] ?? []).map(t => (
+                  <span key={t} className="tk-chip" title={TICKET_TITLE[t]}>
+                    CONNECT26-{t}
+                  </span>
+                ))}
+                {stripD(n)}
+              </li>
             ))}
+          </ul>
+        </div>
+        <div className="ula-panel-card">
+          <p className="ula-panel-h">티켓별 보기</p>
+          <ul className="tk-list">
+            {Object.keys(TICKET_TITLE)
+              .map(Number)
+              .map(t => {
+                const steps = STEPS.filter(x => (NOTE_TICKETS[x.key] ?? []).some(l => l.includes(t)));
+                const ex = EXTRA_TICKETS.filter(e => e.t === t);
+                return (
+                  <li key={t}>
+                    <p className="tk-title">
+                      <span className="tk-chip">CONNECT26-{t}</span>
+                      {TICKET_TITLE[t]}
+                    </p>
+                    <div className="tk-go">
+                      {steps.map(x => (
+                        <button key={x.key} type="button" className={s.step === x.key ? 'is-on' : ''} onClick={() => go(x.key)}>
+                          {x.label}
+                        </button>
+                      ))}
+                      {ex.map(e => (
+                        <span key={e.where} className="tk-where">{e.where}</span>
+                      ))}
+                    </div>
+                  </li>
+                );
+              })}
           </ul>
         </div>
       </aside>

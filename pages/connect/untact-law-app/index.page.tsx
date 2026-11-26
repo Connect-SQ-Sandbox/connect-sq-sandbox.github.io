@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : untact-law-app — 굿닥 앱(환자용) 비대면진료 신청 흐름 · 비대면진료 제도화(의료법 개정) 대응
- * 상태      : 검토용 초안 · v0.21 · 최종수정 2026-11-25 · 샌드박스 배포
+ * 상태      : 검토용 초안 · v0.22 · 최종수정 2026-11-25 · 샌드박스 배포
  * PRD       : 없음(제도화 대응 기획 초안). 사내 문서 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/untact-law-app.html
  * 피그마    : 없음. 현행 화면은 goodoc-mobile origin/staging(b45968ada, 2026-11-19) 코드 기준 재현.
@@ -105,6 +105,7 @@
  *  - [보류] ② 자녀 신청의 보호자 신분증을 거주지 서류로 함께 쓸 수 있는지(지금은 겸용 체크 없음). 보호자 신분증 설명 '신청한 보호자의 신분증 1장을 첨부해 주세요'는 가안.
  *
  * 변경 이력
+ *  - v0.22 (2026-11-25) 하단 버튼 위 안내 문구('본인 확인 서류를 첨부해 주세요' 등)를 버튼과 한 덩어리(흰 배경)로 묶어 함께 하단에 붙임(①, ②, ③).
  *  - v0.21 (2026-11-25) 폰 화면 길게 보기(기본): 폰 안 스크롤 대신 화면 전체 높이로 펼치고, 상단 바와 하단 버튼은 브라우저 기준으로 붙임. 시트, 모달은 브라우저 높이 기준. 패널 '폰 화면' 토글로 812 높이로 되돌릴 수 있음.
  *  - v0.20 (2026-11-25) 패널 상태 토글을 바꿀 때 지금 화면에 그 상태가 드러나지 않으면 드러나는 화면으로 옮김.
  *  - v0.19 (2026-11-25) 티켓을 눌렀을 때 지금 케이스에 영역이 없으면 그 티켓이 보이는 케이스로 바꿔 표시(진료 대상, 자녀, 자녀 시트, 웹 To-be 등), 바꾼 케이스를 패널에 안내. 메모 탭에도 선택 상태 줄.
@@ -1739,9 +1740,11 @@ export default function UntactLawApp() {
           })}
         </div>
       </div>
-      <button className="ula-btn filled-blue ula-cta" disabled={!s.target || (s.target === 'exception' && !exInfo) || (s.target === 'revisit' && !revisitOk)} onClick={() => go('form')}>
-        다음
-      </button>
+      <div className="ula-cta-bar">
+        <button className="ula-btn filled-blue ula-cta" disabled={!s.target || (s.target === 'exception' && !exInfo) || (s.target === 'revisit' && !revisitOk)} onClick={() => go('form')}>
+          다음
+        </button>
+      </div>
       {exSheet && ExSheet}
     </>
   );
@@ -2279,10 +2282,12 @@ export default function UntactLawApp() {
           </T>
         </div>
       </div>
-      {formPending && <p className="ula-cta-hint">{formHint}</p>}
-      <button className="ula-btn filled-blue ula-cta" disabled={formPending} onClick={() => go('consent')}>
-        다음
-      </button>
+      <div className="ula-cta-bar">
+        {formPending && <p className="ula-cta-hint">{formHint}</p>}
+        <button className="ula-btn filled-blue ula-cta" disabled={formPending} onClick={() => go('consent')}>
+          다음
+        </button>
+      </div>
       {deptSheet && DeptSheet}
     </>
   );
@@ -2364,14 +2369,16 @@ export default function UntactLawApp() {
           </div>
         )}
       </div>
-      <p className="ula-cta-hint is-gray">
-        다음 화면에서 결제 수단을 선택해요.
-        <br />
-        진료비는 진료가 끝난 뒤 결제돼요.
-      </p>
-      <button className="ula-btn filled-blue ula-cta" disabled={!consent || (isChild && !guardianConsent)} onClick={() => go('payment')}>
-        다음
-      </button>
+      <div className="ula-cta-bar">
+        <p className="ula-cta-hint is-gray">
+          다음 화면에서 결제 수단을 선택해요.
+          <br />
+          진료비는 진료가 끝난 뒤 결제돼요.
+        </p>
+        <button className="ula-btn filled-blue ula-cta" disabled={!consent || (isChild && !guardianConsent)} onClick={() => go('payment')}>
+          다음
+        </button>
+      </div>
     </>
   );
 
@@ -2773,7 +2780,7 @@ export default function UntactLawApp() {
       <aside className="ula-panel">
         <div className="ula-panel-card">
           <p className="ula-panel-title">비대면진료 신청 · 제도화 대응</p>
-          <p className="ula-panel-sub">굿닥 앱(환자용) · 검토용 초안 v0.21 · 현행 화면은 앱 코드 기준 재현, 동적 값은 {'{중괄호}'}</p>
+          <p className="ula-panel-sub">굿닥 앱(환자용) · 검토용 초안 v0.22 · 현행 화면은 앱 코드 기준 재현, 동적 값은 {'{중괄호}'}</p>
         </div>
         <div className="ptab" role="tablist">
           {([

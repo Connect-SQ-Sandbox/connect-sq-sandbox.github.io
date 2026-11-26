@@ -39,6 +39,7 @@
  * 변경 이력
  *  - v0.9 (2026-11-26) 도착확인 좌측 패널에 '진료실 정보 줄 테스트' 추가. 첫 카드의 노출명, 진료실명(차트), 의사명, 진료과명을 입력하면 1줄 규칙
  *    (합 15자 초과 시 가장 긴 항목부터 한 글자씩 줄이고 '…', 같은 길이는 진료과명→의사명→진료실명 순) 결과와 실제 폭을 바로 보여 준다.
+ *    바로가기 URL ?case=room-line(&preset=1~4 또는 &alias=&room=&doctor=&dept=)로 도착확인 테스트 화면을 바로 연다. 패널에서 현재 입력값 링크 복사.
  *  - v0.8 (2026-11-23) B안 최종: 시안 As-is/A/C·직접 조합·확인 시트·카드/바 진입점 제거, 좌측 시안 카드 제거. DEV 피그마 POC_대상선택 V2 값으로 맞춤
  *    (도착확인 카드 칩·진료실 정보, 복수 3장/2장, 진입점 줄 80, CTA). 텍스트 버튼 터치 영역 확장.
  *  - v0.7 (2026-11-23) 도착확인 화면 추가(접수 유형 전환, 도착 환자 선택·도착 확인 결과 자리표시, 새 진료 접수 → 현장접수 환자 선택 연결). 시안 A/B/C를 두 화면에 같이 적용.
@@ -749,8 +750,27 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
   );
 }
 
+/* 바로가기 URL: ?case=room-line → 도착확인 · 조회 결과부터 · 1건 · 진료실 정보 줄 테스트 켬
+   &preset=1~4(기본, 진료과명만 김, 진료실·진료과 김, 셋 다 김) 또는 &alias= &room= &doctor= &dept= 로 값 지정 */
+function readDeepLink() {
+  try {
+    const q = new URLSearchParams(window.location.search);
+    if (q.get('case') !== 'room-line') return null;
+    const preset = Number(q.get('preset') || '0');
+    const fields: Partial<RoomTest> = {};
+    (['alias', 'room', 'doctor', 'dept'] as (keyof RoomTest)[]).forEach((k) => {
+      const v = q.get(k);
+      if (v !== null) fields[k] = v;
+    });
+    return { preset, fields };
+  } catch {
+    return null;
+  }
+}
+
 function App() {
-  const [scenario, setScenario] = useState<Scenario>({ flow: 'walkin', start: 'home', lookup: 'one' });
+  const deep = useMemo(() => readDeepLink(), []);
+  const [scenario, setScenario] = useState<Scenario>(deep ? { flow: 'arrival', start: 'select', lookup: 'one' } : { flow: 'walkin', start: 'home', lookup: 'one' });
   const [log, setLog] = useState<LogItem[]>([]);
   const [resetKey, setResetKey] = useState(0);
 
@@ -774,8 +794,24 @@ function App() {
     { label: '진료실·진료과 김', v: { alias: '원장님 진료실', room: '진료실명열글자말줄임', doctor: '류현아', dept: '진료과명말줄임없음' } },
     { label: '셋 다 김', v: { alias: '진료실명한줄말줄임처리가나다라마바사', room: '진료실명열글자말줄임', doctor: '의사명여덟글자말', dept: '진료과명말줄임없음안됨' } }
   ];
-  const [roomTestOn, setRoomTestOn] = useState(false);
-  const [roomTest, setRoomTest] = useState<RoomTest>(ROOM_DEFAULT);
+  const [roomTestOn, setRoomTestOn] = useState(!!deep);
+  const [roomTest, setRoomTest] = useState<RoomTest>(() => {
+    const base = deep && deep.preset >= 1 && deep.preset <= ROOM_PRESETS.length ? ROOM_PRESETS[deep.preset - 1].v : ROOM_DEFAULT;
+    return deep ? { ...base, ...deep.fields } : base;
+  });
+  const [copied, setCopied] = useState(false);
+  const copyLink = () => {
+    const q = new URLSearchParams({ case: 'room-line', alias: roomTest.alias, room: roomTest.room, doctor: roomTest.doctor, dept: roomTest.dept });
+    const url = `${window.location.origin}${window.location.pathname}?${q.toString()}`;
+    try {
+      navigator.clipboard?.writeText(url);
+    } catch {
+      /* 무시 */
+    }
+    window.history.replaceState(null, '', url);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1500);
+  };
   const [measure, setMeasure] = useState<LineMeasure | null>(null);
   const onMeasure = (m: LineMeasure) =>
     setMeasure((o) => (o && Math.abs(o.used - m.used) < 0.5 && Math.abs(o.avail - m.avail) < 0.5 ? o : m));
@@ -898,6 +934,9 @@ function App() {
                       </div>
                     )}
                   </div>
+                  <button type="button" className="tps-mini tps-rt-go" onClick={copyLink}>
+                    {copied ? '링크를 복사했습니다' : '이 입력값으로 바로가기 링크 복사'}
+                  </button>
                   <div className="tps-field-hint">첫 번째 카드에만 반영됩니다. 글자 수는 공백, 가운뎃점, 영문, 숫자도 한 글자로 셉니다.</div>
                 </>
               )}

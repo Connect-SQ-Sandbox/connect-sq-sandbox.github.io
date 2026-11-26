@@ -668,6 +668,33 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.tps-arr-room-sub.is-test { flex-wrap: nowrap; overflow: hidden; }
+.tps-arr-room-sub.is-overflow { outline: 4px dashed #f04452; outline-offset: 6px; }
+/* 진료실 정보 줄 테스트 패널 */
+.tps-rt-rule { margin-top: 10px; padding: 8px 10px; border-radius: 8px; border: 1px solid #d9dde5; font-size: 11px; line-height: 1.55; color: #434956; word-break: keep-all; }
+.tps-rt-rule strong { display: block; margin-bottom: 2px; font-size: 12px; color: #31353f; }
+.tps-rt-go { display: block; width: 100%; margin-top: 10px; height: 28px; }
+.tps-rt-presets { display: flex; flex-wrap: wrap; gap: 4px; margin: 10px 0 4px; }
+.tps-rt-field { display: block; margin-top: 8px; }
+.tps-rt-label { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; color: #5d6474; margin-bottom: 4px; }
+.tps-rt-label em { font-style: normal; font-weight: 500; color: #808799; }
+.tps-rt-input {
+  width: 100%;
+  box-sizing: border-box;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid #d9dde5;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 12px;
+  color: #31353f;
+  background: #fff;
+}
+.tps-rt-input:focus { outline: 2px solid #066ae5; outline-offset: -1px; border-color: transparent; }
+.tps-rt-result { margin-top: 10px; padding: 8px 10px; border-radius: 8px; background: #f1f3f6; font-size: 11px; line-height: 1.5; color: #434956; }
+.tps-rt-line { margin-top: 4px; font-size: 12px; font-weight: 600; color: #31353f; word-break: break-all; }
+.tps-rt-ok { margin-top: 4px; color: #0a8f5b; }
+.tps-rt-bad { margin-top: 4px; color: #e5293a; font-weight: 600; }
 .tps-arr-room-sub {
   display: flex;
   flex-wrap: wrap;

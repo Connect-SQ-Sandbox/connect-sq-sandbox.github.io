@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────
  * 이름      : tablet-patient-select — 태블릿 접수 '환자 조회 → 1. 환자 선택' · 새 환자 등록 오탭 UX 개선 체험판
- * 상태      : B안 최종 · v0.8 · 최종수정 2026-11-23
+ * 상태      : B안 최종 · v0.9 · 최종수정 2026-11-26
  * PRD       : 없음(VOC 기반). 병원 VOC: 조회된 본인 카드가 떠도 환자가 '새 환자 등록'을 눌러 정보를 처음부터 다시 입력(고령 재진 환자 중심, 하루 3명).
  *             사내 논의 링크는 공개 저장소라 미기재.
  * 배포URL   : https://connect-sq-sandbox.github.io/out/tablet-patient-select.html
@@ -37,6 +37,8 @@
  *  - [보류] 주민등록번호 조회 경로는 미포함(대기화면 피그마가 휴대전화번호 입력만 있음).
  *
  * 변경 이력
+ *  - v0.9 (2026-11-26) 도착확인 좌측 패널에 '진료실 정보 줄 테스트' 추가. 첫 카드의 노출명, 진료실명(차트), 의사명, 진료과명을 입력하면 1줄 규칙
+ *    (합 15자 초과 시 가장 긴 항목부터 한 글자씩 줄이고 '…', 같은 길이는 진료과명→의사명→진료실명 순) 결과와 실제 폭을 바로 보여 준다.
  *  - v0.8 (2026-11-23) B안 최종: 시안 As-is/A/C·직접 조합·확인 시트·카드/바 진입점 제거, 좌측 시안 카드 제거. DEV 피그마 POC_대상선택 V2 값으로 맞춤
  *    (도착확인 카드 칩·진료실 정보, 복수 3장/2장, 진입점 줄 80, CTA). 텍스트 버튼 터치 영역 확장.
  *  - v0.7 (2026-11-23) 도착확인 화면 추가(접수 유형 전환, 도착 환자 선택·도착 확인 결과 자리표시, 새 진료 접수 → 현장접수 환자 선택 연결). 시안 A/B/C를 두 화면에 같이 적용.
@@ -242,7 +244,69 @@ function PatientCard({ p, selected, onTap }: { p: Patient; selected: boolean; on
   );
 }
 
-function ArrivalCard({ a, selected, onTap }: { a: Arrival; selected: boolean; onTap: () => void }) {
+/* 진료실 정보 줄 1줄 규칙(테스트):
+   진료실명(차트), 의사명, 진료과명 글자 수 합(말줄임 '…' 1자 포함)이 15자를 넘으면 가장 긴 항목부터 한 글자씩 줄이고 '…'를 붙인다.
+   15자 이하가 되면 멈춘다. 길이가 같으면 진료과명, 의사명, 진료실명 순으로 먼저 줄인다. */
+const ROOM_LINE_BUDGET = 15;
+type RoomLine = { room: string; doctor: string; dept: string };
+function fitRoomLine(src: RoomLine, budget = ROOM_LINE_BUDGET): { line: RoomLine; total: number; before: number; trimmed: boolean } {
+  // 줄이는 순서(길이가 같을 때): 진료과명 → 의사명 → 진료실명
+  const keys: (keyof RoomLine)[] = ['dept', 'doctor', 'room'];
+  const chars = { room: Array.from(src.room), doctor: Array.from(src.doctor), dept: Array.from(src.dept) };
+  const n = { room: chars.room.length, doctor: chars.doctor.length, dept: chars.dept.length };
+  const cut = { room: false, doctor: false, dept: false };
+  const shown = (k: keyof RoomLine) => n[k] + (cut[k] ? 1 : 0);
+  const sum = () => keys.reduce((s, k) => s + shown(k), 0);
+  const before = sum();
+  let guard = 0;
+  while (sum() > budget && guard++ < 200) {
+    let pick: keyof RoomLine | null = null;
+    for (const k of keys) {
+      if (n[k] <= 1) continue;
+      if (pick === null || shown(k) > shown(pick)) pick = k;
+    }
+    if (!pick) break;
+    n[pick] -= 1;
+    cut[pick] = true;
+  }
+  const out = (k: keyof RoomLine) => (cut[k] ? `${chars[k].slice(0, n[k]).join('')}…` : src[k]);
+  return { line: { room: out('room'), doctor: out('doctor'), dept: out('dept') }, total: sum(), before, trimmed: keys.some((k) => cut[k]) };
+}
+
+type RoomTest = { alias: string } & RoomLine;
+type LineMeasure = { used: number; avail: number };
+
+function ArrivalCard({
+  a,
+  selected,
+  onTap,
+  test,
+  onMeasure
+}: {
+  a: Arrival;
+  selected: boolean;
+  onTap: () => void;
+  test?: RoomTest | null;
+  onMeasure?: (m: LineMeasure) => void;
+}) {
+  const subRef = useRef<HTMLDivElement>(null);
+  const alias = test ? test.alias : a.alias;
+  const line = test ? fitRoomLine(test).line : { room: a.room, doctor: a.doctor, dept: a.dept };
+  const parts = [line.room, line.doctor, line.dept].filter((s) => s !== '');
+  const [overflow, setOverflow] = useState(false);
+
+  useLayoutEffect(() => {
+    const el = subRef.current;
+    if (!el) return;
+    // transform scale은 레이아웃 폭에 영향을 주지 않으므로 scrollWidth/clientWidth가 1920 기준 px
+    const kids = Array.from(el.children) as HTMLElement[];
+    const gap = parseFloat(getComputedStyle(el).columnGap) || 0;
+    const used = kids.reduce((s, c) => s + c.offsetWidth, 0) + gap * Math.max(0, kids.length - 1);
+    const avail = el.clientWidth;
+    setOverflow(used > avail + 0.5);
+    onMeasure?.({ used, avail });
+  });
+
   return (
     <button type="button" className={`tps-card tps-card-patient tps-card-arrival${selected ? ' is-selected' : ''}`} onClick={onTap} aria-pressed={selected}>
       <div className="tps-arr-chip-row">
@@ -250,13 +314,14 @@ function ArrivalCard({ a, selected, onTap }: { a: Arrival; selected: boolean; on
       </div>
       <PatientInfo {...a} />
       <div className="tps-arr-room">
-        <div className="tps-arr-room-name">{a.alias}</div>
-        <div className="tps-arr-room-sub">
-          <span>{a.room}</span>
-          <i className="tps-dot" />
-          <span>{a.doctor}</span>
-          <i className="tps-dot" />
-          <span>{a.dept}</span>
+        <div className="tps-arr-room-name">{alias}</div>
+        <div className={`tps-arr-room-sub${test ? ' is-test' : ''}${test && overflow ? ' is-overflow' : ''}`} ref={subRef}>
+          {parts.map((s, i) => (
+            <React.Fragment key={i}>
+              {i > 0 && <i className="tps-dot" />}
+              <span>{s}</span>
+            </React.Fragment>
+          ))}
         </div>
       </div>
       {selected && <SelectedBadge />}
@@ -369,7 +434,19 @@ function nowLabel() {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
 }
 
-function Tablet({ scenario, onLog, resetKey }: { scenario: Scenario; onLog: (msg: string) => void; resetKey: number }) {
+function Tablet({
+  scenario,
+  onLog,
+  resetKey,
+  roomTest,
+  onMeasure
+}: {
+  scenario: Scenario;
+  onLog: (msg: string) => void;
+  resetKey: number;
+  roomTest: RoomTest | null;
+  onMeasure: (m: LineMeasure) => void;
+}) {
   const many = scenario.lookup === 'many';
   const results = useMemo(() => (many ? PATIENTS : PATIENTS.slice(0, 1)), [many]);
   const arrivals = useMemo(() => (many ? ARRIVALS : ARRIVALS.slice(0, 1)), [many]);
@@ -557,8 +634,15 @@ function Tablet({ scenario, onLog, resetKey }: { scenario: Scenario; onLog: (msg
         <Topbar active={0} steps={ARRIVAL_STEPS} onHome={() => home()} />
         <div className="tps-content">
           <div className={`tps-list${arrivals.length > 2 ? ' is-scroll' : ''}`} ref={listRef}>
-            {arrivals.map((a) => (
-              <ArrivalCard key={a.id} a={a} selected={arrSel.includes(a.id)} onTap={() => tapArrival(a)} />
+            {arrivals.map((a, i) => (
+              <ArrivalCard
+                key={a.id}
+                a={a}
+                selected={arrSel.includes(a.id)}
+                onTap={() => tapArrival(a)}
+                test={i === 0 ? roomTest : null}
+                onMeasure={i === 0 ? onMeasure : undefined}
+              />
             ))}
           </div>
           <EntryRow prefix={ENTRY.arrival.prefix} label={ENTRY.arrival.label} onTap={tapNewReceipt} />
@@ -682,12 +766,29 @@ function App() {
 
   const isArrivalFlow = scenario.flow === 'arrival';
 
+  // 진료실 정보 줄 테스트(도착확인 첫 카드에 바로 반영)
+  const ROOM_DEFAULT: RoomTest = { alias: ARRIVALS[0].alias, room: ARRIVALS[0].room, doctor: ARRIVALS[0].doctor, dept: ARRIVALS[0].dept };
+  const ROOM_PRESETS: { label: string; v: RoomTest }[] = [
+    { label: '기본', v: ROOM_DEFAULT },
+    { label: '진료과명만 김', v: { alias: '원장님 진료실', room: '원장님진료실', doctor: '김철수', dept: '한방안·이비인후·피부과' } },
+    { label: '진료실·진료과 김', v: { alias: '원장님 진료실', room: '진료실명열글자말줄임', doctor: '류현아', dept: '진료과명말줄임없음' } },
+    { label: '셋 다 김', v: { alias: '진료실명한줄말줄임처리가나다라마바사', room: '진료실명열글자말줄임', doctor: '의사명여덟글자말', dept: '진료과명말줄임없음안됨' } }
+  ];
+  const [roomTestOn, setRoomTestOn] = useState(false);
+  const [roomTest, setRoomTest] = useState<RoomTest>(ROOM_DEFAULT);
+  const [measure, setMeasure] = useState<LineMeasure | null>(null);
+  const onMeasure = (m: LineMeasure) =>
+    setMeasure((o) => (o && Math.abs(o.used - m.used) < 0.5 && Math.abs(o.avail - m.avail) < 0.5 ? o : m));
+  const fit = fitRoomLine(roomTest);
+  const setRoomField = (k: keyof RoomTest, v: string) => setRoomTest((o) => ({ ...o, [k]: v }));
+  const lenOf = (s: string) => Array.from(s).length;
+
   return (
     <div className="tps-root bb">
       <div className="tps-bar">
         <div className="tps-bar-title">
           <strong>태블릿 접수 · 도착확인 · 환자 조회 → 환자 선택</strong>
-          <span>‘새 환자 등록’ 오탭 UX 개선 체험판 · B안 최종 v0.8</span>
+          <span>‘새 환자 등록’ 오탭 UX 개선 체험판 · B안 최종 v0.9</span>
         </div>
       </div>
 
@@ -741,6 +842,68 @@ function App() {
             </Field>
           </section>
 
+          {isArrivalFlow && (
+            <section className="tps-panel-card">
+              <div className="tps-log-head">
+                <h3>진료실 정보 줄 테스트</h3>
+                <button type="button" className="tps-mini" onClick={() => setRoomTestOn((v) => !v)}>
+                  {roomTestOn ? '끄기' : '켜기'}
+                </button>
+              </div>
+              <div className="tps-rt-rule">
+                <strong>1줄 규칙</strong>
+                진료실명(차트), 의사명, 진료과명 글자 수 합(말줄임 ‘…’ 1자 포함)이 15자를 넘으면, 가장 긴 항목부터 한 글자씩 줄이고 ‘…’를 붙인다. 15자 이하가 되면
+                멈춘다. 길이가 같으면 진료과명, 의사명, 진료실명 순으로 먼저 줄인다.
+              </div>
+              {!roomTestOn ? (
+                <div className="tps-log-empty">켜면 도착확인 첫 번째 카드의 진료실명, 의사명, 진료과명을 직접 입력해 1줄 규칙 결과를 바로 볼 수 있습니다.</div>
+              ) : (
+                <>
+                  {scenario.start === 'home' && (
+                    <button type="button" className="tps-mini tps-rt-go" onClick={() => setScn('start', 'select')}>
+                      도착 환자 선택 화면으로 바로 보기
+                    </button>
+                  )}
+                  <div className="tps-rt-presets">
+                    {ROOM_PRESETS.map((p) => (
+                      <button key={p.label} type="button" className="tps-mini" onClick={() => setRoomTest(p.v)}>
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                  {(
+                    [
+                      ['alias', '진료실 노출명(제목 줄, 1줄 말줄임)'],
+                      ['room', '진료실명(차트)'],
+                      ['doctor', '의사명'],
+                      ['dept', '진료과명']
+                    ] as [keyof RoomTest, string][]
+                  ).map(([k, label]) => (
+                    <label key={k} className="tps-rt-field">
+                      <span className="tps-rt-label">
+                        {label}
+                        <em>{lenOf(roomTest[k])}자</em>
+                      </span>
+                      <input className="tps-rt-input" value={roomTest[k]} onChange={(e) => setRoomField(k, e.target.value)} />
+                    </label>
+                  ))}
+                  <div className="tps-rt-result">
+                    <div>
+                      합계 {fit.before}자 → {fit.trimmed ? <strong>{fit.total}자로 줄임</strong> : '줄이지 않음'} (기준 {ROOM_LINE_BUDGET}자)
+                    </div>
+                    <div className="tps-rt-line">{[fit.line.room, fit.line.doctor, fit.line.dept].filter(Boolean).join(' · ')}</div>
+                    {measure && (
+                      <div className={measure.used > measure.avail + 0.5 ? 'tps-rt-bad' : 'tps-rt-ok'}>
+                        실제 폭 {Math.round(measure.used)} / {Math.round(measure.avail)}px {measure.used > measure.avail + 0.5 ? '· 넘침(빨간 점선)' : '· 1줄 안에 들어감'}
+                      </div>
+                    )}
+                  </div>
+                  <div className="tps-field-hint">첫 번째 카드에만 반영됩니다. 글자 수는 공백, 가운뎃점, 영문, 숫자도 한 글자로 셉니다.</div>
+                </>
+              )}
+            </section>
+          )}
+
           <section className="tps-panel-card">
             <div className="tps-log-head">
               <h3>행동 기록{log.length > 0 && <span className="tps-log-count"> · {log.length}</span>}</h3>
@@ -764,7 +927,7 @@ function App() {
         </aside>
 
         <Stage>
-          <Tablet scenario={scenario} onLog={addLog} resetKey={resetKey} />
+          <Tablet scenario={scenario} onLog={addLog} resetKey={resetKey} roomTest={isArrivalFlow && roomTestOn ? roomTest : null} onMeasure={onMeasure} />
         </Stage>
       </div>
     </div>

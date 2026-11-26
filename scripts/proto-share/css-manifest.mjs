@@ -27,6 +27,7 @@ export const SCREEN_CSS = {
   'kakao-link': ['styles/connectKakaoLink.css'],
   'application-unified': ['styles/applicationUnified.css'],
   'adot-clinic-linking': ['styles/adotClinicLinking.css'],
+  'adot-webview': ['styles/adotReservationReview.css'],
   'tablet-patient-select': ['styles/tabletPatientSelect.css'],
   'untact-law-app': ['styles/untactLawApp.css'],
   'untact-law-doctor': ['styles/untactLawDoctor.css'],
